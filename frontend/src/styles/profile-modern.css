@@ -1,0 +1,1460 @@
+/* ============================================
+   PROFILE PAGE - Modern Styling
+   Complete styling for user profile page
+   ============================================ */
+
+/* ============================================
+   1. PAGE CONTAINER
+   ============================================ */
+.va-profile-container {
+	padding: var(--space-2) var(--space-8);
+	background-color: var(--bg-primary);
+	height: 100%;
+	overflow-y: auto; /* Allow scroll within container */
+	max-width: 1400px;
+	margin: 0 auto;
+}
+
+/* ============================================
+   2. PROFILE HEADER
+   ============================================ */
+.va-profile-header {
+	position: relative;
+	margin-bottom: var(--space-6);
+	background-color: var(--bg-elevated);
+	border-radius: var(--radius-xl);
+	overflow: hidden;
+	border: 1px solid var(--border-primary);
+	box-shadow: var(--shadow-lg);
+}
+
+.va-profile-cover {
+	width: 100%;
+	height: 104px;
+	background-image: none;
+	background-color: var(--color-primary);
+	position: relative;
+	z-index: 1;
+	border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+	overflow: hidden;
+}
+
+.va-profile-cover::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+}
+
+.va-profile-cover::after {
+	content: '';
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	height: 1px;
+	background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
+}
+
+.va-profile-info {
+	display: flex;
+	align-items: center;
+	gap: var(--space-6);
+	padding: var(--space-6) var(--space-8);
+	position: relative;
+	z-index: 2;
+	background: var(--bg-elevated);
+	border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+	min-height: 176px;
+}
+
+.va-profile-avatar-wrap {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--space-3);
+	flex-shrink: 0;
+}
+
+.va-profile-avatar {
+	position: relative;
+	z-index: 3;
+}
+
+.va-profile-avatar-img {
+	width: 120px;
+	height: 120px;
+	border-radius: var(--radius-full);
+	object-fit: cover;
+	border: 5px solid var(--bg-elevated);
+	box-shadow: var(--shadow-xl), 0 0 0 1px rgba(var(--formely-white-rgb), 0.2);
+	display: block;
+}
+
+.va-profile-avatar-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2);
+	justify-content: center;
+}
+
+.va-profile-avatar-input {
+	position: absolute;
+	width: 0.1px;
+	height: 0.1px;
+	opacity: 0;
+	overflow: hidden;
+	z-index: -1;
+}
+
+.va-profile-avatar-btn {
+	padding: var(--space-2) var(--space-4);
+	border-radius: var(--radius-md);
+	font-size: var(--font-size-sm);
+	font-weight: 500;
+	background: var(--bg-secondary);
+	border: 1px solid var(--border-primary);
+	color: var(--text-primary);
+	cursor: pointer;
+	transition: all var(--transition-base);
+}
+
+.va-profile-avatar-btn:hover:not(:disabled) {
+	background: var(--bg-tertiary);
+	border-color: var(--color-primary);
+	color: var(--color-primary);
+}
+
+.va-profile-avatar-btn:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.va-profile-avatar-btn-remove {
+	color: var(--text-tertiary);
+}
+
+.va-profile-avatar-btn-remove:hover:not(:disabled) {
+	border-color: var(--color-error);
+	color: var(--color-error);
+}
+
+.va-avatar-editor-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 1200;
+	display: grid;
+	place-items: center;
+	padding: var(--space-4);
+	background: rgba(5, 10, 20, 0.72);
+	backdrop-filter: blur(12px);
+}
+
+.va-avatar-editor-modal {
+	width: min(100%, 560px);
+	padding: var(--space-5);
+	border-radius: var(--radius-xl);
+	border: 1px solid var(--border-primary);
+	background: var(--bg-elevated);
+	box-shadow: var(--shadow-xl);
+}
+
+.va-avatar-editor-header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--space-4);
+	margin-bottom: var(--space-4);
+}
+
+.va-avatar-editor-header h3 {
+	margin: 0 0 var(--space-1);
+	color: var(--text-primary);
+}
+
+.va-avatar-editor-header p {
+	margin: 0;
+	color: var(--text-secondary);
+}
+
+.va-avatar-editor-close {
+	width: 40px;
+	height: 40px;
+	border-radius: 999px;
+	border: 1px solid var(--border-primary);
+	background: var(--bg-secondary);
+	color: var(--text-primary);
+	cursor: pointer;
+}
+
+.va-avatar-editor-stage-wrap {
+	display: grid;
+	place-items: center;
+	margin-bottom: var(--space-4);
+}
+
+.va-avatar-editor-stage {
+	position: relative;
+	width: 280px;
+	height: 280px;
+	border-radius: 50%;
+	overflow: hidden;
+	background:
+		linear-gradient(45deg, rgba(255,255,255,0.04) 25%, transparent 25%) -10px 0/20px 20px,
+		linear-gradient(-45deg, rgba(255,255,255,0.04) 25%, transparent 25%) -10px 0/20px 20px,
+		linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.04) 75%) -10px 0/20px 20px,
+		linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.04) 75%) -10px 0/20px 20px,
+		var(--bg-secondary);
+	cursor: grab;
+	touch-action: none;
+	user-select: none;
+}
+
+.va-avatar-editor-stage:active {
+	cursor: grabbing;
+}
+
+.va-avatar-editor-image {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	max-width: none;
+	transform-origin: center;
+	will-change: transform;
+}
+
+.va-avatar-editor-mask {
+	position: absolute;
+	inset: 0;
+	border-radius: 50%;
+	box-shadow: inset 0 0 0 3px rgba(var(--formely-white-rgb), 0.8), inset 0 0 0 18px rgba(0, 0, 0, 0.06);
+	pointer-events: none;
+}
+
+.va-avatar-editor-controls {
+	display: grid;
+	gap: var(--space-2);
+	margin-bottom: var(--space-4);
+}
+
+.va-avatar-editor-controls label {
+	color: var(--text-secondary);
+	font-weight: 600;
+}
+
+.va-avatar-editor-controls input[type='range'] {
+	width: 100%;
+	accent-color: var(--color-primary);
+}
+
+.va-avatar-editor-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: var(--space-2);
+}
+
+.va-avatar-editor-save {
+	background: var(--color-primary);
+	border-color: var(--color-primary);
+	color: var(--text-inverse);
+}
+
+.va-profile-avatar-inner {
+	width: 120px;
+	height: 120px;
+	border-radius: var(--radius-full);
+	background: linear-gradient(135deg, var(--color-primary) 0%, rgba(var(--formely-white-rgb), 0.9) 100%);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: var(--font-size-4xl);
+	font-weight: var(--font-weight-bold);
+	color: var(--text-inverse) !important;
+	border: 5px solid var(--bg-elevated);
+	box-shadow: var(--shadow-xl), 0 0 0 1px rgba(var(--formely-white-rgb), 0.2);
+	position: relative;
+	overflow: hidden;
+}
+
+.va-profile-avatar-inner::before {
+	content: '';
+	position: absolute;
+	top: -50%;
+	left: -50%;
+	width: 200%;
+	height: 200%;
+	background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+	opacity: 0.5;
+}
+
+.va-profile-details {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+}
+
+.va-profile-name {
+	font-size: var(--font-size-3xl);
+	font-weight: var(--font-weight-bold);
+	color: var(--text-primary);
+	margin: 0;
+	letter-spacing: -0.02em;
+	line-height: 1.3;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.va-profile-role {
+	font-size: var(--font-size-base);
+	color: var(--text-secondary);
+	margin: 0;
+	font-weight: var(--font-weight-medium);
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+}
+
+.va-profile-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2);
+}
+
+.va-profile-badge {
+	padding: var(--space-2) var(--space-4);
+	border-radius: var(--radius-full);
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-medium);
+	background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-elevated) 100%);
+	border: 1px solid var(--border-primary);
+	color: var(--text-secondary);
+	box-shadow: var(--shadow-sm);
+	transition: all var(--transition-base);
+}
+
+.va-profile-badge:hover {
+	border-color: var(--border-accent);
+	box-shadow: var(--shadow-md);
+	transform: translateY(-1px);
+}
+
+/* Preferințe temă (Profil) */
+.va-profile-theme-section {
+	margin-bottom: var(--space-6);
+	max-width: 100%;
+}
+
+.va-profile-activity-cta {
+	margin-bottom: var(--space-6);
+}
+
+/* ============================================
+   3. STATS GRID
+   ============================================ */
+.va-profile-stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap: var(--space-4);
+	margin-bottom: var(--space-6);
+}
+
+.va-stat-card {
+	background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-secondary) 100%);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-xl);
+	padding: var(--space-5);
+	min-height: 100px;
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	transition: all var(--transition-smooth);
+	box-shadow: var(--shadow-md), 0 0 0 1px rgba(var(--formely-white-rgb), 0.05);
+	position: relative;
+	overflow: hidden;
+}
+
+.va-stat-card::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 4px;
+	background: linear-gradient(90deg, var(--accent-primary) 0%, var(--color-primary-light) 100%);
+	opacity: 0.6;
+}
+
+.va-stat-card:hover {
+	box-shadow: var(--shadow-lg), 0 0 0 1px rgba(var(--formely-white-rgb), 0.1);
+	border-color: var(--border-accent);
+	transform: translateY(-2px);
+}
+
+.va-stat-icon {
+	font-size: var(--font-size-2xl);
+	flex-shrink: 0;
+	opacity: 0.8;
+	width: 48px;
+	height: 48px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--bg-tertiary);
+	border-radius: var(--radius-lg);
+}
+
+.va-stat-content {
+	flex: 1;
+	min-width: 0;
+}
+
+.va-stat-value {
+	font-size: var(--font-size-2xl);
+	font-weight: var(--font-weight-bold);
+	color: var(--accent-primary);
+	margin: 0 0 var(--space-2) 0;
+	line-height: 1.2;
+	text-shadow: 0 0 15px rgba(var(--formely-white-rgb), 0.3);
+	letter-spacing: -0.02em;
+}
+
+.va-stat-label {
+	font-size: var(--font-size-sm);
+	color: var(--text-primary);
+	margin: 0;
+	font-weight: var(--font-weight-semibold);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	opacity: 0.9;
+}
+
+.va-stat-card-progress {
+	min-height: 120px;
+	/* Keep horizontal layout like other cards */
+}
+
+.va-stat-progress-bar {
+	width: 100%;
+	height: 6px;
+	background: var(--bg-tertiary);
+	border-radius: var(--radius-full);
+	overflow: hidden;
+	margin-top: var(--space-1);
+	box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+	position: relative;
+}
+
+.va-stat-progress-fill {
+	height: 100%;
+	background: linear-gradient(90deg, var(--accent-primary) 0%, var(--color-primary-light) 50%, var(--accent-primary) 100%);
+	background-size: 200% 100%;
+	border-radius: var(--radius-full);
+	transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+	box-shadow: 0 2px 12px rgba(var(--formely-white-rgb), 0.5), 0 0 20px rgba(var(--formely-white-rgb), 0.3);
+	position: relative;
+	animation: shimmer-progress 3s infinite;
+}
+
+.va-stat-progress-fill::after {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
+	animation: shine-progress 2s infinite;
+}
+
+@keyframes shimmer-progress {
+	0%, 100% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+}
+
+@keyframes shine-progress {
+	0% {
+		transform: translateX(-100%);
+	}
+	100% {
+		transform: translateX(100%);
+	}
+}
+
+/* ============================================
+   4. MAIN CONTENT GRID
+   ============================================ */
+.va-profile-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: var(--space-3);
+	margin-bottom: var(--space-4);
+}
+
+.va-profile-section {
+	background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-secondary) 100%);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-xl);
+	padding: var(--space-6);
+	box-shadow: var(--shadow-md), 0 0 0 1px rgba(var(--formely-white-rgb), 0.05);
+	position: relative;
+	overflow: hidden;
+	transition: all var(--transition-smooth);
+}
+
+.va-profile-section::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 4px;
+	background: linear-gradient(90deg, var(--accent-primary) 0%, var(--color-primary-light) 100%);
+	opacity: 0.6;
+}
+
+.va-profile-section:hover {
+	box-shadow: var(--shadow-lg), 0 0 0 1px rgba(var(--formely-white-rgb), 0.1);
+	border-color: var(--border-accent);
+}
+
+.va-section-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: var(--space-3);
+	padding-bottom: var(--space-2);
+	border-bottom: 1px solid var(--border-primary);
+}
+
+.va-section-title-group {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	flex: 1;
+}
+
+.va-section-title {
+	font-size: var(--font-size-lg);
+	font-weight: var(--font-weight-bold);
+	color: var(--text-primary);
+	margin: 0;
+	letter-spacing: -0.02em;
+}
+
+.va-section-count {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 24px;
+	height: 24px;
+	padding: 0 var(--space-2);
+	border-radius: var(--radius-full);
+	background-color: var(--bg-secondary);
+	color: var(--text-primary);
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-semibold);
+}
+
+.va-section-more-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	border-radius: var(--radius-md);
+	background-color: transparent;
+	border: 1px solid var(--border-primary);
+	color: var(--text-secondary);
+	text-decoration: none;
+	font-size: var(--font-size-xl);
+	line-height: 1;
+	transition: all var(--transition-base);
+}
+
+.va-section-more-btn:hover {
+	background-color: var(--bg-secondary);
+	border-color: var(--border-secondary);
+	color: var(--text-primary);
+}
+
+/* ============================================
+   5. COURSES LIST
+   ============================================ */
+.va-courses-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+}
+
+.va-course-card {
+	padding: var(--space-4);
+	background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-secondary) 100%);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	transition: all var(--transition-smooth);
+	box-shadow: var(--shadow-sm), 0 0 0 1px rgba(var(--formely-white-rgb), 0.05);
+	position: relative;
+	overflow: hidden;
+}
+
+.va-course-card::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 3px;
+	background: linear-gradient(90deg, var(--accent-primary) 0%, var(--color-primary-light) 100%);
+	opacity: 0.5;
+}
+
+.va-course-card:hover {
+	border-color: var(--border-accent);
+	box-shadow: var(--shadow-md), 0 0 0 1px rgba(var(--formely-white-rgb), 0.1);
+	transform: translateY(-2px);
+}
+
+.va-course-card-header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--space-2);
+	margin-bottom: var(--space-1);
+}
+
+.va-course-card-title {
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	margin: 0;
+	flex: 1;
+	line-height: var(--line-height-tight);
+}
+
+.va-course-card-progress {
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-semibold);
+	color: var(--color-primary);
+	flex-shrink: 0;
+}
+
+.va-course-card-description {
+	font-size: var(--font-size-xs);
+	color: var(--text-secondary);
+	margin: 0 0 var(--space-2) 0;
+	line-height: var(--line-height-relaxed);
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.va-course-card-progress-bar {
+	width: 100%;
+	height: 3px;
+	background-color: var(--bg-primary);
+	border-radius: var(--radius-full);
+	overflow: hidden;
+	margin-bottom: var(--space-1);
+}
+
+.va-course-card-progress-fill {
+	height: 100%;
+	background: linear-gradient(90deg, var(--color-primary) 0%, rgba(var(--formely-white-rgb), 0.8) 100%);
+	border-radius: var(--radius-full);
+	transition: width var(--transition-smooth);
+}
+
+.va-course-card-meta {
+	font-size: var(--font-size-xs);
+	color: var(--text-tertiary);
+	margin-bottom: var(--space-2);
+}
+
+/* ============================================
+   6. COMPLETED COURSES
+   ============================================ */
+.va-completed-courses-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+}
+
+.va-completed-course-item {
+	padding: var(--space-3);
+	background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(var(--formely-white-rgb), 0.05) 100%);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-md);
+	transition: all var(--transition-smooth);
+}
+
+.va-completed-course-item:hover {
+	background: linear-gradient(135deg, var(--bg-elevated) 0%, rgba(var(--formely-white-rgb), 0.1) 100%);
+	border-color: var(--border-accent);
+	box-shadow: var(--shadow-sm);
+	transform: translateY(-1px);
+}
+
+.va-completed-course-content {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-2);
+	margin-bottom: var(--space-1);
+}
+
+.va-completed-course-title {
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	flex: 1;
+}
+
+.va-completed-course-badge {
+	padding: var(--space-1) var(--space-3);
+	border-radius: var(--radius-full);
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-semibold);
+	background-color: rgba(var(--color-success-rgb, 34, 197, 94), 0.2);
+	color: var(--color-success);
+	white-space: nowrap;
+}
+
+.va-completed-course-meta {
+	font-size: var(--font-size-xs);
+	color: var(--text-tertiary);
+}
+
+/* ============================================
+   7. BADGES CONTAINER
+   ============================================ */
+.va-profile-badges-container {
+	background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-secondary) 100%);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-xl);
+	padding: var(--space-3);
+	box-shadow: var(--shadow-md), 0 0 0 1px rgba(var(--formely-white-rgb), 0.05);
+	position: relative;
+	overflow: hidden;
+}
+
+.va-profile-badges-container::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 4px;
+	background: linear-gradient(90deg, var(--accent-primary) 0%, var(--color-primary-light) 100%);
+	opacity: 0.6;
+}
+
+.va-profile-badges-title {
+	font-size: var(--font-size-lg);
+	font-weight: var(--font-weight-bold);
+	color: var(--text-primary);
+	margin: 0 0 var(--space-2) 0;
+	letter-spacing: -0.02em;
+}
+
+.va-profile-badges-list {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+	gap: var(--space-2);
+}
+
+.va-profile-badge-item {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--space-2);
+	padding: var(--space-2);
+	background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(var(--formely-white-rgb), 0.05) 100%);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-md);
+	transition: all var(--transition-smooth);
+}
+
+.va-profile-badge-item:hover {
+	background: linear-gradient(135deg, var(--bg-elevated) 0%, rgba(var(--formely-white-rgb), 0.1) 100%);
+	border-color: var(--border-accent);
+	box-shadow: var(--shadow-md);
+	transform: translateY(-2px);
+}
+
+.va-profile-badge-icon {
+	font-size: var(--font-size-xl);
+	flex-shrink: 0;
+	opacity: 0.9;
+}
+
+.va-profile-badge-content {
+	flex: 1;
+	min-width: 0;
+}
+
+.va-profile-badge-name {
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	margin: 0 0 var(--space-1) 0;
+}
+
+.va-profile-badge-description {
+	font-size: var(--font-size-xs);
+	color: var(--text-secondary);
+	margin: 0;
+	line-height: var(--line-height-relaxed);
+}
+
+.va-profile-badges-empty {
+	padding: var(--space-4);
+	text-align: center;
+	color: var(--text-tertiary);
+}
+
+.va-profile-badges-empty p {
+	margin: 0;
+	font-size: var(--font-size-sm);
+	display: inline;
+}
+
+/* ============================================
+   8. EMPTY STATES
+   ============================================ */
+.lms-empty-state {
+	padding: var(--space-8);
+	text-align: center;
+}
+
+.lms-empty-description {
+	font-size: var(--font-size-sm);
+	color: var(--text-tertiary);
+	margin: 0 0 var(--space-4) 0;
+}
+
+/* ============================================
+   9. UTILITY CLASSES
+   ============================================ */
+.va-profile-error {
+	padding: var(--space-4);
+	background-color: rgba(var(--color-error-rgb, 239, 68, 68), 0.1);
+	border: 1px solid rgba(var(--color-error-rgb, 239, 68, 68), 0.3);
+	border-radius: var(--radius-lg);
+	color: var(--color-error);
+	font-size: var(--font-size-sm);
+}
+
+.va-profile-back-button {
+	margin-bottom: var(--space-8);
+}
+
+.va-profile-back-button .lms-btn-secondary {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+	padding: var(--space-3) var(--space-6);
+}
+
+.va-profile-badge-email {
+	background-color: var(--bg-secondary) !important;
+	color: var(--text-secondary) !important;
+}
+
+/* ============================================
+   10. RESPONSIVE DESIGN
+   ============================================ */
+@media (max-width: 1024px) {
+	.va-profile-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.va-profile-badges-list {
+		grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	}
+}
+
+@media (max-width: 768px) {
+	.va-profile-container {
+		overflow-x: clip;
+		padding: var(--space-3) var(--space-4) calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
+		box-sizing: border-box;
+	}
+
+	.va-profile-cover {
+		height: 100px;
+	}
+
+	.va-profile-header {
+		margin-bottom: var(--space-5);
+	}
+
+	.va-profile-info {
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		padding: var(--space-4);
+		min-height: 0;
+		gap: var(--space-4);
+	}
+
+	.va-profile-avatar-wrap {
+		width: 100%;
+	}
+
+	.va-profile-details {
+		width: 100%;
+		max-width: 100%;
+		align-items: center;
+		text-align: center;
+	}
+
+	.va-profile-name {
+		width: 100%;
+		word-break: normal;
+		overflow-wrap: break-word;
+	}
+
+	.va-profile-stats {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: var(--space-3);
+	}
+
+	.va-profile-badges-list {
+		grid-template-columns: 1fr;
+	}
+
+	.va-profile-section .lms-btn-primary,
+	.va-profile-section .lms-btn-secondary,
+	.va-profile-back-button .lms-btn-secondary {
+		min-height: 48px;
+		width: 100%;
+		justify-content: center;
+	}
+
+	.student-settings-page {
+		width: 100%;
+		padding: var(--space-3) var(--space-4) calc(var(--space-8) + env(safe-area-inset-bottom, 0));
+	}
+
+	.student-settings-header {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.student-settings-save-btn,
+	.student-settings-form-grid input,
+	.student-settings-form-grid select,
+	.student-settings-form-grid textarea,
+	.student-settings-theme-control .va-theme-segment-btn {
+		min-height: 44px;
+		font-size: 16px;
+	}
+
+	.student-settings-save-btn {
+		width: 100%;
+		min-height: 48px;
+	}
+}
+
+/* Student settings */
+.student-settings-page {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-5);
+	width: min(1040px, 100%);
+	margin: 0 auto;
+	padding: var(--space-4) var(--space-5) var(--space-8);
+	box-sizing: border-box;
+}
+
+.student-settings-header,
+.student-settings-account-card,
+.student-settings-section {
+	background: var(--bg-elevated);
+	border: 1px solid var(--border-primary);
+	border-radius: 16px;
+	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.student-settings-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-4);
+	padding: var(--space-5) var(--space-6);
+	overflow: hidden;
+	position: relative;
+}
+
+.student-settings-header::before {
+	content: '';
+	position: absolute;
+	inset: 0 auto 0 0;
+	width: 4px;
+	border-radius: 16px 0 0 16px;
+	background: var(--accent-primary);
+}
+
+.student-settings-title {
+	margin: 0;
+	font-size: clamp(1.35rem, 2.5vw, 1.65rem);
+	line-height: 1.15;
+	letter-spacing: -0.02em;
+}
+
+.student-settings-grid {
+	display: grid;
+	grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
+	gap: var(--space-4);
+	align-items: stretch;
+}
+
+/* Coloană stânga: cont sus, aspect jos — aliniat la baza cu formularul */
+.student-settings-rail {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-4);
+	min-height: 100%;
+	height: 100%;
+}
+
+.student-settings-appearance-card {
+	margin-top: auto;
+	flex-shrink: 0;
+}
+
+.student-settings-account-card {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-4);
+	padding: var(--space-5);
+	flex-shrink: 0;
+}
+
+.student-settings-account-top {
+	display: flex;
+	align-items: center;
+	gap: var(--space-4);
+	min-width: 0;
+}
+
+.student-settings-avatar {
+	display: inline-grid;
+	place-items: center;
+	flex-shrink: 0;
+	width: 52px;
+	height: 52px;
+	border-radius: 14px;
+	color: var(--text-inverse);
+	background: linear-gradient(135deg, var(--accent-primary), var(--color-primary-hover));
+	font-size: 1rem;
+	font-weight: var(--font-weight-bold);
+	box-shadow: 0 8px 20px color-mix(in srgb, var(--accent-primary) 28%, transparent);
+}
+
+.student-settings-account-copy {
+	min-width: 0;
+}
+
+.student-settings-account-copy h2 {
+	margin: 0;
+	color: var(--text-primary);
+	font-size: 1rem;
+	font-weight: var(--font-weight-bold);
+	line-height: 1.25;
+	overflow-wrap: anywhere;
+}
+
+.student-settings-account-copy p {
+	margin: var(--space-1) 0 0;
+	color: var(--text-secondary);
+	font-size: 0.8125rem;
+	line-height: 1.35;
+	overflow-wrap: anywhere;
+}
+
+.student-settings-account-meta {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+	padding-top: var(--space-3);
+	border-top: 1px solid var(--border-primary);
+}
+
+.student-settings-account-meta span {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+	min-height: 28px;
+	padding: 0 var(--space-2);
+	border-radius: 8px;
+	color: var(--text-secondary);
+	font-size: 0.8125rem;
+	line-height: 1;
+	background: var(--bg-secondary);
+}
+
+.student-settings-page svg {
+	display: block;
+	flex-shrink: 0;
+}
+
+.student-settings-section-main {
+	min-height: 100%;
+	height: 100%;
+	box-sizing: border-box;
+}
+
+.student-settings-section {
+	padding: var(--space-5);
+}
+
+.student-settings-section-header {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	margin-bottom: var(--space-4);
+}
+
+.student-settings-section-header > div {
+	display: flex;
+	align-items: center;
+	min-height: 36px;
+}
+
+.student-settings-section-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	border-radius: 10px;
+	color: var(--accent-primary);
+	background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+	border: 1px solid color-mix(in srgb, var(--accent-primary) 22%, var(--border-primary));
+	flex: 0 0 auto;
+}
+
+.student-settings-section-title {
+	font-size: 1rem;
+	font-weight: var(--font-weight-bold);
+	color: var(--text-primary);
+	margin: 0;
+	line-height: 1.25;
+	letter-spacing: -0.01em;
+}
+
+.student-settings-section + .student-settings-section {
+	margin-top: 0;
+}
+
+.student-settings-form {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-4);
+}
+
+.student-settings-form-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--space-4);
+}
+
+.student-settings-field {
+	display: grid;
+	gap: 0.25rem;
+}
+
+.student-settings-field .va-input-label {
+	color: var(--text-primary);
+	font-size: 0.76rem;
+	font-weight: var(--font-weight-semibold);
+}
+
+.student-settings-field .va-input,
+.student-settings-field .student-settings-textarea {
+	width: 100%;
+	box-sizing: border-box;
+	border-radius: var(--radius-md);
+	background: var(--bg-primary);
+	border: 1px solid var(--border-primary);
+	font-size: 0.84rem;
+	min-height: 34px;
+	padding: 0.45rem 0.65rem;
+	transition: border-color var(--transition-base), box-shadow var(--transition-base), background var(--transition-base);
+}
+
+.student-settings-field .va-input:focus,
+.student-settings-field .student-settings-textarea:focus {
+	border-color: var(--accent-primary);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 16%, transparent);
+	background: var(--bg-elevated);
+}
+
+.student-settings-field .va-input:read-only {
+	color: var(--text-secondary);
+	background: var(--bg-secondary);
+	cursor: default;
+}
+
+.student-settings-textarea {
+	resize: vertical;
+	min-height: 4.6rem;
+	line-height: 1.35;
+}
+
+.student-settings-label-note {
+	color: var(--text-tertiary);
+	font-weight: var(--font-weight-normal);
+}
+
+.student-settings-actions {
+	display: flex;
+	justify-content: flex-end;
+	padding-top: 0;
+}
+
+.student-settings-actions .lms-btn-primary {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-2);
+	min-height: 32px;
+	line-height: 1;
+	border-radius: var(--radius-md);
+	padding-inline: var(--space-3);
+	font-size: 0.82rem;
+}
+
+.student-settings-theme {
+	margin-top: 0;
+}
+
+.student-settings-theme .student-settings-theme-control {
+	width: 100%;
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+}
+
+.student-settings-theme-control .va-theme-preference-info {
+	min-width: 0;
+}
+
+.student-settings-theme-control {
+	gap: 0.55rem;
+}
+
+.student-settings-theme-control .va-theme-preference-info {
+	display: none;
+}
+
+.student-settings-theme-control .va-theme-segment {
+	border-radius: var(--radius-md);
+	width: 100%;
+}
+
+.student-settings-theme-control .va-theme-segment-btn {
+	flex: 1;
+	border-radius: calc(var(--radius-md) - 2px);
+	padding: 0.35rem 0.45rem;
+	font-size: 0.78rem;
+}
+
+@media (max-width: 900px) {
+	.student-settings-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.student-settings-rail {
+		height: auto;
+		min-height: 0;
+	}
+
+	.student-settings-appearance-card {
+		margin-top: 0;
+	}
+
+	.student-settings-section-main {
+		min-height: 0;
+		height: auto;
+	}
+}
+
+@media (max-width: 640px) {
+	.student-settings-page {
+		padding: var(--space-3) var(--space-4) var(--space-6);
+		gap: var(--space-4);
+	}
+
+	.student-settings-header {
+		padding: var(--space-4);
+	}
+
+	.student-settings-account-card,
+	.student-settings-section {
+		padding: var(--space-4);
+	}
+
+	.student-settings-form-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.student-settings-theme-control {
+		align-items: stretch;
+	}
+
+	.student-settings-theme-control .va-theme-segment {
+		width: 100%;
+	}
+
+	.student-settings-theme-control .va-theme-segment-btn {
+		flex: 1;
+		padding-inline: 0.5rem;
+	}
+}
+
+/* Student activity history */
+.va-student-activity-page .va-student-activity-header {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-4);
+	margin-bottom: var(--space-6);
+}
+
+.va-student-activity-title {
+	font-size: 1.5rem;
+	font-weight: 700;
+	color: var(--text-primary);
+	margin: 0 0 var(--space-1);
+}
+
+.va-student-activity-subtitle {
+	margin: 0;
+	color: var(--text-secondary);
+	font-size: 0.95rem;
+	max-width: 42rem;
+}
+
+.va-student-activity-filters {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: var(--space-4);
+	margin-bottom: var(--space-6);
+	padding: var(--space-4);
+	background: var(--bg-elevated);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+}
+
+.va-student-activity-filter-label {
+	display: block;
+	font-size: 0.8rem;
+	font-weight: 600;
+	color: var(--text-secondary);
+	margin-bottom: var(--space-2);
+}
+
+.va-student-activity-filter-input {
+	width: 100%;
+	padding: var(--space-2) var(--space-3);
+	border-radius: var(--radius-md);
+	border: 1px solid var(--border-primary);
+	background: var(--bg-primary);
+	color: var(--text-primary);
+}
+
+.va-student-activity-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+}
+
+.va-student-activity-item {
+	display: flex;
+	gap: var(--space-4);
+	padding: var(--space-4);
+	background: var(--bg-elevated);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+}
+
+.va-student-activity-icon {
+	font-size: 1.5rem;
+	line-height: 1;
+	flex-shrink: 0;
+}
+
+.va-student-activity-body {
+	flex: 1;
+	min-width: 0;
+}
+
+.va-student-activity-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-2);
+	margin-bottom: var(--space-2);
+}
+
+.va-student-activity-badge {
+	font-size: 0.75rem;
+	font-weight: 600;
+	padding: 0.15rem 0.5rem;
+	border-radius: var(--radius-full);
+	background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+	color: var(--color-primary);
+}
+
+.va-student-activity-time {
+	font-size: 0.8rem;
+	color: var(--text-tertiary);
+}
+
+.va-student-activity-line {
+	margin: 0 0 var(--space-2);
+	color: var(--text-primary);
+	line-height: 1.45;
+}
+
+.va-student-activity-link {
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: var(--color-primary);
+	text-decoration: none;
+}
+
+.va-student-activity-link:hover {
+	text-decoration: underline;
+}
+
+.va-student-activity-empty {
+	margin-top: var(--space-8);
+}
+
+.va-student-activity-pagination {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-4);
+	margin-top: var(--space-6);
+	flex-wrap: wrap;
+}
+
+.va-student-activity-page-info {
+	font-size: 0.875rem;
+	color: var(--text-secondary);
+}

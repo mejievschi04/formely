@@ -1,0 +1,6 @@
+---
+alwaysApply: true
+---
+- Avoid unnecessary computations
+- Optimize only when needed
+- Use efficient data structures

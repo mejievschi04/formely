@@ -1,0 +1,150 @@
+/* ============================================
+   BUTTON MODERN - Pagini (va-shell-main, admin-container)
+   Stil modern, aranjat, consistent
+   ============================================ */
+
+/* Base - butoane compacte, rotunjite */
+.va-shell-main .btn,
+.va-shell-main .admin-btn,
+.va-shell-main .lms-btn-primary,
+.va-shell-main .admin-btn-create-course,
+.va-shell-main .admin-btn-secondary,
+.admin-container .btn,
+.admin-container .admin-btn,
+.admin-container .lms-btn-primary,
+.admin-container .admin-btn-create-course,
+.admin-container .admin-btn-secondary {
+	min-height: var(--btn-desktop-min-height);
+	padding: var(--btn-desktop-padding-y) var(--btn-desktop-padding-x);
+	border-radius: var(--btn-desktop-radius);
+	font-size: var(--btn-desktop-font-size);
+	font-weight: var(--font-weight-semibold);
+	letter-spacing: 0.02em;
+	gap: var(--btn-desktop-gap);
+	transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+	-webkit-font-smoothing: antialiased;
+}
+
+/* Primary - modern, pill-shaped, text NEGRU pe galben */
+.va-shell-main .btn-primary,
+.va-shell-main .lms-btn-primary,
+.va-shell-main .admin-btn-create-course,
+.admin-container .btn-primary,
+.admin-container .lms-btn-primary,
+.admin-container .admin-btn-create-course {
+	color: var(--text-inverse) !important;
+	border-radius: var(--btn-desktop-radius);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+	border: none;
+}
+
+.va-shell-main .btn-primary span,
+.va-shell-main .lms-btn-primary span,
+.va-shell-main .admin-btn-create-course span,
+.admin-container .btn-primary span,
+.admin-container .lms-btn-primary span,
+.admin-container .admin-btn-create-course span {
+	color: inherit !important;
+}
+
+.va-shell-main .btn-primary:hover:not(:disabled),
+.va-shell-main .lms-btn-primary:hover:not(:disabled),
+.va-shell-main .admin-btn-create-course:hover:not(:disabled),
+.admin-container .btn-primary:hover:not(:disabled),
+.admin-container .lms-btn-primary:hover:not(:disabled),
+.admin-container .admin-btn-create-course:hover:not(:disabled) {
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+	transform: translateY(-2px);
+}
+
+.va-shell-main .btn-primary:active:not(:disabled),
+.va-shell-main .lms-btn-primary:active:not(:disabled),
+.va-shell-main .admin-btn-create-course:active:not(:disabled),
+.admin-container .btn-primary:active:not(:disabled),
+.admin-container .lms-btn-primary:active:not(:disabled),
+.admin-container .admin-btn-create-course:active:not(:disabled) {
+	transform: translateY(0);
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.va-shell-main .btn-primary:focus-visible,
+.va-shell-main .lms-btn-primary:focus-visible,
+.va-shell-main .admin-btn-create-course:focus-visible,
+.admin-container .btn-primary:focus-visible,
+.admin-container .lms-btn-primary:focus-visible,
+.admin-container .admin-btn-create-course:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--color-primary-alpha-30);
+}
+
+[data-theme="light"] .va-shell-main .btn-primary,
+[data-theme="light"] .va-shell-main .admin-btn-create-course,
+[data-theme="light"] .admin-container .btn-primary,
+[data-theme="light"] .admin-container .admin-btn-create-course {
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* Secondary - rotunjit, hover modern */
+.va-shell-main .btn-secondary,
+.va-shell-main .admin-btn-secondary,
+.admin-container .btn-secondary,
+.admin-container .admin-btn-secondary {
+	border-radius: var(--btn-desktop-radius);
+}
+
+.va-shell-main .btn-secondary:hover:not(:disabled),
+.va-shell-main .admin-btn-secondary:hover:not(:disabled),
+.admin-container .btn-secondary:hover:not(:disabled),
+.admin-container .admin-btn-secondary:hover:not(:disabled) {
+	box-shadow: 0 4px 16px var(--color-primary-alpha-20);
+	transform: translateY(-2px);
+}
+
+.va-shell-main .btn-secondary:active:not(:disabled),
+.va-shell-main .admin-btn-secondary:active:not(:disabled),
+.admin-container .btn-secondary:active:not(:disabled),
+.admin-container .admin-btn-secondary:active:not(:disabled) {
+	transform: translateY(0);
+}
+
+.va-shell-main .btn-secondary:focus-visible,
+.va-shell-main .admin-btn-secondary:focus-visible,
+.admin-container .btn-secondary:focus-visible,
+.admin-container .admin-btn-secondary:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--color-primary-alpha-30);
+}
+
+/* Grupuri de butoane - spațiere aranjată, gap consistent */
+.va-shell-main .admin-courses-header-actions,
+.va-shell-main .admin-courses-toolbar-actions,
+.admin-container .admin-courses-header-actions,
+.admin-container .admin-courses-toolbar-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	flex-wrap: wrap;
+}
+
+.va-shell-main .admin-course-card-actions,
+.va-shell-main .admin-course-table-actions,
+.admin-container .admin-course-card-actions,
+.admin-container .admin-course-table-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	flex-wrap: wrap;
+}
+
+/* Card/table action buttons - compacte */
+.va-shell-main .admin-course-card-action-btn,
+.va-shell-main .admin-course-table-action-btn,
+.admin-container .admin-course-card-action-btn,
+.admin-container .admin-course-table-action-btn {
+	min-height: 32px;
+	padding: var(--space-2) var(--space-3);
+	border-radius: var(--radius-md);
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-medium);
+	transition: all 0.2s ease;
+}

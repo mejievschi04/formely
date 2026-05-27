@@ -1,0 +1,107 @@
+/* ============================================
+   DARK THEME — Future Tech (#030712 / #0F172A / #38BDF8 / #22D3EE)
+   Tokenii principali sunt în design-system.css.
+   ============================================ */
+
+html[data-theme="dark"]::before {
+	background: var(--bg-primary);
+}
+
+html[data-theme="dark"],
+html[data-theme="dark"] body,
+html[data-theme="dark"] #root {
+	background-color: var(--bg-primary);
+	color: var(--text-primary);
+}
+
+html[data-theme="dark"] body:not(:has(.auth-x)) input[type="text"],
+html[data-theme="dark"] body:not(:has(.auth-x)) input[type="email"],
+html[data-theme="dark"] body:not(:has(.auth-x)) input[type="password"],
+html[data-theme="dark"] body:not(:has(.auth-x)) input[type="number"],
+html[data-theme="dark"] body:not(:has(.auth-x)) input[type="search"],
+html[data-theme="dark"] body:not(:has(.auth-x)) textarea,
+html[data-theme="dark"] body:not(:has(.auth-x)) select {
+	background-color: color-mix(in srgb, var(--formely-surface) 92%, var(--formely-primary));
+	border-color: var(--border-primary);
+	color: var(--text-primary);
+}
+
+html[data-theme="dark"] body:not(:has(.auth-x)) input::placeholder,
+html[data-theme="dark"] body:not(:has(.auth-x)) textarea::placeholder {
+	color: var(--text-tertiary);
+}
+
+html[data-theme="dark"] .card,
+html[data-theme="dark"] [class*="card"]:not([class*="modern-auth"]):not([class*="course-showcase"]):not([class*="course-map-card--showcase"]):not([class*="library-book"]):not([class*="content-card__"]):not([class*="test-questions-card"]),
+html[data-theme="dark"] [class*="Card"]:not([class*="CourseShowcase"]) {
+	background-color: var(--bg-elevated);
+	border-color: var(--border-primary);
+}
+
+html[data-theme="dark"] .modal,
+html[data-theme="dark"] [class*="modal"],
+html[data-theme="dark"] [class*="Modal"] {
+	background-color: var(--bg-elevated);
+}
+
+html[data-theme="dark"] table,
+html[data-theme="dark"] thead,
+html[data-theme="dark"] tbody,
+html[data-theme="dark"] tr {
+	border-color: var(--border-primary);
+}
+
+html[data-theme="dark"] h1,
+html[data-theme="dark"] h2,
+html[data-theme="dark"] h3,
+html[data-theme="dark"] h4,
+html[data-theme="dark"] h5,
+html[data-theme="dark"] h6 {
+	color: var(--text-primary);
+}
+
+html[data-theme="dark"] p,
+html[data-theme="dark"] span,
+html[data-theme="dark"] div,
+html[data-theme="dark"] label {
+	color: inherit;
+}
+
+html[data-theme="dark"] .text-secondary,
+html[data-theme="dark"] [class*="secondary"],
+html[data-theme="dark"] small {
+	color: var(--text-secondary);
+}
+
+html[data-theme="dark"] .text-tertiary,
+html[data-theme="dark"] [class*="tertiary"],
+html[data-theme="dark"] .hint,
+html[data-theme="dark"] .helper-text {
+	color: var(--text-tertiary);
+}
+
+html[data-theme="dark"] body:not(:has(.auth-x)) a {
+	color: var(--color-primary);
+}
+
+html[data-theme="dark"] body:not(:has(.auth-x)) a:hover {
+	color: var(--color-primary-hover);
+}
+
+html[data-theme="dark"] .btn-primary,
+html[data-theme="dark"] .lms-btn-primary,
+html[data-theme="dark"] .admin-btn-create-course,
+html[data-theme="dark"] .admin-btn-primary,
+html[data-theme="dark"] .student-btn-primary,
+html[data-theme="dark"] .library-btn--primary {
+	background-color: var(--btn-primary-bg);
+	color: var(--btn-primary-text);
+	border-color: var(--btn-primary-border);
+}
+
+html[data-theme="dark"] .btn-primary:hover,
+html[data-theme="dark"] .lms-btn-primary:hover,
+html[data-theme="dark"] .admin-btn-primary:hover,
+html[data-theme="dark"] .student-btn-primary:hover {
+	background-color: var(--btn-primary-hover);
+}

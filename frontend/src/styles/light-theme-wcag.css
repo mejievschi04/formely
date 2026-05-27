@@ -1,0 +1,49 @@
+/* ============================================
+   LIGHT THEME — Future Tech (#EEF2F7 / #FFFFFF / #0891B2 / #0F172A)
+   ============================================ */
+
+[data-theme="light"] {
+	color-scheme: light;
+}
+
+[data-theme="light"]::before {
+	background: var(--bg-primary);
+}
+
+[data-theme="light"],
+[data-theme="light"] body,
+[data-theme="light"] #root {
+	background-color: var(--bg-primary);
+	color: var(--text-primary);
+}
+
+[data-theme="light"] body:not(:has(.auth-x)) input[type="text"],
+[data-theme="light"] body:not(:has(.auth-x)) input[type="email"],
+[data-theme="light"] body:not(:has(.auth-x)) input[type="password"],
+[data-theme="light"] body:not(:has(.auth-x)) input[type="number"],
+[data-theme="light"] body:not(:has(.auth-x)) input[type="search"],
+[data-theme="light"] body:not(:has(.auth-x)) textarea,
+[data-theme="light"] body:not(:has(.auth-x)) select {
+	background-color: var(--bg-elevated);
+	border-color: var(--border-primary);
+	color: var(--text-primary);
+}
+
+[data-theme="light"] body:not(:has(.auth-x)) input::placeholder,
+[data-theme="light"] body:not(:has(.auth-x)) textarea::placeholder {
+	color: var(--text-tertiary);
+}
+
+[data-theme="light"] .card,
+[data-theme="light"] [class*="card"]:not([class*="modern-auth"]):not([class*="course-showcase"]):not([class*="course-map-card--showcase"]) {
+	background-color: var(--bg-elevated);
+	border-color: var(--border-primary);
+}
+
+[data-theme="light"] body:not(:has(.auth-x)) a {
+	color: var(--color-primary);
+}
+
+[data-theme="light"] body:not(:has(.auth-x)) a:hover {
+	color: var(--color-primary-hover);
+}

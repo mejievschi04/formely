@@ -1,0 +1,173 @@
+/* Modal Adaugă modul – conform standardelor LMS moderne */
+
+.add-module-modal-backdrop {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.5);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
+	padding: var(--space-4);
+}
+
+.add-module-modal {
+	width: 100%;
+	max-width: 440px;
+	background: var(--bg-elevated);
+	border: 1px solid var(--border-primary);
+	border-radius: 12px;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+	overflow: hidden;
+}
+
+.add-module-modal-header {
+	position: relative;
+	padding: var(--space-5) var(--space-6);
+	border-bottom: 1px solid var(--border-primary);
+}
+
+.add-module-modal-header h2 {
+	margin: 0;
+	font-size: 1.25rem;
+	font-weight: 600;
+	color: var(--text-primary);
+}
+
+.add-module-modal-subtitle {
+	margin: var(--space-2) 0 0 0;
+	font-size: var(--font-size-sm);
+	color: var(--text-tertiary);
+	line-height: 1.4;
+}
+
+.add-module-modal-close {
+	position: absolute;
+	top: var(--space-4);
+	right: var(--space-4);
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	background: transparent;
+	color: var(--text-tertiary);
+	font-size: 1.5rem;
+	line-height: 1;
+	cursor: pointer;
+	border-radius: var(--radius-md);
+	transition: background 0.15s, color 0.15s;
+}
+
+.add-module-modal-close:hover {
+	background: var(--bg-hover);
+	color: var(--text-primary);
+}
+
+.add-module-modal-form {
+	padding: var(--space-5) var(--space-6);
+}
+
+.add-module-modal-field {
+	margin-bottom: var(--space-5);
+}
+
+.add-module-modal-field:last-of-type {
+	margin-bottom: var(--space-6);
+}
+
+.add-module-modal-label {
+	display: block;
+	font-size: var(--font-size-sm);
+	font-weight: 500;
+	color: var(--text-primary);
+	margin-bottom: var(--space-2);
+}
+
+.add-module-modal-required {
+	color: var(--color-error);
+}
+
+.add-module-modal-input,
+.add-module-modal-textarea {
+	width: 100%;
+	padding: var(--space-3) var(--space-4);
+	font-size: var(--font-size-base);
+	color: var(--text-primary);
+	background: var(--bg-primary);
+	border: 1px solid var(--border-primary);
+	border-radius: 8px;
+	transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.add-module-modal-input:focus,
+.add-module-modal-textarea:focus {
+	outline: none;
+	border-color: var(--color-primary);
+	box-shadow: 0 0 0 3px rgba(var(--formely-white-rgb), 0.15);
+}
+
+.add-module-modal-input[aria-invalid="true"] {
+	border-color: var(--color-error);
+}
+
+.add-module-modal-textarea {
+	resize: vertical;
+	min-height: 72px;
+}
+
+.add-module-modal-error {
+	margin: var(--space-2) 0 0 0;
+	font-size: var(--font-size-sm);
+	color: var(--color-error);
+}
+
+.add-module-modal-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: var(--space-3);
+	padding-top: var(--space-4);
+	border-top: 1px solid var(--border-primary);
+}
+
+.add-module-modal-btn-cancel {
+	padding: var(--space-2) var(--space-4);
+	font-size: var(--font-size-sm);
+	font-weight: 500;
+	border-radius: 8px;
+	border: 1px solid var(--border-primary);
+	background: transparent;
+	color: var(--text-secondary);
+	cursor: pointer;
+	transition: all 0.2s;
+}
+
+.add-module-modal-btn-cancel:hover:not(:disabled) {
+	background: var(--bg-secondary);
+	color: var(--text-primary);
+}
+
+.add-module-modal-btn-submit {
+	padding: var(--space-2) var(--space-5);
+	font-size: var(--font-size-sm);
+	font-weight: 600;
+	border-radius: 8px;
+	border: none;
+	background: var(--color-primary);
+	color: var(--color-black);
+	cursor: pointer;
+	transition: all 0.2s;
+	box-shadow: 0 2px 8px rgba(var(--formely-white-rgb), 0.25);
+}
+
+.add-module-modal-btn-submit:hover:not(:disabled) {
+	background: var(--color-primary-hover);
+	box-shadow: 0 4px 12px rgba(var(--formely-white-rgb), 0.35);
+}
+
+.add-module-modal-btn-submit:disabled,
+.add-module-modal-btn-cancel:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}

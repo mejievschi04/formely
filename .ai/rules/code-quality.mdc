@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+- No duplicated logic
+- Clear naming conventions
+- Functions must have a single responsibility
+- Avoid deeply nested logic

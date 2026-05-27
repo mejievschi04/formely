@@ -1,0 +1,43 @@
+/* Scoped look refresh for builder pages only */
+.admin-course-builder-page,
+.test-editor-page,
+.admin-question-bank-builder-page {
+	--builder-surface: color-mix(in srgb, var(--bg-elevated) 92%, var(--color-primary) 8%);
+}
+
+.admin-course-builder-page .admin-course-builder-header,
+.admin-question-bank-builder-page .admin-course-builder-header,
+.test-editor-page .test-editor-panel {
+	background: var(--builder-surface);
+	border: 1px solid color-mix(in srgb, var(--border-primary) 80%, var(--color-primary) 20%);
+	box-shadow: var(--shadow-sm);
+}
+
+.admin-course-builder-page .admin-course-builder-header,
+.admin-question-bank-builder-page .admin-course-builder-header,
+.test-editor-page .test-editor-header {
+	border-left: 4px solid var(--color-primary);
+	padding-left: var(--space-4);
+}
+
+.admin-course-builder-page .admin-btn,
+.admin-question-bank-builder-page .admin-btn,
+.test-editor-page .test-editor-btn {
+	border-radius: var(--radius-lg);
+}
+
+.admin-course-builder-page .admin-card,
+.admin-question-bank-builder-page .admin-card,
+.test-editor-page .admin-card {
+	border: 1px solid var(--border-primary);
+	box-shadow: var(--shadow-xs);
+}
+
+.builder-wizard-shell {
+	max-width: 1320px;
+	margin: 0 auto;
+}
+
+.builder-wizard-step-label {
+	font-weight: var(--font-weight-semibold);
+}

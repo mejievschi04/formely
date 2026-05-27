@@ -1,0 +1,112 @@
+/* ============================================
+   EMPTY STATES - Standardized
+   Consistent empty state design across app
+   ============================================ */
+
+.va-empty-state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: var(--space-16) var(--space-6);
+	text-align: center;
+	max-width: 400px;
+	margin: 0 auto;
+}
+
+.va-empty-state-icon {
+	width: 80px;
+	height: 80px;
+	margin-bottom: var(--space-6);
+	opacity: 0.5;
+	color: var(--text-tertiary);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: var(--font-size-4xl);
+}
+
+.va-empty-state-title {
+	font-size: var(--font-size-xl);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	margin: 0 0 var(--space-2) 0;
+	line-height: var(--line-height-tight);
+}
+
+.va-empty-state-description {
+	font-size: var(--font-size-base);
+	color: var(--text-secondary);
+	margin: 0 0 var(--space-6) 0;
+	line-height: var(--line-height-relaxed);
+	max-width: 320px;
+}
+
+.va-empty-state-action {
+	margin-top: var(--space-4);
+}
+
+/* Empty State Variants */
+.va-empty-state.compact {
+	padding: var(--space-8) var(--space-4);
+}
+
+.va-empty-state.compact .va-empty-state-icon {
+	width: 60px;
+	height: 60px;
+	font-size: var(--font-size-3xl);
+	margin-bottom: var(--space-4);
+}
+
+.va-empty-state.compact .va-empty-state-title {
+	font-size: var(--font-size-lg);
+}
+
+.va-empty-state.compact .va-empty-state-description {
+	font-size: var(--font-size-sm);
+	margin-bottom: var(--space-4);
+}
+
+/* Empty State in Cards */
+.va-unified-card .va-empty-state {
+	padding: var(--space-12) var(--space-4);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+	.va-empty-state {
+		padding: var(--space-12) var(--space-4);
+	}
+	
+	.va-empty-state-icon {
+		width: 60px;
+		height: 60px;
+		font-size: var(--font-size-3xl);
+		margin-bottom: var(--space-4);
+	}
+	
+	.va-empty-state-title {
+		font-size: var(--font-size-lg);
+	}
+	
+	.va-empty-state-description {
+		font-size: var(--font-size-sm);
+	}
+}
+
+/* ============================================
+   LIGHT THEME - IMPROVED CONTRAST & VISIBILITY
+   ============================================ */
+
+[data-theme="light"] .va-empty-state-title {
+	color: var(--text-primary);
+}
+
+[data-theme="light"] .va-empty-state-description {
+	color: var(--text-secondary);
+}
+
+[data-theme="light"] .va-empty-state-icon {
+	color: var(--text-tertiary);
+	opacity: 0.7;
+}

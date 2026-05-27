@@ -1,0 +1,552 @@
+/* ============================================
+   FORMELY — Future Tech (fără aur)
+   Light: #EEF2F7 · #FFFFFF · #0891B2 · #0F172A · #22D3EE
+   Dark:  #030712 · #0F172A · #38BDF8 · #E2E8F0 · #22D3EE
+   ============================================ */
+
+/* ============================================
+   1. CSS VARIABLES — paletă + light (implicit)
+   ============================================ */
+:root {
+	--formely-bg: #eef2f7;
+	--formely-surface: #ffffff;
+	--formely-primary: #0891b2;
+	--formely-secondary: #0f172a;
+	--formely-accent: #22d3ee;
+	--formely-bg-rgb: 238, 242, 247;
+	--formely-surface-rgb: 255, 255, 255;
+	--formely-primary-rgb: 8, 145, 178;
+	--formely-secondary-rgb: 15, 23, 42;
+	--formely-accent-rgb: 34, 211, 238;
+	--formely-white: var(--formely-surface);
+	--formely-shadow: #cbd5e1;
+
+	--va-logo-mark-size: 32px;
+
+	--color-brand-primary: var(--formely-primary);
+	--color-brand-hover: #0e7490;
+	--color-brand-soft: #e0f2fe;
+	--color-primary-rgb: var(--formely-primary-rgb);
+
+	--color-black: var(--formely-secondary);
+	--color-near-black: var(--formely-secondary);
+	--color-gray-dark: #334155;
+	--color-gray-medium: #64748b;
+	--color-gray-light: #94a3b8;
+	--color-gray-extra-light: #e2e8f0;
+	--color-white: var(--formely-surface);
+
+	--color-success: #10b981;
+	--color-warning: #f59e0b;
+	--color-error: #ef4444;
+	--color-info: var(--formely-primary);
+	--color-success-rgb: 16, 185, 129;
+	--color-warning-rgb: 245, 158, 11;
+	--color-error-rgb: 239, 68, 68;
+	--color-info-rgb: var(--formely-primary-rgb);
+
+	--bg-primary: var(--formely-bg);
+	--bg-secondary: var(--formely-bg);
+	--bg-tertiary: #e2e8f0;
+	--bg-elevated: var(--formely-surface);
+	--bg-sidebar-toggle: var(--formely-primary);
+	--bg-sidebar-toggle-hover: var(--color-brand-hover);
+	--bg-overlay: rgba(15, 23, 42, 0.55);
+	--bg-surface: var(--formely-surface);
+
+	--color-primary: var(--formely-primary);
+	--color-primary-hover: var(--color-brand-hover);
+	--color-primary-light: var(--color-brand-soft);
+	--color-primary-dark: #155e75;
+
+	--text-primary: var(--formely-secondary);
+	--text-secondary: #475569;
+	--text-tertiary: #94a3b8;
+	--text-disabled: #cbd5e1;
+	--text-inverse: #ffffff;
+
+	--border-primary: #e2e8f0;
+	--border-secondary: #f1f5f9;
+	--border-accent: var(--formely-accent);
+	--border-focus: var(--formely-primary);
+
+	--btn-primary-bg: var(--formely-primary);
+	--btn-primary-text: #ffffff;
+	--btn-primary-hover: var(--color-brand-hover);
+	--btn-primary-border: var(--formely-primary);
+
+	--btn-secondary-bg: transparent;
+	--btn-secondary-text: var(--formely-primary);
+	--btn-secondary-border: var(--formely-primary);
+	--btn-secondary-hover: rgba(8, 145, 178, 0.08);
+
+	/* Button Dimensions - compacte, rotunjite */
+	--btn-desktop-padding-y: var(--space-3);
+	--btn-desktop-padding-x: var(--space-5);
+	--btn-desktop-min-height: 40px;
+	--btn-desktop-font-size: var(--font-size-sm);
+	--btn-desktop-gap: var(--space-2);
+	--btn-desktop-radius: var(--radius-2xl);
+
+	--btn-mobile-padding-y: var(--space-3);
+	--btn-mobile-padding-x: var(--space-4);
+	--btn-mobile-min-height: 40px;
+	--btn-mobile-min-width: 40px;
+	--btn-mobile-font-size: var(--font-size-base);
+	--btn-mobile-gap: var(--space-3);
+
+	/* AI / accente */
+	--accent-ai: var(--formely-primary);
+	--accent-neural: var(--formely-accent);
+	--accent-ai-rgb: var(--formely-primary-rgb);
+	--accent-warning: var(--color-warning);
+
+	/* Umbre — tech, crisp */
+	--shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.06);
+	--shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.08);
+	--shadow-md: 0 8px 20px rgba(15, 23, 42, 0.1);
+	--shadow-lg: 0 16px 32px rgba(15, 23, 42, 0.12);
+	--shadow-xl: 0 24px 48px rgba(15, 23, 42, 0.14);
+	--shadow-2xl: 0 32px 64px rgba(15, 23, 42, 0.16);
+	--shadow-focus: 0 0 0 3px rgba(34, 211, 238, 0.4);
+	--shadow-glow: 0 0 24px rgba(34, 211, 238, 0.2);
+	
+	/* Extended Shadow System - State-specific */
+	--shadow-hover: var(--shadow-md);
+	--shadow-active: var(--shadow-sm);
+	--shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+
+	/* Border Radius - Consistent */
+	--radius-sm: 6px;
+	--radius-md: 8px;
+	--radius-lg: 12px;
+	--radius-xl: 16px;
+	--radius-2xl: 20px;
+	--radius-3xl: 24px;
+	--radius-full: 9999px;
+
+	/* Spacing - 8px Base System */
+	--space-1: 4px;
+	--space-2: 8px;
+	--space-2-5: 10px;
+	--space-3: 12px;
+	--space-4: 16px;
+	--space-5: 20px;
+	--space-6: 24px;
+	--space-8: 32px;
+	--space-10: 40px;
+	--space-12: 48px;
+	--space-16: 64px;
+
+	--color-primary-alpha-10: rgba(8, 145, 178, 0.08);
+	--color-primary-alpha-15: rgba(8, 145, 178, 0.12);
+	--color-primary-alpha-20: rgba(8, 145, 178, 0.18);
+	--color-primary-alpha-30: rgba(8, 145, 178, 0.28);
+	--color-accent-alpha-15: rgba(34, 211, 238, 0.15);
+	
+	/* Extended Spacing - Component-specific */
+	--space-card: var(--space-6);      /* 24px - Card padding */
+	--space-section: var(--space-8);   /* 32px - Section spacing */
+	--space-page: var(--space-10);     /* 40px - Page padding */
+	--space-container: var(--space-12); /* 48px - Container padding */
+
+	/* Typography */
+	--font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+	--font-size-xs: 0.75rem;    /* 12px */
+	--font-size-sm: 0.875rem;   /* 14px */
+	--font-size-base: 1rem;     /* 16px */
+	--font-size-lg: 1.125rem;    /* 18px */
+	--font-size-xl: 1.25rem;    /* 20px */
+	--font-size-2xl: 1.5rem;    /* 24px */
+	--font-size-3xl: 1.875rem;  /* 30px */
+	--font-size-4xl: 2.25rem;   /* 36px */
+	--font-size-5xl: 2.5rem;    /* 40px */
+	--font-size-6xl: 3rem;      /* 48px */
+	--font-size-display: 3rem;  /* 48px - Hero headings */
+	--font-size-caption: 0.6875rem; /* 11px - Caption text */
+
+	--font-weight-normal: 400;
+	--font-weight-medium: 500;
+	--font-weight-semibold: 600;
+	--font-weight-bold: 700;
+
+	--line-height-tight: 1.2;
+	--line-height-normal: 1.5;
+	--line-height-relaxed: 1.75;
+
+	/* Transitions - Smooth (150-200ms) */
+	--transition-fast: 150ms ease;
+	--transition-base: 200ms ease;
+	--transition-smooth: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+
+	/* Z-Index */
+	--z-base: 1;
+	--z-dropdown: 100;
+	--z-sticky: 200;
+	--z-fixed: 300;
+	--z-modal-backdrop: 400;
+	--z-modal: 500;
+	--z-tooltip: 600;
+	
+	/* Breakpoints - Responsive Design */
+	--breakpoint-sm: 640px;
+	--breakpoint-md: 768px;
+	--breakpoint-lg: 1024px;
+	--breakpoint-xl: 1280px;
+	--breakpoint-2xl: 1536px;
+}
+
+/* Light — aceleași tokeni ca :root (fundal alb) */
+[data-theme="light"] {
+	color-scheme: light;
+}
+
+/* Dark */
+html[data-theme="dark"] {
+	color-scheme: dark;
+
+	--formely-bg: #030712;
+	--formely-surface: #0f172a;
+	--formely-primary: #38bdf8;
+	--formely-secondary: #e2e8f0;
+	--formely-accent: #22d3ee;
+	--formely-bg-rgb: 3, 7, 18;
+	--formely-surface-rgb: 15, 23, 42;
+	--formely-primary-rgb: 56, 189, 248;
+	--formely-secondary-rgb: 226, 232, 240;
+	--formely-accent-rgb: 34, 211, 238;
+	--formely-white: var(--formely-surface);
+	--formely-shadow: #1e293b;
+
+	--color-brand-primary: var(--formely-primary);
+	--color-brand-hover: #7dd3fc;
+	--color-brand-soft: #0c4a6e;
+	--color-primary-rgb: var(--formely-primary-rgb);
+
+	--color-primary: var(--formely-primary);
+	--color-primary-hover: var(--color-brand-hover);
+	--color-primary-light: var(--color-brand-soft);
+	--color-primary-dark: #0284c7;
+
+	--bg-primary: var(--formely-bg);
+	--bg-secondary: var(--formely-bg);
+	--bg-tertiary: #0a0f1c;
+	--bg-elevated: var(--formely-surface);
+	--bg-sidebar-toggle: #0891b2;
+	--bg-sidebar-toggle-hover: #06b6d4;
+	--bg-overlay: rgba(0, 0, 0, 0.75);
+	--bg-surface: var(--formely-surface);
+
+	--text-primary: var(--formely-secondary);
+	--text-secondary: #94a3b8;
+	--text-tertiary: #64748b;
+	--text-disabled: #475569;
+	--text-inverse: #030712;
+
+	--border-primary: #1e293b;
+	--border-secondary: #334155;
+	--border-accent: var(--formely-accent);
+	--border-focus: var(--formely-accent);
+
+	--btn-primary-bg: #0891b2;
+	--btn-primary-text: #ffffff;
+	--btn-primary-hover: #06b6d4;
+	--btn-primary-border: #0891b2;
+
+	--btn-secondary-bg: transparent;
+	--btn-secondary-text: var(--formely-primary);
+	--btn-secondary-border: var(--formely-primary);
+	--btn-secondary-hover: rgba(56, 189, 248, 0.1);
+
+	--color-success: #34d399;
+	--color-info: var(--formely-primary);
+
+	--color-primary-alpha-10: rgba(56, 189, 248, 0.1);
+	--color-primary-alpha-15: rgba(56, 189, 248, 0.15);
+	--color-primary-alpha-20: rgba(56, 189, 248, 0.22);
+	--color-primary-alpha-30: rgba(56, 189, 248, 0.32);
+	--color-accent-alpha-15: rgba(34, 211, 238, 0.18);
+
+	--shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.5);
+	--shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.55);
+	--shadow-md: 0 8px 24px rgba(0, 0, 0, 0.6);
+	--shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.65);
+	--shadow-xl: 0 24px 56px rgba(0, 0, 0, 0.7);
+	--shadow-2xl: 0 32px 72px rgba(0, 0, 0, 0.75);
+	--shadow-focus: 0 0 0 3px rgba(34, 211, 238, 0.45);
+	--shadow-glow: 0 0 28px rgba(34, 211, 238, 0.25);
+}
+
+/* ============================================
+   2. GLOBAL RESET & BASE STYLES
+   ============================================ */
+* {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+/* Elimină bara neagră - pseudo-element care umple viewport-ul cu background */
+html::before {
+	content: '';
+	position: fixed;
+	inset: 0;
+	background-color: var(--bg-primary);
+	z-index: -1;
+	pointer-events: none;
+}
+
+html {
+	font-size: 16px;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	height: 100%;
+	min-height: 100vh;
+	min-height: 100dvh;
+	min-height: -webkit-fill-available;
+	background-color: var(--bg-primary);
+	overscroll-behavior: none;
+}
+
+#root {
+	min-height: 100%;
+	height: 100%;
+	background-color: var(--bg-primary);
+}
+
+body {
+	font-family: var(--font-family);
+	font-size: var(--font-size-base);
+	line-height: var(--line-height-normal);
+	color: var(--text-primary);
+	background-color: var(--bg-primary);
+	min-height: 100vh;
+	min-height: 100dvh;
+	min-height: -webkit-fill-available;
+	overflow-x: hidden;
+	overscroll-behavior: none;
+}
+
+/* Ascunde scrollbar-urile peste tot (păstrează scroll-ul funcțional) */
+* {
+	scrollbar-width: none; /* Firefox */
+	-ms-overflow-style: none; /* IE, Edge */
+}
+
+*::-webkit-scrollbar {
+	display: none; /* Chrome, Safari, Opera */
+}
+
+/* ============================================
+   3. TYPOGRAPHY SYSTEM
+   ============================================ */
+h1, h2, h3, h4, h5, h6 {
+	font-weight: var(--font-weight-semibold);
+	line-height: var(--line-height-tight);
+	color: var(--text-primary);
+	letter-spacing: -0.02em;
+}
+
+h1 { font-size: var(--font-size-4xl); }
+h2 { font-size: var(--font-size-3xl); }
+h3 { font-size: var(--font-size-2xl); }
+h4 { font-size: var(--font-size-xl); }
+h5 { font-size: var(--font-size-lg); }
+h6 { font-size: var(--font-size-base); }
+
+/* Display Text - Hero Headings */
+.display-text {
+	font-size: var(--font-size-display);
+	font-weight: var(--font-weight-bold);
+	line-height: var(--line-height-tight);
+	letter-spacing: -0.03em;
+}
+
+/* Caption Text */
+.caption {
+	font-size: var(--font-size-caption);
+	color: var(--text-tertiary);
+	line-height: var(--line-height-normal);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+p {
+	margin: 0;
+	color: var(--text-secondary);
+	line-height: var(--line-height-relaxed);
+}
+
+a {
+	color: var(--color-primary);
+	text-decoration: none;
+	transition: color var(--transition-fast);
+}
+
+a:hover {
+	color: var(--color-primary-hover);
+}
+
+/* ============================================
+   4. UTILITY CLASSES
+   ============================================ */
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+.text-accent { color: var(--formely-accent); }
+
+.bg-primary { background-color: var(--bg-primary); }
+.bg-secondary { background-color: var(--bg-secondary); }
+.bg-elevated { background-color: var(--bg-elevated); }
+
+.opacity-70 { opacity: 0.7; }
+.opacity-50 { opacity: 0.5; }
+
+/* ============================================
+   4b. SELECTION & REDUCED MOTION
+   ============================================ */
+::selection {
+	background-color: var(--color-primary-alpha-20);
+	color: var(--text-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+
+	:root {
+		--transition-fast: 0ms;
+		--transition-base: 0ms;
+		--transition-smooth: 0ms;
+	}
+}
+
+/* ============================================
+   5. SCROLLBAR STYLING
+   ============================================ */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--border-secondary);
+	border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--border-accent);
+}
+
+/* ============================================
+   6. FOCUS STATES - ACCESSIBILITY
+   ============================================ */
+*:focus-visible {
+	outline: 2px solid var(--border-focus);
+	outline-offset: 2px;
+	border-radius: var(--radius-sm);
+}
+
+button:focus-visible,
+a:focus-visible {
+	outline: 2px solid var(--border-focus);
+	outline-offset: 2px;
+}
+
+/* ============================================
+   7. ANIMATIONS
+   ============================================ */
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes slideUp {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes scaleIn {
+	from {
+		opacity: 0;
+		transform: scale(0.95);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+/* ============================================
+   8. RESPONSIVE BREAKPOINTS
+   ============================================ */
+/* Use breakpoint tokens for consistency */
+@media (max-width: 1024px) {
+	:root {
+		--font-size-4xl: 2rem;
+		--font-size-3xl: 1.75rem;
+	}
+}
+
+@media (max-width: 768px) {
+	:root {
+		--font-size-4xl: 1.75rem;
+		--font-size-3xl: 1.5rem;
+		--font-size-2xl: 1.25rem;
+	}
+}
+
+/* Utility classes for responsive design */
+@media (min-width: 640px) {
+	.sm\:hidden { display: none; }
+}
+
+@media (min-width: 768px) {
+	.md\:hidden { display: none; }
+	.md\:block { display: block; }
+	.md\:flex { display: flex; }
+}
+
+@media (min-width: 1024px) {
+	.lg\:hidden { display: none; }
+	.lg\:block { display: block; }
+	.lg\:flex { display: flex; }
+}
+
+span.va-logo-icon-img {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--va-logo-mark-size);
+	height: var(--va-logo-mark-size);
+	font-weight: 800;
+	font-size: 1rem;
+	line-height: 1;
+	color: var(--text-inverse);
+	border-radius: 8px;
+	background: var(--bg-sidebar-toggle);
+}
+
+html[data-theme="dark"] span.va-logo-icon-img {
+	color: #030712;
+	background: linear-gradient(135deg, #22d3ee, #0891b2);
+}

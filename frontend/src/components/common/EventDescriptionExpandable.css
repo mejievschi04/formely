@@ -1,0 +1,45 @@
+.event-desc-expand {
+	margin: 0;
+}
+
+.events-card-desc {
+	margin-bottom: 1rem;
+}
+
+.event-desc-expand__text {
+	margin: 0;
+	font-size: var(--font-size-sm);
+	color: var(--text-secondary);
+	line-height: 1.65;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+}
+
+.event-desc-expand__text--clamp {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.event-desc-expand__btn {
+	margin-top: var(--space-2);
+	padding: 0;
+	border: none;
+	background: none;
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-semibold);
+	color: var(--color-primary);
+	cursor: pointer;
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+.event-desc-expand__btn:hover {
+	color: var(--color-primary-hover, var(--color-primary));
+}
+
+.event-desc-expand__btn:focus-visible {
+	outline: 2px solid var(--border-focus);
+	outline-offset: 2px;
+	border-radius: var(--radius-sm);
+}

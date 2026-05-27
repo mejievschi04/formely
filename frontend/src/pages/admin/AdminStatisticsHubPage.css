@@ -1,0 +1,439 @@
+/* Statistică admin — aliniat la admin-common-modern + tabele utilizatori */
+
+.admin-statistics-hub-layout {
+	display: grid;
+	grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+	gap: var(--space-6);
+	align-items: start;
+	width: 100%;
+}
+
+.admin-statistics-hub-sidebar {
+	position: sticky;
+	top: calc(var(--space-4) + 64px);
+	padding: var(--space-5);
+	background-color: var(--bg-elevated);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-sm);
+}
+
+.admin-statistics-hub-sidebar-title {
+	margin: 0 0 var(--space-4);
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-semibold);
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--text-tertiary);
+}
+
+.admin-statistics-hub-nav {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-1);
+}
+
+.admin-statistics-hub-nav button {
+	width: 100%;
+	text-align: left;
+	padding: var(--space-3) var(--space-4);
+	border-radius: var(--radius-md);
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-medium);
+	font-family: var(--font-family);
+	color: var(--text-secondary);
+	background: var(--bg-secondary);
+	border: 1px solid var(--border-primary);
+	cursor: pointer;
+	transition:
+		background-color var(--transition-base),
+		border-color var(--transition-base),
+		color var(--transition-base);
+}
+
+.admin-statistics-hub-nav button:hover {
+	background: var(--bg-tertiary);
+	color: var(--text-primary);
+	border-color: var(--border-secondary);
+}
+
+.admin-statistics-hub-nav button.is-active {
+	color: var(--text-primary);
+	border-color: var(--color-primary);
+	background: color-mix(in srgb, var(--color-primary) 14%, var(--bg-elevated));
+	box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+
+.admin-statistics-hub-main {
+	min-width: 0;
+	width: 100%;
+	padding: var(--space-4);
+	background-color: var(--bg-elevated);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-sm);
+}
+
+.admin-statistics-placeholder {
+	padding: var(--space-4) 0;
+}
+
+.admin-statistics-placeholder-text {
+	margin: var(--space-3) 0 0;
+	color: var(--text-tertiary);
+	font-size: var(--font-size-base);
+	line-height: var(--line-height-relaxed);
+}
+
+/* Secțiuni raport */
+.admin-statistics-student-progress {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-4);
+}
+
+.admin-statistics-student-head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--space-3);
+	flex-wrap: wrap;
+	padding-bottom: var(--space-3);
+	border-bottom: 1px solid var(--border-primary);
+}
+
+.admin-statistics-section-heading {
+	margin: 0;
+	font-size: var(--font-size-lg);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	letter-spacing: -0.02em;
+	line-height: var(--line-height-tight);
+}
+
+.admin-statistics-section-desc {
+	margin: var(--space-2) 0 0;
+	max-width: 44rem;
+	font-size: var(--font-size-sm);
+	color: var(--text-tertiary);
+	line-height: var(--line-height-relaxed);
+}
+
+.admin-statistics-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: var(--space-3);
+	padding: var(--space-3) var(--space-4);
+	background-color: var(--bg-secondary);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+}
+
+.admin-statistics-filter {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+	min-width: 11rem;
+}
+
+.admin-statistics-filter .va-input {
+	min-height: 2.25rem;
+	font-size: var(--font-size-sm);
+}
+
+.admin-statistics-top-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	flex-wrap: wrap;
+	justify-content: flex-end;
+}
+
+.admin-statistics-top-actions--wrap {
+	justify-content: flex-end;
+	max-width: min(100%, 28rem);
+	margin-left: auto;
+}
+
+.admin-statistics-top-actions--wrap .admin-statistics-tests-search {
+	flex: 1;
+	min-width: 12rem;
+}
+
+.admin-statistics-meta-pill {
+	display: inline-flex;
+	align-items: center;
+	padding: var(--space-2) var(--space-3);
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-medium);
+	color: var(--text-secondary);
+	background: var(--bg-secondary);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-md);
+}
+
+/* KPI */
+.admin-statistics-student-kpis {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(7.25rem, 1fr));
+	gap: var(--space-2);
+}
+
+.admin-statistics-student-kpis article {
+	padding: var(--space-2) var(--space-3);
+	background: var(--bg-secondary);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-md);
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	transition: border-color var(--transition-base);
+}
+
+.admin-statistics-student-kpis article:hover {
+	border-color: var(--border-secondary);
+}
+
+.admin-statistics-student-kpis span {
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-medium);
+	color: var(--text-tertiary);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.admin-statistics-student-kpis strong {
+	font-size: var(--font-size-xl);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	line-height: 1.15;
+	font-variant-numeric: tabular-nums;
+}
+
+/* Tabel compact: mai mult conținut în viewport; scroll vertical în zonă dedicată */
+.admin-statistics-hub-main .admin-users-table-wrapper.admin-statistics-table-clip {
+	overflow: auto;
+	-webkit-overflow-scrolling: touch;
+	max-height: min(calc(100vh - 12rem), 40rem);
+	max-height: min(calc(100dvh - 12rem), 40rem);
+	border-radius: var(--radius-md);
+}
+
+.admin-statistics-hub-main .admin-users-table {
+	font-size: 0.75rem;
+	line-height: 1.35;
+}
+
+.admin-statistics-hub-main .admin-users-table thead th {
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	padding: 0.35rem 0.5rem;
+	font-size: 0.65rem;
+	line-height: 1.25;
+	background-color: var(--bg-secondary);
+	box-shadow: 0 1px 0 var(--border-primary);
+}
+
+.admin-statistics-hub-main .admin-users-table td {
+	padding: 0.35rem 0.5rem;
+	font-size: 0.75rem;
+	line-height: 1.35;
+}
+
+.admin-statistics-hub-main .admin-users-table tbody tr {
+	cursor: default;
+}
+
+.admin-statistics-hub-main .admin-statistics-student-table th {
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+	white-space: nowrap;
+}
+
+.admin-statistics-hub-main .admin-statistics-student-table td {
+	vertical-align: middle;
+}
+
+.admin-statistics-student-empty {
+	padding: var(--space-4) var(--space-3);
+	text-align: center;
+	font-size: var(--font-size-xs);
+	color: var(--text-tertiary);
+	background: var(--bg-secondary);
+	border-top: 1px solid var(--border-primary);
+}
+
+/* Tab-uri teste */
+.admin-statistics-tests-tabs {
+	display: inline-flex;
+	gap: var(--space-1);
+	padding: var(--space-1);
+	background: var(--bg-secondary);
+	border-radius: var(--radius-lg);
+	border: 1px solid var(--border-primary);
+}
+
+.admin-statistics-tests-tabs button {
+	border: none;
+	background: transparent;
+	color: var(--text-secondary);
+	font-weight: var(--font-weight-medium);
+	font-size: var(--font-size-xs);
+	font-family: var(--font-family);
+	padding: var(--space-1) var(--space-3);
+	border-radius: var(--radius-md);
+	cursor: pointer;
+	transition:
+		background-color var(--transition-base),
+		color var(--transition-base);
+}
+
+.admin-statistics-tests-tabs button:hover {
+	color: var(--text-primary);
+	background: var(--bg-tertiary);
+}
+
+.admin-statistics-tests-tabs button.is-active {
+	color: var(--text-primary);
+	background: var(--bg-elevated);
+	box-shadow: var(--shadow-sm);
+}
+
+.admin-statistics-student-person {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.admin-statistics-student-person strong {
+	font-size: 0.75rem;
+	font-weight: var(--font-weight-semibold);
+}
+
+.admin-statistics-student-person span {
+	font-size: 0.65rem;
+	color: var(--text-tertiary);
+}
+
+/* Top 10 — rânduri evidențiate */
+.admin-statistics-top10-table tbody tr {
+	background: color-mix(in srgb, var(--color-primary) 8%, var(--bg-elevated));
+}
+
+.admin-statistics-top10-table tbody tr:hover {
+	background: color-mix(in srgb, var(--color-primary) 14%, var(--bg-secondary));
+}
+
+.admin-statistics-progress-pill {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 2.5rem;
+	padding: 1px var(--space-2);
+	border-radius: var(--radius-sm);
+	font-weight: var(--font-weight-semibold);
+	font-size: 0.7rem;
+	font-variant-numeric: tabular-nums;
+	background: color-mix(in srgb, var(--color-success) 22%, var(--bg-elevated));
+	color: var(--text-primary);
+	border: 1px solid color-mix(in srgb, var(--color-success) 40%, var(--border-primary));
+}
+
+.admin-statistics-metric-pill {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 1.75rem;
+	padding: 1px var(--space-1);
+	border-radius: var(--radius-sm);
+	font-weight: var(--font-weight-semibold);
+	font-size: 0.7rem;
+	font-variant-numeric: tabular-nums;
+	background: color-mix(in srgb, var(--color-info) 18%, var(--bg-elevated));
+	color: var(--text-primary);
+	border: 1px solid var(--border-primary);
+}
+
+.admin-statistics-metric-pill.is-muted {
+	background: var(--bg-secondary);
+	color: var(--text-tertiary);
+}
+
+.admin-statistics-attention {
+	margin-top: var(--space-2);
+	padding: var(--space-3);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-md);
+	background: var(--bg-secondary);
+}
+
+.admin-statistics-attention h3 {
+	margin: 0 0 var(--space-2);
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+}
+
+.admin-statistics-attention p {
+	margin: 0;
+	color: var(--text-tertiary);
+	font-size: var(--font-size-xs);
+}
+
+.admin-statistics-attention ul {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+}
+
+.admin-statistics-attention li {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-2);
+	padding: var(--space-2) var(--space-3);
+	background: var(--bg-elevated);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-sm);
+}
+
+.admin-statistics-attention li span {
+	font-size: var(--font-size-xs);
+	color: var(--text-tertiary);
+}
+
+@media (max-width: 1024px) {
+	.admin-statistics-hub-layout {
+		grid-template-columns: 1fr;
+	}
+
+	.admin-statistics-hub-sidebar {
+		position: static;
+	}
+
+	.admin-statistics-hub-nav {
+		flex-direction: row;
+		flex-wrap: wrap;
+	}
+
+	.admin-statistics-hub-nav button {
+		width: auto;
+		flex: 1 1 auto;
+		min-width: calc(50% - var(--space-1));
+	}
+}
+
+@media (max-width: 640px) {
+	.admin-statistics-hub-main {
+		padding: var(--space-4);
+	}
+
+	.admin-statistics-student-kpis {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}

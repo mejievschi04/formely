@@ -1,0 +1,138 @@
+/* Admin ↔ Student view switcher (topnav + sidebar) */
+
+.admin-topnav-control {
+	display: flex;
+	align-items: center;
+	padding: 0;
+	background: transparent;
+	border: none;
+	box-shadow: none;
+	width: auto;
+	height: auto;
+	flex-shrink: 0;
+}
+
+.admin-view-mode-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+	height: 40px;
+	padding: 0 var(--space-3) 0 var(--space-2);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-elevated) 100%);
+	color: var(--text-primary);
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-medium);
+	line-height: 1;
+	cursor: pointer;
+	transition:
+		border-color var(--transition-base),
+		box-shadow var(--transition-base),
+		transform var(--transition-base),
+		background var(--transition-base);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+	flex-shrink: 0;
+	white-space: nowrap;
+}
+
+.admin-view-mode-btn:hover {
+	border-color: var(--color-primary);
+	box-shadow: 0 4px 14px rgba(var(--formely-white-rgb), 0.18);
+	transform: translateY(-1px);
+}
+
+.admin-view-mode-btn:focus-visible {
+	outline: 2px solid var(--color-primary);
+	outline-offset: 2px;
+}
+
+.admin-view-mode-btn:active {
+	transform: translateY(0);
+}
+
+.admin-view-mode-btn__icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	background: none;
+}
+
+.admin-view-mode-btn.is-admin-view .admin-view-mode-btn__icon {
+	color: var(--color-primary);
+}
+
+.admin-view-mode-btn.is-student-view .admin-view-mode-btn__icon {
+	color: #38bdf8;
+}
+
+[data-theme="light"] .admin-view-mode-btn.is-student-view .admin-view-mode-btn__icon {
+	color: #0284c7;
+}
+
+.admin-view-mode-btn__text {
+	letter-spacing: 0.01em;
+}
+
+.admin-view-mode-btn__swap {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-left: var(--space-1);
+	color: var(--text-tertiary);
+	opacity: 0.75;
+	transition: color var(--transition-base), opacity var(--transition-base);
+}
+
+.admin-view-mode-btn:hover .admin-view-mode-btn__swap {
+	color: var(--color-primary);
+	opacity: 1;
+}
+
+.admin-view-mode-btn.is-student-view:hover .admin-view-mode-btn__swap {
+	color: #38bdf8;
+}
+
+/* Sidebar mobile — buton pe toată lățimea rândului */
+.admin-view-mode-btn--sidebar {
+	width: 100%;
+	justify-content: flex-start;
+	height: 36px;
+	font-size: var(--font-size-xs);
+	padding: 0 var(--space-2-5) 0 var(--space-2);
+}
+
+.sidebar-mobile-control-content--view-switch {
+	flex: 1;
+	min-width: 0;
+}
+
+.sidebar-mobile-control-item--view-switch {
+	padding: var(--space-2);
+}
+
+.sidebar-mobile-control-item--view-switch .admin-view-mode-btn--sidebar {
+	box-shadow: none;
+}
+
+.sidebar-mobile-control-item--view-switch .admin-view-mode-btn--sidebar:hover {
+	box-shadow: 0 2px 8px rgba(var(--formely-white-rgb), 0.12);
+}
+
+@media (max-width: 1023px) {
+	.admin-topnav-control .admin-view-mode-btn__text {
+		display: none;
+	}
+
+	.admin-topnav-control .admin-view-mode-btn {
+		width: 40px;
+		padding: 0;
+		justify-content: center;
+	}
+
+	.admin-topnav-control .admin-view-mode-btn__swap {
+		display: none;
+	}
+
+}

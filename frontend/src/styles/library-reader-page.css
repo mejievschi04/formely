@@ -1,0 +1,201 @@
+.library-reader-page {
+	position: fixed;
+	inset: 0;
+	z-index: 10060;
+	display: grid;
+	background:
+		radial-gradient(circle at top right, var(--color-primary-alpha-15), transparent 30%),
+		linear-gradient(180deg, var(--bg-primary), var(--bg-secondary));
+	color: var(--text-primary);
+	overflow: hidden;
+}
+
+.library-reader-stage {
+	position: relative;
+	min-height: 0;
+	padding: 0.5rem;
+}
+
+.library-reader-frame {
+	width: 100%;
+	height: 100%;
+	min-height: calc(100vh - 1rem);
+	border: 0;
+	border-radius: var(--radius-xl, 16px);
+	background: var(--bg-sidebar-toggle);
+	box-shadow: var(--shadow-2xl);
+}
+
+.library-reader-floating-actions {
+	position: absolute;
+	top: 0.9rem;
+	right: 0.9rem;
+	display: flex;
+	align-items: center;
+	gap: 0.55rem;
+	padding: 0.55rem;
+	border-radius: var(--radius-full, 999px);
+	background: var(--bg-elevated);
+	border: 1px solid var(--border-primary);
+	backdrop-filter: blur(18px);
+	box-shadow: var(--shadow-lg);
+	z-index: 2;
+}
+
+.library-reader-loading,
+.library-reader-empty-state {
+	min-height: 100%;
+	display: grid;
+	place-items: center;
+	text-align: center;
+	padding: 2rem;
+	border-radius: var(--radius-xl, 18px);
+	background: var(--bg-elevated);
+	border: 1px solid var(--border-primary);
+}
+
+.library-reader-loading {
+	gap: 0.85rem;
+	color: var(--text-secondary);
+}
+
+.library-reader-loading--embedded,
+.library-reader-empty-state--embedded {
+	min-height: calc(100vh - 1rem);
+}
+
+.library-reader-spinner {
+	width: 44px;
+	height: 44px;
+	border-radius: var(--radius-full, 999px);
+	border: 4px solid var(--border-primary);
+	border-top-color: var(--color-primary);
+	animation: library-reader-spin 0.9s linear infinite;
+}
+
+.library-reader-empty-state {
+	gap: 0.85rem;
+}
+
+.library-reader-empty-state h1 {
+	margin: 0;
+	color: var(--text-primary);
+}
+
+.library-reader-empty-state p {
+	margin: 0;
+	color: var(--text-secondary);
+	line-height: 1.6;
+}
+
+.library-reader-empty-icon {
+	font-size: 2rem;
+}
+
+.library-reader-btn {
+	padding: 0.75rem 1rem;
+	border-radius: 14px;
+	border: 1px solid transparent;
+	font-weight: 600;
+	cursor: pointer;
+	transition: transform 0.15s ease, filter 0.15s ease, background 0.15s ease;
+}
+
+.library-reader-btn:hover:not(:disabled) {
+	transform: translateY(-1px);
+}
+
+.library-reader-btn:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+	transform: none;
+}
+
+.library-reader-btn-primary {
+	background: var(--btn-primary-bg);
+	color: var(--btn-primary-text);
+	border-color: var(--btn-primary-border);
+}
+
+.library-reader-btn-secondary {
+	background: var(--bg-secondary);
+	color: var(--text-primary);
+	border-color: var(--border-primary);
+}
+
+.library-reader-floating-btn {
+	background: transparent;
+	color: var(--text-secondary);
+	border: 0;
+	box-shadow: none;
+	padding: 0.5rem 0.7rem;
+	border-radius: var(--radius-full, 999px);
+	font-weight: 600;
+}
+
+.library-reader-floating-btn:hover:not(:disabled) {
+	background: var(--color-primary-alpha-10);
+	color: var(--text-primary);
+}
+
+@keyframes library-reader-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+/* light-theme-wcag: butoane fără „primary” în nume + text pe paragrafe */
+[data-theme="light"] .library-reader-floating-btn {
+	background: transparent !important;
+	color: var(--text-secondary) !important;
+	border-color: transparent !important;
+}
+
+[data-theme="light"] .library-reader-floating-btn:hover:not(:disabled) {
+	background: var(--bg-secondary) !important;
+	color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .library-reader-empty-state p,
+[data-theme="light"] .library-reader-loading p {
+	color: var(--text-secondary) !important;
+}
+
+[data-theme="light"] .library-reader-frame {
+	border: 1px solid var(--border-primary);
+	box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+	.library-reader-page {
+		overflow-x: clip;
+		min-height: 100dvh;
+	}
+
+	.library-reader-stage {
+		padding: var(--space-2);
+		padding-bottom: env(safe-area-inset-bottom, 0);
+	}
+
+	.library-reader-floating-actions {
+		top: calc(56px + var(--space-2));
+		right: var(--space-3);
+		left: var(--space-3);
+		justify-content: space-between;
+		border-radius: 18px;
+		gap: var(--space-2);
+	}
+
+	.library-reader-floating-actions button,
+	.library-reader-floating-actions a {
+		min-height: 44px;
+		min-width: 44px;
+	}
+
+	.library-reader-frame,
+	.library-reader-loading--embedded,
+	.library-reader-empty-state--embedded {
+		min-height: calc(100dvh - 56px - 1rem);
+		border-radius: var(--radius-lg);
+	}
+}

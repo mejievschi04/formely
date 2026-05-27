@@ -1,0 +1,529 @@
+/* ============================================
+   AUTH — Future Tech (fix, fără aur)
+   Fundal #030712 · card #FFFFFF · primary #0891B2 · accent #22D3EE
+   ============================================ */
+
+/* Container partajat: AuthExperience + pagini legacy */
+.modern-auth-container {
+	--auth-bg: #030712;
+	--auth-ink: #e2e8f0;
+	--auth-surface: rgba(15, 23, 42, 0.82);
+	--auth-white: #f8fafc;
+	--auth-shadow: rgba(34, 211, 238, 0.2);
+	--auth-primary: #22d3ee;
+	--auth-accent: #0891b2;
+	--auth-text: #e2e8f0;
+	--auth-text-muted: #94a3b8;
+	--auth-input-bg: rgba(3, 7, 18, 0.55);
+	--auth-border: rgba(34, 211, 238, 0.22);
+	--auth-border-focus: #22d3ee;
+	--auth-btn-bg: #0891b2;
+	--auth-btn-text: #ffffff;
+	--auth-btn-hover: #06b6d4;
+	--auth-focus-ring: rgba(34, 211, 238, 0.4);
+
+	color-scheme: light;
+	min-height: 100vh;
+	min-height: 100dvh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: var(--space-6);
+	background-color: var(--auth-bg) !important;
+	color: var(--auth-text);
+	position: relative;
+	overflow: hidden;
+}
+
+.modern-auth-background {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	overflow: hidden;
+	pointer-events: none;
+}
+
+.modern-auth-gradient {
+	position: absolute;
+	top: -40%;
+	right: -30%;
+	width: 180%;
+	height: 180%;
+	background: radial-gradient(
+		circle,
+		rgba(8, 145, 178, 0.35) 0%,
+		rgba(34, 211, 238, 0.15) 35%,
+		transparent 68%
+	);
+	animation: authGlowPulse 10s ease-in-out infinite;
+}
+
+.modern-auth-pattern {
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		160deg,
+		rgba(3, 7, 18, 0.65) 0%,
+		rgba(8, 145, 178, 0.4) 50%,
+		rgba(3, 7, 18, 0.97) 100%
+	);
+}
+
+@keyframes authGlowPulse {
+	0%, 100% { opacity: 0.7; transform: scale(1); }
+	50% { opacity: 1; transform: scale(1.05); }
+}
+
+.modern-auth-content {
+	position: relative;
+	z-index: 1;
+	width: 100%;
+	max-width: 440px;
+}
+
+.modern-auth-card {
+	background-color: var(--auth-surface);
+	border-radius: var(--radius-xl);
+	padding: var(--space-10) var(--space-8);
+	border: 1px solid var(--auth-border);
+	box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+	animation: slideUp var(--transition-smooth);
+}
+
+/* AuthExperience: un singur card, animație controlată în AuthExperience.css */
+.auth-x .modern-auth-card {
+	animation: none;
+}
+
+.modern-auth-header {
+	text-align: center;
+	margin-bottom: var(--space-8);
+}
+
+.modern-auth-header--compact {
+	margin-bottom: var(--space-6);
+}
+
+.modern-auth-header--compact .modern-auth-logo {
+	display: none;
+}
+
+.modern-auth-logo {
+	display: flex;
+	justify-content: center;
+	margin-bottom: var(--space-6);
+}
+
+.modern-auth-logo-text {
+	display: inline-flex;
+	align-items: center;
+	font-size: 1.75rem;
+	font-weight: 800;
+	letter-spacing: -0.03em;
+	line-height: 1;
+	color: var(--auth-text);
+}
+
+.modern-auth-title {
+	font-size: var(--font-size-3xl);
+	font-weight: var(--font-weight-bold);
+	color: var(--auth-text);
+	margin: 0 0 var(--space-2);
+	letter-spacing: -0.02em;
+	line-height: var(--line-height-tight);
+}
+
+.modern-auth-subtitle {
+	font-size: var(--font-size-base);
+	color: var(--auth-text);
+	margin: 0;
+	line-height: var(--line-height-relaxed);
+	opacity: 0.72;
+}
+
+.modern-auth-form {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-6);
+	width: 100%;
+	min-width: 0;
+}
+
+.modern-form-group {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+	width: 100%;
+	min-width: 0;
+}
+
+.modern-form-label {
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-medium);
+	color: var(--auth-text);
+}
+
+.modern-form-input-wrapper {
+	position: relative;
+	display: block;
+	width: 100%;
+	min-width: 0;
+	isolation: isolate;
+}
+
+.modern-form-icon {
+	position: absolute;
+	left: 14px;
+	top: 50%;
+	transform: translateY(-50%);
+	color: var(--auth-text-muted);
+	pointer-events: none;
+	z-index: 2;
+	transition: color var(--transition-base);
+}
+
+.modern-form-input {
+	position: relative;
+	z-index: 1;
+	width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+	padding: 14px 14px 14px 48px;
+	background-color: #ffffff;
+	border: 1px solid var(--auth-border);
+	border-radius: var(--radius-lg);
+	color: var(--auth-text);
+	font-size: var(--font-size-base);
+	font-family: var(--font-family);
+	transition: border-color var(--transition-base), box-shadow var(--transition-base), background-color var(--transition-base);
+}
+
+.modern-form-input:focus {
+	outline: none;
+	border-color: var(--auth-border-focus);
+	box-shadow: 0 0 0 3px var(--auth-focus-ring);
+	background-color: #ffffff;
+}
+
+.modern-form-input-wrapper:focus-within .modern-form-icon {
+	color: var(--auth-text);
+}
+
+.modern-form-input::placeholder {
+	color: var(--auth-text-muted);
+}
+
+.modern-form-input-wrapper:has(.modern-password-toggle) .modern-form-input {
+	padding-right: 52px;
+}
+
+.modern-password-toggle {
+	position: absolute;
+	right: 6px;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 40px;
+	height: 40px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: transparent;
+	border: none;
+	color: var(--auth-text-muted);
+	cursor: pointer;
+	border-radius: var(--radius-md);
+	transition: color var(--transition-base), background-color var(--transition-base);
+	z-index: 2;
+}
+
+.modern-password-toggle:hover {
+	background-color: rgba(8, 145, 178, 0.08);
+	color: var(--auth-text);
+}
+
+.modern-password-toggle:focus-visible {
+	outline: 2px solid var(--auth-border-focus);
+	outline-offset: 2px;
+}
+
+.modern-auth-error {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	padding: var(--space-4);
+	background-color: #ffffff;
+	border: 1px solid var(--auth-border);
+	border-radius: var(--radius-lg);
+	font-size: var(--font-size-sm);
+	color: var(--auth-text);
+	animation: shake 0.3s ease-in-out;
+}
+
+.modern-auth-error svg {
+	flex-shrink: 0;
+	color: var(--auth-text);
+}
+
+.modern-auth-success {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	padding: var(--space-4);
+	background-color: #ffffff;
+	border: 1px solid var(--auth-border);
+	border-radius: var(--radius-lg);
+	font-size: var(--font-size-sm);
+	color: var(--auth-text);
+}
+
+.modern-auth-success svg {
+	flex-shrink: 0;
+	color: var(--auth-text);
+}
+
+@keyframes shake {
+	0%, 100% { transform: translateX(0); }
+	25% { transform: translateX(-8px); }
+	75% { transform: translateX(8px); }
+}
+
+/* Submit — culori fixe, fără var(--color-primary) din temă */
+.modern-auth-submit,
+button.modern-auth-submit,
+.modern-auth-form button.modern-auth-submit,
+.modern-auth-form button[type="submit"].modern-auth-submit,
+.modern-auth-container .modern-auth-submit {
+	width: 100%;
+	padding: var(--space-4) var(--space-6);
+	background-color: var(--auth-btn-bg) !important;
+	background: var(--auth-btn-bg) !important;
+	color: var(--auth-btn-text) !important;
+	border: 1px solid var(--auth-btn-bg) !important;
+	border-radius: var(--radius-lg);
+	font-size: var(--font-size-base);
+	font-weight: var(--font-weight-semibold);
+	font-family: var(--font-family);
+	cursor: pointer;
+	transition: transform var(--transition-base), box-shadow var(--transition-base), background-color var(--transition-base);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-2);
+	margin-top: var(--space-2);
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.modern-auth-submit span,
+button.modern-auth-submit span,
+.modern-auth-form button.modern-auth-submit span {
+	color: var(--auth-btn-text) !important;
+}
+
+.modern-auth-submit svg,
+button.modern-auth-submit svg {
+	color: var(--auth-btn-text) !important;
+}
+
+.modern-auth-submit:hover:not(:disabled),
+button.modern-auth-submit:hover:not(:disabled) {
+	background-color: var(--auth-btn-hover) !important;
+	background: var(--auth-btn-hover) !important;
+	transform: translateY(-2px);
+	box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+}
+
+.modern-auth-submit:hover:not(:disabled) span,
+.modern-auth-submit:hover:not(:disabled) svg {
+	color: var(--auth-btn-text) !important;
+}
+
+.modern-auth-submit:active:not(:disabled) {
+	transform: translateY(0);
+}
+
+.modern-auth-submit:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+	transform: none;
+}
+
+.modern-auth-spinner {
+	animation: authSpin 0.8s linear infinite;
+}
+
+@keyframes authSpin {
+	to { transform: rotate(360deg); }
+}
+
+.modern-auth-footer {
+	margin-top: var(--space-8);
+	padding-top: var(--space-6);
+	border-top: 1px solid var(--auth-border);
+	text-align: center;
+}
+
+.modern-auth-footer-text {
+	font-size: var(--font-size-sm);
+	color: var(--auth-text);
+	margin: 0;
+	opacity: 0.72;
+}
+
+.modern-auth-link {
+	color: var(--auth-text);
+	text-decoration: none;
+	font-weight: var(--font-weight-semibold);
+	transition: color var(--transition-base);
+	position: relative;
+}
+
+.modern-auth-link::after {
+	content: '';
+	position: absolute;
+	bottom: -2px;
+	left: 0;
+	width: 0;
+	height: 2px;
+	background-color: var(--auth-white);
+	transition: width var(--transition-base);
+}
+
+.modern-auth-link:hover {
+	color: #000000;
+}
+
+.modern-auth-link:hover::after {
+	width: 100%;
+	background-color: var(--auth-primary);
+}
+
+.modern-form-hint {
+	font-size: var(--font-size-xs);
+	color: var(--auth-text);
+	opacity: 0.65;
+	margin-top: var(--space-1);
+	padding-left: var(--space-1);
+}
+
+/* ============================================
+   Insulă auth — login & register identice, fără tema app
+   ============================================ */
+html[data-theme='light'] .modern-auth-container,
+html[data-theme='dark'] .modern-auth-container,
+.auth-x.modern-auth-container {
+	color-scheme: dark;
+	background-color: var(--auth-bg) !important;
+	color: var(--auth-text) !important;
+}
+
+html[data-theme='light'] .modern-auth-container .modern-auth-card,
+html[data-theme='dark'] .modern-auth-container .modern-auth-card {
+	background-color: var(--auth-surface) !important;
+	border: 1px solid var(--auth-border) !important;
+	color: var(--auth-text) !important;
+}
+
+html[data-theme='light'] .modern-auth-container .modern-auth-title,
+html[data-theme='dark'] .modern-auth-container .modern-auth-title,
+html[data-theme='light'] .modern-auth-container .modern-auth-subtitle,
+html[data-theme='dark'] .modern-auth-container .modern-auth-subtitle,
+html[data-theme='light'] .modern-auth-container .modern-form-label,
+html[data-theme='dark'] .modern-auth-container .modern-form-label,
+html[data-theme='light'] .modern-auth-container .modern-auth-footer-text,
+html[data-theme='dark'] .modern-auth-container .modern-auth-footer-text,
+html[data-theme='light'] .modern-auth-container .modern-form-hint,
+html[data-theme='dark'] .modern-auth-container .modern-form-hint,
+.auth-x .modern-auth-title,
+.auth-x .modern-auth-subtitle,
+.auth-x .modern-form-label,
+.auth-x .modern-auth-footer-text,
+.auth-x .modern-form-hint {
+	color: var(--auth-text) !important;
+}
+
+html[data-theme='light'] .modern-auth-container .modern-auth-subtitle,
+html[data-theme='dark'] .modern-auth-container .modern-auth-subtitle,
+html[data-theme='light'] .modern-auth-container .modern-auth-footer-text,
+html[data-theme='dark'] .modern-auth-container .modern-auth-footer-text,
+html[data-theme='light'] .modern-auth-container .modern-form-hint,
+html[data-theme='dark'] .modern-auth-container .modern-form-hint,
+.auth-x .modern-auth-subtitle,
+.auth-x .modern-auth-footer-text,
+.auth-x .modern-form-hint {
+	color: var(--auth-text-muted) !important;
+	opacity: 1 !important;
+}
+
+html[data-theme='light'] .modern-auth-container .modern-form-input,
+html[data-theme='dark'] .modern-auth-container .modern-form-input,
+.auth-x .modern-form-input {
+	background-color: var(--auth-input-bg) !important;
+	border: 1px solid var(--auth-border) !important;
+	color: var(--auth-text) !important;
+}
+
+html[data-theme='light'] .modern-auth-container .modern-form-input::placeholder,
+html[data-theme='dark'] .modern-auth-container .modern-form-input::placeholder,
+.auth-x .modern-form-input::placeholder {
+	color: var(--auth-text-muted) !important;
+}
+
+html[data-theme='light'] .modern-auth-container .modern-form-icon,
+html[data-theme='dark'] .modern-auth-container .modern-form-icon,
+.auth-x .modern-form-icon {
+	color: var(--auth-text-muted) !important;
+}
+
+html[data-theme='light'] .modern-auth-container .modern-auth-error,
+html[data-theme='dark'] .modern-auth-container .modern-auth-error,
+.auth-x .modern-auth-error {
+	background-color: #fef2f2 !important;
+	border: 1px solid #fecaca !important;
+	color: #b91c1c !important;
+}
+
+html[data-theme='light'] .modern-auth-container .modern-auth-success,
+html[data-theme='dark'] .modern-auth-container .modern-auth-success,
+.auth-x .modern-auth-success {
+	background-color: #ecfdf5 !important;
+	border: 1px solid #a7f3d0 !important;
+	color: #047857 !important;
+}
+
+html[data-theme='light'] .modern-auth-container .modern-auth-link,
+html[data-theme='dark'] .modern-auth-container .modern-auth-link,
+.auth-x .modern-auth-link {
+	color: #67e8f9 !important;
+}
+
+.auth-x .modern-auth-link:hover {
+	color: #22d3ee !important;
+}
+
+.auth-x .modern-auth-footer {
+	border-top-color: rgba(34, 211, 238, 0.15) !important;
+}
+
+html[data-theme='light'] .modern-auth-container .modern-auth-submit,
+html[data-theme='dark'] .modern-auth-container .modern-auth-submit,
+.auth-x .modern-auth-submit {
+	background: var(--auth-btn-bg) !important;
+	color: var(--auth-btn-text) !important;
+	border: 1px solid var(--auth-btn-bg) !important;
+}
+
+html[data-theme='light'] .modern-auth-container .modern-auth-submit:hover:not(:disabled),
+html[data-theme='dark'] .modern-auth-container .modern-auth-submit:hover:not(:disabled),
+.auth-x .modern-auth-submit:hover:not(:disabled) {
+	background: var(--auth-btn-hover) !important;
+	border-color: var(--auth-btn-hover) !important;
+}
+
+html[data-theme='light'] .modern-auth-container .modern-auth-submit span,
+html[data-theme='dark'] .modern-auth-container .modern-auth-submit span,
+html[data-theme='light'] .modern-auth-container .modern-auth-submit svg,
+html[data-theme='dark'] .modern-auth-container .modern-auth-submit svg,
+.auth-x .modern-auth-submit span,
+.auth-x .modern-auth-submit svg {
+	color: var(--auth-btn-text) !important;
+}

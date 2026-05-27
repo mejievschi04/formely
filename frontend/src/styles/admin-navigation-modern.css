@@ -1,0 +1,1512 @@
+/* ============================================
+   ADMIN NAVIGATION - Modern Styling
+   Sidebar & Top Navigation for Admin
+   ============================================ */
+
+/* ============================================
+   1. ADMIN SIDEBAR
+   ============================================ */
+.modern-sidebar,
+.va-sidebar {
+	position: fixed;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	width: 72px;
+	background: var(--bg-elevated);
+	border-right: 1px solid var(--border-primary);
+	z-index: var(--z-fixed);
+	display: flex;
+	flex-direction: column;
+	transition: width var(--transition-smooth);
+	box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+	overflow: hidden;
+	backdrop-filter: blur(10px);
+}
+
+[data-theme="light"] .modern-sidebar,
+[data-theme="light"] .va-sidebar {
+	background: var(--bg-elevated);
+}
+
+.modern-sidebar.expanded,
+.va-sidebar.expanded {
+	width: 280px;
+}
+
+/* ============================================
+   2. SIDEBAR BRAND / LOGO
+   ============================================ */
+.modern-sidebar-brand,
+.va-sidebar-brand {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: var(--space-3);
+	padding: var(--space-4);
+	border-bottom: 1px solid var(--border-primary);
+	flex-shrink: 0;
+	transition: all var(--transition-base);
+	justify-content: center;
+	background-color: var(--bg-primary);
+}
+
+.modern-sidebar.expanded .modern-sidebar-brand,
+.modern-sidebar.expanded .va-sidebar-brand {
+	justify-content: flex-start;
+}
+
+/* Doar zona logo (imagine) deschide/închide meniul */
+.modern-sidebar-logo-toggle,
+.va-sidebar-logo-toggle {
+	--logo-toggle-ease: cubic-bezier(0.22, 1, 0.36, 1);
+	--logo-toggle-duration: 0.45s;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin: 0;
+	padding: 0;
+	min-width: 40px;
+	min-height: 40px;
+	border: none;
+	border-radius: var(--radius-md);
+	background: transparent;
+	cursor: pointer;
+	font: inherit;
+	-webkit-appearance: none;
+	appearance: none;
+	flex-shrink: 0;
+	transition:
+		background-color 0.28s var(--logo-toggle-ease),
+		box-shadow 0.28s var(--logo-toggle-ease),
+		transform 0.2s var(--logo-toggle-ease);
+}
+
+.modern-sidebar-logo-toggle:hover,
+.va-sidebar-logo-toggle:hover {
+	background-color: rgba(0, 0, 0, 0.38);
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.06),
+		0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+.modern-sidebar-logo-toggle:active,
+.va-sidebar-logo-toggle:active {
+	transform: scale(0.94);
+}
+
+.modern-sidebar-logo-toggle:focus-visible,
+.va-sidebar-logo-toggle:focus-visible {
+	outline: 2px solid var(--color-primary);
+	outline-offset: 2px;
+}
+
+[data-theme="light"] .modern-sidebar-logo-toggle:hover,
+[data-theme="light"] .va-sidebar-logo-toggle:hover {
+	background-color: rgba(0, 0, 0, 0.14);
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.5),
+		0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.modern-sidebar-logo,
+.va-logo-text {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	flex-shrink: 0;
+}
+
+/* Rotație pe <img> — evită conflicte cu .va-logo-text; durată explicită (nu inherit din * global) */
+.modern-sidebar .modern-sidebar-logo-toggle .va-logo-icon-img,
+.modern-sidebar .va-sidebar-logo-toggle .va-logo-icon-img {
+	transform: rotate(0deg) scale(1);
+	transform-origin: center center;
+	transition: transform var(--logo-toggle-duration) var(--logo-toggle-ease);
+}
+
+.modern-sidebar.expanded .modern-sidebar-logo-toggle:hover .va-logo-icon-img,
+.modern-sidebar.expanded .va-sidebar-logo-toggle:hover .va-logo-icon-img {
+	transform: rotate(-90deg) scale(1.04);
+}
+
+.modern-sidebar:not(.expanded) .modern-sidebar-logo-toggle:hover .va-logo-icon-img,
+.modern-sidebar:not(.expanded) .va-sidebar-logo-toggle:hover .va-logo-icon-img {
+	transform: rotate(90deg) scale(1.04);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.modern-sidebar-logo-toggle,
+	.va-sidebar-logo-toggle {
+		transition: none;
+	}
+
+	.modern-sidebar-logo-toggle:active,
+	.va-sidebar-logo-toggle:active {
+		transform: none;
+	}
+
+	.modern-sidebar .modern-sidebar-logo-toggle .va-logo-icon-img,
+	.modern-sidebar .va-sidebar-logo-toggle .va-logo-icon-img {
+		transition: none;
+	}
+
+	.modern-sidebar.expanded .modern-sidebar-logo-toggle:hover .va-logo-icon-img,
+	.modern-sidebar.expanded .va-sidebar-logo-toggle:hover .va-logo-icon-img,
+	.modern-sidebar:not(.expanded) .modern-sidebar-logo-toggle:hover .va-logo-icon-img,
+	.modern-sidebar:not(.expanded) .va-sidebar-logo-toggle:hover .va-logo-icon-img {
+		transform: none;
+	}
+}
+
+.va-logo-icon-img {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
+.modern-sidebar-brand-text {
+	font-size: var(--font-size-lg);
+	font-weight: var(--font-weight-bold);
+	color: var(--text-primary);
+	letter-spacing: -0.02em;
+	white-space: nowrap;
+	opacity: 0;
+	transform: translateX(-10px);
+	transition: all var(--transition-smooth);
+}
+
+.modern-sidebar.expanded .modern-sidebar-brand-text {
+	opacity: 1;
+	transform: translateX(0);
+}
+
+/* ============================================
+   4. SIDEBAR NAVIGATION
+   ============================================ */
+.modern-nav,
+.va-sidebar-nav {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+	padding: 0;
+	overflow: hidden;
+	background-color: var(--bg-primary);
+}
+
+/* Zona principală scroll; Setări rămâne lipită de fundalul sidebar-ului */
+.va-sidebar-nav-scroll {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-1);
+	padding: var(--space-4);
+}
+
+.modern-sidebar:not(.expanded) .va-sidebar-nav-scroll {
+	padding: var(--space-3);
+	align-items: center;
+}
+
+.va-sidebar-nav-bottom {
+	flex-shrink: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-1);
+	padding: var(--space-3) var(--space-4) var(--space-4);
+	border-top: 1px solid var(--border-primary);
+	background-color: var(--bg-primary);
+}
+
+.modern-sidebar:not(.expanded) .va-sidebar-nav-bottom {
+	padding: var(--space-3);
+	align-items: center;
+	border-top-color: var(--border-primary);
+}
+
+.modern-nav-item,
+.va-nav-btn {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	padding: var(--space-3) var(--space-4);
+	border-radius: var(--radius-lg);
+	color: var(--text-secondary);
+	text-decoration: none;
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-medium);
+	transition: all var(--transition-base);
+	position: relative;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+/* When collapsed, center items perfectly */
+.modern-sidebar:not(.expanded) .modern-nav-item,
+.modern-sidebar:not(.expanded) .va-nav-btn {
+	justify-content: center;
+	align-items: center;
+	padding: var(--space-3);
+	width: 100%;
+	gap: 0;
+}
+
+.modern-nav-item::before,
+.va-nav-btn::before {
+	content: '';
+	position: absolute;
+	left: 0;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 3px;
+	height: 0;
+	background-color: var(--color-primary);
+	border-radius: 0 var(--radius-full) var(--radius-full) 0;
+	transition: height var(--transition-base);
+}
+
+.modern-nav-item:hover,
+.va-nav-btn:hover {
+	background-color: rgba(31, 41, 55, 0.08);
+	color: var(--text-primary);
+}
+
+/* Light theme - more visible hover background */
+[data-theme="light"] .modern-nav-item:hover,
+[data-theme="light"] .va-nav-btn:hover {
+	background-color: rgba(31, 41, 55, 0.08);
+}
+
+.modern-sidebar.expanded .modern-nav-item:hover,
+.modern-sidebar.expanded .va-nav-btn:hover {
+	transform: translateX(2px);
+}
+
+.modern-sidebar:not(.expanded) .modern-nav-item:hover,
+.modern-sidebar:not(.expanded) .va-nav-btn:hover {
+	background-color: rgba(31, 41, 55, 0.12);
+}
+
+/* Light theme - more visible hover background when collapsed */
+[data-theme="light"] .modern-sidebar:not(.expanded) .modern-nav-item:hover,
+[data-theme="light"] .modern-sidebar:not(.expanded) .va-nav-btn:hover {
+	background-color: rgba(31, 41, 55, 0.12);
+}
+
+.modern-nav-item:hover::before,
+.va-nav-btn:hover::before {
+	height: 40%;
+}
+
+.modern-sidebar:not(.expanded) .modern-nav-item:hover::before,
+.modern-sidebar:not(.expanded) .va-nav-btn:hover::before {
+	display: none; /* Hide left indicator when collapsed */
+}
+
+.modern-nav-item.active,
+.modern-nav-item.is-active,
+.va-nav-btn.active,
+.va-nav-btn.is-active {
+	background-color: var(--color-primary);
+	color: var(--text-primary);
+	font-weight: var(--font-weight-semibold);
+	box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.3), 0 8px 20px rgba(34, 211, 238, 0.2);
+}
+
+/* When collapsed, make active state more visible */
+.modern-sidebar:not(.expanded) .modern-nav-item.active,
+.modern-sidebar:not(.expanded) .modern-nav-item.is-active,
+.modern-sidebar:not(.expanded) .va-nav-btn.active,
+.modern-sidebar:not(.expanded) .va-nav-btn.is-active {
+	background-color: var(--color-primary);
+	box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.35), 0 10px 24px rgba(34, 211, 238, 0.24);
+}
+
+/* Light theme - yellow background with dark gray text */
+[data-theme="light"] .modern-nav-item.active,
+[data-theme="light"] .modern-nav-item.is-active,
+[data-theme="light"] .va-nav-btn.active,
+[data-theme="light"] .va-nav-btn.is-active {
+	background-color: var(--color-primary);
+	color: var(--text-primary);
+	font-weight: var(--font-weight-semibold);
+	box-shadow: 0 0 0 1px rgba(8, 145, 178, 0.3), 0 8px 20px rgba(8, 145, 178, 0.2);
+}
+
+[data-theme="light"] .modern-sidebar:not(.expanded) .modern-nav-item.active,
+[data-theme="light"] .modern-sidebar:not(.expanded) .modern-nav-item.is-active,
+[data-theme="light"] .modern-sidebar:not(.expanded) .va-nav-btn.active,
+[data-theme="light"] .modern-sidebar:not(.expanded) .va-nav-btn.is-active {
+	background-color: var(--color-primary);
+	box-shadow: 0 0 0 1px rgba(8, 145, 178, 0.35), 0 10px 24px rgba(8, 145, 178, 0.24);
+}
+
+.modern-nav-item.active::before,
+.modern-nav-item.is-active::before,
+.va-nav-btn.active::before,
+.va-nav-btn.is-active::before {
+	height: 70%;
+	width: 4px;
+	background-color: var(--text-primary);
+	box-shadow: 0 0 8px rgba(31, 41, 55, 0.4);
+}
+
+/* Light theme - dark indicator for active items */
+[data-theme="light"] .modern-nav-item.active::before,
+[data-theme="light"] .modern-nav-item.is-active::before,
+[data-theme="light"] .va-nav-btn.active::before,
+[data-theme="light"] .va-nav-btn.is-active::before {
+	background-color: var(--text-primary);
+	box-shadow: 0 0 8px rgba(31, 41, 55, 0.4);
+}
+
+.modern-sidebar:not(.expanded) .modern-nav-item.active::before,
+.modern-sidebar:not(.expanded) .modern-nav-item.is-active::before,
+.modern-sidebar:not(.expanded) .va-nav-btn.active::before,
+.modern-sidebar:not(.expanded) .va-nav-btn.is-active::before {
+	display: none; /* Hide left indicator when collapsed */
+}
+
+.modern-nav-item-icon,
+.va-nav-icon {
+	width: 20px;
+	height: 20px;
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	opacity: 0.7;
+	transition: all var(--transition-base);
+	color: var(--text-secondary);
+}
+
+/* Light theme - dark icons for better contrast */
+[data-theme="light"] .modern-nav-item-icon,
+[data-theme="light"] .va-nav-icon {
+	color: var(--text-secondary);
+}
+
+/* When collapsed, make icons centered and visible */
+.modern-sidebar:not(.expanded) .modern-nav-item-icon,
+.modern-sidebar:not(.expanded) .va-nav-icon {
+	width: 22px;
+	height: 22px;
+	opacity: 0.9;
+	flex-shrink: 0;
+	margin: 0;
+	position: relative;
+	left: 0;
+}
+
+.modern-nav-item.active .modern-nav-item-icon,
+.modern-nav-item.is-active .modern-nav-item-icon,
+.va-nav-btn.active .va-nav-icon,
+.va-nav-btn.is-active .va-nav-icon {
+	opacity: 1;
+	color: #030712 !important;
+}
+
+/* Light theme - dark gray icons for active items */
+[data-theme="light"] .modern-nav-item.active .modern-nav-item-icon,
+[data-theme="light"] .modern-nav-item.is-active .modern-nav-item-icon,
+[data-theme="light"] .va-nav-btn.active .va-nav-icon,
+[data-theme="light"] .va-nav-btn.is-active .va-nav-icon {
+	color: #ffffff !important;
+	opacity: 1;
+}
+
+/* When collapsed, make active icon more prominent */
+.modern-sidebar:not(.expanded) .modern-nav-item.active .modern-nav-item-icon,
+.modern-sidebar:not(.expanded) .modern-nav-item.is-active .modern-nav-item-icon,
+.modern-sidebar:not(.expanded) .va-nav-btn.active .va-nav-icon,
+.modern-sidebar:not(.expanded) .va-nav-btn.is-active .va-nav-icon {
+	opacity: 1;
+	color: #030712 !important;
+}
+
+/* Light theme - dark gray icons for collapsed active items */
+[data-theme="light"] .modern-sidebar:not(.expanded) .modern-nav-item.active .modern-nav-item-icon,
+[data-theme="light"] .modern-sidebar:not(.expanded) .modern-nav-item.is-active .modern-nav-item-icon,
+[data-theme="light"] .modern-sidebar:not(.expanded) .va-nav-btn.active .va-nav-icon,
+[data-theme="light"] .modern-sidebar:not(.expanded) .va-nav-btn.is-active .va-nav-icon {
+	color: #ffffff !important;
+	opacity: 1;
+}
+
+/* SVG color for active navigation items */
+.modern-nav-item.active svg,
+.modern-nav-item.is-active svg,
+.va-nav-btn.active svg,
+.va-nav-btn.is-active svg {
+	color: #030712 !important;
+	stroke: #030712 !important;
+	fill: #030712 !important;
+}
+
+/* Light theme: active icon SVG must be dark (not bg-primary/white) */
+[data-theme="light"] .modern-nav-item.active svg,
+[data-theme="light"] .modern-nav-item.is-active svg,
+[data-theme="light"] .va-nav-btn.active svg,
+[data-theme="light"] .va-nav-btn.is-active svg {
+	color: #ffffff !important;
+	stroke: #ffffff !important;
+	fill: #ffffff !important;
+}
+
+/* Keep Phosphor and legacy SVGs synced with active color */
+[data-theme="light"] .modern-nav-item.active svg *,
+[data-theme="light"] .modern-nav-item.is-active svg *,
+[data-theme="light"] .va-nav-btn.active svg *,
+[data-theme="light"] .va-nav-btn.is-active svg * {
+	stroke: #ffffff !important;
+	fill: #ffffff !important;
+}
+
+.modern-nav-item:hover .modern-nav-item-icon,
+.va-nav-btn:hover .va-nav-icon {
+	color: var(--text-primary);
+}
+
+[data-theme="light"] .modern-nav-item:hover .modern-nav-item-icon,
+[data-theme="light"] .va-nav-btn:hover .va-nav-icon {
+	color: var(--text-primary);
+}
+
+.modern-nav-item-label,
+.va-nav-label {
+	opacity: 0;
+	transform: translateX(-10px);
+	transition: all var(--transition-smooth);
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+/* When collapsed, completely hide label */
+.modern-sidebar:not(.expanded) .modern-nav-item-label,
+.modern-sidebar:not(.expanded) .va-nav-label {
+	display: none;
+	width: 0;
+	opacity: 0;
+}
+
+/* When expanded, show label normally */
+.modern-sidebar.expanded .modern-nav-item-label,
+.modern-sidebar.expanded .va-nav-label {
+	opacity: 1;
+	transform: translateX(0);
+	display: block;
+	width: auto;
+	position: static;
+}
+
+/* Dark and light theme - dark gray text for active items */
+.modern-nav-item.active .modern-nav-item-label,
+.modern-nav-item.is-active .modern-nav-item-label,
+.va-nav-btn.active .va-nav-label,
+.va-nav-btn.is-active .va-nav-label {
+	color: var(--bg-primary) !important;
+	font-weight: var(--font-weight-semibold);
+}
+
+[data-theme="light"] .modern-nav-item.active .modern-nav-item-label,
+[data-theme="light"] .modern-nav-item.is-active .modern-nav-item-label,
+[data-theme="light"] .va-nav-btn.active .va-nav-label,
+[data-theme="light"] .va-nav-btn.is-active .va-nav-label {
+	color: var(--text-inverse) !important;
+	font-weight: var(--font-weight-semibold);
+}
+
+/* Tooltip for collapsed sidebar */
+.modern-nav-item[data-tooltip]::after,
+.va-nav-btn[data-tooltip]::after {
+	content: attr(data-tooltip);
+	position: absolute;
+	left: calc(100% + var(--space-3));
+	top: 50%;
+	transform: translateY(-50%);
+	background-color: var(--bg-elevated);
+	color: var(--text-primary);
+	padding: var(--space-2) var(--space-3);
+	border-radius: var(--radius-md);
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-medium);
+	white-space: nowrap;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity var(--transition-base);
+	z-index: var(--z-tooltip);
+	box-shadow: var(--shadow-lg);
+	border: 1px solid var(--border-primary);
+}
+
+.modern-sidebar:not(.expanded) .modern-nav-item:hover[data-tooltip]::after,
+.modern-sidebar:not(.expanded) .va-nav-btn:hover[data-tooltip]::after {
+	opacity: 1;
+}
+
+/* Additional styling for collapsed sidebar items */
+.modern-sidebar:not(.expanded) .modern-nav-item,
+.modern-sidebar:not(.expanded) .va-nav-btn {
+	min-height: 44px;
+}
+
+/* Submenu group (e.g. Cursuri, Teste, Bănci de întrebări) */
+.modern-nav-group,
+.va-nav-group {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.modern-nav-group .modern-nav-group-label {
+	text-decoration: none;
+	color: inherit;
+}
+
+/* Părintele (Cursuri, Teste & Bănci) nu e niciodată activ – doar subitem-ul curent e galben */
+.modern-nav-group .modern-nav-group-label,
+.modern-nav-group button.va-nav-btn {
+	background-color: transparent !important;
+	color: var(--text-secondary) !important;
+	font-weight: inherit !important;
+}
+.modern-nav-group .modern-nav-group-label::before,
+.modern-nav-group button.va-nav-btn::before {
+	display: none !important;
+}
+.modern-nav-group .modern-nav-group-label:hover,
+.modern-nav-group button.va-nav-btn:hover {
+	background-color: rgba(31, 41, 55, 0.08) !important;
+	color: var(--text-primary) !important;
+}
+
+/* Buton parent (toggle submeniu) – aspect ca un nav item, fără galben */
+.modern-nav-group .modern-nav-group-label.va-nav-btn[type="button"],
+.modern-nav-group button.modern-nav-group-label {
+	width: 100%;
+	text-align: left;
+	background: transparent !important;
+	border: none;
+	cursor: pointer;
+	font: inherit;
+}
+
+.modern-nav-submenu-chevron {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-left: auto;
+	transition: transform 0.2s ease;
+}
+.modern-nav-group-label.submenu-open .modern-nav-submenu-chevron {
+	transform: rotate(-180deg);
+}
+
+.modern-nav-submenu {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding-left: calc(var(--space-3) + 20px);
+	margin-top: 2px;
+}
+
+.modern-nav-subitem {
+	padding-left: var(--space-4);
+	font-size: var(--font-size-sm);
+}
+
+/* Doar subitem-ul activ primește galben */
+.modern-nav-subitem.active,
+.modern-nav-subitem.is-active {
+	background-color: var(--color-primary) !important;
+	color: var(--text-primary) !important;
+	font-weight: var(--font-weight-semibold);
+}
+.modern-nav-subitem .modern-nav-item-label {
+	font-weight: 500;
+}
+.modern-nav-subitem.active .modern-nav-item-label,
+.modern-nav-subitem.is-active .modern-nav-item-label {
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary) !important;
+}
+
+/* Submeniu Content (sidebar restrâns): portal în document.body — evită tăierea de overflow-y:auto pe nav */
+.admin-content-submenu-portal {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 200px;
+	padding: var(--space-2);
+	background: var(--bg-elevated);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-lg);
+	pointer-events: auto;
+}
+
+.admin-content-submenu-portal__link {
+	width: 100%;
+	justify-content: flex-start;
+	text-align: left;
+}
+
+/* Portal e în document.body, nu în .modern-sidebar — label-urile nu trebuie să rămână opacity:0 */
+.admin-content-submenu-portal .modern-nav-item-label,
+.admin-content-submenu-portal .va-nav-label {
+	opacity: 1;
+	transform: none;
+	display: block;
+	width: auto;
+	overflow: visible;
+	position: static;
+}
+
+[data-theme="light"] .admin-content-submenu-portal {
+	box-shadow: var(--shadow-lg), 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+/* ============================================
+   5. ADMIN TOP NAVIGATION
+   ============================================ */
+.modern-topnav,
+.admin-topnav,
+.va-topnav {
+	position: fixed;
+	top: 0;
+	left: 72px;
+	right: 0;
+	height: 64px;
+	background-color: var(--bg-elevated);
+	border-bottom: 1px solid var(--border-primary);
+	padding: 0 var(--space-6);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-6);
+	z-index: calc(var(--z-fixed) - 1);
+	box-shadow: var(--shadow-md), 0 1px 0 var(--border-primary) inset;
+	transition: left var(--transition-smooth);
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+}
+
+[data-theme="light"] .modern-topnav,
+[data-theme="light"] .admin-topnav,
+[data-theme="light"] .va-topnav {
+	background-color: var(--bg-elevated);
+}
+
+.modern-sidebar.expanded ~ .modern-topnav,
+.modern-sidebar.expanded ~ .admin-topnav,
+.sidebar-expanded.modern-topnav,
+.sidebar-expanded.admin-topnav {
+	left: 280px;
+}
+
+.modern-topnav-left,
+.va-topnav-brand {
+	display: flex;
+	align-items: center;
+	gap: var(--space-4);
+	flex-shrink: 0;
+}
+
+.modern-topnav-right {
+	display: flex;
+	align-items: center;
+	gap: var(--space-4);
+	flex-shrink: 0;
+}
+
+.modern-topnav-nav,
+.va-topnav-nav {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	flex: 1;
+	justify-content: center;
+}
+
+.modern-topnav-item,
+.va-topnav-btn {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	padding: var(--space-2) var(--space-4);
+	border-radius: var(--radius-lg);
+	color: var(--text-secondary);
+	text-decoration: none;
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-medium);
+	transition: all var(--transition-base);
+	position: relative;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+}
+
+.modern-topnav-item::after,
+.va-topnav-btn::after {
+	content: '';
+	position: absolute;
+	bottom: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 0;
+	height: 2px;
+	background-color: var(--color-primary);
+	border-radius: var(--radius-full);
+	transition: width var(--transition-base);
+}
+
+.modern-topnav-item:hover,
+.va-topnav-btn:hover {
+	color: var(--text-primary);
+	background-color: var(--bg-secondary);
+	transform: translateY(-1px);
+}
+
+/* Light theme - more visible hover background */
+[data-theme="light"] .modern-topnav-item:hover,
+[data-theme="light"] .va-topnav-btn:hover {
+	background-color: rgba(31, 41, 55, 0.08);
+}
+
+.modern-topnav-item:hover::after,
+.va-topnav-btn:hover::after {
+	width: 40%;
+}
+
+.modern-topnav-item.active,
+.modern-topnav-item.is-active,
+.va-topnav-btn.active,
+.va-topnav-btn.is-active {
+	color: var(--color-primary);
+	font-weight: var(--font-weight-semibold);
+	background: linear-gradient(135deg, rgba(var(--formely-white-rgb), 0.25) 0%, rgba(230, 214, 0, 0.15) 100%);
+	box-shadow: 0 2px 8px rgba(var(--formely-white-rgb), 0.3);
+}
+
+/* Light theme - yellow background with black text */
+[data-theme="light"] .modern-topnav-item.active,
+[data-theme="light"] .modern-topnav-item.is-active,
+[data-theme="light"] .va-topnav-btn.active,
+[data-theme="light"] .va-topnav-btn.is-active {
+	background: var(--color-primary);
+	color: var(--text-inverse);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.modern-topnav-item.active::after,
+.modern-topnav-item.is-active::after,
+.va-topnav-btn.active::after,
+.va-topnav-btn.is-active::after {
+	width: 80%;
+	height: 3px;
+	box-shadow: 0 0 8px rgba(var(--formely-white-rgb), 0.5);
+}
+
+.modern-topnav-item-icon,
+.va-topnav-icon {
+	width: 18px;
+	height: 18px;
+	flex-shrink: 0;
+	opacity: 0.7;
+	transition: opacity var(--transition-base);
+}
+
+.modern-topnav-item.active .modern-topnav-item-icon,
+.modern-topnav-item.is-active .modern-topnav-item-icon,
+.va-topnav-btn.active .va-topnav-icon,
+.va-topnav-btn.is-active .va-topnav-icon {
+	opacity: 1;
+	color: currentColor;
+}
+
+/* Light theme - dark icons for better contrast */
+[data-theme="light"] .modern-topnav-item-icon,
+[data-theme="light"] .va-topnav-icon {
+	color: var(--text-secondary);
+}
+
+[data-theme="light"] .modern-topnav-item.active .modern-topnav-item-icon,
+[data-theme="light"] .modern-topnav-item.is-active .modern-topnav-item-icon,
+[data-theme="light"] .va-topnav-btn.active .va-topnav-icon,
+[data-theme="light"] .va-topnav-btn.is-active .va-topnav-icon {
+	color: var(--text-inverse);
+	opacity: 1;
+}
+
+[data-theme="light"] .modern-topnav-item:hover .modern-topnav-item-icon,
+[data-theme="light"] .va-topnav-btn:hover .va-topnav-icon {
+	color: var(--text-primary);
+}
+
+.modern-topnav-item-label,
+.va-topnav-label {
+	white-space: nowrap;
+}
+
+/* ============================================
+   6. ADMIN TOP NAV CONTROLS
+   ============================================ */
+/* Asigură că toate elementele din modern-topnav-right au același spacing */
+.modern-topnav-right > * {
+	flex-shrink: 0;
+}
+
+.admin-topnav-search {
+	position: relative;
+	width: 300px;
+	flex-shrink: 0;
+}
+
+.admin-topnav-search-input {
+	width: 100%;
+	padding: var(--space-2) var(--space-4) var(--space-2) var(--space-10);
+	background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-elevated) 100%);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	color: var(--text-primary);
+	font-size: var(--font-size-sm);
+	font-family: var(--font-family);
+	transition: all var(--transition-base);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.admin-topnav-search-input:focus {
+	outline: none;
+	border-color: var(--color-primary);
+	box-shadow: 0 0 0 3px rgba(var(--formely-white-rgb), 0.1), 0 4px 12px rgba(var(--formely-white-rgb), 0.2);
+	background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-secondary) 100%);
+	transform: translateY(-1px);
+}
+
+.admin-topnav-search-input::placeholder {
+	color: var(--text-tertiary);
+}
+
+.admin-topnav-search::before {
+	content: '';
+	position: absolute;
+	left: var(--space-3);
+	top: 50%;
+	transform: translateY(-50%);
+	width: 18px;
+	height: 18px;
+	background-image: url("data:image/svg+xml,%3Csvg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+	background-size: contain;
+	background-repeat: no-repeat;
+	pointer-events: none;
+	opacity: 0.5;
+}
+
+/* Calendar + clopoțel grupate la dreapta (după căutare) */
+.admin-topnav-trailing-icons {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	flex-shrink: 0;
+}
+
+.admin-topnav-calendar-btn {
+	width: 40px;
+	height: 40px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-elevated) 100%);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	color: var(--text-secondary);
+	cursor: pointer;
+	transition: all var(--transition-base);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.admin-topnav-calendar-btn:hover {
+	border-color: var(--color-primary);
+	color: var(--color-primary);
+	box-shadow: 0 4px 12px rgba(var(--formely-white-rgb), 0.15);
+	transform: translateY(-1px);
+}
+
+.admin-topnav-notifications {
+	position: relative;
+}
+
+.admin-topnav-notification-btn {
+	width: 40px;
+	height: 40px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-elevated) 100%);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	color: var(--text-secondary);
+	cursor: pointer;
+	transition: all var(--transition-base);
+	position: relative;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.admin-topnav-notification-btn:hover {
+	background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-secondary) 100%);
+	border-color: var(--color-primary);
+	color: var(--color-primary);
+	box-shadow: 0 4px 12px rgba(var(--formely-white-rgb), 0.2);
+	transform: translateY(-1px);
+}
+
+.admin-topnav-notification-badge {
+	position: absolute;
+	top: -4px;
+	right: -4px;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 4px;
+	background: var(--color-error);
+	color: white;
+	border-radius: var(--radius-full);
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-bold);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: 2px solid var(--bg-elevated);
+	box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+	animation: pulse 2s infinite;
+}
+
+.admin-topnav-notifications-dropdown {
+	position: absolute;
+	top: calc(100% + var(--space-2));
+	right: 0;
+	width: 360px;
+	background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-secondary) 100%);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+	z-index: var(--z-dropdown);
+	overflow: hidden;
+	animation: slideDown 0.2s ease-out;
+	backdrop-filter: blur(20px) saturate(180%);
+	-webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+.admin-topnav-notifications-header {
+	padding: var(--space-4) var(--space-6);
+	border-bottom: 1px solid var(--border-primary);
+}
+
+.admin-topnav-notifications-header h3 {
+	font-size: var(--font-size-base);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	margin: 0;
+}
+
+.admin-topnav-notifications-header-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-3);
+}
+
+.admin-topnav-notifications-see-all {
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-semibold);
+	color: var(--color-primary);
+	text-decoration: none;
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+
+.admin-topnav-notifications-see-all:hover {
+	text-decoration: underline;
+}
+
+.admin-topnav-notifications-list {
+	max-height: 400px;
+	overflow-y: auto;
+}
+
+.admin-topnav-notification-item {
+	display: flex;
+	gap: var(--space-3);
+	padding: var(--space-4) var(--space-6);
+	border-bottom: 1px solid var(--border-primary);
+	transition: all var(--transition-base);
+	cursor: pointer;
+	text-decoration: none;
+	color: inherit;
+}
+
+.admin-topnav-notification-item:hover {
+	background-color: var(--bg-secondary);
+}
+
+.admin-topnav-notification-item:last-child {
+	border-bottom: none;
+}
+
+.admin-topnav-notification-icon {
+	width: 24px;
+	height: 24px;
+	flex-shrink: 0;
+	color: var(--color-warning);
+}
+
+.admin-topnav-notification-content {
+	flex: 1;
+	min-width: 0;
+}
+
+.admin-topnav-notification-title {
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-medium);
+	color: var(--text-primary);
+	margin-bottom: var(--space-1);
+}
+
+.admin-topnav-notification-time {
+	font-size: var(--font-size-xs);
+	color: var(--text-tertiary);
+}
+
+.admin-topnav-notifications-empty {
+	padding: var(--space-8) var(--space-6);
+	text-align: center;
+	color: var(--text-tertiary);
+	font-size: var(--font-size-sm);
+}
+
+/* ============================================
+   7. ADMIN TOP NAV CONTROL GROUPS
+   ============================================ */
+/* .admin-topnav-control + .admin-view-mode-btn → admin-view-switcher.css */
+
+/* Legacy toggle — păstrat pentru AdminExamsPage header switch */
+.admin-view-switcher {
+	width: 48px;
+	height: 24px;
+	min-width: 48px;
+	max-width: 48px;
+	min-height: 24px;
+	max-height: 24px;
+	background-color: var(--bg-elevated);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-full);
+	cursor: pointer;
+	position: relative;
+	transition: all var(--transition-base);
+	flex-shrink: 0;
+	padding: 0;
+	margin: 0;
+	overflow: hidden;
+}
+
+.admin-view-switcher:hover {
+	border-color: var(--border-secondary);
+}
+
+.admin-view-switcher-slider svg {
+	color: var(--text-inverse);
+	stroke: var(--text-inverse);
+	width: 16px;
+	height: 16px;
+	flex-shrink: 0;
+	display: block;
+}
+
+[data-theme="light"] .admin-view-switcher-slider svg {
+	color: var(--text-inverse);
+	stroke: var(--text-inverse);
+}
+
+.admin-view-switcher-slider {
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 20px;
+	height: 20px;
+	min-width: 20px;
+	max-width: 20px;
+	min-height: 20px;
+	max-height: 20px;
+	background-color: var(--color-primary);
+	border-radius: var(--radius-full);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: transform var(--transition-base);
+	color: white;
+	box-sizing: border-box;
+}
+
+/* ============================================
+   8. ADMIN USER INFO
+   ============================================ */
+.admin-topnav-user {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	padding: var(--space-2) var(--space-4);
+	background: transparent;
+	border: 1px solid var(--border-primary);
+	border-radius: 0px;
+	transition: all var(--transition-base);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	flex-shrink: 0;
+	margin-left: var(--space-8);
+}
+
+.admin-topnav-user:hover {
+	border-color: var(--color-primary);
+	background: transparent;
+	box-shadow: 0 4px 12px rgba(var(--formely-white-rgb), 0.15);
+	transform: translateY(-1px);
+}
+
+.admin-topnav-user-avatar {
+	width: 36px;
+	height: 36px;
+	border-radius: var(--radius-full);
+	background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+	color: var(--text-inverse); /* Negru pe fundal galben (brand rule) */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: var(--font-weight-bold);
+	font-size: var(--font-size-sm);
+	flex-shrink: 0;
+	box-shadow: 0 2px 8px rgba(var(--formely-white-rgb), 0.3);
+	border: 2px solid rgba(255, 255, 255, 0.1);
+	overflow: hidden;
+}
+
+.admin-topnav-user-avatar img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	border-radius: inherit;
+}
+
+.admin-topnav-user-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.admin-topnav-user-name {
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	margin: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.admin-topnav-user-role {
+	font-size: var(--font-size-xs);
+	color: var(--text-tertiary);
+	margin: 0;
+}
+
+.admin-topnav-logout {
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: transparent;
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-md);
+	color: var(--text-secondary);
+	cursor: pointer;
+	transition: all var(--transition-base);
+	flex-shrink: 0;
+}
+
+.admin-topnav-logout:hover {
+	background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.1) 100%);
+	border-color: rgba(239, 68, 68, 0.4);
+	color: var(--color-error);
+	box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+	transform: translateY(-1px);
+}
+
+/* ============================================
+   9. MAIN CONTENT AREA
+   ============================================ */
+.va-shell-main {
+	margin-left: 72px;
+	margin-top: 64px;
+	min-height: calc(100vh - 64px);
+	background-color: var(--bg-primary);
+	transition: margin-left var(--transition-smooth);
+}
+
+.va-shell-main-topnav {
+	margin-left: 0;
+}
+
+.sidebar-expanded ~ .va-shell-main,
+.modern-sidebar.expanded ~ .va-shell-main {
+	margin-left: 280px;
+}
+
+.va-main {
+	padding: var(--space-8);
+	min-height: calc(100vh - 64px);
+}
+
+/* ============================================
+   10. ANIMATIONS
+   ============================================ */
+@keyframes slideDown {
+	from {
+		opacity: 0;
+		transform: translateY(-10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes pulse {
+	0%, 100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+	50% {
+		opacity: 0.8;
+		transform: scale(1.05);
+	}
+}
+
+/* ============================================
+   11. RESPONSIVE
+   ============================================ */
+@media (max-width: 1024px) {
+	.modern-sidebar,
+	.va-sidebar {
+		transform: translateX(-100%);
+		transition: transform var(--transition-smooth);
+	}
+
+	.modern-sidebar.expanded,
+	.va-sidebar.expanded {
+		transform: translateX(0);
+	}
+
+	.modern-topnav,
+	.admin-topnav,
+	.va-topnav {
+		left: 0;
+	}
+
+	.va-shell-main {
+		margin-left: 0;
+	}
+
+	.modern-topnav-nav,
+	.va-topnav-nav {
+		display: none;
+	}
+
+	.admin-topnav-search {
+		width: 200px;
+	}
+}
+
+@media (max-width: 768px) {
+	/* Remove blur from sidebar on mobile - must be first */
+	.modern-sidebar,
+	.va-sidebar {
+		backdrop-filter: none !important;
+		-webkit-backdrop-filter: none !important;
+	}
+	.modern-topnav,
+	.admin-topnav,
+	.va-topnav {
+		padding: 0 var(--space-4);
+		display: flex !important;
+		visibility: visible !important;
+	}
+
+	/* Logo visible in topnav on mobile */
+	.modern-topnav-left,
+	.va-topnav-brand {
+		display: flex !important;
+		visibility: visible !important;
+	}
+
+	.va-logo-text,
+	.modern-sidebar-logo {
+		display: flex !important;
+		visibility: visible !important;
+		opacity: 1 !important;
+	}
+
+	.va-logo-icon-img {
+		display: block !important;
+		visibility: visible !important;
+		opacity: 1 !important;
+		width: 32px !important;
+		height: 32px !important;
+	}
+
+	.admin-topnav-search {
+		display: none;
+	}
+
+	.admin-topnav-control-label {
+		display: none;
+	}
+
+	/* Hide toggle controls from topnav on mobile - they're in bottom menu */
+	.admin-topnav-control {
+		display: none !important;
+	}
+
+	.admin-topnav-user {
+		display: none !important;
+	}
+
+	.admin-topnav-user-info {
+		display: none;
+	}
+
+	.va-main {
+		padding: var(--space-4);
+		padding-top: 56px !important;
+	}
+
+	.admin-topnav-notifications-dropdown,
+	.va-topnav-notifications-dropdown {
+		position: fixed;
+		left: 50%;
+		right: auto;
+		top: calc(56px + var(--space-2));
+		transform: translateX(-50%);
+		width: calc(100vw - var(--space-8));
+		max-width: 360px;
+	}
+
+	/* Mobile hamburger button in topnav - matches topnav background */
+	.mobile-sidebar-toggle {
+		display: flex !important;
+		visibility: visible !important;
+		align-items: center;
+		justify-content: center;
+		width: 44px;
+		height: 44px;
+		min-width: 44px;
+		min-height: 44px;
+		padding: var(--space-2);
+		background: var(--bg-elevated) !important;
+		border: none;
+		border-radius: var(--radius-md);
+		color: var(--text-primary);
+		cursor: pointer;
+		transition: all var(--transition-base);
+		margin-right: var(--space-2);
+	}
+
+	.mobile-sidebar-toggle:hover {
+		background: var(--bg-secondary) !important;
+	}
+
+	.mobile-sidebar-toggle:active {
+		transform: scale(0.95);
+	}
+
+	/* Backdrop overlay */
+	.sidebar-backdrop {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(18, 18, 18, 0.5);
+		z-index: calc(var(--z-modal) - 1);
+		opacity: 0;
+		animation: fadeIn 0.3s ease forwards;
+		backdrop-filter: blur(4px);
+		-webkit-backdrop-filter: blur(4px);
+		pointer-events: auto;
+	}
+
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+}
+
+/* ============================================
+   DESKTOP OVERRIDES - Reset mobile styles
+   ============================================ */
+
+@media (min-width: 769px) {
+	/*
+	 * Logo doar în sidebar pentru layout admin (fără va-shell-topnav).
+	 * Layout student folosește aceleași clase (.va-topnav) — fără acest scoping,
+	 * după ce se încarcă CSS admin, logo-ul din topnav student dispare pe desktop.
+	 */
+	.va-shell:not(.va-shell-topnav) .modern-topnav .va-logo-text,
+	.va-shell:not(.va-shell-topnav) .modern-topnav .va-logo-icon-img,
+	.va-shell:not(.va-shell-topnav) .admin-topnav .va-logo-text,
+	.va-shell:not(.va-shell-topnav) .admin-topnav .va-logo-icon-img,
+	.va-shell:not(.va-shell-topnav) .va-topnav .va-logo-text,
+	.va-shell:not(.va-shell-topnav) .va-topnav .va-logo-icon-img {
+		display: none !important;
+		visibility: hidden !important;
+		opacity: 0 !important;
+		width: 0 !important;
+		height: 0 !important;
+		overflow: hidden !important;
+	}
+
+	/* Titlu brand în topnav doar în shell admin */
+	.va-shell:not(.va-shell-topnav) .modern-topnav .va-topnav-page-title,
+	.va-shell:not(.va-shell-topnav) .admin-topnav .va-topnav-page-title,
+	.va-shell:not(.va-shell-topnav) .va-topnav .va-topnav-page-title {
+		display: none !important;
+		visibility: hidden !important;
+		opacity: 0 !important;
+	}
+	/* Hide mobile hamburger button on desktop */
+	.mobile-sidebar-toggle {
+		display: none !important;
+	}
+
+	/* Hide backdrop on desktop */
+	.sidebar-backdrop {
+		display: none !important;
+	}
+
+	/* Remove mobile overlay positioning - let original styles work */
+	.sidebar,
+	.modern-sidebar {
+		left: 0 !important;
+		max-width: none !important;
+	}
+}

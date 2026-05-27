@@ -1,0 +1,10 @@
+---
+alwaysApply: true
+---
+# Enforcement Rules
+
+- If UI is not responsive → FIX immediately
+- If layout breaks on mobile → REFACTOR
+- If UI is cluttered → SIMPLIFY
+- If spacing is inconsistent → STANDARDIZE
+- If component is reused incorrectly → RESTRUCTURE

@@ -1,0 +1,12 @@
+---
+alwaysApply: true
+---
+# Mobile First Rules
+
+- Design starts from 320px width
+- Mobile layout is primary layout
+- Content must stack vertically on small screens
+- No horizontal scrolling allowed
+
+- Use responsive flex/grid layouts
+- Break layouts only when necessary

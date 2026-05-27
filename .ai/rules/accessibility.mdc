@@ -1,0 +1,12 @@
+---
+alwaysApply: true
+---
+# Accessibility Rules
+
+- Maintain readable font sizes
+- Ensure proper contrast ratios
+- Touch targets minimum 44px
+- UI must be usable without precision clicks
+
+- Avoid low-contrast text
+- Ensure clear visual hierarchy

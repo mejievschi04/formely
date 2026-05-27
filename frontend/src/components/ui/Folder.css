@@ -1,0 +1,203 @@
+.rb-folder-wrap {
+	width: 100px;
+	height: 90px;
+	transform-origin: center;
+}
+
+.rb-folder {
+	transition: transform 0.2s ease-in;
+	cursor: pointer;
+	width: 100px;
+	height: 90px;
+}
+
+.rb-folder:not(.rb-folder--has-cover):hover {
+	transform: translateY(-8px);
+}
+
+.rb-folder--has-cover:hover {
+	transform: none;
+}
+
+.rb-folder:hover .rb-paper {
+	transform: translate(-50%, 0%);
+}
+
+/* Foldere simple (fără copertă): două clapete skew */
+.rb-folder:not(.rb-folder--has-cover):hover .rb-folder__front {
+	transform: skew(15deg) scaleY(0.6);
+}
+
+.rb-folder:not(.rb-folder--has-cover):hover .right {
+	transform: skew(-15deg) scaleY(0.6);
+}
+
+.rb-folder:not(.rb-folder--has-cover).open {
+	transform: translateY(-8px);
+}
+
+.rb-folder:not(.rb-folder--has-cover).open .rb-paper:nth-child(1) {
+	transform: translate(
+			calc(-120% + var(--rb-magnet-x, 0px)),
+			calc(-70% + var(--rb-magnet-y, 0px))
+		)
+		rotateZ(-15deg);
+}
+
+.rb-folder:not(.rb-folder--has-cover).open .rb-paper:nth-child(1):hover {
+	transform: translate(
+			calc(-120% + var(--rb-magnet-x, 0px)),
+			calc(-70% + var(--rb-magnet-y, 0px))
+		)
+		rotateZ(-15deg)
+		scale(1.1);
+}
+
+.rb-folder:not(.rb-folder--has-cover).open .rb-paper:nth-child(2) {
+	height: 80%;
+	transform: translate(calc(10% + var(--rb-magnet-x, 0px)), calc(-70% + var(--rb-magnet-y, 0px)))
+		rotateZ(15deg);
+}
+
+.rb-folder:not(.rb-folder--has-cover).open .rb-paper:nth-child(2):hover {
+	transform: translate(calc(10% + var(--rb-magnet-x, 0px)), calc(-70% + var(--rb-magnet-y, 0px)))
+		rotateZ(15deg)
+		scale(1.1);
+}
+
+.rb-folder:not(.rb-folder--has-cover).open .rb-paper:nth-child(3) {
+	height: 80%;
+	transform: translate(
+			calc(-50% + var(--rb-magnet-x, 0px)),
+			calc(-100% + var(--rb-magnet-y, 0px))
+		)
+		rotateZ(5deg);
+}
+
+.rb-folder:not(.rb-folder--has-cover).open .rb-paper:nth-child(3):hover {
+	transform: translate(
+			calc(-50% + var(--rb-magnet-x, 0px)),
+			calc(-100% + var(--rb-magnet-y, 0px))
+		)
+		rotateZ(5deg)
+		scale(1.1);
+}
+
+.rb-folder:not(.rb-folder--has-cover).open .rb-folder__front {
+	transform: skew(15deg) scaleY(0.6);
+}
+
+.rb-folder:not(.rb-folder--has-cover).open .right {
+	transform: skew(-15deg) scaleY(0.6);
+}
+
+.rb-folder__back {
+	position: relative;
+	width: 100px;
+	height: 80px;
+	background: var(--rb-folder-back-color, #4785ff);
+	border-radius: 0 10px 10px 10px;
+}
+
+.rb-folder--has-cover .rb-folder__back {
+	transform-style: preserve-3d;
+	perspective: 340px;
+	perspective-origin: 50% 100%;
+	overflow: visible;
+}
+
+.rb-folder__back::after {
+	position: absolute;
+	z-index: 0;
+	bottom: 98%;
+	left: 0;
+	content: '';
+	width: 30px;
+	height: 10px;
+	background: var(--rb-folder-back-color, #4785ff);
+	border-radius: 5px 5px 0 0;
+}
+
+.rb-paper {
+	position: absolute;
+	z-index: 2;
+	bottom: 10%;
+	left: 50%;
+	width: 70%;
+	height: 80%;
+	display: grid;
+	place-items: center;
+	overflow: hidden;
+	background: var(--rb-paper-1, #e6e6e6);
+	border-radius: 10px;
+	transform: translate(-50%, 10%);
+	transition: transform 0.3s ease-in-out, height 0.3s ease-in-out;
+}
+
+.rb-paper:nth-child(2) {
+	width: 80%;
+	height: 70%;
+	background: var(--rb-paper-2, #f2f2f2);
+}
+
+.rb-paper:nth-child(3) {
+	width: 90%;
+	height: 60%;
+	background: var(--rb-paper-3, #ffffff);
+}
+
+.rb-folder__front {
+	position: absolute;
+	z-index: 3;
+	width: 100%;
+	height: 100%;
+	background: var(--rb-folder-color, #70a1ff);
+	background-position: center;
+	background-size: cover;
+	border-radius: 5px 10px 10px 10px;
+	transform-origin: bottom center;
+	transition: transform 0.35s ease-in-out;
+}
+
+/* Copertă mapă: o singură imagine, se ridică ca un capac (fără dublare) */
+.rb-folder__front--image {
+	background-image:
+		linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.12)),
+		var(--rb-folder-front-image);
+	background-size: cover;
+	background-position: center;
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.rb-folder__front--lid {
+	transform-origin: bottom center;
+	backface-visibility: hidden;
+}
+
+.rb-folder--has-cover:hover .rb-folder__front--lid,
+.rb-folder--has-cover.open .rb-folder__front--lid {
+	transform: rotateX(-50deg);
+}
+
+/* Mape cu copertă: hârtiile nu ies */
+.rb-folder--has-cover:hover .rb-paper,
+.rb-folder--has-cover.open .rb-paper,
+.rb-folder--has-cover.open .rb-paper:nth-child(1),
+.rb-folder--has-cover.open .rb-paper:nth-child(2),
+.rb-folder--has-cover.open .rb-paper:nth-child(3) {
+	transform: translate(-50%, 10%);
+}
+
+.rb-folder--has-cover.open .rb-paper:nth-child(2) {
+	height: 70%;
+}
+
+.rb-folder--has-cover.open .rb-paper:nth-child(3) {
+	height: 60%;
+}
+
+.rb-folder--has-cover.open .rb-paper:nth-child(1):hover,
+.rb-folder--has-cover.open .rb-paper:nth-child(2):hover,
+.rb-folder--has-cover.open .rb-paper:nth-child(3):hover {
+	transform: translate(-50%, 10%);
+}

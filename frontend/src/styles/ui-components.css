@@ -1,0 +1,385 @@
+/* ============================================
+   UI COMPONENTS - CourseCard, StatCard, etc.
+   Unified & Standardized using Design System
+   ============================================ */
+
+/* ============================================
+   1. STAT CARD (Pro Dashboard)
+   ============================================ */
+.pro-stat-card {
+	background-color: var(--bg-elevated);
+	border: 2px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	padding: var(--space-6);
+	cursor: pointer;
+	transition: all var(--transition-base);
+	text-align: left;
+	width: 100%;
+	box-shadow: var(--shadow-sm);
+}
+
+.pro-stat-card:hover {
+	box-shadow: var(--shadow-md);
+	border-color: var(--border-accent);
+	transform: translateY(-2px);
+}
+
+.pro-stat-card:active {
+	transform: translateY(0);
+}
+
+.pro-stat-card-inner {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--space-4);
+}
+
+.pro-stat-card-icon {
+	width: 48px;
+	height: 48px;
+	border-radius: var(--radius-lg);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: var(--font-size-xl);
+	flex-shrink: 0;
+}
+
+.pro-stat-card-body {
+	flex: 1;
+	min-width: 0;
+}
+
+.pro-stat-card-value {
+	font-size: var(--font-size-2xl);
+	font-weight: var(--font-weight-bold);
+	color: var(--text-primary);
+	margin: 0 0 var(--space-1) 0;
+	line-height: 1.2;
+}
+
+.pro-stat-card-title {
+	font-size: var(--font-size-base);
+	font-weight: var(--font-weight-medium);
+	color: var(--text-primary);
+	margin: 0 0 var(--space-1) 0;
+}
+
+.pro-stat-card-subtitle {
+	font-size: var(--font-size-sm);
+	color: var(--text-tertiary);
+	margin: 0;
+	opacity: 0.7;
+}
+
+/* ============================================
+   2. COURSE CARD (Pro Courses)
+   ============================================ */
+.pro-course-card {
+	background-color: var(--bg-elevated);
+	border-radius: var(--radius-lg);
+	overflow: hidden;
+	border: 1px solid var(--border-primary);
+	box-shadow: var(--shadow-sm);
+	transition: all var(--transition-base);
+	cursor: pointer;
+	display: flex;
+	flex-direction: column;
+}
+
+.pro-course-card:hover {
+	box-shadow: var(--shadow-md);
+	border-color: var(--border-secondary);
+	transform: translateY(-2px);
+}
+
+.pro-course-card:focus {
+	outline: 2px solid var(--border-focus);
+	outline-offset: 2px;
+}
+
+.pro-course-card-media {
+	position: relative;
+	width: 100%;
+	height: 200px;
+	overflow: hidden;
+	background-color: var(--bg-secondary);
+}
+
+.pro-course-card-media img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	transition: transform var(--transition-smooth);
+}
+
+.pro-course-card:hover .pro-course-card-media img {
+	transform: scale(1.05);
+}
+
+.pro-course-card-overlay {
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(to bottom, transparent, rgba(11, 18, 32, 0.8));
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	padding: var(--space-4);
+	opacity: 0;
+	transition: opacity var(--transition-base);
+}
+
+.pro-course-card:hover .pro-course-card-overlay {
+	opacity: 1;
+}
+
+.pro-course-card-meta {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.pro-course-category {
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-medium);
+	color: var(--text-primary);
+	background-color: rgba(var(--formely-shadow-rgb), 0.2);
+	padding: var(--space-1) var(--space-3);
+	border-radius: var(--radius-full);
+	margin: 0;
+}
+
+.pro-course-popularity {
+	font-size: var(--font-size-sm);
+	color: var(--text-primary);
+	margin: 0;
+}
+
+.pro-course-start {
+	padding: var(--space-3) var(--space-5);
+	background-color: var(--btn-primary-bg);
+	color: var(--btn-primary-text);
+	border: 1px solid var(--btn-primary-border);
+	border-radius: var(--radius-lg);
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-semibold);
+	cursor: pointer;
+	transition: all var(--transition-base);
+	align-self: flex-start;
+}
+
+.pro-course-start:hover {
+	background-color: var(--btn-primary-hover);
+	box-shadow: var(--shadow-md);
+}
+
+.pro-course-card-body {
+	padding: var(--space-6);
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
+
+.pro-course-title {
+	font-size: var(--font-size-lg);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	margin: 0 0 var(--space-2) 0;
+	line-height: var(--line-height-tight);
+}
+
+.pro-course-instructor {
+	font-size: var(--font-size-sm);
+	color: var(--text-tertiary);
+	margin: 0 0 var(--space-4) 0;
+}
+
+.pro-course-progress {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	margin-top: auto;
+}
+
+.pro-course-progress-label {
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	min-width: 45px;
+	text-align: right;
+}
+
+/* ============================================
+   3. PROGRESS CHART
+   ============================================ */
+.progress-chart {
+	display: flex;
+	align-items: center;
+	gap: var(--space-1);
+	flex: 1;
+	height: 8px;
+}
+
+.progress-chart-bar {
+	flex: 1;
+	height: 100%;
+	background-color: var(--bg-secondary);
+	border-radius: var(--radius-full);
+	overflow: hidden;
+	position: relative;
+}
+
+.progress-chart-fill {
+	position: absolute;
+	top: 0;
+	left: 0;
+	height: 100%;
+	background-color: var(--color-primary);
+	border-radius: var(--radius-full);
+	transition: width var(--transition-smooth);
+}
+
+/* ============================================
+   4. WIDGET COMPONENTS
+   ============================================ */
+.resume-learning-widget,
+.course-progress-widget,
+.incomplete-lessons-widget,
+.pending-exams-widget {
+	background-color: var(--bg-elevated);
+	border-radius: var(--radius-lg);
+	padding: var(--space-6);
+	border: 1px solid var(--border-primary);
+	box-shadow: var(--shadow-sm);
+	transition: all var(--transition-base);
+}
+
+.resume-learning-widget:hover,
+.course-progress-widget:hover,
+.incomplete-lessons-widget:hover,
+.pending-exams-widget:hover {
+	box-shadow: var(--shadow-md);
+	border-color: var(--border-secondary);
+}
+
+.widget-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: var(--space-4);
+}
+
+.widget-title {
+	font-size: var(--font-size-lg);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	margin: 0;
+}
+
+.widget-content {
+	color: var(--text-secondary);
+}
+
+/* ============================================
+   5. LOADING STATES
+   ============================================ */
+.page-loading {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	min-height: 60vh;
+	gap: var(--space-4);
+	color: var(--text-secondary);
+}
+
+.page-loading-spinner {
+	width: 40px;
+	height: 40px;
+	border: 3px solid var(--border-primary);
+	border-top-color: var(--color-primary);
+	border-radius: var(--radius-full);
+	animation: spin 0.8s linear infinite;
+}
+
+.page-loading-text {
+	font-size: var(--font-size-base);
+	color: var(--text-tertiary);
+}
+
+/* ============================================
+   6. ERROR STATES
+   ============================================ */
+.page-error {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	min-height: 60vh;
+	gap: var(--space-4);
+	text-align: center;
+	padding: var(--space-8);
+}
+
+.page-error-icon {
+	font-size: 4rem;
+	opacity: 0.5;
+	margin-bottom: var(--space-2);
+}
+
+.page-error-title {
+	font-size: var(--font-size-xl);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	margin: 0 0 var(--space-2) 0;
+}
+
+.page-error-message {
+	font-size: var(--font-size-base);
+	color: var(--text-tertiary);
+	margin: 0 0 var(--space-4) 0;
+}
+
+.page-error-button {
+	padding: var(--space-3) var(--space-6);
+	background-color: var(--btn-primary-bg);
+	color: var(--btn-primary-text);
+	border: 1px solid var(--btn-primary-border);
+	border-radius: var(--radius-lg);
+	font-size: var(--font-size-base);
+	font-weight: var(--font-weight-medium);
+	cursor: pointer;
+	transition: all var(--transition-base);
+}
+
+.page-error-button:hover {
+	background-color: var(--btn-primary-hover);
+	box-shadow: var(--shadow-md);
+}
+
+/* ============================================
+   7. RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+	.pro-stat-card {
+		padding: var(--space-4);
+	}
+
+	.pro-stat-card-icon {
+		width: 40px;
+		height: 40px;
+		font-size: var(--font-size-lg);
+	}
+
+	.pro-stat-card-value {
+		font-size: var(--font-size-xl);
+	}
+
+	.pro-course-card-media {
+		height: 160px;
+	}
+
+	.pro-course-card-body {
+		padding: var(--space-4);
+	}
+}

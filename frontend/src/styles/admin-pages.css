@@ -1,0 +1,1101 @@
+/* ============================================
+   ADMIN PAGES & COMPONENTS - Complete Styling
+   All admin-specific pages and components
+   ============================================ */
+
+/* ============================================
+   1. ADMIN COMMON CLASSES
+   ============================================ */
+.va-main {
+	padding: var(--space-8);
+	background-color: var(--bg-primary);
+	min-height: 100vh;
+}
+
+.va-card {
+	background-color: var(--bg-elevated);
+	border-radius: var(--radius-lg);
+	padding: var(--space-6);
+	border: 1px solid var(--border-primary);
+	box-shadow: var(--shadow-sm);
+	transition: all var(--transition-base);
+}
+
+.va-card:hover {
+	box-shadow: var(--shadow-md);
+	border-color: var(--border-secondary);
+}
+
+.va-card-body {
+	padding: 0;
+}
+
+.va-card-title {
+	font-size: var(--font-size-xl);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	margin: 0 0 var(--space-4) 0;
+}
+
+.va-btn {
+	padding: var(--space-3) var(--space-6);
+	border-radius: var(--radius-lg);
+	font-size: var(--font-size-base);
+	font-weight: var(--font-weight-medium);
+	cursor: pointer;
+	transition: all var(--transition-base);
+	border: none;
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+}
+
+.va-btn-primary {
+	background-color: var(--btn-primary-bg);
+	color: var(--btn-primary-text);
+	border: 1px solid var(--btn-primary-border);
+}
+
+.va-btn-primary:hover {
+	background-color: var(--btn-primary-hover);
+	box-shadow: var(--shadow-md);
+}
+
+/* Light theme - yellow background with black text */
+[data-theme="light"] .va-btn-primary {
+	background-color: var(--color-primary);
+	color: var(--text-inverse);
+	border: 1px solid var(--color-primary);
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .va-btn-primary:hover {
+	background-color: var(--color-primary-hover);
+	border-color: var(--color-primary-hover);
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.va-btn-secondary {
+	background-color: var(--btn-secondary-bg);
+	color: var(--btn-secondary-text);
+	border: 1px solid var(--btn-secondary-border);
+}
+
+.va-btn-secondary:hover {
+	background-color: var(--btn-secondary-hover);
+}
+
+/* ============================================
+   2. ADMIN COURSES PAGE
+   ============================================ */
+.admin-courses-page {
+	padding: var(--space-8);
+	background-color: var(--bg-primary);
+	min-height: 100vh;
+}
+
+.admin-courses-header {
+	margin-bottom: var(--space-8);
+}
+
+.admin-courses-filters {
+	display: flex;
+	align-items: center;
+	gap: var(--space-4);
+	flex-wrap: wrap;
+}
+.admin-courses-toolbar .admin-courses-filters {
+	margin-bottom: 0;
+}
+
+.admin-courses-filter-select {
+	padding: var(--space-3) var(--space-4);
+	background-color: var(--bg-secondary);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	color: var(--text-primary);
+	font-size: var(--font-size-sm);
+	font-family: var(--font-family);
+	cursor: pointer;
+	transition: all var(--transition-base);
+	appearance: none;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23FFEE00' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 0.75rem center;
+	background-size: 1em;
+	padding-right: 2.5rem;
+	min-width: 120px;
+	height: 40px;
+}
+
+.admin-courses-filter-select:hover {
+	border-color: var(--border-secondary);
+	background-color: var(--bg-elevated);
+}
+
+.admin-courses-filter-select:focus {
+	outline: none;
+	border-color: var(--border-focus);
+	box-shadow: var(--shadow-focus);
+	background-color: var(--bg-elevated);
+}
+
+.admin-courses-filter-select option {
+	background-color: var(--bg-elevated);
+	color: var(--text-primary);
+	padding: var(--space-2);
+}
+
+.admin-courses-view-toggle {
+	display: flex;
+	align-items: center;
+	gap: var(--space-1);
+	background-color: var(--bg-secondary);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	padding: var(--space-1);
+}
+
+.admin-courses-view-toggle button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	background-color: transparent;
+	border: none;
+	border-radius: var(--radius-md);
+	color: var(--text-tertiary);
+	cursor: pointer;
+	transition: all var(--transition-base);
+}
+
+.admin-courses-view-toggle button:hover {
+	background-color: var(--bg-elevated);
+	color: var(--text-primary);
+}
+
+.admin-courses-view-toggle button.active {
+	background-color: var(--color-primary);
+	color: var(--text-inverse);
+}
+
+.admin-courses-view-toggle button svg {
+	width: 18px;
+	height: 18px;
+	stroke: currentColor;
+}
+
+.admin-courses-view-toggle button.active svg {
+	stroke: var(--text-inverse);
+}
+
+.admin-courses-search {
+	flex: 1;
+	min-width: 250px;
+	position: relative;
+}
+
+.admin-courses-search-input {
+	width: 100%;
+	padding: var(--space-3) var(--space-4) var(--space-3) var(--space-10);
+	background-color: var(--bg-elevated);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	color: var(--text-primary);
+	font-size: var(--font-size-base);
+	transition: all var(--transition-base);
+}
+
+.admin-courses-search-input:focus {
+	outline: none;
+	border-color: var(--border-focus);
+	box-shadow: var(--shadow-focus);
+}
+
+.admin-courses-grid {
+	display: flex;
+	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+	gap: var(--space-6);
+	align-items: stretch;
+}
+
+.admin-courses-grid-container {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+	gap: var(--space-6);
+	width: 100%;
+	align-items: stretch;
+	padding-top: 4px;
+}
+
+.admin-courses-grid-container > * {
+	min-width: 0;
+}
+
+/* Cardurile de curs folosesc design tip dosar din admin-components-modern.css */
+
+/* ============================================
+   3. ADMIN USERS PAGE
+   ============================================ */
+.admin-users-page {
+	padding: var(--space-8);
+	background-color: var(--bg-primary);
+	min-height: 100vh;
+}
+
+.admin-users-table {
+	width: 100%;
+	background-color: var(--bg-elevated);
+	border-radius: var(--radius-lg);
+	border: 1px solid var(--border-primary);
+	overflow: hidden;
+}
+
+.admin-users-table-header {
+	display: grid;
+	grid-template-columns: 40px 1fr 150px 120px 100px 120px;
+	gap: var(--space-4);
+	padding: var(--space-4) var(--space-6);
+	background-color: var(--bg-secondary);
+	border-bottom: 1px solid var(--border-primary);
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+}
+
+.admin-users-table-row {
+	display: grid;
+	grid-template-columns: 40px 1fr 150px 120px 100px 120px;
+	gap: var(--space-4);
+	padding: var(--space-4) var(--space-6);
+	border-bottom: 1px solid var(--border-primary);
+	transition: all var(--transition-base);
+}
+
+.admin-users-table-row:hover {
+	background-color: var(--bg-secondary);
+}
+
+.admin-users-table-row:last-child {
+	border-bottom: none;
+}
+
+/* ============================================
+   4. ADMIN EVENTS PAGE
+   ============================================ */
+.admin-events-page {
+	padding: var(--space-8);
+	background-color: var(--bg-primary);
+	min-height: 100vh;
+}
+
+.admin-events-header {
+	margin-bottom: var(--space-8);
+}
+
+.admin-events-filters {
+	display: flex;
+	align-items: center;
+	gap: var(--space-4);
+	margin-bottom: var(--space-6);
+	flex-wrap: wrap;
+}
+
+.admin-events-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+	gap: var(--space-6);
+}
+
+.admin-event-card {
+	background-color: var(--bg-elevated);
+	border-radius: var(--radius-lg);
+	padding: var(--space-6);
+	border: 1px solid var(--border-primary);
+	box-shadow: var(--shadow-sm);
+	transition: all var(--transition-base);
+}
+
+.admin-event-card:hover {
+	box-shadow: var(--shadow-md);
+	border-color: var(--border-secondary);
+	transform: translateY(-2px);
+}
+
+/* ============================================
+   5. ADMIN SETTINGS PAGE
+   ============================================ */
+.admin-settings-page {
+	padding: var(--space-8);
+	background-color: var(--bg-primary);
+	min-height: 100vh;
+}
+
+.admin-settings-section {
+	background-color: var(--bg-elevated);
+	border-radius: var(--radius-lg);
+	padding: var(--space-6);
+	border: 1px solid var(--border-primary);
+	box-shadow: var(--shadow-sm);
+	margin-bottom: var(--space-6);
+}
+
+.admin-settings-section-title {
+	font-size: var(--font-size-xl);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	margin: 0 0 var(--space-4) 0;
+}
+
+.admin-settings-form-group {
+	margin-bottom: var(--space-4);
+}
+
+.admin-settings-label {
+	display: block;
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-medium);
+	color: var(--text-primary);
+	margin-bottom: var(--space-2);
+}
+
+.admin-settings-input {
+	width: 100%;
+	padding: var(--space-3) var(--space-4);
+	background-color: var(--bg-secondary);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	color: var(--text-primary);
+	font-size: var(--font-size-base);
+	transition: all var(--transition-base);
+}
+
+.admin-settings-input:focus {
+	outline: none;
+	border-color: var(--border-focus);
+	box-shadow: var(--shadow-focus);
+}
+
+/* ============================================
+   8. ADMIN TEAMS PAGE
+   ============================================ */
+.admin-teams-page {
+	padding: var(--space-8);
+	background-color: var(--bg-primary);
+	min-height: 100vh;
+}
+
+.admin-teams-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+	gap: var(--space-6);
+}
+
+.admin-team-card {
+	background-color: var(--bg-elevated);
+	border-radius: var(--radius-lg);
+	padding: var(--space-6);
+	border: 1px solid var(--border-primary);
+	box-shadow: var(--shadow-sm);
+	transition: all var(--transition-base);
+}
+
+.admin-team-card:hover {
+	box-shadow: var(--shadow-md);
+	border-color: var(--border-secondary);
+	transform: translateY(-2px);
+}
+
+/* ============================================
+   9. ADMIN LESSONS PAGE
+   ============================================ */
+.admin-lessons-page {
+	padding: var(--space-8);
+	background-color: var(--bg-primary);
+	min-height: 100vh;
+}
+
+.admin-lessons-header {
+	margin-bottom: var(--space-8);
+}
+
+.admin-lessons-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+	gap: var(--space-6);
+}
+
+.admin-lesson-card {
+	background-color: var(--bg-elevated);
+	border-radius: var(--radius-lg);
+	padding: var(--space-6);
+	border: 1px solid var(--border-primary);
+	box-shadow: var(--shadow-sm);
+	transition: all var(--transition-base);
+}
+
+.admin-lesson-card:hover {
+	box-shadow: var(--shadow-md);
+	border-color: var(--border-secondary);
+	transform: translateY(-2px);
+}
+
+/* ============================================
+   10. ADMIN ACTIVITY LOGS PAGE
+   ============================================ */
+.admin-activity-logs-page {
+	padding: var(--space-8);
+	background-color: var(--bg-primary);
+	min-height: 100vh;
+}
+
+.admin-activity-logs-table {
+	width: 100%;
+	background-color: var(--bg-elevated);
+	border-radius: var(--radius-lg);
+	border: 1px solid var(--border-primary);
+	overflow: hidden;
+}
+
+.admin-activity-logs-header {
+	display: grid;
+	grid-template-columns: 1fr 150px 120px 200px;
+	gap: var(--space-4);
+	padding: var(--space-4) var(--space-6);
+	background-color: var(--bg-secondary);
+	border-bottom: 1px solid var(--border-primary);
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+}
+
+.admin-activity-logs-row {
+	display: grid;
+	grid-template-columns: 1fr 150px 120px 200px;
+	gap: var(--space-4);
+	padding: var(--space-4) var(--space-6);
+	border-bottom: 1px solid var(--border-primary);
+	transition: all var(--transition-base);
+}
+
+.admin-activity-logs-row:hover {
+	background-color: var(--bg-secondary);
+}
+
+.admin-activity-logs-row:last-child {
+	border-bottom: none;
+}
+
+.admin-activity-logs-filters {
+	background-color: var(--bg-elevated);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	padding: var(--space-6);
+	margin-bottom: var(--space-6);
+	box-shadow: var(--shadow-sm);
+}
+
+.admin-activity-logs-filters-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: var(--space-4);
+}
+
+.admin-activity-logs-filter-group {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+}
+
+.admin-activity-logs-filter-label {
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-medium);
+	color: var(--text-secondary);
+}
+
+.admin-activity-logs-filter-input {
+	width: 100%;
+	padding: var(--space-2) var(--space-3);
+	border-radius: var(--radius-md);
+	border: 1px solid var(--border-primary);
+	background: var(--bg-primary);
+	color: var(--text-primary);
+	font-size: var(--font-size-sm);
+}
+
+.admin-activity-logs-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+}
+
+.admin-activity-logs-item {
+	background-color: var(--bg-elevated);
+	border-radius: var(--radius-lg);
+	border: 1px solid var(--border-primary);
+	box-shadow: var(--shadow-sm);
+	overflow: hidden;
+	transition: border-color var(--transition-base);
+}
+
+.admin-activity-logs-item:hover {
+	border-color: var(--border-secondary);
+}
+
+.admin-activity-logs-item-toggle {
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	border: none;
+	background: transparent;
+	text-align: left;
+	cursor: pointer;
+	color: inherit;
+	font: inherit;
+}
+
+.admin-activity-logs-item-toggle:focus-visible {
+	outline: 2px solid var(--color-info, #3b82f6);
+	outline-offset: 2px;
+}
+
+.admin-activity-logs-item-content {
+	display: flex;
+	gap: var(--space-4);
+	padding: var(--space-4) var(--space-5);
+	align-items: flex-start;
+}
+
+.admin-activity-logs-icon {
+	font-size: 1.5rem;
+	line-height: 1;
+	flex-shrink: 0;
+}
+
+.admin-activity-logs-main {
+	flex: 1;
+	min-width: 0;
+}
+
+.admin-activity-logs-card-header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-2) var(--space-3);
+	margin-bottom: var(--space-2);
+}
+
+.admin-activity-logs-description {
+	font-weight: var(--font-weight-medium);
+	color: var(--text-primary);
+	flex: 1 1 200px;
+	min-width: 0;
+}
+
+.admin-activity-logs-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px var(--space-2);
+	border-radius: var(--radius-sm);
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-medium);
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.admin-activity-logs-badge.action {
+	background: rgba(59, 130, 246, 0.15);
+	color: var(--color-info, #60a5fa);
+}
+
+.admin-activity-logs-badge.model {
+	background: var(--bg-secondary);
+	color: var(--text-secondary);
+}
+
+.admin-activity-logs-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-3);
+	font-size: var(--font-size-xs);
+	color: var(--text-secondary);
+}
+
+.admin-activity-logs-meta-item {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-1);
+}
+
+.admin-activity-logs-chevron {
+	margin-left: auto;
+	color: var(--text-tertiary, var(--text-secondary));
+}
+
+.admin-activity-logs-detail {
+	padding: 0 var(--space-5) var(--space-5);
+	padding-top: 0;
+	border-top: 1px solid var(--border-primary);
+	margin-top: 0;
+}
+
+.admin-activity-logs-detail-tech {
+	font-size: var(--font-size-xs);
+	color: var(--text-secondary);
+	margin: var(--space-3) 0 var(--space-2);
+}
+
+.admin-activity-logs-detail-tech code {
+	font-size: 0.85em;
+	word-break: break-all;
+}
+
+.admin-activity-logs-detail-desc {
+	font-size: var(--font-size-sm);
+	color: var(--text-primary);
+	margin: 0 0 var(--space-2);
+	white-space: pre-wrap;
+}
+
+.admin-activity-logs-detail-ua {
+	margin: 0;
+	opacity: 0.85;
+	word-break: break-all;
+}
+
+.admin-activity-logs-json-block {
+	margin-top: var(--space-3);
+}
+
+.admin-activity-logs-json-block strong {
+	display: block;
+	font-size: var(--font-size-xs);
+	margin-bottom: var(--space-2);
+	color: var(--text-secondary);
+}
+
+.admin-activity-logs-json-block pre {
+	margin: 0;
+	padding: var(--space-3);
+	border-radius: var(--radius-md);
+	background: var(--bg-secondary);
+	border: 1px solid var(--border-primary);
+	font-size: 11px;
+	line-height: 1.45;
+	overflow-x: auto;
+	max-height: 280px;
+	overflow-y: auto;
+}
+
+.admin-activity-logs-empty {
+	text-align: center;
+	padding: var(--space-12) var(--space-6);
+	background: var(--bg-elevated);
+	border: 1px dashed var(--border-primary);
+	border-radius: var(--radius-lg);
+}
+
+.admin-activity-logs-empty-icon {
+	font-size: 2.5rem;
+	margin-bottom: var(--space-3);
+}
+
+.admin-activity-logs-empty-title {
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	margin-bottom: var(--space-2);
+}
+
+.admin-activity-logs-empty-text {
+	font-size: var(--font-size-sm);
+	color: var(--text-secondary);
+	max-width: 420px;
+	margin: 0 auto;
+}
+
+.admin-activity-logs-pagination {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-4);
+	margin-top: var(--space-8);
+	flex-wrap: wrap;
+}
+
+.admin-activity-logs-pagination-info {
+	font-size: var(--font-size-sm);
+	color: var(--text-secondary);
+}
+
+/* ============================================
+   11. ADMIN ALERTS PAGE
+   ============================================ */
+.admin-alerts-page {
+	padding: var(--space-8);
+	background-color: var(--bg-primary);
+	min-height: 100vh;
+}
+
+.admin-alerts-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-4);
+}
+
+.admin-alert-item {
+	background-color: var(--bg-elevated);
+	border-radius: var(--radius-lg);
+	padding: var(--space-6);
+	border: 1px solid var(--border-primary);
+	box-shadow: var(--shadow-sm);
+	transition: all var(--transition-base);
+}
+
+.admin-alert-item:hover {
+	box-shadow: var(--shadow-md);
+	border-color: var(--border-secondary);
+}
+
+.admin-alert-item.critical {
+	border-left: 4px solid var(--color-error);
+}
+
+.admin-alert-item.warning {
+	border-left: 4px solid var(--color-warning);
+}
+
+.admin-alert-item.info {
+	border-left: 4px solid var(--color-info);
+}
+
+/* ============================================
+   12. ADMIN TASKS PAGE
+   ============================================ */
+.admin-tasks-page {
+	padding: var(--space-8);
+	background-color: var(--bg-primary);
+	min-height: 100vh;
+}
+
+.admin-tasks-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-4);
+}
+
+.admin-task-item {
+	background-color: var(--bg-elevated);
+	border-radius: var(--radius-lg);
+	padding: var(--space-6);
+	border: 1px solid var(--border-primary);
+	box-shadow: var(--shadow-sm);
+	transition: all var(--transition-base);
+}
+
+.admin-task-item:hover {
+	box-shadow: var(--shadow-md);
+	border-color: var(--border-secondary);
+}
+
+/* ============================================
+   13. ADMIN TOP COURSES PAGE
+   ============================================ */
+.admin-top-courses-page {
+	padding: var(--space-8);
+	background-color: var(--bg-primary);
+	min-height: 100vh;
+}
+
+.admin-top-courses-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-4);
+}
+
+.admin-top-course-item {
+	background-color: var(--bg-elevated);
+	border-radius: var(--radius-lg);
+	padding: var(--space-6);
+	border: 1px solid var(--border-primary);
+	box-shadow: var(--shadow-sm);
+	transition: all var(--transition-base);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.admin-top-course-item:hover {
+	box-shadow: var(--shadow-md);
+	border-color: var(--border-secondary);
+}
+
+/* ============================================
+   14. ADMIN PROBLEMATIC COURSES PAGE
+   ============================================ */
+.admin-problematic-courses-page {
+	padding: var(--space-8);
+	background-color: var(--bg-primary);
+	min-height: 100vh;
+}
+
+.admin-problematic-courses-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-4);
+}
+
+.admin-problematic-course-item {
+	background-color: var(--bg-elevated);
+	border-radius: var(--radius-lg);
+	padding: var(--space-6);
+	border: 1px solid var(--border-primary);
+	border-left: 4px solid var(--color-error);
+	box-shadow: var(--shadow-sm);
+	transition: all var(--transition-base);
+}
+
+.admin-problematic-course-item:hover {
+	box-shadow: var(--shadow-md);
+	border-color: var(--border-secondary);
+}
+
+/* ============================================
+   15. ADMIN ACTIVITY PAGE
+   ============================================ */
+.admin-activity-page {
+	padding: var(--space-8);
+	background-color: var(--bg-primary);
+	min-height: 100vh;
+}
+
+.admin-activity-feed {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-4);
+}
+
+.admin-activity-item {
+	background-color: var(--bg-elevated);
+	border-radius: var(--radius-lg);
+	padding: var(--space-6);
+	border: 1px solid var(--border-primary);
+	box-shadow: var(--shadow-sm);
+	transition: all var(--transition-base);
+}
+
+.admin-activity-item:hover {
+	box-shadow: var(--shadow-md);
+	border-color: var(--border-secondary);
+}
+
+/* ============================================
+   16. RESPONSIVE
+   ============================================ */
+@media (max-width: 1024px) {
+	.admin-courses-grid-container > * {
+		flex: 0 0 calc(50% - var(--space-6) / 2);
+		min-width: 280px;
+	}
+	
+	.admin-events-grid,
+	.admin-teams-grid,
+	.admin-lessons-grid {
+		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	}
+}
+
+@media (max-width: 768px) {
+	.admin-courses-page,
+	.admin-users-page,
+	.admin-events-page,
+	.admin-settings-page,
+	.admin-teams-page,
+	.admin-lessons-page,
+	.admin-activity-logs-page,
+	.admin-alerts-page,
+	.admin-tasks-page,
+	.admin-top-courses-page,
+	.admin-problematic-courses-page,
+	.admin-activity-page {
+		padding: var(--space-4);
+	}
+
+	.admin-courses-grid-container {
+		flex-direction: column;
+	}
+	
+	.admin-courses-grid-container > * {
+		flex: 1 1 100%;
+		min-width: 100%;
+	}
+	
+	.admin-events-grid,
+	.admin-teams-grid,
+	.admin-lessons-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.admin-users-table-header,
+	.admin-users-table-row,
+	.admin-activity-logs-header,
+	.admin-activity-logs-row {
+		grid-template-columns: 1fr;
+		gap: var(--space-2);
+	}
+
+	.admin-activity-logs-filters-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.admin-activity-logs-item-content {
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+
+	.admin-activity-logs-card-header {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: var(--space-2);
+	}
+
+	.admin-activity-logs-pagination {
+		flex-direction: column;
+		gap: var(--space-3);
+	}
+}
+
+/* ============================================
+   LIGHT THEME - IMPROVED CONTRAST & VISIBILITY
+   ============================================ */
+
+[data-theme="light"] .va-main {
+	background-color: var(--bg-primary);
+}
+
+[data-theme="light"] .va-card {
+	background-color: var(--bg-elevated);
+	border-color: var(--border-primary);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .va-card:hover {
+	border-color: var(--border-secondary);
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .va-card-title {
+	color: var(--text-primary);
+}
+
+[data-theme="light"] .va-btn-secondary {
+	color: var(--text-primary);
+	border-color: var(--text-primary);
+}
+
+[data-theme="light"] .va-btn-secondary:hover {
+	background-color: rgba(31, 41, 55, 0.1);
+	border-color: var(--text-primary);
+	color: var(--text-primary);
+}
+
+[data-theme="light"] .admin-courses-page {
+	background-color: var(--bg-primary);
+}
+
+[data-theme="light"] .admin-courses-filter-select {
+	background-color: var(--bg-elevated);
+	border-color: var(--border-secondary);
+	color: var(--text-primary); /* WCAG AA: 15.8:1 contrast */
+}
+
+[data-theme="light"] .admin-courses-filter-select:hover {
+	background-color: var(--bg-secondary);
+	border-color: var(--text-tertiary);
+}
+
+[data-theme="light"] .admin-courses-filter-select:focus {
+	border-color: var(--color-primary);
+	background-color: var(--bg-elevated);
+}
+
+[data-theme="light"] .admin-courses-filter-select option {
+	background-color: var(--bg-elevated);
+	color: var(--text-primary); /* WCAG AA: 15.8:1 contrast */
+}
+
+[data-theme="light"] .admin-courses-view-toggle {
+	background-color: var(--bg-elevated);
+	border-color: var(--border-primary);
+}
+
+[data-theme="light"] .admin-courses-view-toggle button {
+	color: var(--text-secondary);
+}
+
+[data-theme="light"] .admin-courses-view-toggle button:hover {
+	background-color: var(--bg-secondary);
+	color: var(--text-primary);
+}
+
+[data-theme="light"] .admin-courses-view-toggle button.active {
+	background-color: var(--text-primary);
+	color: var(--color-white);
+}
+
+[data-theme="light"] .admin-course-table-row {
+	background-color: var(--bg-elevated);
+	border-bottom-color: var(--border-primary);
+}
+
+[data-theme="light"] .admin-course-table-row:hover {
+	background-color: var(--bg-secondary);
+}
+
+[data-theme="light"] .admin-course-table-row.selected {
+	background-color: rgba(31, 41, 55, 0.05);
+	border-left-color: var(--text-primary);
+}
+
+[data-theme="light"] .admin-course-table-title {
+	color: var(--text-primary);
+}
+
+[data-theme="light"] .admin-course-table-meta {
+	color: var(--text-secondary);
+}
+
+[data-theme="light"] .admin-course-table-metric-label {
+	color: var(--text-secondary);
+}
+
+[data-theme="light"] .admin-course-table-metric-value {
+	color: var(--text-primary);
+}
+
+[data-theme="light"] .admin-course-action-btn {
+	border-color: var(--border-secondary);
+	color: var(--text-secondary); /* WCAG AA: 6.1:1 contrast */
+	background-color: var(--bg-elevated);
+}
+
+[data-theme="light"] .admin-course-action-btn:hover {
+	background-color: var(--bg-secondary);
+	border-color: var(--text-tertiary);
+	color: var(--text-primary);
+}
+
+[data-theme="light"] .admin-course-action-btn-danger {
+	border-color: rgba(239, 68, 68, 0.5);
+	color: var(--color-error);
+}
+
+[data-theme="light"] .admin-course-action-btn-danger:hover {
+	background-color: rgba(239, 68, 68, 0.1);
+	border-color: var(--color-error);
+	color: var(--color-error);
+}

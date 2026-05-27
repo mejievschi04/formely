@@ -1,0 +1,17 @@
+---
+alwaysApply: true
+---
+# Component Rules
+
+- One responsibility per component
+- Components must be reusable
+- Separate UI from logic
+
+## Structure
+- Screen = layout container
+- Components = UI blocks
+- Hooks/services = logic layer
+
+## Rules
+- No duplicated UI components
+- No inline logic inside UI components

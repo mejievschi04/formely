@@ -1,0 +1,568 @@
+.admin-test-builder-page {
+	min-height: 100%;
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 70%, transparent) 0, transparent 300px),
+		var(--bg-primary);
+	padding: 18px;
+}
+
+.admin-test-builder-topbar {
+	display: flex;
+	align-items: center;
+	width: min(100%, 1360px);
+	margin: 0 auto 16px;
+}
+
+.admin-test-builder-back {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 38px;
+	padding: 0 12px;
+	border: 1px solid var(--border-primary);
+	border-radius: 8px;
+	background: var(--bg-elevated);
+	color: var(--text-primary);
+	font-weight: 750;
+	cursor: pointer;
+	box-shadow: var(--shadow-sm);
+}
+
+.admin-test-builder-back:hover {
+	border-color: color-mix(in srgb, var(--color-primary) 38%, var(--border-primary));
+	background: color-mix(in srgb, var(--color-primary) 8%, var(--bg-elevated));
+}
+
+.admin-test-builder-workspace {
+	margin-top: 0;
+	width: min(100%, 1360px);
+	margin-inline: auto;
+	background: transparent;
+	border: 0;
+	box-shadow: none;
+}
+
+.admin-test-builder-page .admin-course-builder-workspace-content {
+	padding: 0;
+	max-width: none;
+}
+
+.admin-test-builder-page .admin-course-builder-test-shell {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 18px;
+	align-items: start;
+}
+
+.admin-test-builder-page .admin-course-builder-test-overview-card {
+	display: grid;
+	gap: 18px;
+	padding: 18px 20px;
+	border: 1px solid var(--border-primary);
+	border-radius: 8px;
+	background: var(--bg-elevated);
+	box-shadow: var(--shadow-sm);
+}
+
+.admin-test-builder-page .admin-course-builder-test-shell-header {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: start;
+	gap: 18px;
+	padding-bottom: 16px;
+	border-bottom: 1px solid var(--border-primary);
+}
+
+.admin-test-builder-page .admin-course-builder-test-shell-header h2 {
+	margin: 0;
+	color: var(--text-primary);
+	font-size: 1.35rem;
+	font-weight: 800;
+	line-height: 1.18;
+	letter-spacing: 0;
+}
+
+.admin-test-builder-page .admin-course-builder-test-shell-header p {
+	margin: 8px 0 0;
+	color: var(--text-secondary);
+	font-size: 0.9rem;
+	line-height: 1.5;
+}
+
+.admin-test-builder-page .admin-course-builder-test-status-line {
+	margin-top: 12px;
+}
+
+.admin-test-builder-page .admin-course-builder-test-status-pill {
+	letter-spacing: 0;
+	border-radius: 999px;
+}
+
+.admin-test-builder-page .admin-course-builder-test-shell-actions {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.admin-test-builder-page .admin-course-builder-test-shell-actions .admin-btn {
+	width: auto;
+	min-width: 120px;
+	min-height: 40px;
+	border-radius: 8px;
+	font-weight: 800;
+}
+
+.admin-test-builder-page .admin-course-builder-test-summary-grid {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 10px;
+}
+
+.admin-test-builder-page .admin-course-builder-test-summary-grid > div {
+	display: grid;
+	gap: 4px;
+	padding: 10px;
+	border: 1px solid var(--border-primary);
+	border-radius: 8px;
+	background: var(--bg-primary);
+}
+
+.admin-test-builder-page .admin-course-builder-test-summary-grid span {
+	color: var(--text-tertiary);
+	font-size: 0.72rem;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: 0;
+}
+
+.admin-test-builder-page .admin-course-builder-test-summary-grid strong {
+	color: var(--text-primary);
+	font-size: 0.98rem;
+	line-height: 1.1;
+}
+
+.admin-test-builder-page .admin-course-builder-test-tabs {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0;
+	padding: 8px;
+	border: 1px solid var(--border-primary);
+	border-bottom: 0;
+	border-radius: 8px;
+	background: var(--bg-primary);
+}
+
+.admin-test-builder-page .admin-course-builder-test-tab {
+	width: auto;
+	flex: 1 1 180px;
+	min-height: 48px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0 12px;
+	border: 1px solid transparent;
+	border-radius: 8px;
+	background: transparent;
+	color: var(--text-secondary);
+	text-align: center;
+	letter-spacing: 0;
+}
+
+.admin-test-builder-page .admin-course-builder-test-tab.is-active,
+.admin-test-builder-page .admin-course-builder-test-tab:hover {
+	border-color: color-mix(in srgb, var(--color-primary) 45%, var(--border-primary));
+	background: color-mix(in srgb, var(--color-primary) 12%, var(--bg-primary));
+	color: var(--text-primary);
+	box-shadow: none;
+}
+
+.admin-test-builder-page .admin-course-builder-test-layout {
+	display: grid;
+	min-width: 0;
+	padding: 18px;
+	border: 1px solid var(--border-primary);
+	border-radius: 8px;
+	background: color-mix(in srgb, var(--bg-secondary) 64%, var(--bg-primary));
+}
+
+.admin-test-builder-page .admin-course-builder-test-main {
+	display: grid;
+	gap: 16px;
+	min-width: 0;
+}
+
+.admin-test-builder-page .admin-course-builder-test-questions-card,
+.admin-test-builder-page .admin-course-builder-test-settings {
+	display: grid;
+	gap: 16px;
+	padding: 20px;
+	border: 1px solid var(--border-primary);
+	border-radius: 8px;
+	background: var(--bg-elevated);
+	box-shadow: none;
+}
+
+.admin-test-builder-page .admin-course-builder-test-questions-header {
+	padding-bottom: 14px;
+	border-bottom: 1px solid var(--border-primary);
+}
+
+.admin-test-builder-page .admin-course-builder-test-questions-header span {
+	color: var(--text-primary);
+	font-size: 1.05rem;
+	font-weight: 800;
+}
+
+.admin-test-builder-page .admin-course-builder-test-question-list {
+	gap: 10px;
+}
+
+.admin-test-builder-page .admin-course-builder-test-question-item {
+	min-height: 0;
+	gap: 10px;
+	padding: 12px;
+	border: 1px solid var(--border-primary);
+	border-radius: 8px;
+	background: var(--bg-primary);
+	box-shadow: none;
+}
+
+.admin-test-builder-page .admin-course-builder-test-question-item.is-expanded {
+	background: var(--bg-elevated);
+	box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.admin-test-builder-page .admin-course-builder-test-question-item.is-collapsed {
+	min-height: 58px;
+	padding: 10px 12px;
+	background: var(--bg-primary);
+}
+
+.admin-test-builder-page .admin-course-builder-test-question-topline {
+	gap: 12px;
+}
+
+.admin-test-builder-page .admin-course-builder-test-question-badge,
+.admin-test-builder-page .admin-course-builder-test-question-badge-btn {
+	border-radius: 8px;
+	padding: 7px 10px;
+	font-size: 0.76rem;
+	letter-spacing: 0;
+}
+
+.admin-test-builder-page .admin-course-builder-test-question-top-actions {
+	gap: 8px;
+}
+
+.admin-test-builder-page .admin-course-builder-test-question-top-actions .admin-btn,
+.admin-test-builder-page .admin-course-builder-test-add-bottom .admin-btn,
+.admin-test-builder-page .admin-course-builder-test-answer-row .admin-btn {
+	min-height: 34px;
+	border-radius: 8px;
+	font-weight: 750;
+}
+
+.admin-test-builder-page .admin-course-builder-test-question-input,
+.admin-test-builder-page .admin-course-builder-test-question-desc,
+.admin-test-builder-page .admin-course-builder-test-answer-row input[type='text'],
+.admin-test-builder-page .admin-course-builder-test-field input,
+.admin-test-builder-page .admin-course-builder-test-field textarea,
+.admin-test-builder-page .admin-course-builder-test-field select {
+	border: 1px solid var(--border-primary);
+	border-radius: 8px;
+	background: var(--bg-primary);
+}
+
+.admin-test-builder-page .admin-course-builder-test-question-input {
+	min-height: 64px;
+}
+
+.admin-test-builder-page .admin-course-builder-test-question-desc {
+	min-height: 48px;
+}
+
+.admin-test-builder-page .admin-course-builder-test-question-answers {
+	gap: 8px;
+	padding: 10px;
+	border: 1px solid var(--border-primary);
+	border-radius: 8px;
+	background: color-mix(in srgb, var(--bg-secondary) 64%, var(--bg-primary));
+}
+
+.admin-test-builder-page .admin-course-builder-test-question-answers > p {
+	margin: 0 0 2px;
+	font-size: 0.88rem;
+}
+
+.admin-test-builder-page .admin-course-builder-test-answer-row {
+	gap: 10px;
+}
+
+.admin-test-builder-page .admin-course-builder-test-answer-row-ordering {
+	grid-template-columns: 32px minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 10px;
+	padding: 6px;
+	border: 1px solid var(--border-primary);
+	border-radius: 8px;
+	background: var(--bg-elevated);
+}
+
+.admin-test-builder-page .admin-course-builder-test-order-index {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	border-radius: 8px;
+	background: var(--bg-secondary);
+	color: var(--text-primary);
+	font-size: 0.8rem;
+	font-weight: 800;
+}
+
+.admin-test-builder-page .admin-course-builder-test-answer-row-ordering input[type='text'] {
+	min-height: 34px;
+	padding: 7px 10px;
+}
+
+.admin-test-builder-page .admin-course-builder-test-order-actions {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.admin-test-builder-page .admin-course-builder-test-order-actions .admin-btn {
+	width: 30px;
+	min-width: 30px;
+	height: 30px;
+	min-height: 30px;
+	padding: 0;
+	border-radius: 8px;
+	font-size: 0.82rem;
+}
+
+.admin-test-builder-page .admin-course-builder-test-order-btn.is-move {
+	border-color: color-mix(in srgb, var(--color-primary) 26%, var(--border-primary));
+	background: color-mix(in srgb, var(--color-primary) 7%, var(--bg-elevated));
+	color: var(--text-primary);
+}
+
+.admin-test-builder-page .admin-course-builder-test-order-btn.is-move:hover:not(:disabled) {
+	border-color: color-mix(in srgb, var(--color-primary) 48%, var(--border-primary));
+	background: color-mix(in srgb, var(--color-primary) 14%, var(--bg-elevated));
+}
+
+.admin-test-builder-page .admin-course-builder-test-order-btn.is-delete {
+	color: #991b1b !important;
+	background-color: rgba(239, 68, 68, 0.14) !important;
+	border-color: rgba(220, 38, 38, 0.45) !important;
+}
+
+.admin-test-builder-page .admin-course-builder-test-order-btn.is-delete:hover:not(:disabled) {
+	color: #991b1b !important;
+	background-color: rgba(239, 68, 68, 0.22) !important;
+	border-color: rgba(220, 38, 38, 0.55) !important;
+}
+
+html[data-theme='dark'] .admin-test-builder-page .admin-course-builder-test-order-btn.is-delete {
+	color: #fecaca !important;
+	background-color: rgba(239, 68, 68, 0.18) !important;
+	border-color: rgba(248, 113, 113, 0.45) !important;
+}
+
+html[data-theme='dark'] .admin-test-builder-page .admin-course-builder-test-order-btn.is-delete:hover:not(:disabled) {
+	color: #fee2e2 !important;
+	background-color: rgba(239, 68, 68, 0.28) !important;
+	border-color: rgba(248, 113, 113, 0.55) !important;
+}
+
+.admin-test-builder-page .admin-course-builder-test-order-btn:disabled {
+	opacity: 0.38;
+	background: var(--bg-primary);
+	color: var(--text-tertiary);
+}
+
+.admin-test-builder-page .admin-course-builder-test-add-bottom {
+	justify-content: flex-start;
+	margin-top: 4px;
+	padding-top: 16px;
+	border-top: 1px solid var(--border-primary);
+}
+
+.admin-test-builder-page .admin-course-builder-test-settings {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	align-items: start;
+}
+
+.admin-test-builder-page .admin-course-builder-test-field {
+	display: grid;
+	gap: 8px;
+}
+
+.admin-test-builder-page .admin-course-builder-test-field:nth-child(1),
+.admin-test-builder-page .admin-course-builder-test-field:nth-child(2),
+.admin-test-builder-page .admin-course-builder-test-settings-section {
+	grid-column: 1 / -1;
+}
+
+.admin-test-builder-page .admin-course-builder-test-settings-section {
+	display: grid;
+	gap: 14px;
+	margin-top: 2px;
+	padding: 16px;
+	border: 1px solid var(--border-primary);
+	border-radius: 8px;
+	background: var(--bg-primary);
+}
+
+.admin-test-builder-page .admin-course-builder-test-settings-section h3 {
+	margin: 0;
+	font-size: 1rem;
+	letter-spacing: 0;
+}
+
+.admin-test-builder-page .admin-course-builder-test-toggle-list {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px;
+}
+
+.admin-test-builder-page .admin-course-builder-test-toggle {
+	padding: 12px;
+	border-radius: 8px;
+	background: var(--bg-elevated);
+}
+
+.admin-test-builder-page .admin-course-builder-test-sidepanel {
+	top: 92px;
+	right: 24px;
+	border-radius: 8px;
+	width: 260px;
+	padding: 12px;
+	background: var(--bg-elevated);
+	box-shadow: 0 22px 60px rgba(15, 23, 42, 0.18);
+}
+
+.admin-test-builder-page .admin-course-builder-test-sidepanel-head {
+	margin-bottom: 12px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid var(--border-primary);
+}
+
+.admin-test-builder-page .admin-course-builder-test-sidepanel h3 {
+	margin: 0;
+	font-size: 0.95rem;
+	letter-spacing: 0;
+}
+
+.admin-test-builder-page .admin-course-builder-test-sidepanel-head button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 34px;
+	min-width: 34px;
+	height: 34px;
+	min-height: 34px;
+	padding: 0;
+	border-radius: 999px;
+	background: var(--bg-primary);
+	font-size: 1.2rem;
+	font-weight: 700;
+	line-height: 1;
+	text-align: center;
+}
+
+.admin-test-builder-page .admin-course-builder-test-type-grid {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px;
+}
+
+.admin-test-builder-page .admin-course-builder-test-type-card {
+	aspect-ratio: 1 / 1;
+	min-height: 98px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 9px;
+	padding: 12px;
+	border-radius: 8px;
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--bg-elevated) 82%, white), var(--bg-primary));
+	text-align: center;
+	box-shadow: none;
+}
+
+.admin-test-builder-page .admin-course-builder-test-type-card:hover:not(:disabled) {
+	border-color: color-mix(in srgb, var(--color-primary) 52%, var(--border-primary));
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--color-primary) 13%, var(--bg-elevated)), var(--bg-primary));
+	box-shadow: 0 10px 22px color-mix(in srgb, var(--color-primary) 12%, transparent);
+	transform: translateY(-1px);
+}
+
+.admin-test-builder-page .admin-course-builder-test-type-short {
+	min-width: 42px;
+	width: auto;
+	height: 28px;
+	padding: 0 10px;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--color-primary) 18%, var(--bg-elevated));
+	font-size: 0.7rem;
+	letter-spacing: 0;
+}
+
+.admin-test-builder-page .admin-course-builder-test-type-label {
+	color: var(--text-primary);
+	font-size: 0.8rem;
+	font-weight: 800;
+	line-height: 1.25;
+	max-width: 10ch;
+}
+
+@media (max-width: 1040px) {
+	.admin-test-builder-page .admin-course-builder-test-shell-header {
+		grid-template-columns: 1fr;
+	}
+
+	.admin-test-builder-page .admin-course-builder-test-summary-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.admin-test-builder-page .admin-course-builder-test-shell-actions {
+		justify-content: flex-start;
+	}
+}
+
+@media (max-width: 760px) {
+	.admin-test-builder-page {
+		padding: 12px 10px 28px;
+	}
+
+	.admin-test-builder-page .admin-course-builder-test-overview-card,
+	.admin-test-builder-page .admin-course-builder-test-layout,
+	.admin-test-builder-page .admin-course-builder-test-questions-card,
+	.admin-test-builder-page .admin-course-builder-test-settings {
+		padding: 14px;
+	}
+
+	.admin-test-builder-page .admin-course-builder-test-summary-grid,
+	.admin-test-builder-page .admin-course-builder-test-shell-actions,
+	.admin-test-builder-page .admin-course-builder-test-settings,
+	.admin-test-builder-page .admin-course-builder-test-toggle-list {
+		grid-template-columns: 1fr;
+	}
+
+	.admin-test-builder-page .admin-course-builder-test-tabs {
+		display: grid;
+		grid-template-columns: 1fr;
+	}
+
+	.admin-test-builder-page .admin-course-builder-test-question-top-actions,
+	.admin-test-builder-page .admin-course-builder-test-add-bottom {
+		width: 100%;
+	}
+}

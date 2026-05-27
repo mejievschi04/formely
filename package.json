@@ -1,0 +1,9 @@
+{
+  "name": "formely",
+  "private": true,
+  "description": "Formely LMS – monorepo root",
+  "scripts": {
+    "audit:lms": "node scripts/test-lms-audit.js",
+    "test:lms": "node scripts/test-lms-audit.js"
+  }
+}

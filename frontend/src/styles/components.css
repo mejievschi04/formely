@@ -1,0 +1,743 @@
+/* ============================================
+   COMPONENTS - UNIFIED & STANDARDIZED
+   Buttons, Cards, Inputs, Progress Bars
+   ============================================ */
+
+/* ============================================
+   1. BUTTONS - PRIMARY & SECONDARY
+   Convenție: .admin-btn .admin-btn-primary / .admin-btn-secondary în admin;
+   .lms-btn-primary / .lms-btn-secondary în rest. .btn-primary / .btn-secondary
+   păstrate pentru compatibilitate.
+   ============================================ */
+.btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-2);
+	padding: var(--space-3) var(--space-6);
+	border-radius: var(--radius-lg);
+	font-family: var(--font-family);
+	font-size: var(--font-size-base);
+	font-weight: var(--font-weight-medium);
+	line-height: 1;
+	border: none;
+	cursor: pointer;
+	transition: all var(--transition-base);
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+/* Primary Button - Yellow Background, Dark Text */
+.btn-primary {
+	background-color: var(--btn-primary-bg);
+	color: var(--btn-primary-text);
+	border: 1px solid var(--btn-primary-border);
+	box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover:not(:disabled) {
+	background-color: var(--btn-primary-hover);
+	border-color: var(--btn-primary-hover);
+	box-shadow: var(--shadow-md);
+	transform: translateY(-1px);
+}
+
+/* Light theme - yellow background with black text */
+[data-theme="light"] .btn-primary {
+	background-color: var(--color-primary);
+	color: var(--text-inverse);
+	border: 1px solid var(--color-primary);
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .btn-primary:hover:not(:disabled) {
+	background-color: var(--color-primary-hover);
+	border-color: var(--color-primary-hover);
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-primary:active:not(:disabled) {
+	transform: translateY(0);
+	box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Secondary Button - Transparent, Yellow Border/Text */
+.btn-secondary {
+	background-color: var(--btn-secondary-bg);
+	color: var(--btn-secondary-text);
+	border: 1px solid var(--btn-secondary-border);
+}
+
+.btn-secondary:hover:not(:disabled) {
+	background-color: var(--btn-secondary-hover);
+	border-color: var(--color-primary-hover);
+	color: var(--color-primary-hover);
+}
+
+/* Light theme - dark text and border for better contrast */
+[data-theme="light"] .btn-secondary {
+	color: var(--text-primary);
+	border-color: var(--text-primary);
+}
+
+[data-theme="light"] .btn-secondary:hover:not(:disabled) {
+	background-color: rgba(31, 41, 55, 0.1);
+	border-color: var(--text-primary);
+	color: var(--text-primary);
+}
+
+.btn-secondary:active:not(:disabled) {
+	transform: translateY(0);
+}
+
+.btn-secondary:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Delete / danger — roșu consistent (text, icon, modal, toolbar) */
+.btn-danger,
+.va-btn-danger,
+.admin-btn-danger,
+.qb-delete-btn,
+.messages-chat-actions-btn,
+.admin-content-card__action.is-danger {
+	color: #991b1b !important;
+	background-color: rgba(239, 68, 68, 0.12) !important;
+	border-color: rgba(220, 38, 38, 0.45) !important;
+}
+
+.btn-danger:hover:not(:disabled),
+.va-btn-danger:hover:not(:disabled),
+.admin-btn-danger:hover:not(:disabled),
+.qb-delete-btn:hover:not(:disabled),
+.messages-chat-actions-btn:hover:not(:disabled),
+.admin-content-card__action.is-danger:hover:not(:disabled) {
+	color: #991b1b !important;
+	background-color: rgba(239, 68, 68, 0.18) !important;
+	border-color: rgba(220, 38, 38, 0.55) !important;
+}
+
+/* Când e combinat cu secondary, nu moșteni gri */
+.lms-btn-secondary.va-btn-danger,
+.lms-btn-secondary.btn-danger,
+button.lms-btn-secondary.va-btn-danger {
+	color: #991b1b !important;
+	background-color: rgba(239, 68, 68, 0.12) !important;
+	border-color: rgba(220, 38, 38, 0.45) !important;
+}
+
+.lms-btn-secondary.va-btn-danger:hover:not(:disabled),
+.lms-btn-secondary.btn-danger:hover:not(:disabled) {
+	color: #991b1b !important;
+	background-color: rgba(239, 68, 68, 0.18) !important;
+	border-color: rgba(220, 38, 38, 0.55) !important;
+}
+
+html[data-theme='dark'] .btn-danger,
+html[data-theme='dark'] .va-btn-danger,
+html[data-theme='dark'] .admin-btn-danger,
+html[data-theme='dark'] .qb-delete-btn,
+html[data-theme='dark'] .messages-chat-actions-btn,
+html[data-theme='dark'] .admin-content-card__action.is-danger,
+html[data-theme='dark'] .lms-btn-secondary.va-btn-danger,
+html[data-theme='dark'] .lms-btn-secondary.btn-danger {
+	color: #fecaca !important;
+	background-color: rgba(239, 68, 68, 0.14) !important;
+	border-color: rgba(248, 113, 113, 0.45) !important;
+}
+
+html[data-theme='dark'] .btn-danger:hover:not(:disabled),
+html[data-theme='dark'] .va-btn-danger:hover:not(:disabled),
+html[data-theme='dark'] .admin-btn-danger:hover:not(:disabled),
+html[data-theme='dark'] .qb-delete-btn:hover:not(:disabled),
+html[data-theme='dark'] .messages-chat-actions-btn:hover:not(:disabled),
+html[data-theme='dark'] .admin-content-card__action.is-danger:hover:not(:disabled),
+html[data-theme='dark'] .lms-btn-secondary.va-btn-danger:hover:not(:disabled),
+html[data-theme='dark'] .lms-btn-secondary.btn-danger:hover:not(:disabled) {
+	color: #fee2e2 !important;
+	background-color: rgba(239, 68, 68, 0.22) !important;
+	border-color: rgba(248, 113, 113, 0.55) !important;
+}
+
+.qb-delete-btn svg,
+.va-btn-danger svg,
+.admin-btn-danger svg,
+.messages-chat-actions-btn svg {
+	color: currentColor !important;
+	stroke: currentColor !important;
+}
+
+/* ============================================
+   1.3 BUTTON VARIANTS - Ghost, Outline, Text
+   ============================================ */
+
+/* Ghost Button - Transparent, No Border */
+.btn-ghost {
+	background-color: transparent;
+	color: var(--color-primary);
+	border: none;
+}
+
+.btn-ghost:hover:not(:disabled) {
+	background-color: var(--btn-secondary-hover);
+	color: var(--color-primary-hover);
+}
+
+.btn-ghost:active:not(:disabled) {
+	background-color: rgba(var(--formely-white-rgb), 0.15);
+}
+
+.btn-ghost:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Light theme - dark text for better contrast */
+[data-theme="light"] .btn-ghost {
+	color: var(--text-primary);
+}
+
+[data-theme="light"] .btn-ghost:hover:not(:disabled) {
+	background-color: rgba(31, 41, 55, 0.1);
+	color: var(--text-primary);
+}
+
+/* Outline Button - Border Only, No Background */
+.btn-outline {
+	background-color: transparent;
+	color: var(--color-primary);
+	border: 1px solid var(--color-primary);
+}
+
+.btn-outline:hover:not(:disabled) {
+	background-color: var(--btn-secondary-hover);
+	border-color: var(--color-primary-hover);
+	color: var(--color-primary-hover);
+}
+
+.btn-outline:active:not(:disabled) {
+	background-color: rgba(var(--formely-white-rgb), 0.2);
+}
+
+.btn-outline:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Light theme - dark text and border for better contrast */
+[data-theme="light"] .btn-outline {
+	color: var(--text-primary);
+	border-color: var(--text-primary);
+}
+
+[data-theme="light"] .btn-outline:hover:not(:disabled) {
+	background-color: rgba(31, 41, 55, 0.1);
+	border-color: var(--text-primary);
+	color: var(--text-primary);
+}
+
+/* Text Button - Text Only, No Border */
+.btn-text {
+	background-color: transparent;
+	color: var(--color-primary);
+	border: none;
+	padding: var(--space-2) var(--space-3);
+	box-shadow: none;
+}
+
+.btn-text:hover:not(:disabled) {
+	background-color: var(--btn-secondary-hover);
+	color: var(--color-primary-hover);
+}
+
+/* Light theme - dark text for better contrast */
+[data-theme="light"] .btn-text {
+	color: var(--text-primary);
+}
+
+[data-theme="light"] .btn-text:hover:not(:disabled) {
+	background-color: rgba(31, 41, 55, 0.1);
+	color: var(--text-primary);
+}
+
+.btn-text:active:not(:disabled) {
+	background-color: rgba(var(--formely-white-rgb), 0.15);
+}
+
+.btn-text:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* ============================================
+   1.4 BUTTON SIZES - Complete System
+   ============================================ */
+.btn-sm {
+	padding: var(--space-2) var(--space-4);
+	font-size: var(--font-size-sm);
+	min-height: 32px;
+}
+
+.btn-md {
+	padding: var(--space-3) var(--space-6);
+	font-size: var(--font-size-base);
+	min-height: 40px;
+}
+
+.btn-lg {
+	padding: var(--space-4) var(--space-8);
+	font-size: var(--font-size-lg);
+	min-height: 48px;
+}
+
+/* ============================================
+   1.5 BUTTON STATES - Loading, Disabled
+   ============================================ */
+
+/* Loading State */
+.btn-loading {
+	position: relative;
+	color: transparent;
+	pointer-events: none;
+}
+
+.btn-loading::after {
+	content: '';
+	position: absolute;
+	width: 16px;
+	height: 16px;
+	top: 50%;
+	left: 50%;
+	margin-left: -8px;
+	margin-top: -8px;
+	border: 2px solid currentColor;
+	border-top-color: transparent;
+	border-radius: var(--radius-full);
+	animation: spin 0.6s linear infinite;
+}
+
+.btn-primary.btn-loading::after {
+	border-color: var(--btn-primary-text);
+	border-top-color: transparent;
+}
+
+.btn-secondary.btn-loading::after,
+.btn-ghost.btn-loading::after,
+.btn-outline.btn-loading::after,
+.btn-text.btn-loading::after {
+	border-color: var(--color-primary);
+	border-top-color: transparent;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+/* Full Width Button */
+.btn-block {
+	width: 100%;
+}
+
+/* ============================================
+   2. CARDS - UNIFIED SYSTEM
+   ============================================ */
+/* Legacy card class - uses unified system */
+.card {
+	background-color: var(--bg-elevated);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	padding: var(--space-6);
+	box-shadow: var(--shadow-sm);
+	transition: all var(--transition-base);
+	position: relative;
+	overflow: hidden;
+}
+
+.card:hover {
+	box-shadow: var(--shadow-md);
+	border-color: var(--border-secondary);
+	transform: translateY(-2px);
+}
+
+.card-header {
+	margin-bottom: var(--space-4);
+	padding-bottom: var(--space-4);
+	border-bottom: 1px solid var(--border-primary);
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--space-4);
+}
+
+.card-title {
+	font-size: var(--font-size-lg);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	margin: 0;
+	line-height: var(--line-height-tight);
+}
+
+.card-subtitle {
+	font-size: var(--font-size-sm);
+	color: var(--text-tertiary);
+	margin: var(--space-1) 0 0 0;
+	line-height: var(--line-height-normal);
+}
+
+.card-body {
+	color: var(--text-secondary);
+	line-height: var(--line-height-relaxed);
+}
+
+.card-footer {
+	margin-top: var(--space-4);
+	padding-top: var(--space-4);
+	border-top: 1px solid var(--border-primary);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-3);
+	flex-wrap: wrap;
+}
+
+/* ============================================
+   3. FORM INPUTS
+   Convenție: form-group / form-label / form-input = formulare generice.
+   În zone admin preferați: admin-form-group + va-form-label + va-form-input.
+   ============================================ */
+.form-group {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+	margin-bottom: var(--space-4);
+}
+
+.form-label {
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-medium);
+	color: var(--text-primary);
+}
+
+/* Unified Input System – va-input / form-input; .form-control = alias (legacy) */
+.va-input,
+.form-input,
+.form-control,
+.form-textarea,
+.form-select {
+	width: 100%;
+	padding: var(--space-3) var(--space-4);
+	background-color: var(--bg-elevated);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	color: var(--text-primary);
+	font-family: var(--font-family);
+	font-size: var(--font-size-base);
+	transition: all var(--transition-base);
+	box-shadow: var(--shadow-sm);
+}
+
+.va-input:focus,
+.form-input:focus,
+.form-control:focus,
+.form-textarea:focus,
+.form-select:focus {
+	outline: none;
+	border-color: var(--border-focus);
+	box-shadow: var(--shadow-focus);
+	background-color: var(--bg-elevated);
+}
+
+.va-input::placeholder,
+.form-input::placeholder,
+.form-control::placeholder,
+.form-textarea::placeholder {
+	color: var(--text-tertiary);
+}
+
+/* Input States - Error */
+.va-input.error,
+.form-input.error,
+.form-control.error,
+.form-textarea.error,
+.form-select.error {
+	border-color: var(--color-error);
+	box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.va-input.error:focus,
+.form-input.error:focus,
+.form-textarea.error:focus,
+.form-select.error:focus {
+	border-color: var(--color-error);
+	box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+/* Input States - Success */
+.va-input.success,
+.form-input.success,
+.form-textarea.success,
+.form-select.success {
+	border-color: var(--color-success);
+	box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.va-input.success:focus,
+.form-input.success:focus,
+.form-textarea.success:focus,
+.form-select.success:focus {
+	border-color: var(--color-success);
+	box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+/* Input States - Disabled */
+.va-input:disabled,
+.form-input:disabled,
+.form-textarea:disabled,
+.form-select:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+	background-color: var(--bg-secondary);
+}
+
+.form-textarea {
+	resize: vertical;
+	min-height: 100px;
+}
+
+.form-select {
+	cursor: pointer;
+	appearance: none;
+	background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right var(--space-4) center;
+	padding-right: var(--space-10);
+}
+
+/* Form Label - Standardized */
+.va-input-label,
+.form-label {
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-medium);
+	color: var(--text-primary);
+	margin-bottom: var(--space-2);
+	display: block;
+}
+
+/* Form Helper Text */
+.va-input-helper,
+.form-hint {
+	font-size: var(--font-size-xs);
+	color: var(--text-tertiary);
+	margin-top: var(--space-1);
+	line-height: var(--line-height-normal);
+}
+
+/* Form Error Message */
+.va-input-error,
+.form-error {
+	font-size: var(--font-size-sm);
+	color: var(--color-error);
+	margin-top: var(--space-1);
+	display: flex;
+	align-items: center;
+	gap: var(--space-1);
+}
+
+.va-input-error::before {
+	content: '⚠';
+	font-size: var(--font-size-base);
+}
+
+/* ============================================
+   4. PROGRESS BARS
+   ============================================ */
+.progress {
+	width: 100%;
+	height: 8px;
+	background-color: var(--bg-secondary);
+	border-radius: var(--radius-full);
+	overflow: hidden;
+}
+
+.progress-bar {
+	height: 100%;
+	background-color: var(--color-primary);
+	border-radius: var(--radius-full);
+	transition: width var(--transition-smooth);
+}
+
+.progress-lg {
+	height: 12px;
+}
+
+.progress-sm {
+	height: 4px;
+}
+
+/* ============================================
+   5. BADGES & TAGS
+   ============================================ */
+.badge {
+	display: inline-flex;
+	align-items: center;
+	padding: var(--space-1) var(--space-3);
+	border-radius: var(--radius-full);
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-medium);
+	line-height: 1;
+}
+
+.badge-primary {
+	background-color: rgba(var(--formely-white-rgb), 0.2);
+	color: var(--color-primary);
+}
+
+.badge-success {
+	background-color: rgba(34, 197, 94, 0.2);
+	color: var(--color-success);
+}
+
+.badge-warning {
+	background-color: rgba(245, 158, 11, 0.2);
+	color: var(--color-warning);
+}
+
+.badge-error {
+	background-color: rgba(239, 68, 68, 0.2);
+	color: var(--color-error);
+}
+
+/* Light theme - better contrast for badges */
+[data-theme="light"] .badge-primary {
+	background-color: rgba(31, 41, 55, 0.1);
+	color: var(--text-primary);
+	border: 1px solid rgba(31, 41, 55, 0.2);
+}
+
+[data-theme="light"] .badge-success {
+	background-color: rgba(16, 185, 129, 0.15);
+	color: var(--color-success);
+	border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+[data-theme="light"] .badge-warning {
+	background-color: rgba(245, 158, 11, 0.15);
+	color: var(--color-warning);
+	border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+[data-theme="light"] .badge-error {
+	background-color: rgba(239, 68, 68, 0.15);
+	color: var(--color-error);
+	border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* ============================================
+   6. ICONS - LOW OPACITY, SINGLE COLOR
+   ============================================ */
+.icon {
+	width: 20px;
+	height: 20px;
+	flex-shrink: 0;
+	opacity: 0.7;
+	color: var(--text-secondary);
+	transition: all var(--transition-fast);
+}
+
+.icon-sm {
+	width: 16px;
+	height: 16px;
+}
+
+.icon-lg {
+	width: 24px;
+	height: 24px;
+}
+
+.icon-primary {
+	color: var(--color-primary);
+	opacity: 1;
+}
+
+/* Light theme - dark icons for better contrast */
+[data-theme="light"] .icon-primary {
+	color: var(--text-primary);
+}
+
+/* ============================================
+   7. LOADING STATES
+   ============================================ */
+.loading {
+	display: inline-block;
+	width: 20px;
+	height: 20px;
+	border: 2px solid var(--border-primary);
+	border-top-color: var(--color-primary);
+	border-radius: var(--radius-full);
+	animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+/* ============================================
+   8. DIVIDERS
+   ============================================ */
+.divider {
+	height: 1px;
+	background-color: var(--border-primary);
+	border: none;
+	margin: var(--space-4) 0;
+}
+
+.divider-vertical {
+	width: 1px;
+	height: 100%;
+	background-color: var(--border-primary);
+	border: none;
+	margin: 0 var(--space-4);
+}
+
+/* ============================================
+   9. RESPONSIVE ADJUSTMENTS
+   ============================================ */
+@media (max-width: 768px) {
+	.card {
+		padding: var(--space-4);
+	}
+}
+
+/* Desktop - butoane PAGES ONLY (nu meniul) */
+@media (min-width: 769px) {
+	.va-shell-main button:not(.btn-sm):not(.btn-lg):not(.admin-settings-toggle-switch):not(.admin-exams-header-switch):not(.admin-course-card-action-btn):not(.admin-course-table-action-btn):not(.admin-course-map-delete-btn):not(.admin-course-map-edit-btn):not(.admin-course-map-plus-btn):not(.admin-courses-showcase-edit-btn),
+	.va-shell-main .btn:not(.btn-sm):not(.btn-lg),
+	.va-shell-main .admin-btn:not(.admin-btn-sm):not(.btn-sm),
+	.va-shell-main .va-btn:not(.btn-sm),
+	.va-shell-main .lms-btn-primary,
+	.va-shell-main .admin-btn-create-course,
+	.va-shell-main .admin-btn-secondary,
+	.admin-container button:not(.btn-sm):not(.btn-lg):not(.admin-settings-toggle-switch):not(.admin-exams-header-switch):not(.admin-course-card-action-btn):not(.admin-course-table-action-btn):not(.admin-course-map-delete-btn):not(.admin-course-map-edit-btn):not(.admin-course-map-plus-btn):not(.admin-courses-showcase-edit-btn),
+	.admin-container .btn:not(.btn-sm):not(.btn-lg),
+	.admin-container .admin-btn:not(.admin-btn-sm):not(.btn-sm),
+	.admin-container .va-btn:not(.btn-sm),
+	.admin-container .lms-btn-primary,
+	.admin-container .admin-btn-create-course,
+	.admin-container .admin-btn-secondary {
+		min-height: var(--btn-desktop-min-height);
+		padding: var(--btn-desktop-padding-y) var(--btn-desktop-padding-x);
+		font-size: var(--btn-desktop-font-size);
+		gap: var(--btn-desktop-gap);
+		border-radius: var(--btn-desktop-radius);
+	}
+}

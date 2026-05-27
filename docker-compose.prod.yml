@@ -1,0 +1,20 @@
+# Override pentru producție pe VPS
+# Folosire: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Diferențe față de dev:
+# - Backend: NU se montează codul local (se folosesc fișierele din imagine)
+# - Nginx-backend: citește public din containerul backend (volumes_from)
+
+services:
+  backend:
+    volumes:
+      - backend_storage:/var/www/html/storage
+      - backend_cache:/var/www/html/bootstrap/cache
+      # Fără mount ./backend - folosim imaginea build-uită
+
+  nginx-backend:
+    volumes:
+      - ./docker/nginx-backend.conf:/etc/nginx/conf.d/default.conf:ro
+    volumes_from:
+      - backend
+    # Nginx va avea acces la /var/www/html din backend (inclusiv public)

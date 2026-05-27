@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+- Never expose secrets
+- Sanitize inputs
+- Avoid unsafe operations
+- Use built-in security mechanisms where possible

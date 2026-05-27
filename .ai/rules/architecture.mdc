@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+- Separate responsibilities clearly
+- Avoid tight coupling
+- Prefer modular design
+- Reuse existing logic before adding new

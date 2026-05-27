@@ -1,0 +1,18 @@
+# .dockerignore pentru Frontend
+node_modules
+npm-debug.log
+dist
+.env
+.env.local
+.env.production
+.git
+.gitignore
+.gitattributes
+.idea
+.vscode
+*.md
+!README.md
+.DS_Store
+Thumbs.db
+coverage
+.nyc_output

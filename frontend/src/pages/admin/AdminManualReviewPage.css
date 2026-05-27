@@ -1,0 +1,38 @@
+.admin-manual-review-kind-tabs {
+	display: flex;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+	margin-bottom: 1.25rem;
+	padding: 0.25rem;
+	border-radius: 12px;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-manual-review-kind-tabs button {
+	flex: 1;
+	min-width: 120px;
+	padding: 0.65rem 1rem;
+	border-radius: 10px;
+	border: 1px solid transparent;
+	background: transparent;
+	color: inherit;
+	font-weight: 600;
+	cursor: pointer;
+	opacity: 0.75;
+	transition: background 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-manual-review-kind-tabs button:hover {
+	opacity: 1;
+}
+
+.admin-manual-review-kind-tabs button.is-active {
+	opacity: 1;
+	background: rgba(255, 255, 255, 0.08);
+	border-color: rgba(255, 255, 255, 0.12);
+}
+
+.admin-manual-review-panel-wrap .admin-tests-pending-embedded .admin-tests-pending-page-header h1 {
+	font-size: 1.25rem;
+}

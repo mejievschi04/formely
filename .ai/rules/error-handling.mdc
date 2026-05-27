@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+- Always validate input
+- Handle null/undefined cases
+- Provide fallback behavior
+- Never crash silently

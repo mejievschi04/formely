@@ -1,0 +1,144 @@
+/* Peste modalul detalii (va-cal-event-modal-overlay = 10055) */
+.admin-event-modal-overlay.aev-participants-overlay,
+.aev-participants-overlay {
+	z-index: 10070;
+}
+
+.aev-participants-modal {
+	max-width: min(520px, 96vw);
+	max-height: min(85vh, 720px);
+	display: flex;
+	flex-direction: column;
+}
+
+.aev-participants-header-text {
+	min-width: 0;
+}
+
+.aev-participants-subtitle {
+	margin: var(--space-1) 0 0;
+	font-size: var(--font-size-sm);
+	color: var(--text-secondary);
+	font-weight: var(--font-weight-normal);
+	line-height: 1.35;
+}
+
+.aev-participants-count {
+	font-weight: var(--font-weight-medium);
+	color: var(--text-secondary);
+	margin-left: var(--space-1);
+}
+
+.aev-participants-body {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+}
+
+.aev-participants-loading {
+	display: flex;
+	justify-content: center;
+	padding: var(--space-8);
+}
+
+.aev-participants-error {
+	margin: 0;
+	color: var(--color-error);
+	font-size: var(--font-size-sm);
+}
+
+.aev-participants-intro {
+	margin: 0 0 var(--space-4);
+	font-size: var(--font-size-sm);
+	color: var(--text-secondary);
+	line-height: 1.45;
+}
+
+.aev-participants-empty {
+	margin: 0;
+	color: var(--text-secondary);
+	font-size: var(--font-size-sm);
+}
+
+.aev-participants-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+}
+
+.aev-participants-row {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	gap: var(--space-3);
+	align-items: center;
+	padding: var(--space-3);
+	background: var(--bg-secondary);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-md);
+}
+
+.aev-participants-check {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--space-1);
+	padding-top: 2px;
+	cursor: pointer;
+	user-select: none;
+}
+
+.aev-participants-check.is-readonly {
+	cursor: default;
+	opacity: 0.85;
+}
+
+.aev-participants-check input {
+	width: 1.125rem;
+	height: 1.125rem;
+	accent-color: var(--color-success);
+	cursor: inherit;
+}
+
+.aev-participants-check-label {
+	font-size: 0.65rem;
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-secondary);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	white-space: nowrap;
+}
+
+.aev-participants-user {
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.aev-participants-name {
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+}
+
+.aev-participants-email {
+	font-size: var(--font-size-xs);
+	color: var(--text-secondary);
+	word-break: break-all;
+}
+
+.aev-participants-date {
+	font-size: var(--font-size-xs);
+	color: var(--text-tertiary);
+	margin-top: var(--space-1);
+}
+
+.aev-participants-footer {
+	display: flex;
+	justify-content: flex-end;
+	padding: var(--space-4);
+	border-top: 1px solid var(--border-primary);
+}

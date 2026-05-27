@@ -1,0 +1,2 @@
+# Fișier pentru tracking replacements - NU adăuga token-uri aici
+# Token-urile se gestionează prin .env

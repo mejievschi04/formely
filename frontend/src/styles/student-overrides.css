@@ -1,0 +1,199 @@
+/* ============================================
+   STUDENT OVERRIDES - Ensure student UI integrity
+   Loaded after student-components, reinforces student styles
+   AI for students – polish and consistency
+   ============================================ */
+
+/* Student layout - main content area (va-shell-topnav = student view) */
+.va-shell-topnav .va-main {
+	padding: var(--space-6) var(--space-8) var(--space-10);
+	padding-top: var(--space-8);
+	max-width: 1400px;
+	margin: 0 auto;
+	width: 100%;
+	min-height: 100%;
+}
+
+/* Student dashboard page - ensure proper spacing */
+.student-dashboard-page {
+	padding: 0;
+	min-height: 100%;
+}
+
+/* Dashboard header – typography and spacing */
+.va-shell-topnav .student-dashboard-header {
+	margin-bottom: var(--space-8);
+	padding-bottom: var(--space-6);
+	border-bottom: 1px solid var(--border-primary);
+}
+
+.va-shell-topnav .student-dashboard-title {
+	font-size: clamp(1.75rem, 4vw, 2.25rem);
+	font-weight: 800;
+	letter-spacing: -0.03em;
+	line-height: 1.2;
+}
+
+.va-shell-topnav .student-dashboard-subtitle {
+	font-size: var(--font-size-base);
+	line-height: 1.6;
+	max-width: 560px;
+}
+
+/* Hero – progress card and quick stats */
+.va-shell-topnav .student-dashboard-hero-content {
+	gap: var(--space-6);
+}
+
+.va-shell-topnav .student-dashboard-global-progress {
+	border-radius: 16px;
+	padding: var(--space-6) var(--space-8);
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.va-shell-topnav .student-global-progress-bar {
+	height: 12px;
+	border-radius: 999px;
+	background: var(--bg-tertiary);
+}
+
+.va-shell-topnav .student-global-progress-fill {
+	border-radius: 999px;
+	box-shadow: none;
+}
+
+.va-shell-topnav .student-global-progress-percentage {
+	font-size: var(--font-size-xl);
+	font-weight: 800;
+}
+
+.va-shell-topnav .student-dashboard-quick-stats {
+	gap: var(--space-4);
+}
+
+.va-shell-topnav .student-quick-stat {
+	border-radius: 14px;
+	padding: var(--space-5) var(--space-4);
+	min-height: 100px;
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.va-shell-topnav .student-quick-stat:hover {
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+/* Content columns */
+.va-shell-topnav .student-dashboard-content {
+	gap: var(--space-8);
+}
+
+.va-shell-topnav .student-dashboard-left,
+.va-shell-topnav .student-dashboard-right {
+	gap: var(--space-6);
+}
+
+/* Student widgets - ensure visibility and contrast */
+.student-widget,
+.student-course-progress-card {
+	background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-secondary) 100%);
+	border: 1px solid var(--border-primary);
+	border-radius: 16px;
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.va-shell-topnav .student-widget:hover,
+.va-shell-topnav .student-course-progress-card:hover {
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+/* Student quick stats - prevent layout collapse */
+.student-quick-stat {
+	min-height: 100px;
+}
+
+/* Student progress indicator - visible fill */
+.student-progress-indicator-fill {
+	background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+}
+
+/* Student buttons - ensure they stand out */
+.student-btn-primary {
+	font-weight: var(--font-weight-semibold);
+	border-radius: 12px;
+	padding: var(--space-3) var(--space-6);
+}
+
+.student-btn-secondary {
+	border-color: var(--border-secondary);
+	border-radius: 12px;
+}
+
+/* Student global progress - fill only, no track */
+.student-global-progress-fill {
+	background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+}
+
+/* Student incomplete lessons & pending exams - hover states */
+.student-incomplete-lesson-item,
+.student-pending-exam-item {
+	cursor: pointer;
+	border-radius: 12px;
+}
+
+/* Light theme - student accent */
+[data-theme="light"] .student-widget::before,
+[data-theme="light"] .student-course-progress-card::before {
+	background: linear-gradient(90deg, var(--accent-primary) 0%, var(--color-primary) 100%);
+}
+
+[data-theme="light"] .student-course-progress-card:hover,
+[data-theme="light"] .student-widget:hover {
+	box-shadow: var(--shadow-lg), 0 0 0 1px rgba(var(--formely-white-rgb), 0.15);
+}
+
+/* Ensure student loading (lms-dashboard-loading) works on student pages */
+.va-shell-topnav .lms-dashboard-loading {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	min-height: 40vh;
+	gap: var(--space-4);
+	color: var(--text-tertiary);
+}
+
+/* AI – pagini student (cursuri, evenimente, etc.) spacing consistent */
+.va-shell-topnav .va-main > .events-page,
+.va-shell-topnav .va-main > .courses-page-modern,
+.va-shell-topnav .va-main > .library-page,
+.va-shell-topnav .va-main > .course-map-page {
+	max-width: 1400px;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+/* Responsive – dashboard quick stats și layout */
+@media (max-width: 1200px) {
+	.va-shell-topnav .student-dashboard-quick-stats {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+@media (max-width: 900px) {
+	.va-shell-topnav .student-dashboard-content {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media (max-width: 768px) {
+	.va-shell-topnav .va-main {
+		padding: var(--space-4) var(--space-4) var(--space-8);
+		padding-top: var(--space-6);
+	}
+	.va-shell-topnav .student-dashboard-hero-content {
+		grid-template-columns: 1fr;
+	}
+	.va-shell-topnav .student-dashboard-quick-stats {
+		grid-template-columns: 1fr;
+	}
+}

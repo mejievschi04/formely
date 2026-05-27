@@ -1,0 +1,561 @@
+/* ============================================
+   ADMIN TEAM MEMBERS PAGE - Modern Styling
+   Complete styling for AdminTeamMembersPage
+   ============================================ */
+
+/* ============================================
+   1. FILTERS
+   ============================================ */
+.admin-team-members-filters {
+	display: flex;
+	align-items: center;
+	gap: var(--space-4);
+	margin-bottom: var(--space-6);
+	flex-wrap: wrap;
+	padding: var(--space-4) var(--space-6);
+	background-color: var(--bg-elevated);
+	border-radius: var(--radius-lg);
+	border: 1px solid var(--border-primary);
+}
+
+.admin-team-members-search {
+	padding: var(--space-3) var(--space-4);
+	background-color: var(--bg-secondary);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	color: var(--text-primary);
+	font-size: var(--font-size-sm);
+	font-family: var(--font-family);
+	transition: all var(--transition-base);
+	flex: 1;
+	min-width: 300px;
+}
+
+.admin-team-members-search:focus {
+	outline: none;
+	border-color: var(--border-focus);
+	box-shadow: var(--shadow-focus);
+	background-color: var(--bg-elevated);
+}
+
+.admin-team-members-search:hover {
+	border-color: var(--border-secondary);
+}
+
+.admin-team-members-search::placeholder {
+	color: var(--text-tertiary);
+	opacity: 0.6;
+}
+
+.admin-team-members-filter-select {
+	padding: var(--space-3) var(--space-4);
+	background-color: var(--bg-secondary);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	color: var(--text-primary);
+	font-size: var(--font-size-sm);
+	cursor: pointer;
+	transition: all var(--transition-base);
+	font-family: var(--font-family);
+	min-width: 180px;
+}
+
+.admin-team-members-filter-select:focus {
+	outline: none;
+	border-color: var(--border-focus);
+	box-shadow: var(--shadow-focus);
+	background-color: var(--bg-elevated);
+}
+
+.admin-team-members-filter-select:hover {
+	border-color: var(--border-secondary);
+}
+
+/* ============================================
+   2. MEMBERS GRID
+   ============================================ */
+.admin-team-members-grid {
+	display: grid;
+	gap: var(--space-4);
+}
+
+/* ============================================
+   3. MEMBER CARD
+   ============================================ */
+.admin-team-member-card {
+	background-color: var(--bg-elevated);
+	border-radius: var(--radius-lg);
+	border: 1px solid var(--border-primary);
+	box-shadow: var(--shadow-sm);
+	cursor: pointer;
+	transition: all var(--transition-base);
+	position: relative;
+	overflow: hidden;
+}
+
+.admin-team-member-card:hover {
+	transform: translateY(-2px);
+	box-shadow: var(--shadow-md);
+	border-color: var(--border-secondary);
+}
+
+.admin-team-member-card-body {
+	padding: var(--space-6);
+}
+
+.admin-team-member-card-content {
+	display: flex;
+	gap: var(--space-6);
+	align-items: flex-start;
+}
+
+/* ============================================
+   4. MEMBER AVATAR
+   ============================================ */
+.admin-team-member-avatar {
+	width: 64px;
+	height: 64px;
+	border-radius: var(--radius-full);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: var(--font-size-xl);
+	font-weight: var(--font-weight-bold);
+	color: var(--color-white);
+	flex-shrink: 0;
+	overflow: hidden;
+}
+
+.admin-team-member-avatar img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	border-radius: var(--radius-full);
+}
+
+/* ============================================
+   5. MEMBER INFO
+   ============================================ */
+.admin-team-member-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.admin-team-member-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	margin-bottom: var(--space-3);
+	gap: var(--space-4);
+}
+
+.admin-team-member-name {
+	font-size: var(--font-size-lg);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	margin: 0 0 var(--space-1) 0;
+}
+
+.admin-team-member-email {
+	font-size: var(--font-size-sm);
+	color: var(--text-tertiary);
+	margin: 0;
+}
+
+.admin-team-member-badges {
+	display: flex;
+	gap: var(--space-2);
+	align-items: center;
+	flex-shrink: 0;
+}
+
+.admin-team-member-role-badge,
+.admin-team-member-status-badge {
+	padding: var(--space-1) var(--space-3);
+	border-radius: var(--radius-full);
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-bold);
+	color: var(--color-white);
+	white-space: nowrap;
+}
+
+.admin-team-member-meta {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: var(--space-4);
+	margin-top: var(--space-4);
+	font-size: var(--font-size-sm);
+}
+
+.admin-team-member-meta-item {
+	color: var(--text-secondary);
+}
+
+.admin-team-member-meta-item strong {
+	color: var(--text-primary);
+	font-weight: var(--font-weight-semibold);
+}
+
+.admin-team-member-meta-item--teams {
+	grid-column: 1 / -1;
+}
+
+.admin-team-member-meta-item--teams > strong {
+	display: block;
+	margin-bottom: 2px;
+}
+
+.admin-team-member-meta-muted {
+	color: var(--text-tertiary);
+	font-weight: var(--font-weight-normal);
+}
+
+/* ============================================
+   6. MEMBER ACTIONS
+   ============================================ */
+.admin-team-member-actions {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+	flex-shrink: 0;
+}
+
+.admin-team-member-action-btn {
+	white-space: nowrap;
+}
+
+.admin-team-member-action-btn-role {
+	background-color: var(--color-primary) !important;
+	color: var(--text-inverse) !important;
+	border-color: var(--color-primary) !important;
+}
+
+.admin-team-member-action-btn-role:hover {
+	background-color: var(--color-primary-hover) !important;
+	border-color: var(--color-primary-hover) !important;
+}
+
+.admin-team-member-action-btn-courses {
+	background-color: var(--color-success) !important;
+	color: var(--color-white) !important;
+	border-color: var(--color-success) !important;
+}
+
+.admin-team-member-action-btn-courses:hover {
+	background-color: var(--color-success) !important;
+	border-color: var(--color-success) !important;
+}
+
+.admin-team-member-action-btn-activate {
+	background-color: var(--color-success) !important;
+	color: var(--color-white) !important;
+	border-color: var(--color-success) !important;
+}
+
+.admin-team-member-action-btn-activate:hover {
+	background-color: var(--color-success) !important;
+	border-color: var(--color-success) !important;
+}
+
+.admin-team-member-action-btn-suspend {
+	background-color: var(--color-warning) !important;
+	color: var(--color-white) !important;
+	border-color: var(--color-warning) !important;
+}
+
+.admin-team-member-action-btn-suspend:hover {
+	background-color: var(--color-warning) !important;
+	border-color: var(--color-warning) !important;
+}
+
+.admin-team-member-action-btn-reset {
+	background-color: var(--btn-primary-bg) !important;
+	color: var(--btn-primary-text) !important;
+	border-color: var(--btn-primary-border) !important;
+}
+
+.admin-team-member-action-btn-reset:hover {
+	background-color: var(--color-info) !important;
+	border-color: var(--color-info) !important;
+}
+
+.admin-team-member-action-btn-delete {
+	background-color: var(--color-error) !important;
+	color: var(--color-white) !important;
+	border-color: var(--color-error) !important;
+}
+
+.admin-team-member-action-btn-delete:hover {
+	background-color: var(--color-error) !important;
+	border-color: var(--color-error) !important;
+}
+
+/* ============================================
+   7. MODAL
+   ============================================ */
+.admin-team-members-modal-overlay {
+	position: fixed;
+	inset: 0;
+	background-color: var(--bg-overlay);
+	backdrop-filter: blur(8px);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
+	padding: var(--space-4);
+}
+
+.admin-team-members-modal {
+	background-color: var(--bg-elevated);
+	border-radius: var(--radius-xl);
+	border: 1px solid var(--border-primary);
+	box-shadow: var(--shadow-2xl);
+	width: 100%;
+	max-width: 600px;
+	max-height: 90vh;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.admin-team-members-modal-header {
+	padding: var(--space-6);
+	border-bottom: 1px solid var(--border-primary);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-shrink: 0;
+}
+
+.admin-team-members-modal-title {
+	font-size: var(--font-size-xl);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	margin: 0;
+}
+
+.admin-team-members-modal-close {
+	width: 32px;
+	height: 32px;
+	border-radius: var(--radius-md);
+	background-color: transparent;
+	border: 1px solid var(--border-primary);
+	color: var(--text-secondary);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all var(--transition-base);
+	font-size: var(--font-size-xl);
+	line-height: 1;
+}
+
+.admin-team-members-modal-close:hover {
+	background-color: var(--bg-secondary);
+	border-color: var(--border-secondary);
+	color: var(--text-primary);
+}
+
+.admin-team-members-modal-body {
+	flex: 1;
+	overflow-y: auto;
+	padding: var(--space-6);
+}
+
+.admin-team-members-modal-form {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-4);
+}
+
+.admin-team-members-modal-footer {
+	padding: var(--space-4) var(--space-6);
+	border-top: 1px solid var(--border-primary);
+	display: flex;
+	justify-content: flex-end;
+	gap: var(--space-3);
+	flex-shrink: 0;
+}
+
+/* ============================================
+   8. PERMISSIONS LIST
+   ============================================ */
+.admin-team-members-permissions-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+	padding: var(--space-4);
+	background-color: var(--bg-secondary);
+	border-radius: var(--radius-lg);
+	border: 1px solid var(--border-primary);
+}
+
+.admin-team-members-permission-item {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	cursor: pointer;
+	padding: var(--space-2);
+	border-radius: var(--radius-md);
+	transition: background-color var(--transition-base);
+}
+
+.admin-team-members-permission-item:hover {
+	background-color: var(--bg-elevated);
+}
+
+.admin-team-members-permission-item input[type="checkbox"] {
+	width: 20px;
+	height: 20px;
+	cursor: pointer;
+	accent-color: var(--color-primary);
+}
+
+.admin-team-members-permission-item span {
+	text-transform: capitalize;
+	color: var(--text-primary);
+	font-size: var(--font-size-sm);
+}
+
+/* ============================================
+   9. COURSES LIST
+   ============================================ */
+.admin-team-members-courses-list {
+	max-height: 400px;
+	overflow-y: auto;
+	background-color: var(--bg-secondary);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	padding: var(--space-4);
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+}
+
+.admin-team-members-course-item {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	padding: var(--space-3);
+	border-radius: var(--radius-md);
+	cursor: pointer;
+	transition: all var(--transition-base);
+	background-color: transparent;
+	border: 1px solid transparent;
+}
+
+.admin-team-members-course-item:hover {
+	background-color: var(--bg-elevated);
+	border-color: var(--border-primary);
+}
+
+.admin-team-members-course-item.selected {
+	background-color: rgba(var(--formely-white-rgb), 0.1);
+	border-color: var(--color-primary);
+}
+
+.admin-team-members-course-item input[type="checkbox"] {
+	width: 18px;
+	height: 18px;
+	cursor: pointer;
+	accent-color: var(--color-primary);
+}
+
+.admin-team-members-course-item span {
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	font-size: var(--font-size-sm);
+}
+
+.admin-team-members-suspend-btn {
+	background-color: var(--color-warning) !important;
+	color: var(--color-white) !important;
+	border-color: var(--color-warning) !important;
+}
+
+.admin-team-members-suspend-btn:hover {
+	background-color: var(--color-warning) !important;
+	border-color: var(--color-warning) !important;
+}
+
+/* ============================================
+   10. CUSTOM SCROLLBAR
+   ============================================ */
+.admin-team-members-modal-body::-webkit-scrollbar,
+.admin-team-members-courses-list::-webkit-scrollbar {
+	width: 6px;
+}
+
+.admin-team-members-modal-body::-webkit-scrollbar-track,
+.admin-team-members-courses-list::-webkit-scrollbar-track {
+	background: var(--bg-secondary);
+}
+
+.admin-team-members-modal-body::-webkit-scrollbar-thumb,
+.admin-team-members-courses-list::-webkit-scrollbar-thumb {
+	background: var(--border-secondary);
+	border-radius: var(--radius-full);
+}
+
+.admin-team-members-modal-body::-webkit-scrollbar-thumb:hover,
+.admin-team-members-courses-list::-webkit-scrollbar-thumb:hover {
+	background: var(--text-tertiary);
+}
+
+/* ============================================
+   11. RESPONSIVE
+   ============================================ */
+@media (max-width: 1024px) {
+	.admin-team-member-card-content {
+		flex-direction: column;
+	}
+
+	.admin-team-member-actions {
+		flex-direction: row;
+		flex-wrap: wrap;
+		width: 100%;
+	}
+
+	.admin-team-member-meta {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media (max-width: 768px) {
+	.admin-team-members-filters {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.admin-team-members-search,
+	.admin-team-members-filter-select {
+		width: 100%;
+		min-width: unset;
+	}
+
+	.admin-team-member-card-body {
+		padding: var(--space-4);
+	}
+
+	.admin-team-member-header {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.admin-team-member-badges {
+		width: 100%;
+		flex-wrap: wrap;
+	}
+
+	.admin-team-members-modal {
+		max-width: 100%;
+		max-height: 100vh;
+		border-radius: var(--radius-lg);
+	}
+
+	.admin-team-members-modal-header,
+	.admin-team-members-modal-body,
+	.admin-team-members-modal-footer {
+		padding: var(--space-4);
+	}
+}

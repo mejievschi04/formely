@@ -1,0 +1,130 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: formely-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-formely}
+      POSTGRES_USER: ${DB_USERNAME:-formely_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-formely_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    networks:
+      - formely-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend Laravel
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+      network: host
+    container_name: backend
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./backend:/var/www/html
+      - backend_storage:/var/www/html/storage
+      - backend_cache:/var/www/html/bootstrap/cache
+    environment:
+      APP_NAME: ${APP_NAME:-Formely}
+      APP_ENV: ${APP_ENV:-production}
+      APP_KEY: ${APP_KEY:-}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_URL: ${APP_URL:-http://localhost:8000}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE:-formely}
+      DB_USERNAME: ${DB_USERNAME:-formely_user}
+      DB_PASSWORD: ${DB_PASSWORD:-formely_password}
+      DB_SSLMODE: ${DB_SSLMODE:-prefer}
+      # Forțat file: dacă folosești ${SESSION_DRIVER} din .env cu `database` fără tabela `sessions` → 500 la toate rutele API.
+      # Pentru sesiuni în DB pe mai multe instanțe, schimbă explicit aici în `database` și rulează migrate.
+      SESSION_DRIVER: file
+      CACHE_STORE: file
+      SESSION_LIFETIME: ${SESSION_LIFETIME:-120}
+      SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-false}
+      SESSION_SAME_SITE: ${SESSION_SAME_SITE:-lax}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      AI_PROVIDER: ${AI_PROVIDER:-groq}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_API_URL: ${GROQ_API_URL:-https://api.groq.com/openai/v1}
+      GROQ_MODEL: ${GROQ_MODEL:-llama-3.1-8b-instant}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_API_URL: ${OPENAI_API_URL:-https://api.openai.com/v1}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      HUGGINGFACE_API_KEY: ${HUGGINGFACE_API_KEY:-}
+      HUGGINGFACE_API_URL: ${HUGGINGFACE_API_URL:-https://router.huggingface.co}
+      HUGGINGFACE_MODEL: ${HUGGINGFACE_MODEL:-meta-llama/Meta-Llama-3.1-8B-Instruct}
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
+      OLLAMA_API_URL: ${OLLAMA_API_URL:-http://host.docker.internal:11434/v1}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma:2b-instruct}
+      OLLAMA_CREATOR_MODEL: ${OLLAMA_CREATOR_MODEL:-gemma:2b-instruct}
+      OLLAMA_CREATOR_QUALITY_MODEL: ${OLLAMA_CREATOR_QUALITY_MODEL:-qwen2.5:7b-instruct}
+      OLLAMA_TUTOR_MODEL: ${OLLAMA_TUTOR_MODEL:-gemma:2b-instruct}
+      AI_VERIFY_SSL: ${AI_VERIFY_SSL:-true}
+      LOG_CHANNEL: stack
+      LOG_LEVEL: ${LOG_LEVEL:-error}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - formely-network
+    # Expune portul pentru PHP-FPM (dacă folosești Nginx separat)
+    # Sau poți folosi un reverse proxy
+
+  # Nginx Reverse Proxy pentru Backend
+  nginx-backend:
+    image: nginx:alpine
+    container_name: formely-nginx-backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-8000}:80"
+    volumes:
+      - ./backend/public:/var/www/html/public:ro
+      - ./docker/nginx-backend.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+    networks:
+      - formely-network
+
+  # Frontend React
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+      network: host
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000/api}
+    container_name: frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3001}:80"
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:8000/api}
+    depends_on:
+      - nginx-backend
+    networks:
+      - formely-network
+
+volumes:
+  postgres_data:
+    driver: local
+  backend_storage:
+    driver: local
+  backend_cache:
+    driver: local
+
+networks:
+  formely-network:
+    driver: bridge

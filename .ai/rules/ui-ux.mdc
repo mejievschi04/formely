@@ -1,0 +1,13 @@
+---
+alwaysApply: true
+---
+# UI/UX Rules
+
+- Keep UI minimal and clean
+- Use consistent spacing system (8px base)
+- Prefer whitespace over dense layouts
+- Use soft shadows and subtle borders
+- Use one accent color only
+
+- Avoid visual noise
+- Avoid over-designed interfaces

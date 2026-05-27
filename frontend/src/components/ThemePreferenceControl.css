@@ -1,0 +1,79 @@
+.va-theme-preference {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-4);
+	padding: var(--space-5);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	background: var(--bg-elevated);
+}
+
+.va-theme-preference-info {
+	flex: 1;
+	min-width: min(100%, 220px);
+}
+
+.va-theme-preference-label {
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	display: block;
+	font-size: var(--font-size-base);
+}
+
+.va-theme-preference-desc {
+	font-size: var(--font-size-sm);
+	color: var(--text-secondary) !important;
+	margin-top: var(--space-1);
+	line-height: var(--line-height-normal);
+}
+
+.va-theme-segment {
+	display: inline-flex;
+	padding: var(--space-1);
+	border-radius: var(--radius-full);
+	background: var(--bg-secondary);
+	border: 1px solid var(--border-primary);
+	gap: var(--space-1);
+	flex-shrink: 0;
+}
+
+.va-theme-segment-btn {
+	border: none;
+	background: transparent;
+	padding: var(--space-2) var(--space-5);
+	border-radius: var(--radius-full);
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-medium);
+	font-family: inherit;
+	color: var(--text-secondary);
+	cursor: pointer;
+	transition:
+		background var(--transition-fast),
+		color var(--transition-fast),
+		transform 0.15s ease;
+}
+
+.va-theme-segment-btn:hover {
+	color: var(--text-primary);
+}
+
+.va-theme-segment-btn:focus-visible {
+	outline: 2px solid var(--border-focus);
+	outline-offset: 2px;
+}
+
+.va-theme-segment-btn.active {
+	background: var(--color-primary);
+	color: var(--text-inverse);
+}
+
+.va-theme-segment-btn.active:hover {
+	color: var(--text-inverse);
+	background: var(--color-primary-hover);
+}
+
+.va-theme-segment-btn:active:not(.active) {
+	transform: scale(0.98);
+}
