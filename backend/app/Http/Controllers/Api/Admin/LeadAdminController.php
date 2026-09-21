@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\UserInvitation;
 use App\Services\PlanEntitlementService;
 use App\Services\UserInvitationService;
+use App\Support\PlatformActivityLogger;
 use App\Support\TenantContext;
 use App\Support\UserRoles;
 use Illuminate\Http\Request;
@@ -51,11 +52,22 @@ class LeadAdminController extends Controller
             'status' => 'required|in:new,contacted,qualified,won,lost',
         ]);
 
+        $before = $lead->status;
         $lead->status = $validated['status'];
         if ($validated['status'] === 'contacted' && ! $lead->contacted_at) {
             $lead->contacted_at = now();
         }
         $lead->save();
+
+        PlatformActivityLogger::log(
+            $request,
+            'platform.lead_status',
+            "Lead #{$lead->id} status: {$before} → {$lead->status}",
+            'Lead',
+            (int) $lead->id,
+            ['status' => $before],
+            ['status' => $lead->status],
+        );
 
         return response()->json(['lead' => $lead->fresh()->toPlatformArray()]);
     }
@@ -139,6 +151,20 @@ class LeadAdminController extends Controller
 
             return [$company, $invite];
         });
+
+        PlatformActivityLogger::log(
+            $request,
+            'platform.lead_converted',
+            "Lead #{$lead->id} convertit în academie {$company->name}",
+            'Lead',
+            (int) $lead->id,
+            null,
+            [
+                'company_id' => $company->id,
+                'company_slug' => $company->slug,
+                'plan' => $company->plan,
+            ],
+        );
 
         return response()->json([
             'message' => 'Lead convertit în academie.',

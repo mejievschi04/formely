@@ -50,6 +50,7 @@ export const platform = {
   convertLead: async (id, payload = {}) => (
     await api.post(`/platform/leads/${id}/convert`, payload)
   ).data,
+  activityLogs: async (params) => (await api.get('/platform/activity-logs', { params })).data,
 };
 
 export default api;

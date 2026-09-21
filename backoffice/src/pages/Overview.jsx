@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { platform } from '../api';
-import { PLAN_LABELS, REASON_LABELS, STATUS_LABELS, errMessage, seats } from '../lib';
+import { LEAD_STATUS, PLAN_LABELS, REASON_LABELS, STATUS_LABELS, errMessage, seats } from '../lib';
 import { SeatMeter } from '../ui';
 import { useToast } from '../toast';
 import { usePoll } from '../usePoll';
@@ -28,6 +28,11 @@ export default function OverviewPage() {
 
   const kpis = data.kpis || {};
   const companies = data.companies || [];
+  const funnel = data.leads_by_status || {};
+  const funnelTotal = Math.max(
+    1,
+    Object.values(funnel).reduce((sum, n) => sum + (Number(n) || 0), 0),
+  );
   const planTotal = Math.max(
     1,
     (data.by_plan?.instructor || 0) + (data.by_plan?.academie || 0) + (data.by_plan?.business || 0),
@@ -80,6 +85,28 @@ export default function OverviewPage() {
           <strong>{kpis.needs_attention ?? 0}</strong>
           <small>{kpis.leads_new ?? 0} cereri noi</small>
         </article>
+      </section>
+
+      <section className="bo-card">
+        <div className="bo-card__head">
+          <h2>Funnel cereri</h2>
+          <Link to="/leads">Deschide cererile</Link>
+        </div>
+        <div className="bo-funnel">
+          {Object.entries(LEAD_STATUS).map(([id, label]) => {
+            const count = funnel[id] || 0;
+            const pct = Math.round((count / funnelTotal) * 100);
+            return (
+              <Link key={id} to="/leads" className="bo-funnel__step">
+                <strong>{count}</strong>
+                <span>{label}</span>
+                <div className="bo-funnel__bar" aria-hidden>
+                  <span style={{ width: `${pct}%` }} />
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       </section>
 
       <div className="bo-split">

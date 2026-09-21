@@ -240,6 +240,7 @@ Route::middleware([
 ])->prefix('platform')->group(function () {
     Route::get('/overview', [CompanyAdminController::class, 'overview']);
     Route::get('/plans', [CompanyAdminController::class, 'plans']);
+    Route::get('/activity-logs', [CompanyAdminController::class, 'activityLogs']);
     Route::get('/companies', [CompanyAdminController::class, 'index']);
     Route::post('/companies', [CompanyAdminController::class, 'store']);
     Route::get('/companies/{id}', [CompanyAdminController::class, 'show']);
@@ -522,6 +523,7 @@ Route::middleware([
     Route::middleware('super_admin')->prefix('platform')->group(function () {
         Route::get('/overview', [CompanyAdminController::class, 'overview']);
         Route::get('/plans', [CompanyAdminController::class, 'plans']);
+        Route::get('/activity-logs', [CompanyAdminController::class, 'activityLogs']);
         Route::get('/companies', [CompanyAdminController::class, 'index']);
         Route::post('/companies', [CompanyAdminController::class, 'store']);
         Route::get('/companies/{id}', [CompanyAdminController::class, 'show']);

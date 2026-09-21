@@ -7,9 +7,11 @@ use App\Models\Company;
 use App\Models\Lead;
 use App\Models\User;
 use App\Models\UserInvitation;
+use App\Models\ActivityLog;
 use App\Services\CompanyDeletionService;
 use App\Services\PlanEntitlementService;
 use App\Services\UserInvitationService;
+use App\Support\PlatformActivityLogger;
 use App\Support\UserRoles;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -90,6 +92,21 @@ class CompanyAdminController extends Controller
             return [$company, $invite];
         });
 
+        PlatformActivityLogger::log(
+            $request,
+            'platform.company_created',
+            "Academie creată: {$company->name}",
+            'Company',
+            (int) $company->id,
+            null,
+            [
+                'name' => $company->name,
+                'slug' => $company->slug,
+                'plan' => $company->plan,
+                'status' => $company->status,
+            ],
+        );
+
         return response()->json([
             'message' => 'Compania a fost creată.',
             'company' => $this->serializeCompany($company->fresh(), true),
@@ -100,6 +117,15 @@ class CompanyAdminController extends Controller
     public function update(Request $request, int $id)
     {
         $company = Company::findOrFail($id);
+        $before = [
+            'name' => $company->name,
+            'slug' => $company->slug,
+            'plan' => $company->plan,
+            'status' => $company->status,
+            'trial_ends_at' => $company->trial_ends_at?->toIso8601String(),
+            'contract_ends_at' => $company->contract_ends_at?->toIso8601String(),
+            'notes' => $company->notes,
+        ];
         $validated = $this->validateCompanyPayload($request, false, $company);
         $planChanging = isset($validated['plan']) && $validated['plan'] !== $company->plan;
 
@@ -124,6 +150,25 @@ class CompanyAdminController extends Controller
 
         $company->fill($validated);
         $company->save();
+
+        $after = [
+            'name' => $company->name,
+            'slug' => $company->slug,
+            'plan' => $company->plan,
+            'status' => $company->status,
+            'trial_ends_at' => $company->trial_ends_at?->toIso8601String(),
+            'contract_ends_at' => $company->contract_ends_at?->toIso8601String(),
+            'notes' => $company->notes,
+        ];
+        PlatformActivityLogger::log(
+            $request,
+            'platform.company_updated',
+            "Academie actualizată: {$company->name}",
+            'Company',
+            (int) $company->id,
+            $before,
+            $after,
+        );
 
         return response()->json([
             'message' => 'Compania a fost actualizată.',
@@ -199,6 +244,16 @@ class CompanyAdminController extends Controller
             $request
         );
 
+        PlatformActivityLogger::log(
+            $request,
+            'platform.owner_invited',
+            "Invitație owner pentru {$company->name}: {$validated['owner_email']}",
+            'Company',
+            (int) $company->id,
+            null,
+            ['owner_email' => $validated['owner_email']],
+        );
+
         return response()->json([
             'message' => 'Invitația pentru proprietar a fost trimisă.',
             'invite_url' => $result['invite_url'],
@@ -220,10 +275,73 @@ class CompanyAdminController extends Controller
         }
 
         $name = $company->name;
+        $snapshot = $company->only(['id', 'name', 'slug', 'plan', 'status']);
         $this->companyDeletion->deletePermanently($company);
+
+        PlatformActivityLogger::log(
+            $request,
+            'platform.company_deleted',
+            "Academie ștearsă: {$name}",
+            'Company',
+            (int) $snapshot['id'],
+            $snapshot,
+            null,
+        );
 
         return response()->json([
             'message' => "Academia „{$name}” a fost ștearsă definitiv.",
+        ]);
+    }
+
+    /**
+     * Platform-only audit trail (actions prefixed platform.*).
+     * Separate from tenant LMS activity-logs — platform admins have denyTenantData.
+     */
+    public function activityLogs(Request $request)
+    {
+        $perPage = min(100, max(1, (int) $request->get('per_page', 50)));
+        $search = trim((string) $request->get('q', ''));
+        $action = $request->get('action');
+
+        $query = ActivityLog::with('user:id,name,email')
+            ->where('action', 'like', 'platform.%')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%")
+                    ->orWhere('action', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($uq) use ($search) {
+                        $uq->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($action) {
+            $query->where('action', $action);
+        }
+
+        $logs = $query->paginate($perPage);
+
+        $actions = ActivityLog::query()
+            ->where('action', 'like', 'platform.%')
+            ->select('action')
+            ->distinct()
+            ->orderBy('action')
+            ->pluck('action')
+            ->values();
+
+        return response()->json([
+            'data' => $logs->items(),
+            'current_page' => $logs->currentPage(),
+            'last_page' => $logs->lastPage(),
+            'per_page' => $logs->perPage(),
+            'total' => $logs->total(),
+            'filters' => [
+                'actions' => $actions,
+            ],
         ]);
     }
 
@@ -306,10 +424,38 @@ class CompanyAdminController extends Controller
             ],
             'by_plan' => $byPlan,
             'by_status' => $byStatus,
+            'leads_by_status' => $this->leadsByStatus(),
             'attention' => $attentionCompanies->take(12)->values(),
             'leads_recent' => Lead::query()->where('status', 'new')->orderByDesc('created_at')->limit(5)->get()->map->toPlatformArray()->values(),
             'companies' => $sortedCompanies->take(12)->values(),
         ]);
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function leadsByStatus(): array
+    {
+        $counts = [
+            'new' => 0,
+            'contacted' => 0,
+            'qualified' => 0,
+            'won' => 0,
+            'lost' => 0,
+        ];
+
+        Lead::query()
+            ->selectRaw('status, count(*) as c')
+            ->groupBy('status')
+            ->get()
+            ->each(function ($row) use (&$counts) {
+                $status = (string) $row->status;
+                if (array_key_exists($status, $counts)) {
+                    $counts[$status] = (int) $row->c;
+                }
+            });
+
+        return $counts;
     }
 
     public function plans()

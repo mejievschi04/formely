@@ -136,6 +136,21 @@ export function formatDate(iso) {
   }
 }
 
+export function formatDateTime(iso) {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleString('ro-RO', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return String(iso);
+  }
+}
+
 /** Local midnight ISO for API date fields (nullable). */
 export function dateInputToIso(value) {
   if (!value) return null;

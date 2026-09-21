@@ -9,6 +9,7 @@ import ClientDetailPage from './pages/ClientDetail';
 import LeadsPage from './pages/Leads';
 import PlansPage from './pages/Plans';
 import InvoicesPage from './pages/Invoices';
+import AuditPage from './pages/Audit';
 
 function Guard({ children }) {
   const { user, loading } = useAuth();
@@ -41,6 +42,7 @@ export default function App() {
                 <Route path="plans" element={<PlansPage />} />
                 <Route path="pipeline" element={<InvoicesPage />} />
                 <Route path="invoices" element={<Navigate to="/pipeline" replace />} />
+                <Route path="audit" element={<AuditPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Shell>

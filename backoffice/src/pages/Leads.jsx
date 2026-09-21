@@ -130,6 +130,8 @@ export default function LeadsPage() {
   const [convertSaving, setConvertSaving] = useState(false);
   const [inviteUrl, setInviteUrl] = useState('');
   const [createdCompanyId, setCreatedCompanyId] = useState(null);
+  const [checked, setChecked] = useState(() => new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
   const statusRef = useRef(status);
   const queryRef = useRef(query);
   statusRef.current = status;
@@ -146,6 +148,14 @@ export default function LeadsPage() {
       });
       const rows = res?.data || [];
       setLeads(rows);
+      setChecked((prev) => {
+        const ids = new Set(rows.map((l) => l.id));
+        const next = new Set();
+        prev.forEach((id) => {
+          if (ids.has(id)) next.add(id);
+        });
+        return next;
+      });
       setSelected((prev) => {
         if (!prev) return null;
         return rows.find((l) => l.id === prev.id) || null;
@@ -217,6 +227,36 @@ export default function LeadsPage() {
       await load();
     } catch (err) {
       push(errMessage(err, 'Actualizarea a eșuat.'), 'error');
+    }
+  };
+
+  const allChecked = leads.length > 0 && checked.size === leads.length;
+  const toggleAll = () => {
+    if (allChecked) setChecked(new Set());
+    else setChecked(new Set(leads.map((l) => l.id)));
+  };
+  const toggleOne = (id) => {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const bulkStatus = async (nextStatus) => {
+    const ids = [...checked];
+    if (ids.length === 0) return;
+    setBulkBusy(true);
+    try {
+      await Promise.all(ids.map((id) => platform.updateLead(id, { status: nextStatus })));
+      push(`${ids.length} cereri → ${LEAD_STATUS[nextStatus] || nextStatus}.`, 'success');
+      setChecked(new Set());
+      await load();
+    } catch (err) {
+      push(errMessage(err, 'Actualizarea în masă a eșuat.'), 'error');
+    } finally {
+      setBulkBusy(false);
     }
   };
 
@@ -293,6 +333,24 @@ export default function LeadsPage() {
         </button>
       </div>
 
+      {checked.size > 0 && (
+        <div className="bo-bulk">
+          <span>{checked.size} selectate</span>
+          <button type="button" className="bo-btn bo-btn--sm" disabled={bulkBusy} onClick={() => bulkStatus('contacted')}>
+            Contactate
+          </button>
+          <button type="button" className="bo-btn bo-btn--sm" disabled={bulkBusy} onClick={() => bulkStatus('qualified')}>
+            Calificate
+          </button>
+          <button type="button" className="bo-btn bo-btn--sm" disabled={bulkBusy} onClick={() => bulkStatus('lost')}>
+            Pierdute
+          </button>
+          <button type="button" className="bo-btn bo-btn--sm bo-btn--ghost" onClick={() => setChecked(new Set())}>
+            Anulează
+          </button>
+        </div>
+      )}
+
       <section className="bo-card">
         <div className="bo-card__head">
           <h2>{loading ? '…' : `${leads.length} cereri`}</h2>
@@ -315,6 +373,14 @@ export default function LeadsPage() {
             <table className="bo-table">
               <thead>
                 <tr>
+                  <th className="bo-check-col">
+                    <input
+                      type="checkbox"
+                      checked={allChecked}
+                      onChange={toggleAll}
+                      aria-label="Selectează toate"
+                    />
+                  </th>
                   <th>Organizație</th>
                   <th>Contact</th>
                   <th>Plan</th>
@@ -332,6 +398,14 @@ export default function LeadsPage() {
                     onClick={() => setSelected(lead)}
                     style={{ cursor: 'pointer' }}
                   >
+                    <td className="bo-check-col" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={checked.has(lead.id)}
+                        onChange={() => toggleOne(lead.id)}
+                        aria-label={`Selectează ${lead.company_name || lead.name}`}
+                      />
+                    </td>
                     <td>
                       <strong>{lead.company_name || lead.name}</strong>
                       <div className="bo-muted">{lead.message || leadReason(lead) || '—'}</div>

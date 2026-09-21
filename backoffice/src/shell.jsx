@@ -8,6 +8,7 @@ const links = [
   { to: '/leads', label: 'Cereri' },
   { to: '/plans', label: 'Planuri' },
   { to: '/pipeline', label: 'De facturat' },
+  { to: '/audit', label: 'Jurnal' },
 ];
 
 export default function Shell({ children }) {

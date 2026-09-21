@@ -107,6 +107,61 @@ button, input, select, textarea { font: inherit; }
 .bo-kpis small { color: var(--muted); }
 .bo-kpis .is-alert { border-color: color-mix(in srgb, var(--danger) 35%, var(--border)); }
 
+.bo-funnel {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.bo-funnel__step {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  text-decoration: none;
+  color: inherit;
+}
+.bo-funnel__step:hover { background: #f0f9ff; }
+.bo-funnel__step strong { font-size: 1.35rem; }
+.bo-funnel__step span {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+.bo-funnel__bar {
+  height: 4px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+  margin-top: 0.35rem;
+}
+.bo-funnel__bar > span {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+}
+
+.bo-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 0.75rem;
+  border-radius: 12px;
+  background: #ecfeff;
+  border: 1px solid #a5f3fc;
+  font-weight: 600;
+}
+.bo-check-col {
+  width: 2rem;
+  vertical-align: middle;
+}
+
+@media (max-width: 860px) {
+  .bo-funnel { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 .bo-card__head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.8rem; }
 .bo-card h2 { margin: 0; font-size: 1.05rem; }
 
