@@ -16,6 +16,17 @@ if [ -z "$APP_KEY" ]; then
   exit 1
 fi
 
+# Directoare framework necesare (volume-ul storage poate fi gol la primul start)
+mkdir -p \
+  storage/framework/sessions \
+  storage/framework/views \
+  storage/framework/cache/data \
+  storage/logs \
+  storage/app/public \
+  bootstrap/cache
+chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
+chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+
 # Așteaptă PostgreSQL și rulează migrații (retry până la 30 secunde)
 echo "Waiting for database and running migrations..."
 for i in $(seq 1 15); do
