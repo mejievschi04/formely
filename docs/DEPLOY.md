@@ -50,6 +50,14 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm --no-de
 # lipește în .env: APP_KEY=base64:...
 ```
 
+Dacă imaginea e veche și tot cere APP_KEY, folosește:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm --no-deps --entrypoint php backend artisan key:generate --show
+```
+
+**Atenție `$` în `.env`:** Docker Compose interpretează variabile. Dacă o parolă conține `$`, dublează: `pa$$word`. Warning-ul `The "V" variable is not set` vine de obicei de la un `$V...` neescapat în `.env`.
+
 ### 2. Pornire containere
 
 ```bash

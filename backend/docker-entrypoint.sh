@@ -1,11 +1,18 @@
 #!/bin/sh
 set -e
 
+# Permite generarea cheii fără APP_KEY (bootstrap circular altfel).
+case " $* " in
+  *" artisan key:generate "*|*" key:generate "*)
+    exec "$@"
+    ;;
+esac
+
 if [ -z "$APP_KEY" ]; then
   echo "FATAL: APP_KEY is not set or empty."
-  echo "Set APP_KEY in the project root .env (next to docker-compose.yml), e.g.:"
-  echo "  APP_KEY=base64:...   # php artisan key:generate --show"
-  echo "Then: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --force-recreate backend"
+  echo "Generează una (fără a porni tot stack-ul):"
+  echo "  docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm --no-deps backend php artisan key:generate --show"
+  echo "Lipește rezultatul în .env ca APP_KEY=base64:..."
   exit 1
 fi
 

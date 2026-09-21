@@ -105,8 +105,6 @@ export const notificationsService = {
   },
 };
 
-};
-
 /** Extrage ID numeric din notificări persistate (student: stored_12, admin: 12). */
 export function parseStoredNotificationId(notifId) {
   const raw = String(notifId ?? '');
