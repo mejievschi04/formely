@@ -1,15 +1,12 @@
-# Override producție VPS (domenii formely.org + TLS via Caddy)
+# Override producție VPS — Nginx pe host ocupă deja 80/443
 # Folosire:
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 #   ./scripts/deploy-vps.sh
 #
-# Necesită Docker Compose v2.24+ (suportă !reset pe ports/volumes).
+# Necesită Docker Compose v2.24+ (!reset pe ports/volumes).
 #
-# Diferențe față de baza locală:
-# - fără mount ./backend (doar volume storage/cache)
-# - fără porturi publice pe postgres / SPA / API
-# - Caddy pe 80/443 cu Let's Encrypt
-# - nginx-backend citește public din containerul backend
+# Containerele ascultă DOAR pe 127.0.0.1 (nu public).
+# TLS + domenii: vhost-uri în docker/nginx-host/ → /etc/nginx/sites-available/
 
 services:
   postgres:
@@ -31,43 +28,21 @@ services:
       - backend_cache:/var/www/html/bootstrap/cache
 
   nginx-backend:
-    ports: !reset []
+    ports: !reset
+      - "127.0.0.1:${BACKEND_PORT:-18080}:80"
     volumes: !reset
       - ./docker/nginx-backend.conf:/etc/nginx/conf.d/default.conf:ro
     volumes_from:
       - backend
 
   frontend:
-    ports: !reset []
+    ports: !reset
+      - "127.0.0.1:${FRONTEND_PORT:-13001}:80"
 
   website:
-    ports: !reset []
+    ports: !reset
+      - "127.0.0.1:${WEBSITE_PORT:-14322}:80"
 
   backoffice:
-    ports: !reset []
-
-  caddy:
-    image: caddy:2-alpine
-    container_name: formely-caddy
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-    environment:
-      CADDY_EMAIL: ${CADDY_EMAIL:-ops@formely.org}
-    volumes:
-      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - website
-      - frontend
-      - backoffice
-      - nginx-backend
-    networks:
-      - formely-network
-
-volumes:
-  caddy_data:
-  caddy_config:
+    ports: !reset
+      - "127.0.0.1:${BACKOFFICE_PORT:-15181}:80"

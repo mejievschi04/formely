@@ -1,8 +1,8 @@
 #!/bin/bash
-# Deploy complet Formely pe VPS (Docker + Caddy + domenii formely.org)
+# Deploy Formely pe VPS (Docker + Nginx pe host pentru TLS/domenii)
 # Folosire: cd /var/www/app/formely && chmod +x scripts/deploy-vps.sh && ./scripts/deploy-vps.sh
 # Opțional: DEPLOY_PRUNE=1 ./scripts/deploy-vps.sh
-# Opțional: DEPLOY_SEED=1 ./scripts/deploy-vps.sh  → ProductionSeeder după migrate
+# Opțional: DEPLOY_SEED=1 ./scripts/deploy-vps.sh
 
 set -eo pipefail
 
@@ -70,24 +70,28 @@ echo ">>> permisiuni storage"
 "${COMPOSE[@]}" exec -T backend chown -R www-data:www-data storage bootstrap/cache || true
 
 echo ">>> restart aplicație"
-"${COMPOSE[@]}" restart backend frontend website backoffice nginx-backend queue scheduler caddy
+"${COMPOSE[@]}" restart backend frontend website backoffice nginx-backend queue scheduler
 
 echo ""
 echo ">>> status"
 "${COMPOSE[@]}" ps
 echo ""
 
-HEALTH_URL="${APP_URL%/}/api/health"
-echo ">>> verificare $HEALTH_URL"
+API_LOCAL="http://127.0.0.1:${BACKEND_PORT:-18080}/api/health"
+echo ">>> verificare locală $API_LOCAL"
 if command -v curl &> /dev/null; then
-  code=$(curl -sS -o /dev/null -w "%{http_code}" "$HEALTH_URL" || echo "000")
+  code=$(curl -sS -o /dev/null -w "%{http_code}" "$API_LOCAL" || echo "000")
   echo "    HTTP $code"
   if [ "$code" != "200" ]; then
-    echo "    Dacă DNS/TLS încă propagă, reîncearcă în câteva minute."
-    echo "    Loguri: ${COMPOSE[*]} logs --tail=80 caddy backend"
+    echo "    Loguri: ${COMPOSE[*]} logs --tail=80 backend nginx-backend"
   fi
-else
-  echo "    (instalează curl pentru verificare automată)"
+fi
+
+if [ -n "${APP_URL:-}" ]; then
+  HEALTH_URL="${APP_URL%/}/api/health"
+  echo ">>> verificare publică $HEALTH_URL"
+  code=$(curl -sS -o /dev/null -w "%{http_code}" "$HEALTH_URL" || echo "000")
+  echo "    HTTP $code (necesită vhost Nginx + DNS + certbot)"
 fi
 
 if [ "${DEPLOY_PRUNE:-0}" = "1" ]; then
@@ -98,9 +102,15 @@ if [ "${DEPLOY_PRUNE:-0}" = "1" ]; then
 fi
 
 echo ""
-echo "Gata."
+echo "Gata (containere)."
+echo "Dacă încă nu ai vhost-urile Nginx:"
+echo "  sudo cp docker/nginx-host/formely.conf /etc/nginx/sites-available/formely.conf"
+echo "  sudo ln -sf /etc/nginx/sites-available/formely.conf /etc/nginx/sites-enabled/formely.conf"
+echo "  sudo nginx -t && sudo systemctl reload nginx"
+echo "  sudo certbot --nginx -d formely.org -d www.formely.org -d api.formely.org -d academy.formely.org -d admin.formely.org"
+echo ""
 echo "  Website:   https://formely.org"
 echo "  API:       https://api.formely.org/api/health"
 echo "  Academy:   https://academy.formely.org"
 echo "  Admin:     https://admin.formely.org"
-echo "Loguri: ${COMPOSE[*]} logs -f caddy backend"
+echo "Loguri: ${COMPOSE[*]} logs -f backend queue"

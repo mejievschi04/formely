@@ -1,64 +1,77 @@
-# Formely — deploy pe VPS cu Docker
+# Formely — deploy pe VPS cu Docker + Nginx pe host
 #
 # Domenii:
 #   https://formely.org           — website
 #   https://api.formely.org       — API Laravel
 #   https://academy.formely.org   — LMS
 #   https://admin.formely.org     — backoffice
+#
+# Path pe VPS: /var/www/app/formely
 
-## Arhitectură
+## Arhitectură (VPS cu Nginx existent pe 80/443)
 
 ```
-Internet → Caddy (:80/:443, TLS)
-             ├─ formely.org          → website
-             ├─ api.formely.org      → nginx-backend → PHP-FPM
-             ├─ academy.formely.org  → frontend (proxy /api → backend)
-             └─ admin.formely.org    → backoffice (proxy /api → backend)
+Internet → Nginx host (:80/:443, Certbot)
+             ├─ formely.org          → 127.0.0.1:14322  (website)
+             ├─ api.formely.org      → 127.0.0.1:18080  (nginx-backend → PHP-FPM)
+             ├─ academy.formely.org  → 127.0.0.1:13001  (frontend, proxy /api intern)
+             └─ admin.formely.org    → 127.0.0.1:15181  (backoffice)
 
-postgres · backend · queue · scheduler  (rețea internă)
+postgres · backend · queue · scheduler  (doar rețea Docker, fără port public)
 ```
 
-Academy și admin folosesc **same-origin `/api`** (proxy Nginx) — cookie Sanctum pe subdomeniul respectiv.
-Website-ul apelează `https://api.formely.org/api/leads` (CORS).
+Nu pornim Caddy — pe acest VPS Nginx pe host deține deja 80/443.
+Porturile Formely sunt doar pe `127.0.0.1` (nu se ciocnesc cu alte proiecte pe 8000/8080).
 
-## Cerințe VPS
+## Cerințe
 
-- Ubuntu 22.04+ (sau similar)
-- Docker Engine + Compose **v2.24+** (`docker compose version`)
-- DNS A (sau AAAA) către IP-ul VPS:
-  - `formely.org`
-  - `www.formely.org`
-  - `api.formely.org`
-  - `academy.formely.org`
-  - `admin.formely.org`
-- Porturi deschise: **80**, **443** (și 22 pentru SSH)
-- Nu expune 5432 public
+- Docker Engine + Compose **v2.24+**
+- Nginx pe host + Certbot
+- DNS A către IP-ul VPS pentru cele 5 hosturi
+- Nu expune Postgres public
 
 ## Prima instalare
 
+### 1. Env
+
 ```bash
-# pe VPS
-# pe VPS — proiectul stă în /var/www/app/formely
 cd /var/www/app/formely
 cp .env.example .env
-nano .env   # APP_KEY, DB_PASSWORD, SMTP, FORMELY_PLATFORM_OPERATOR_PASSWORD, CADDY_EMAIL
+nano .env
 ```
 
-Generează `APP_KEY` (o dată):
+Completează: `DB_PASSWORD`, `FORMELY_PLATFORM_OPERATOR_PASSWORD`, SMTP (sau `MAIL_MAILER=log`).
+
+Generează `APP_KEY`:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm --no-deps backend php artisan key:generate --show
-# lipește rezultatul în .env ca APP_KEY=base64:...
+# lipește în .env: APP_KEY=base64:...
 ```
 
-Deploy:
+### 2. Pornire containere
 
 ```bash
 chmod +x scripts/deploy-vps.sh
 ./scripts/deploy-vps.sh
 ```
 
-Seed operator platformă (o dată, după migrate):
+### 3. Nginx pe host + TLS
+
+```bash
+sudo cp docker/nginx-host/formely.conf /etc/nginx/sites-available/formely.conf
+sudo ln -sf /etc/nginx/sites-available/formely.conf /etc/nginx/sites-enabled/formely.conf
+sudo nginx -t && sudo systemctl reload nginx
+
+# după ce DNS arată spre acest VPS:
+sudo certbot --nginx \
+  -d formely.org -d www.formely.org \
+  -d api.formely.org \
+  -d academy.formely.org \
+  -d admin.formely.org
+```
+
+### 4. Operator platformă (o dată)
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml exec backend \
@@ -68,6 +81,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml exec backend \
 ## Verificări
 
 ```bash
+curl -sS http://127.0.0.1:18080/api/health
 curl -sS https://api.formely.org/api/health
 curl -sSI https://formely.org | head -5
 curl -sSI https://academy.formely.org | head -5
@@ -77,7 +91,8 @@ curl -sSI https://admin.formely.org | head -5
 Loguri:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml logs -f caddy backend queue
+docker compose -f docker-compose.yml -f docker-compose.prod.yml logs -f backend queue
+sudo tail -f /var/log/nginx/error.log
 ```
 
 ## DNS
@@ -90,39 +105,20 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml logs -f caddy ba
 | academy.formely.org | A | IP VPS |
 | admin.formely.org | A | IP VPS |
 
-Caddy obține certificate Let's Encrypt automat după ce DNS propagă.
-Email ACME: `CADDY_EMAIL` din `.env`.
-
 ## Deploy ulterior
 
-Din VPS:
-
 ```bash
+cd /var/www/app/formely
 ./scripts/deploy-vps.sh
-```
-
-De pe mașina locală (Windows/macOS), după `cp deploy.env.example deploy.env`:
-
-```powershell
-.\scripts\deploy-remote.ps1 -Push
 ```
 
 ## SMTP
 
-Până setezi SMTP real (`MAIL_MAILER=smtp` + host/user/pass), mail-urile merg în log.
-Invitațiile pot fi copiate din output-ul `formely:provision-company` / backoffice.
-
-## Firewall (exemplu UFW)
-
-```bash
-ufw allow OpenSSH
-ufw allow 80/tcp
-ufw allow 443/tcp
-ufw enable
-```
+Până ai SMTP real, lasă `MAIL_MAILER=log`. Invitațiile pot fi copiate din backoffice.
 
 ## Backup (minim)
 
-- Volume `postgres_data` + `backend_storage`
-- Exemplu dump:  
-  `docker compose … exec -T postgres pg_dump -U formely_user formely > backup-$(date +%F).sql`
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T postgres \
+  pg_dump -U formely_user formely > backup-$(date +%F).sql
+```
