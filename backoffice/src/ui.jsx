@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 import { seatPercent, seats } from './lib';
 
 export function SeatMeter({ used, max, pending }) {
@@ -25,4 +25,92 @@ export async function copyText(value) {
   } catch {
     return false;
   }
+}
+
+/** Modal overlay: Escape, click outside, basic focus restore. */
+export function Overlay({ open, onClose, title, children, wide }) {
+  const titleId = useId();
+  const panelRef = useRef(null);
+  const previousFocus = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    previousFocus.current = document.activeElement;
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    const t = window.setTimeout(() => {
+      const focusable = panelRef.current?.querySelector(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusable && typeof focusable.focus === 'function') focusable.focus();
+    }, 0);
+    return () => {
+      window.clearTimeout(t);
+      document.removeEventListener('keydown', onKey);
+      if (previousFocus.current && typeof previousFocus.current.focus === 'function') {
+        previousFocus.current.focus();
+      }
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="bo-overlay"
+      role="presentation"
+      onClick={onClose}
+    >
+      <div
+        ref={panelRef}
+        className={`bo-panel${wide ? ' bo-panel--wide' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {title ? (
+          <header>
+            <h2 id={titleId}>{title}</h2>
+            <button type="button" className="bo-btn bo-btn--sm bo-btn--ghost" onClick={onClose}>
+              Închide
+            </button>
+          </header>
+        ) : null}
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export function Pagination({ page, lastPage, total, onPage }) {
+  if (!lastPage || lastPage <= 1) {
+    return total != null ? <span className="bo-muted">{total} rezultate</span> : null;
+  }
+  return (
+    <div className="bo-pagination">
+      <button
+        type="button"
+        className="bo-btn bo-btn--sm"
+        disabled={page <= 1}
+        onClick={() => onPage(page - 1)}
+      >
+        Înapoi
+      </button>
+      <span className="bo-muted">
+        Pagina {page} / {lastPage}
+        {total != null ? ` · ${total}` : ''}
+      </span>
+      <button
+        type="button"
+        className="bo-btn bo-btn--sm"
+        disabled={page >= lastPage}
+        onClick={() => onPage(page + 1)}
+      >
+        Înainte
+      </button>
+    </div>
+  );
 }

@@ -10,7 +10,7 @@ import {
   planSeatLabel,
   slugify,
 } from '../lib';
-import { SeatMeter, copyText } from '../ui';
+import { Overlay, Pagination, SeatMeter, copyText } from '../ui';
 import { useToast } from '../toast';
 import { usePoll } from '../usePoll';
 
@@ -24,11 +24,14 @@ const EMPTY = {
   notes: '',
 };
 
+const PER_PAGE = 25;
+
 export default function ClientsPage() {
   const navigate = useNavigate();
   const { push } = useToast();
   const [params, setParams] = useSearchParams();
   const [companies, setCompanies] = useState([]);
+  const [meta, setMeta] = useState({ current_page: 1, last_page: 1, total: 0 });
   const [plans, setPlans] = useState([]);
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,7 +43,16 @@ export default function ClientsPage() {
   const [query, setQuery] = useState(params.get('q') || '');
   const [planFilter, setPlanFilter] = useState(params.get('plan') || '');
   const [statusFilter, setStatusFilter] = useState(params.get('status') || '');
+  const [page, setPage] = useState(Number(params.get('page') || 1) || 1);
   const redirectedLead = useRef(null);
+  const queryRef = useRef(query);
+  const planRef = useRef(planFilter);
+  const statusRef = useRef(statusFilter);
+  const pageRef = useRef(page);
+  queryRef.current = query;
+  planRef.current = planFilter;
+  statusRef.current = statusFilter;
+  pageRef.current = page;
 
   const planOptions = useMemo(
     () => (plans.length
@@ -58,11 +70,22 @@ export default function ClientsPage() {
     try {
       if (!silent) setLoading(true);
       const [companiesRes, plansRes, leadsRes] = await Promise.all([
-        platform.companies({ per_page: 100 }),
+        platform.companies({
+          per_page: PER_PAGE,
+          page: opts.page ?? pageRef.current,
+          q: (opts.q ?? queryRef.current) || undefined,
+          plan: (opts.plan ?? planRef.current) || undefined,
+          status: (opts.status ?? statusRef.current) || undefined,
+        }),
         platform.plans(),
-        platform.leads({ per_page: 50 }),
+        platform.leads({ per_page: 50, status: 'new' }),
       ]);
-      setCompanies(companiesRes?.data || companiesRes || []);
+      setCompanies(companiesRes?.data || []);
+      setMeta({
+        current_page: companiesRes?.current_page || 1,
+        last_page: companiesRes?.last_page || 1,
+        total: companiesRes?.total || 0,
+      });
       setPlans(plansRes?.plans || []);
       setLeads(leadsRes?.data || []);
     } catch (err) {
@@ -82,6 +105,7 @@ export default function ClientsPage() {
     if (params.has('q')) setQuery(params.get('q') || '');
     if (params.has('plan')) setPlanFilter(params.get('plan') || '');
     if (params.has('status')) setStatusFilter(params.get('status') || '');
+    if (params.has('page')) setPage(Number(params.get('page') || 1) || 1);
     if (params.get('new') === '1') setCreateOpen(true);
   }, [params]);
 
@@ -94,27 +118,30 @@ export default function ClientsPage() {
   }, [params, navigate]);
 
   const newLeads = useMemo(
-    () => leads.filter((l) => l.status === 'new' || l.status === 'contacted' || l.status === 'qualified'),
+    () => leads.filter((l) => !l.company_id && (l.status === 'new' || l.status === 'contacted' || l.status === 'qualified')),
     [leads],
   );
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return companies.filter((c) => {
-      if (planFilter && c.plan !== planFilter) return false;
-      if (statusFilter && c.status !== statusFilter) return false;
-      if (!q) return true;
-      return (c.name || '').toLowerCase().includes(q) || (c.slug || '').toLowerCase().includes(q);
-    });
-  }, [companies, planFilter, query, statusFilter]);
-
-  const syncParams = (patch) => {
+  const syncParams = (patch, reload = true) => {
     const next = new URLSearchParams(params);
     Object.entries(patch).forEach(([key, value]) => {
-      if (value) next.set(key, value);
+      if (value) next.set(key, String(value));
       else next.delete(key);
     });
     setParams(next, { replace: true });
+    if (reload) {
+      const nextPage = patch.page != null ? Number(patch.page) || 1 : pageRef.current;
+      if (patch.page != null) setPage(nextPage);
+      if (patch.q != null) setQuery(patch.q);
+      if (patch.plan != null) setPlanFilter(patch.plan);
+      if (patch.status != null) setStatusFilter(patch.status);
+      load({
+        page: patch.page != null ? nextPage : undefined,
+        q: patch.q !== undefined ? patch.q : undefined,
+        plan: patch.plan !== undefined ? patch.plan : undefined,
+        status: patch.status !== undefined ? patch.status : undefined,
+      });
+    }
   };
 
   const update = (key) => (e) => {
@@ -227,17 +254,15 @@ export default function ClientsPage() {
           type="search"
           placeholder="Caută nume sau slug…"
           value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            syncParams({ q: e.target.value });
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') syncParams({ q: e.currentTarget.value, page: 1 });
           }}
         />
         <select
+          aria-label="Filtru plan"
           value={planFilter}
-          onChange={(e) => {
-            setPlanFilter(e.target.value);
-            syncParams({ plan: e.target.value });
-          }}
+          onChange={(e) => syncParams({ plan: e.target.value, page: 1 })}
         >
           <option value="">Toate planurile</option>
           {planOptions.map((p) => (
@@ -245,27 +270,34 @@ export default function ClientsPage() {
           ))}
         </select>
         <select
+          aria-label="Filtru status"
           value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value);
-            syncParams({ status: e.target.value });
-          }}
+          onChange={(e) => syncParams({ status: e.target.value, page: 1 })}
         >
           <option value="">Toate statusurile</option>
           <option value="active">Activ</option>
           <option value="trial">Trial</option>
           <option value="suspended">Suspendat</option>
         </select>
+        <button type="button" className="bo-btn bo-btn--sm" onClick={() => syncParams({ q: query, page: 1 })}>
+          Caută
+        </button>
       </div>
 
       <section className="bo-card">
         <div className="bo-card__head">
-          <h2>{loading ? '…' : `${filtered.length} din ${companies.length}`}</h2>
+          <h2>{loading ? '…' : `${meta.total} clienți`}</h2>
+          <Pagination
+            page={meta.current_page}
+            lastPage={meta.last_page}
+            total={meta.total}
+            onPage={(p) => syncParams({ page: p })}
+          />
         </div>
         <div className="bo-table-wrap">
           {loading ? (
             <p className="bo-muted">Se încarcă…</p>
-          ) : filtered.length === 0 ? (
+          ) : companies.length === 0 ? (
             <p className="bo-muted">Niciun client pe filtrul curent.</p>
           ) : (
             <table className="bo-table">
@@ -280,7 +312,7 @@ export default function ClientsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((c) => (
+                {companies.map((c) => (
                   <tr key={c.id} data-severity={c.health?.severity || 'ok'}>
                     <td>
                       <Link to={`/clients/${c.id}`} className="bo-link-strong">{c.name}</Link>
@@ -328,47 +360,45 @@ export default function ClientsPage() {
             </table>
           )}
         </div>
+        {meta.last_page > 1 && (
+          <div className="bo-card__foot">
+            <Pagination
+              page={meta.current_page}
+              lastPage={meta.last_page}
+              total={meta.total}
+              onPage={(p) => syncParams({ page: p })}
+            />
+          </div>
+        )}
       </section>
 
-      {createOpen ? (
-        <div
-          className="bo-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Client nou"
-          onClick={closeCreate}
-          onKeyDown={(e) => { if (e.key === 'Escape') closeCreate(); }}
-        >
-          <form className="bo-panel" onClick={(e) => e.stopPropagation()} onSubmit={handleCreate}>
-            <header>
-              <h2>Client nou</h2>
-              <button type="button" className="bo-btn bo-btn--sm bo-btn--ghost" onClick={closeCreate}>Închide</button>
-            </header>
-            {inviteUrl ? (
-              <div className="bo-invite">
-                <p>Academia există. Trimite owner-ului acest link:</p>
-                <input readOnly value={inviteUrl} onFocus={(e) => e.target.select()} />
-                <button
-                  type="button"
-                  className="bo-btn bo-btn--primary"
-                  onClick={async () => {
-                    const ok = await copyText(inviteUrl);
-                    push(ok ? 'Link copiat.' : 'Copiază din câmp.', ok ? 'success' : 'info');
-                  }}
-                >
-                  Copiază invitația
-                </button>
-                {createdId ? (
-                  <Link to={`/clients/${createdId}`} className="bo-btn" onClick={closeCreate}>
-                    Deschide academia
-                  </Link>
-                ) : null}
-              </div>
+      <Overlay open={createOpen} onClose={closeCreate} title="Client nou">
+        {inviteUrl ? (
+          <div className="bo-invite">
+            <p>Academia există. Trimite owner-ului acest link:</p>
+            <input readOnly value={inviteUrl} onFocus={(e) => e.target.select()} />
+            <button
+              type="button"
+              className="bo-btn bo-btn--primary"
+              onClick={async () => {
+                const ok = await copyText(inviteUrl);
+                push(ok ? 'Link copiat.' : 'Copiază din câmp.', ok ? 'success' : 'info');
+              }}
+            >
+              Copiază invitația
+            </button>
+            {createdId ? (
+              <Link to={`/clients/${createdId}`} className="bo-btn" onClick={closeCreate}>
+                Deschide academia
+              </Link>
             ) : null}
+          </div>
+        ) : (
+          <form className="bo-stack-form" onSubmit={handleCreate}>
             <p className="bo-muted">Owner-ul primește invitația. Modulele urmează planul.</p>
             <label>
               Nume academie
-              <input required autoFocus value={form.name} onChange={update('name')} />
+              <input required value={form.name} onChange={update('name')} />
             </label>
             <label>
               Slug
@@ -413,12 +443,12 @@ export default function ClientsPage() {
               Note interne
               <textarea rows={3} value={form.notes} onChange={update('notes')} />
             </label>
-            <button type="submit" className="bo-btn bo-btn--primary" disabled={saving || Boolean(inviteUrl)}>
+            <button type="submit" className="bo-btn bo-btn--primary" disabled={saving}>
               {saving ? 'Se creează…' : 'Creează și trimite invitația'}
             </button>
           </form>
-        </div>
-      ) : null}
+        )}
+      </Overlay>
     </>
   );
 }

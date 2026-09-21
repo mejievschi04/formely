@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { platform } from '../api';
 import {
   LEAD_STATUS,
@@ -11,20 +11,120 @@ import {
   leadSource,
   slugify,
 } from '../lib';
-import { copyText } from '../ui';
+import { Overlay, copyText } from '../ui';
 import { useToast } from '../toast';
 import { usePoll } from '../usePoll';
 
 const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://formely.org';
 
+function LeadDrawer({ lead, open, onClose, onConvert, onStatus }) {
+  if (!open || !lead) return null;
+
+  return (
+    <div className="bo-drawer-root" role="presentation" onClick={onClose}>
+      <aside
+        className="bo-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Cerere ${lead.company_name || lead.name}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="bo-drawer__head">
+          <div>
+            <p className="bo-kicker">Cerere #{lead.id}</p>
+            <h2>{lead.company_name || lead.name}</h2>
+          </div>
+          <button type="button" className="bo-btn bo-btn--sm bo-btn--ghost" onClick={onClose}>
+            Închide
+          </button>
+        </header>
+
+        <dl className="bo-drawer__fields">
+          <div>
+            <dt>Contact</dt>
+            <dd>
+              {lead.name}
+              <br />
+              <a href={`mailto:${lead.email}`}>{lead.email}</a>
+            </dd>
+          </div>
+          <div>
+            <dt>Organizație</dt>
+            <dd>{lead.company_name || '—'}</dd>
+          </div>
+          <div>
+            <dt>Plan interes</dt>
+            <dd>{PLAN_LABELS[lead.plan_interest] || lead.plan_interest || '—'}</dd>
+          </div>
+          <div>
+            <dt>Motiv</dt>
+            <dd>{leadReason(lead) || '—'}</dd>
+          </div>
+          <div>
+            <dt>Mesaj</dt>
+            <dd className="bo-drawer__message">{lead.message || '—'}</dd>
+          </div>
+          <div>
+            <dt>Sursă</dt>
+            <dd>{leadSource(lead)}</dd>
+          </div>
+          <div>
+            <dt>Creată</dt>
+            <dd>{formatDate(lead.created_at)}</dd>
+          </div>
+          <div>
+            <dt>Contactată</dt>
+            <dd>{lead.contacted_at ? formatDate(lead.contacted_at) : '—'}</dd>
+          </div>
+          <div>
+            <dt>Consimțământ</dt>
+            <dd>{lead.privacy_accepted_at ? formatDate(lead.privacy_accepted_at) : '—'}</dd>
+          </div>
+          {lead.company_id ? (
+            <div>
+              <dt>Academie</dt>
+              <dd>
+                <Link to={`/clients/${lead.company_id}`}>#{lead.company_id}</Link>
+              </dd>
+            </div>
+          ) : null}
+        </dl>
+
+        <label className="bo-drawer__status">
+          Status
+          <select
+            value={lead.status}
+            onChange={(e) => onStatus(lead, e.target.value)}
+          >
+            {Object.entries(LEAD_STATUS).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+        </label>
+
+        <div className="bo-drawer__actions">
+          {!lead.company_id && lead.status !== 'lost' && (
+            <button type="button" className="bo-btn bo-btn--primary" onClick={() => onConvert(lead)}>
+              Convertește în academie
+            </button>
+          )}
+          <a className="bo-btn" href={`mailto:${lead.email}?subject=${encodeURIComponent(`Formely — ${lead.company_name || lead.name}`)}`}>
+            Scrie email
+          </a>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
 export default function LeadsPage() {
-  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const { push } = useToast();
   const [leads, setLeads] = useState([]);
   const [status, setStatus] = useState('');
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState(null);
   const [converting, setConverting] = useState(null);
   const [convertForm, setConvertForm] = useState(null);
   const [convertSaving, setConvertSaving] = useState(false);
@@ -44,7 +144,12 @@ export default function LeadsPage() {
         status: (filters.status ?? statusRef.current) || undefined,
         q: (filters.q ?? queryRef.current) || undefined,
       });
-      setLeads(res?.data || []);
+      const rows = res?.data || [];
+      setLeads(rows);
+      setSelected((prev) => {
+        if (!prev) return null;
+        return rows.find((l) => l.id === prev.id) || null;
+      });
     } catch (err) {
       if (!silent) push(errMessage(err, 'Nu am putut încărca cererile.'), 'error');
     } finally {
@@ -60,6 +165,7 @@ export default function LeadsPage() {
 
   const openConvert = useCallback((lead) => {
     const name = lead.company_name || lead.name || '';
+    setSelected(null);
     setConverting(lead);
     setInviteUrl('');
     setCreatedCompanyId(null);
@@ -86,6 +192,15 @@ export default function LeadsPage() {
     next.delete('convert');
     setParams(next, { replace: true });
   }, [leads, params, openConvert, setParams]);
+
+  useEffect(() => {
+    if (!selected) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape' && !converting) setSelected(null);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [selected, converting]);
 
   const counts = useMemo(() => {
     const all = { all: leads.length };
@@ -211,13 +326,20 @@ export default function LeadsPage() {
               </thead>
               <tbody>
                 {leads.map((lead) => (
-                  <tr key={lead.id}>
+                  <tr
+                    key={lead.id}
+                    className={selected?.id === lead.id ? 'is-selected' : undefined}
+                    onClick={() => setSelected(lead)}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <td>
                       <strong>{lead.company_name || lead.name}</strong>
                       <div className="bo-muted">{lead.message || leadReason(lead) || '—'}</div>
                       {lead.company_id ? (
                         <div className="bo-muted">
-                          <Link to={`/clients/${lead.company_id}`}>Academie #{lead.company_id}</Link>
+                          <Link to={`/clients/${lead.company_id}`} onClick={(e) => e.stopPropagation()}>
+                            Academie #{lead.company_id}
+                          </Link>
                         </div>
                       ) : null}
                     </td>
@@ -230,7 +352,7 @@ export default function LeadsPage() {
                       <span className="bo-pill">{leadSource(lead)}</span>
                     </td>
                     <td className="bo-muted">{formatDate(lead.created_at)}</td>
-                    <td>
+                    <td onClick={(e) => e.stopPropagation()}>
                       <select
                         aria-label={`Status ${lead.company_name || lead.name}`}
                         value={lead.status}
@@ -241,7 +363,10 @@ export default function LeadsPage() {
                         ))}
                       </select>
                     </td>
-                    <td className="bo-row-actions">
+                    <td className="bo-row-actions" onClick={(e) => e.stopPropagation()}>
+                      <button type="button" className="bo-btn bo-btn--sm" onClick={() => setSelected(lead)}>
+                        Detalii
+                      </button>
                       {!lead.company_id && lead.status !== 'lost' && (
                         <button type="button" className="bo-btn bo-btn--sm" onClick={() => openConvert(lead)}>
                           Convertește
@@ -256,135 +381,129 @@ export default function LeadsPage() {
         </div>
       </section>
 
-      {converting && convertForm ? (
-        <div
-          className="bo-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Convertește lead"
-          onClick={closeConvert}
-          onKeyDown={(e) => { if (e.key === 'Escape') closeConvert(); }}
-        >
-          <form className="bo-panel" onClick={(e) => e.stopPropagation()} onSubmit={handleConvert}>
-            <header>
-              <h2>Convertește în academie</h2>
-              <button type="button" className="bo-btn bo-btn--sm bo-btn--ghost" onClick={closeConvert}>
-                Închide
-              </button>
-            </header>
-            {inviteUrl || createdCompanyId ? (
-              <div className="bo-invite">
-                <p>Lead marcat câștigat și legat de academie.</p>
-                {inviteUrl ? (
-                  <>
-                    <input readOnly value={inviteUrl} onFocus={(e) => e.target.select()} />
-                    <button
-                      type="button"
-                      className="bo-btn bo-btn--primary"
-                      onClick={async () => {
-                        const ok = await copyText(inviteUrl);
-                        push(ok ? 'Link copiat.' : 'Copiază din câmp.', ok ? 'success' : 'info');
-                      }}
-                    >
-                      Copiază invitația
-                    </button>
-                  </>
-                ) : null}
-                {createdCompanyId ? (
-                  <Link
-                    to={`/clients/${createdCompanyId}`}
-                    className="bo-btn"
-                    onClick={closeConvert}
-                  >
-                    Deschide academia
-                  </Link>
-                ) : null}
-              </div>
-            ) : (
+      <LeadDrawer
+        lead={selected}
+        open={Boolean(selected) && !converting}
+        onClose={() => setSelected(null)}
+        onConvert={openConvert}
+        onStatus={setLeadStatus}
+      />
+
+      <Overlay
+        open={Boolean(converting && convertForm)}
+        onClose={closeConvert}
+        title="Convertește în academie"
+      >
+        {inviteUrl || createdCompanyId ? (
+          <div className="bo-invite">
+            <p>Lead marcat câștigat și legat de academie.</p>
+            {inviteUrl ? (
               <>
-                <p className="bo-muted">
-                  Creează academia, marchează lead-ul câștigat și trimite invitația owner — într-un singur pas.
-                </p>
-                <label>
-                  Nume academie
-                  <input
-                    required
-                    autoFocus
-                    value={convertForm.name}
-                    onChange={(e) => {
-                      const name = e.target.value;
-                      setConvertForm((p) => ({
-                        ...p,
-                        name,
-                        slug: p.slugTouched ? p.slug : slugify(name),
-                      }));
-                    }}
-                  />
-                </label>
-                <label>
-                  Slug
-                  <input
-                    value={convertForm.slug}
-                    onChange={(e) => setConvertForm((p) => ({
-                      ...p,
-                      slug: e.target.value,
-                      slugTouched: true,
-                    }))}
-                  />
-                </label>
-                <label>
-                  Plan
-                  <select
-                    value={convertForm.plan}
-                    onChange={(e) => setConvertForm((p) => ({ ...p, plan: e.target.value }))}
-                  >
-                    {Object.entries(PLAN_LABELS).map(([id, label]) => (
-                      <option key={id} value={id}>{label}</option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Start
-                  <select
-                    value={convertForm.status}
-                    onChange={(e) => setConvertForm((p) => ({ ...p, status: e.target.value }))}
-                  >
-                    <option value="trial">Trial {TRIAL_DAYS} zile</option>
-                    <option value="active">Activ (contract)</option>
-                  </select>
-                </label>
-                <label>
-                  Email owner
-                  <input
-                    required
-                    type="email"
-                    value={convertForm.owner_email}
-                    onChange={(e) => setConvertForm((p) => ({ ...p, owner_email: e.target.value }))}
-                  />
-                </label>
-                <label>
-                  Nume owner
-                  <input
-                    value={convertForm.owner_name}
-                    onChange={(e) => setConvertForm((p) => ({ ...p, owner_name: e.target.value }))}
-                  />
-                </label>
-                <label>
-                  Note
-                  <textarea
-                    rows={3}
-                    value={convertForm.notes}
-                    onChange={(e) => setConvertForm((p) => ({ ...p, notes: e.target.value }))}
-                  />
-                </label>
-                <button type="submit" className="bo-btn bo-btn--primary" disabled={convertSaving}>
-                  {convertSaving ? 'Se convertește…' : 'Convertește'}
+                <input readOnly value={inviteUrl} onFocus={(e) => e.target.select()} />
+                <button
+                  type="button"
+                  className="bo-btn bo-btn--primary"
+                  onClick={async () => {
+                    const ok = await copyText(inviteUrl);
+                    push(ok ? 'Link copiat.' : 'Copiază din câmp.', ok ? 'success' : 'info');
+                  }}
+                >
+                  Copiază invitația
                 </button>
               </>
-            )}
+            ) : null}
+            {createdCompanyId ? (
+              <Link
+                to={`/clients/${createdCompanyId}`}
+                className="bo-btn"
+                onClick={closeConvert}
+              >
+                Deschide academia
+              </Link>
+            ) : null}
+          </div>
+        ) : (
+          <form className="bo-stack-form" onSubmit={handleConvert}>
+            <p className="bo-muted">
+              Creează academia, marchează lead-ul câștigat și trimite invitația owner — într-un singur pas.
+            </p>
+            <label>
+              Nume academie
+              <input
+                required
+                value={convertForm?.name || ''}
+                onChange={(e) => {
+                  const name = e.target.value;
+                  setConvertForm((p) => ({
+                    ...p,
+                    name,
+                    slug: p.slugTouched ? p.slug : slugify(name),
+                  }));
+                }}
+              />
+            </label>
+            <label>
+              Slug
+              <input
+                value={convertForm?.slug || ''}
+                onChange={(e) => setConvertForm((p) => ({
+                  ...p,
+                  slug: e.target.value,
+                  slugTouched: true,
+                }))}
+              />
+            </label>
+            <label>
+              Plan
+              <select
+                value={convertForm?.plan || 'academie'}
+                onChange={(e) => setConvertForm((p) => ({ ...p, plan: e.target.value }))}
+              >
+                {Object.entries(PLAN_LABELS).map(([id, label]) => (
+                  <option key={id} value={id}>{label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Start
+              <select
+                value={convertForm?.status || 'trial'}
+                onChange={(e) => setConvertForm((p) => ({ ...p, status: e.target.value }))}
+              >
+                <option value="trial">Trial {TRIAL_DAYS} zile</option>
+                <option value="active">Activ (contract)</option>
+              </select>
+            </label>
+            <label>
+              Email owner
+              <input
+                required
+                type="email"
+                value={convertForm?.owner_email || ''}
+                onChange={(e) => setConvertForm((p) => ({ ...p, owner_email: e.target.value }))}
+              />
+            </label>
+            <label>
+              Nume owner
+              <input
+                value={convertForm?.owner_name || ''}
+                onChange={(e) => setConvertForm((p) => ({ ...p, owner_name: e.target.value }))}
+              />
+            </label>
+            <label>
+              Note
+              <textarea
+                rows={3}
+                value={convertForm?.notes || ''}
+                onChange={(e) => setConvertForm((p) => ({ ...p, notes: e.target.value }))}
+              />
+            </label>
+            <button type="submit" className="bo-btn bo-btn--primary" disabled={convertSaving}>
+              {convertSaving ? 'Se convertește…' : 'Convertește'}
+            </button>
           </form>
-        </div>
-      ) : null}
+        )}
+      </Overlay>
     </>
   );
 }

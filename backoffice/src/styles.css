@@ -448,6 +448,7 @@ button, input, select, textarea { font: inherit; }
   max-height: 90vh;
   overflow: auto;
 }
+.bo-panel--wide { width: min(720px, 100%); }
 .bo-panel header { display: flex; justify-content: space-between; align-items: center; }
 .bo-panel h2 { margin: 0; }
 .bo-panel label { display: grid; gap: 0.3rem; font-weight: 600; font-size: 0.88rem; }
@@ -457,9 +458,95 @@ button, input, select, textarea { font: inherit; }
   border: 1px solid var(--border);
   border-radius: 10px;
 }
-.bo-invite { background: #e0f2fe; border-radius: 12px; padding: 0.8rem; }
+.bo-invite { background: #e0f2fe; border-radius: 12px; padding: 0.8rem; display: grid; gap: 0.55rem; }
 .bo-invite input { width: 100%; margin-top: 0.4rem; }
 .bo-invite-row input { width: auto; margin-top: 0; flex: 1; }
+
+.bo-pagination {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.bo-card__foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem 0;
+  border-top: 1px solid var(--border);
+  margin-top: 0.75rem;
+}
+
+.bo-table tbody tr.is-selected td {
+  background: #f0f9ff;
+}
+
+.bo-drawer-root {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  z-index: 28;
+  display: flex;
+  justify-content: flex-end;
+}
+.bo-drawer {
+  width: min(420px, 100%);
+  height: 100%;
+  background: #fff;
+  box-shadow: -12px 0 40px rgba(15, 23, 42, 0.12);
+  padding: 1.25rem;
+  overflow: auto;
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+.bo-drawer__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.bo-drawer__head h2 { margin: 0.15rem 0 0; font-size: 1.25rem; }
+.bo-drawer__fields {
+  margin: 0;
+  display: grid;
+  gap: 0.85rem;
+}
+.bo-drawer__fields > div {
+  display: grid;
+  gap: 0.2rem;
+}
+.bo-drawer__fields dt {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+.bo-drawer__fields dd {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  word-break: break-word;
+}
+.bo-drawer__message {
+  white-space: pre-wrap;
+}
+.bo-drawer__status {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+.bo-drawer__status select {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-weight: 400;
+}
+.bo-drawer__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
 
 .bo-empty { text-align: center; padding: 3rem 1.5rem; }
 .bo-empty h2 { margin: 0 0 0.5rem; }
