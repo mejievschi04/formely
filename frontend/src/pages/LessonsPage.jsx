@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, Fragment } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
 	ArrowLeft,
@@ -16,7 +16,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import LessonBlocksPreview from '../components/admin/content-blocks/LessonBlocksPreview';
 import CourseCongratulationsModal from '../components/student/CourseCongratulationsModal';
-import { getNextLessonIdAfter, getPreviousLessonIdBefore } from '../utils/lessonOrder';
+import { getNextLessonIdAfter, getPreviousLessonIdBefore, getRootLessons } from '../utils/lessonOrder';
+import {
+	advanceAfterLessonComplete,
+	courseResumeLessonId,
+	getPendingEndOfCourseTestId,
+	normalizeCourseProgressPayload,
+} from '../utils/courseFlowNavigation';
 import { normalizeRichTextMediaHtml } from '../utils/richTextContent';
 import { useLessonTimeTracking } from '../hooks/useLessonTimeTracking';
 import { filterPublishedCourseTests, isPublishedTestStatus } from '../utils/testVisibility';
@@ -43,6 +49,11 @@ const LessonsPage = () => {
 	
 	const [course, setCourse] = useState(null);
 	const [modules, setModules] = useState([]);
+	const courseModules = useMemo(
+		() => [...(course?.modules || [])].sort((a, b) => (a.order || 0) - (b.order || 0)),
+		[course?.modules],
+	);
+	const rootLessons = useMemo(() => getRootLessons(course), [course]);
 	const [progress, setProgress] = useState(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
@@ -61,33 +72,57 @@ const LessonsPage = () => {
 	const [selectedLessonId, setSelectedLessonId] = useState(lessonIdFromUrl);
 
 	useEffect(() => {
+		document.body.classList.add('student-lesson-player');
+		return () => document.body.classList.remove('student-lesson-player');
+	}, []);
+
+	useEffect(() => {
+		const title = course?.title ? String(course.title) : '';
+		window.dispatchEvent(new CustomEvent('formely-lesson-course-title', { detail: title }));
+		return () => {
+			window.dispatchEvent(new CustomEvent('formely-lesson-course-title', { detail: '' }));
+		};
+	}, [course?.title]);
+
+	useEffect(() => {
+		const openLessonsMenu = () => setSidebarOpen(true);
+		window.addEventListener('formely-open-lessons-sidebar', openLessonsMenu);
+		return () => window.removeEventListener('formely-open-lessons-sidebar', openLessonsMenu);
+	}, []);
+
+	useEffect(() => {
 		if (courseId) {
 			fetchCourseData();
 		}
 	}, [courseId]);
 
 	useEffect(() => {
+		if (lessonIdFromUrl && String(lessonIdFromUrl) !== String(selectedLessonId ?? '')) {
+			setSelectedLessonId(lessonIdFromUrl);
+		}
+	}, [lessonIdFromUrl, selectedLessonId]);
+
+	useEffect(() => {
 		setReachedMilestones(new Set());
 		sentMilestonesRef.current = new Set();
 	}, [selectedLessonId]);
 
-	// Auto-open first lesson when course loads (no lesson in URL)
+	// Reia progresul (next_lesson) sau prima lecție — nu reseta la prima după test
 	useEffect(() => {
-		if (!loading && modules.length > 0 && !selectedLessonId) {
-			// Find first lesson from first module
-			const firstModule = modules[0];
-			if (firstModule?.lessons && firstModule.lessons.length > 0) {
-				const sortedLessons = firstModule.lessons.sort((a, b) => (a.order || 0) - (b.order || 0));
-				const firstLesson = sortedLessons[0];
-				if (firstLesson) {
-					setSelectedLessonId(firstLesson.id);
-					loadLesson(firstLesson.id);
-					// Expand first module
-					setExpandedModules(new Set([firstModule.id]));
+		if (!loading && (courseModules.length > 0 || rootLessons.length > 0) && !selectedLessonId && !lessonIdFromUrl) {
+			const resumeId = courseResumeLessonId(progress, courseModules, rootLessons);
+			if (resumeId) {
+				setSelectedLessonId(String(resumeId));
+				loadLesson(resumeId);
+				const moduleContainingLesson = modules.find((m) =>
+					m.lessons?.some((l) => Number(l.id) === Number(resumeId))
+				);
+				if (moduleContainingLesson) {
+					setExpandedModules(new Set([moduleContainingLesson.id]));
 				}
 			}
 		}
-	}, [loading, modules, selectedLessonId]);
+	}, [loading, courseModules, rootLessons, modules, selectedLessonId, lessonIdFromUrl, progress?.next_lesson?.id]);
 
 	// Expand module containing lesson when loading from URL (?lesson=1)
 	useEffect(() => {
@@ -210,7 +245,8 @@ const LessonsPage = () => {
 	}, [courseId, user?.id]);
 
 	const completeCurrentLesson = useCallback(async () => {
-		if (!selectedLessonId || isCompleted || !user?.id) return true;
+		if (!selectedLessonId || !user?.id) return null;
+		if (isCompleted) return { progress };
 		try {
 			setIsCompleting(true);
 			const result = await courseProgressService.completeLesson(selectedLessonId);
@@ -220,15 +256,15 @@ const LessonsPage = () => {
 			} else {
 				await refreshCourseProgress();
 			}
-			return true;
+			return result;
 		} catch (err) {
 			const msg = err?.response?.data?.message || err?.message || 'Nu s-a putut marca lecția ca finalizată.';
 			showToast(msg, 'error');
-			return false;
+			return null;
 		} finally {
 			setIsCompleting(false);
 		}
-	}, [selectedLessonId, isCompleted, user?.id, refreshCourseProgress, showToast]);
+	}, [selectedLessonId, isCompleted, user?.id, progress, refreshCourseProgress, showToast]);
 
 	const isLessonCompleted = (lessonId) => isLessonMarkedComplete(progress, lessonId);
 
@@ -243,7 +279,9 @@ const LessonsPage = () => {
 	};
 
 	const getModuleCourseTests = (m) =>
-		filterPublishedCourseTests(m?.course_tests || m?.courseTests || m?.exams || []);
+		filterPublishedCourseTests(m?.course_tests || m?.courseTests || []);
+	const getCourseLevelTests = () =>
+		filterPublishedCourseTests(course?.course_tests || course?.courseTests || []);
 	const getLessonCourseTests = (l) => filterPublishedCourseTests(l?.course_tests || l?.courseTests || []);
 	const getProgressModule = (moduleId) =>
 		progress?.modules?.find((x) => Number(x.id) === Number(moduleId));
@@ -316,7 +354,7 @@ const LessonsPage = () => {
 			const markers = Array.from(contentRef.current?.querySelectorAll('[data-lesson-milestone]') || []);
 			if (!markers.length) return;
 
-			const footerOffset = window.innerWidth <= 768 ? 72 : 0;
+			const footerOffset = window.matchMedia('(max-width: 768px)').matches ? 72 : 0;
 			const viewportBottom = window.innerHeight - footerOffset;
 			const seen = [];
 
@@ -379,21 +417,40 @@ const LessonsPage = () => {
 	}, [currentLesson, selectedLessonId, isCompleted, isCompleting, reachedMilestones]);
 
 	const handleNextLesson = async () => {
+		let progressPayload = null;
 		if (!isCompleted) {
-			const ok = await completeCurrentLesson();
-			if (!ok) return;
+			progressPayload = await completeCurrentLesson();
+			if (progressPayload === null) return;
 		}
-
-		const nextId = getNextLessonIdAfter(modules, selectedLessonId);
-		if (nextId != null && !Number.isNaN(nextId)) {
-			handleLessonClick(nextId);
-			return;
-		}
-		navigate(`/courses/${courseId}`);
+		const payload = progressPayload ?? progress;
+		const nextId = getNextLessonIdAfter(courseModules, selectedLessonId, rootLessons);
+		const examId =
+			payload?.next_exam?.id ||
+			(nextId === null
+				? getPendingEndOfCourseTestId({
+						course,
+						modules: courseModules,
+						rootLessons,
+						progress: payload,
+					})
+				: null);
+		await advanceAfterLessonComplete({
+			courseId,
+			lessonId: selectedLessonId,
+			modules: courseModules,
+			rootLessons,
+			navigate,
+			progressPayload: examId
+				? { ...normalizeCourseProgressPayload(payload), next_exam: { id: examId } }
+				: payload,
+			lessonPageMode: false,
+			onCongrats: () => setShowCourseCongrats(true),
+			onFinalize: handleFinalizeCourse,
+		});
 	};
 
 	const handlePreviousLesson = () => {
-		const prevId = getPreviousLessonIdBefore(modules, selectedLessonId);
+		const prevId = getPreviousLessonIdBefore(courseModules, selectedLessonId, rootLessons);
 		if (prevId != null && !Number.isNaN(prevId)) {
 			handleLessonClick(prevId);
 		}
@@ -413,8 +470,16 @@ const LessonsPage = () => {
 			}
 			const p = await courseProgressService.getCourseProgress(courseId);
 			setProgress(p);
-			if (p?.next_exam?.id) {
-				navigate(`/courses/${courseId}/exams/${p.next_exam.id}`);
+			const pendingId =
+				p?.next_exam?.id ||
+				getPendingEndOfCourseTestId({
+					course,
+					modules: courseModules,
+					rootLessons,
+					progress: p,
+				});
+			if (pendingId) {
+				navigate(`/courses/${courseId}/exams/${pendingId}`);
 				return;
 			}
 			if (p?.course_complete) {
@@ -477,13 +542,30 @@ const LessonsPage = () => {
 		);
 	}
 
-	const totalLessons = modules.reduce((sum, module) => sum + (module.lessons?.length || 0), 0);
+	const totalLessons = rootLessons.length + courseModules.reduce((sum, module) => sum + (module.lessons?.length || 0), 0);
 	const hasMultipleLessons = totalLessons > 1;
-	const nextLessonTarget = selectedLessonId ? getNextLessonIdAfter(modules, selectedLessonId) : undefined;
-	const previousLessonTarget = selectedLessonId ? getPreviousLessonIdBefore(modules, selectedLessonId) : undefined;
-	const isLastLessonInCourse = nextLessonTarget === null;
+	const nextLessonTarget = selectedLessonId ? getNextLessonIdAfter(courseModules, selectedLessonId, rootLessons) : undefined;
+	const previousLessonTarget = selectedLessonId ? getPreviousLessonIdBefore(courseModules, selectedLessonId, rootLessons) : undefined;
+	const progressSnapshot = normalizeCourseProgressPayload(progress);
+	const pendingExamId =
+		progressSnapshot?.next_exam?.id ||
+		(nextLessonTarget === null
+			? getPendingEndOfCourseTestId({
+					course,
+					modules: courseModules,
+					rootLessons,
+					progress: progressSnapshot,
+				})
+			: null);
+	const isLastLessonInCourse = nextLessonTarget === null && !pendingExamId;
 	const hasPreviousLesson = previousLessonTarget != null && !Number.isNaN(previousLessonTarget);
-	const hasNextLesson = typeof nextLessonTarget === 'number' && !Number.isNaN(nextLessonTarget);
+	const hasNextLesson =
+		(typeof nextLessonTarget === 'number' && !Number.isNaN(nextLessonTarget)) || Boolean(pendingExamId);
+	const nextButtonLabel = pendingExamId
+		? 'Continuă la test'
+		: typeof nextLessonTarget === 'number'
+			? 'Lecția următoare'
+			: 'Continuă';
 
 	return (
 		<div className={`lessons-page-modern lessons-page-player-layout ${sidebarOpen ? 'lessons-page-sidebar-open' : ''}`}>
@@ -648,26 +730,27 @@ const LessonsPage = () => {
 							<p>Nu există lecții disponibile</p>
 						</div>
 					)}
-					{/* Course-level tests */}
-					{Array.isArray(course?.exams) &&
-						course.exams.filter((e) => !e.module_id && isPublishedTestStatus(e?.status)).length > 0 && (
+					{/* Course-level tests (doar Test / course_test — nu examene Admin → Examene) */}
+					{getCourseLevelTests().length > 0 && (
 						<div className="lessons-page-sidebar-tests-section">
 							<div className="lessons-page-sidebar-tests-header">Teste la nivel de curs</div>
-							<p className="lessons-page-sidebar-tests-hint">Legate de acest curs (nu examene independente)</p>
-							{course.exams.filter((e) => !e.module_id && isPublishedTestStatus(e?.status)).map((exam) => {
-								const tp = getCourseLevelTestProgress(exam.id);
+							<p className="lessons-page-sidebar-tests-hint">Teste din curs. Examenele independente sunt în Cursuri → Examene.</p>
+							{getCourseLevelTests().map((ct) => {
+								const testId = ct.test_id ?? ct.test?.id;
+								if (!testId) return null;
+								const tp = getCourseLevelTestProgress(testId);
 								const passed = Boolean(tp?.passed);
 								return (
 									<button
-										key={exam.id}
+										key={`course-test-${testId}`}
 										type="button"
 										className={`lessons-page-sidebar-lesson lessons-page-sidebar-test ${passed ? 'completed' : ''}`}
-										onClick={() => navigate(`/courses/${courseId}/exams/${exam.id}`)}
+										onClick={() => navigate(`/courses/${courseId}/exams/${testId}`)}
 									>
 										<div className="lessons-page-sidebar-lesson-icon">{renderTestStatusIcon(passed)}</div>
 										<span className="lessons-page-sidebar-lesson-title">
-											{exam.title || 'Test'}
-											{exam.required ? ' *' : ''}
+											{ct.test?.title || 'Test'}
+											{ct.required ? ' *' : ''}
 										</span>
 									</button>
 								);
@@ -702,14 +785,6 @@ const LessonsPage = () => {
 							{currentLesson.description && (
 								<p className="lessons-page-lesson-viewer-description">{currentLesson.description}</p>
 							)}
-							<div className="lessons-page-lesson-viewer-meta">
-								{isCompleted && (
-									<div className="lessons-page-lesson-completed-badge">
-										<Check size={18} weight="bold" aria-hidden />
-										<span>Completată</span>
-									</div>
-								)}
-							</div>
 						</div>
 
 						{/* Lesson Content */}
@@ -775,6 +850,7 @@ const LessonsPage = () => {
 										title="Lecția anterioară"
 									>
 										<ArrowLeft size={22} weight="bold" aria-hidden />
+										<span className="lessons-page-nav-btn__label">Lecția anterioară</span>
 									</button>
 									{isLastLessonInCourse ? (
 										<button
@@ -801,6 +877,7 @@ const LessonsPage = () => {
 											aria-label="Lecția următoare"
 											title="Lecția următoare"
 										>
+											<span className="lessons-page-nav-btn__label">{nextButtonLabel}</span>
 											<ArrowRight size={22} weight="bold" aria-hidden />
 										</button>
 									)}

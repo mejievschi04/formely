@@ -3,7 +3,6 @@ import LiquidEther from './backgrounds/LiquidEther';
 import './SplashScreen.css';
 
 const SPLASH_LIQUID_COLORS = ['#030712', '#0891b2', '#22d3ee'];
-const LETTERS = 'FORMELY'.split('');
 
 const SplashScreen = ({ onStart, appReady = true }) => {
 	const [booted, setBooted] = useState(false);
@@ -45,16 +44,7 @@ const SplashScreen = ({ onStart, appReady = true }) => {
 
 			<main className="splash-ultra-stage">
 				<div className="splash-ultra-wordmark" aria-label="Formely">
-					{LETTERS.map((ch, i) => (
-						<span
-							key={`${ch}-${i}`}
-							className="splash-ultra-letter"
-							style={{ '--i': i }}
-							aria-hidden="true"
-						>
-							{ch}
-						</span>
-					))}
+					<img className="splash-ultra-logo" src="/logo.png" alt="Formely" />
 					<span className="splash-ultra-wordmark-shine" aria-hidden="true" />
 				</div>
 			</main>

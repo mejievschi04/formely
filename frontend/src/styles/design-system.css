@@ -37,11 +37,11 @@
 	--color-white: var(--formely-surface);
 
 	--color-success: #10b981;
-	--color-warning: #f59e0b;
+	--color-warning: #0e7490;
 	--color-error: #ef4444;
 	--color-info: var(--formely-primary);
 	--color-success-rgb: 16, 185, 129;
-	--color-warning-rgb: 245, 158, 11;
+	--color-warning-rgb: 14, 116, 144;
 	--color-error-rgb: 239, 68, 68;
 	--color-info-rgb: var(--formely-primary-rgb);
 
@@ -530,6 +530,15 @@ a:focus-visible {
 	.lg\:hidden { display: none; }
 	.lg\:block { display: block; }
 	.lg\:flex { display: flex; }
+}
+
+img.va-logo-icon-img {
+	display: block;
+	width: var(--va-logo-mark-size);
+	height: var(--va-logo-mark-size);
+	object-fit: contain;
+	border-radius: 8px;
+	background: transparent;
 }
 
 span.va-logo-icon-img {

@@ -184,7 +184,7 @@
 [data-theme="light"] .course-showcase-dnd-handle {
 	border-color: rgba(15, 23, 42, 0.22);
 	background: #ffffff;
-	color: var(--formely-bg);
+	color: #0f172a;
 	backdrop-filter: none;
 	-webkit-backdrop-filter: none;
 	box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
@@ -195,16 +195,31 @@
 }
 
 @media (max-width: 768px) {
-	.course-map-page-grid .course-showcase-card__hit {
-		min-height: 260px;
+	.course-map-page-grid .course-showcase-card__hit,
+	.courses-page-student .course-showcase-card__hit {
+		min-height: 0;
 	}
 
-	.course-map-page-grid .course-showcase-card__title {
-		font-size: 1.05rem;
+	.course-map-page-grid .course-showcase-card__media,
+	.courses-page-student .course-showcase-card__media {
+		aspect-ratio: 16 / 7;
+		max-height: 120px;
+	}
+
+	.course-map-page-grid .course-showcase-card__inner,
+	.courses-page-student .course-showcase-card__inner {
+		gap: 6px;
+		padding: 8px 10px 10px;
+	}
+
+	.course-map-page-grid .course-showcase-card__title,
+	.courses-page-student .course-showcase-card__title {
+		font-size: 0.92rem;
+		min-height: 0;
 	}
 
 	.course-map-page-grid .course-showcase-card__cta-label {
-		min-height: 44px;
+		min-height: 40px;
 		display: inline-flex;
 		align-items: center;
 	}

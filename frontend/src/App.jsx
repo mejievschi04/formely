@@ -2,10 +2,12 @@ import React, { lazy, Suspense, useState, useEffect, useLayoutEffect, useContext
 import { createPortal } from 'react-dom';
 import { BrowserRouter as Router, Routes, Route, NavLink, Link, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth, AuthContext } from './contexts/AuthContext';
+import { CompanyBrandingProvider, useCompanyBranding } from './contexts/CompanyBrandingContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import AdminRoute from './components/AdminRoute';
 import UserRoute from './components/UserRoute';
+import FeatureRoute from './components/FeatureRoute';
 import ChangePasswordModal from './components/ChangePasswordModal';
 import LoadingOverlay from './components/LoadingOverlay';
 import { authExperienceElement } from './components/auth/AuthExperience';
@@ -13,14 +15,14 @@ import GlobalSearch from './components/GlobalSearch';
 import AdminTopNavControls from './components/admin/AdminTopNavControls';
 import AdminViewSwitcher from './components/admin/AdminViewSwitcher';
 import StudentTopNavNotifications from './components/student/StudentTopNavNotifications';
-import StudentTopNavCalendar from './components/student/StudentTopNavCalendar';
 import AdminStylesLoader from './components/AdminStylesLoader';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import ScrollToTop from './components/common/ScrollToTop';
+import AdminOnboardingBanner from './components/admin/AdminOnboardingBanner';
+import StudentBottomNav from './components/student/StudentBottomNav';
 import { prefetchRoute } from './utils/prefetch';
 import { toImageUrl } from './utils/imageUrl';
-import { isStaffAdminRole } from './constants/staffRoles';
-import { messagesService } from './services/api';
+import { isStaffAdminRole, getRoleLabel } from './constants/staffRoles';
 import {
 	ArrowLeft,
 	BookOpenText,
@@ -28,18 +30,20 @@ import {
 	CalendarDots,
 	CaretDown,
 	ChartLineUp,
-	ChatsCircle,
 	CheckCircle,
 	GearSix,
 	House,
 	ListBullets,
+	Medal,
 	SignOut,
 	X,
 	SquaresFour,
+	TreeStructure,
 	Users,
-	UsersThree,
 	UserCircle,
 } from '@phosphor-icons/react';
+import { companyHasFeature, isPlatformAdmin } from './utils/entitlements';
+import { canUseAiFeature } from './utils/aiAvailability';
 /* Modern Design System - Unified & Standardized */
 import './styles/design-system.css';
 import './styles/light-theme-wcag.css';
@@ -58,10 +62,13 @@ import './styles/ui-components.css';
 import './styles/additional-pages.css';
 import './styles/exam-results-modern.css';
 import './styles/profile-modern.css';
+import './styles/student-settings.css';
 import './styles/lms-dashboard-enterprise.css';
 import './styles/achievements-modern.css';
 import './styles/library-page.css';
 import './styles/library-reader-page.css';
+import './styles/library-compose-page.css';
+import './components/SplashScreen.css';
 /* Student styles - loaded after shared to ensure proper cascade */
 import './styles/student-navigation-modern.css';
 import './styles/admin-view-switcher.css';
@@ -88,7 +95,8 @@ const StudentSettingsPage = lazy(() => import('./pages/StudentSettingsPage'));
 const EventsPage = lazy(() => import('./pages/EventsPage'));
 const EventDetailPage = lazy(() => import('./pages/EventDetailPage'));
 const ExamResultsPage = lazy(() => import('./pages/ExamResultsPage'));
-const CalendarViewPage = lazy(() => import('./pages/CalendarViewPage'));
+const CatalogExamResultsPage = lazy(() => import('./pages/CatalogExamResultsPage'));
+const AiAssistantWidget = lazy(() => import('./components/ai/AiAssistantWidget'));
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
 const AdminAnalyticsPage = lazy(() => import('./pages/admin/AdminAnalyticsPage'));
 const AdminCoursesPage = lazy(() => import('./pages/admin/AdminCoursesPage'));
@@ -96,6 +104,7 @@ const AdminCourseDetailPage = lazy(() => import('./pages/admin/AdminCourseDetail
 const AdminEventsPage = lazy(() => import('./pages/admin/AdminEventsPage'));
 const AdminTeamsPage = lazy(() => import('./pages/admin/AdminTeamsPage'));
 const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
+const AdminInviteUsersPage = lazy(() => import('./pages/admin/AdminInviteUsersPage'));
 const AdminActivityLogsPage = lazy(() => import('./pages/admin/AdminActivityLogsPage'));
 const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'));
 const AdminStatisticsHubPage = lazy(() => import('./pages/admin/AdminStatisticsHubPage'));
@@ -117,13 +126,11 @@ const AdminTestsPendingReviewsPage = lazy(() => import('./pages/admin/AdminTests
 const AdminTestBuilderPage = lazy(() => import('./pages/admin/AdminTestBuilderPage'));
 // const AdminQuestionBankQuestionsPage = lazy(() => import('./pages/admin/AdminQuestionBankQuestionsPage')); // Removed - will be rebuilt from scratch
 const QuestionBankBuilder = lazy(() => import('./components/admin/question-banks/QuestionBankBuilder'));
-const ProDashboard = lazy(() => import('./pages/ProDashboard'));
-const ProCourses = lazy(() => import('./pages/ProCourses'));
 const CompletedCoursesPage = lazy(() => import('./pages/CompletedCoursesPage'));
-const MessagesPage = lazy(() => import('./pages/MessagesPage'));
 const LessonsPage = lazy(() => import('./pages/LessonsPage'));
 const LessonPage = lazy(() => import('./pages/LessonPage'));
 const LibraryPage = lazy(() => import('./pages/LibraryPage'));
+const LibraryComposePage = lazy(() => import('./pages/LibraryComposePage'));
 const LibraryReaderPage = lazy(() => import('./pages/LibraryReaderPage'));
 
 // Loading component (post-login: no full-screen overlay)
@@ -152,23 +159,22 @@ function RedirectDetailToCourse() {
 	return <Navigate to={`/courses/${courseId}`} replace />;
 }
 
+function isStudentLessonPath(pathname) {
+	return /^\/courses\/(?!map(?:\/|$))[^/]+$/.test(pathname);
+}
+
 /** Rolul afișat în badge-ul din topnav (cont real, nu modul de vizualizare admin/student). */
 function getTopnavStaffRoleLabel(user, isStudentPreviewMode) {
 	if (!user) return '';
-	if (isStudentPreviewMode) return 'Student';
-	const ar = user.actualRole ?? user.role ?? 'student';
-	switch (ar) {
-		case 'analyst':
-			return 'Analist';
-		case 'instructor':
-			return 'Instructor';
-		case 'admin':
-			return 'Administrator';
-		case 'student':
-			return 'Utilizator';
-		default:
-			return ar;
-	}
+	if (isStudentPreviewMode) return 'Cursant';
+	return getRoleLabel(user.actualRole ?? user.role);
+}
+
+/** Compat Volta: /register/invite/:token → fluxul Formely /accept-invite?token= */
+function RedirectInviteRegister() {
+	const { token } = useParams();
+	const query = token ? `?token=${encodeURIComponent(token)}` : '';
+	return <Navigate to={`/accept-invite${query}`} replace />;
 }
 
 function Layout({ children }) {
@@ -182,9 +188,20 @@ function Layout({ children }) {
 			</div>
 		);
 	}
-	const { user, logout, setAdminViewMode } = authContext;
+	const { user, logout, setAdminViewMode, adminViewMode } = authContext;
+	const { branding } = useCompanyBranding();
+	const companyName = branding?.name || 'Formely';
 	const navigate = useNavigate();
 	const location = useLocation();
+
+	if (isPlatformAdmin(user)) {
+		window.location.href = import.meta.env.VITE_BACKOFFICE_URL || 'http://localhost:5180';
+		return (
+			<div className="va-main" style={{ display: 'grid', placeItems: 'center', minHeight: '100vh' }}>
+				<p>Redirecționare către backoffice…</p>
+			</div>
+		);
+	}
 	const isAdminContentSubmenuChildActive = React.useCallback(
 		(child) => {
 			if (location.pathname.startsWith('/admin/maps/')) {
@@ -202,52 +219,34 @@ function Layout({ children }) {
 		},
 		[location.pathname, location.search, user?.actualRole]
 	);
-	const isTrueAdminAccount = user?.actualRole === 'admin';
+	const isTrueAdminAccount = ['admin', 'company_owner'].includes(
+		user?.actualRole ?? user?.role
+	);
 	const hasStaffAdminShell = isStaffAdminRole(user?.actualRole);
-	const isAdmin = user?.role === 'admin';
+	const isAdmin = ['admin', 'company_owner'].includes(user?.role);
 	
-	// Check if we're on a user page (not admin pages)
-	// Messages page behavior:
-	// - Regular users (students): always use user layout (top nav), including on /messages
-	// - Admin users: can view /messages in both interfaces
-	//   - If accessed from admin sidebar: use admin layout
-	//   - If accessed from user top nav: use user layout
-	const isMessagesPage = location.pathname === '/messages';
-	const isLibraryPage = location.pathname === '/library' || location.pathname.startsWith('/library/items/');
+	const isLibraryPage = location.pathname === '/library'
+		|| location.pathname.startsWith('/library/items/')
+		|| location.pathname.startsWith('/library/compose');
 	const isLibraryReaderPage = location.pathname.startsWith('/library/items/');
 	const isAdminPage = location.pathname.startsWith('/admin');
-	const isStaffLibraryPage = isLibraryPage && hasStaffAdminShell && user?.role !== 'student';
+	const isStaffLibraryPage = isLibraryPage
+		&& hasStaffAdminShell
+		&& user?.role !== 'student'
+		&& adminViewMode !== 'student';
 	const isAdminShellPage = isAdminPage || isStaffLibraryPage;
-	
-	// Track if we came from admin context for messages page
-	const [cameFromAdmin, setCameFromAdmin] = React.useState(() => {
-		if (isMessagesPage) {
-			// Check if we have a stored admin context
-			return sessionStorage.getItem('messagesFromAdmin') === 'true';
-		}
-		return false;
-	});
-	
-	const isUserPage = !isAdminShellPage && !(isMessagesPage && cameFromAdmin);
-	
-	// For regular users (students): always show user layout (including /messages)
-	// For admin: 
-	//   - If on admin pages: use admin layout
-	//   - If on /messages and came from admin: use admin layout
-	//   - If on other user pages: use user layout (student interface)
+	const isUserPage = !isAdminShellPage;
 	const isStudent = !isAdmin || (user?.role === 'student' || !user?.role || user?.role === '');
 	// Cont admin + mod student: shell admin cât timp URL e /admin* (evită topnav peste conținut admin înainte de redirect).
 	const showUserLayout = !hasStaffAdminShell
 		? isStudent
 			? true
-			: !isAdminShellPage && !(isMessagesPage && cameFromAdmin)
-		: user?.actualRole === 'admin' && user?.role === 'student'
-			? !isAdminShellPage
-			: !isAdminShellPage && !(isMessagesPage && cameFromAdmin);
+			: !isAdminShellPage
+		: !isAdminShellPage;
 
 	// Overlay doar în mod admin efectiv (nu resetăm „ready” la trecere student pe același frame).
 	const requiresAdminChromePaintHold =
-		isTrueAdminAccount && user?.role === 'admin' && !showUserLayout;
+		isTrueAdminAccount && ['admin', 'company_owner'].includes(user?.actualRole ?? user?.role) && !showUserLayout;
 	const [adminChromePaintReady, setAdminChromePaintReady] = React.useState(
 		!requiresAdminChromePaintHold
 	);
@@ -260,18 +259,10 @@ function Layout({ children }) {
 	}, [requiresAdminChromePaintHold]);
 	
 	// State for admin view toggle (active when on admin page or messages from admin)
-	const [isAdminView, setIsAdminView] = React.useState((!isUserPage || (isMessagesPage && cameFromAdmin)) && isAdmin);
-	
-	// State for sidebar expanded/collapsed
 	const [isSidebarExpanded, setIsSidebarExpanded] = React.useState(() => {
 		const saved = localStorage.getItem('sidebarExpanded');
 		return saved !== null ? saved === 'true' : false;
 	});
-	const [messagesUnreadCount, setMessagesUnreadCount] = React.useState(0);
-	const unreadPollingInFlightRef = React.useRef(false);
-	const unreadPollingFailuresRef = React.useRef(0);
-	const unreadPollingCooldownUntilRef = React.useRef(0);
-
 	const prevShowUserLayoutRef = React.useRef(null);
 	React.useEffect(() => {
 		const prev = prevShowUserLayoutRef.current;
@@ -335,16 +326,26 @@ function Layout({ children }) {
 	}, [contentSubmenuOpen, isSidebarExpanded]);
 
 	// Detect mobile viewport
-	const [isMobile, setIsMobile] = React.useState(() => window.innerWidth <= 768);
+	const [isMobile, setIsMobile] = React.useState(() =>
+		typeof window !== 'undefined' ? window.matchMedia('(max-width: 768px)').matches : false
+	);
 	const [adminTopnavContext, setAdminTopnavContext] = React.useState(null);
+	const [lessonCourseTitle, setLessonCourseTitle] = React.useState('');
 	
 	React.useEffect(() => {
-		const handleResize = () => {
-			setIsMobile(window.innerWidth <= 768);
-		};
-		window.addEventListener('resize', handleResize);
-		return () => window.removeEventListener('resize', handleResize);
+		const mq = window.matchMedia('(max-width: 768px)');
+		const handleChange = () => setIsMobile(mq.matches);
+		handleChange();
+		mq.addEventListener('change', handleChange);
+		return () => mq.removeEventListener('change', handleChange);
 	}, []);
+
+	React.useEffect(() => {
+		if (isMobile) {
+			setIsSidebarExpanded(false);
+			document.body.classList.remove('sidebar-expanded');
+		}
+	}, [isMobile, location.pathname]);
 
 	React.useEffect(() => {
 		const handleTopnavContextEvent = (event) => {
@@ -360,130 +361,42 @@ function Layout({ children }) {
 	}, []);
 
 	React.useEffect(() => {
+		const handleLessonCourseTitle = (event) => {
+			setLessonCourseTitle(typeof event?.detail === 'string' ? event.detail : '');
+		};
+		window.addEventListener('formely-lesson-course-title', handleLessonCourseTitle);
+		return () => window.removeEventListener('formely-lesson-course-title', handleLessonCourseTitle);
+	}, []);
+
+	React.useEffect(() => {
+		if (!/^\/courses\/(?!map(?:\/|$))[^/]+$/.test(location.pathname)) {
+			setLessonCourseTitle('');
+		}
+	}, [location.pathname]);
+
+	React.useEffect(() => {
 		if (!location.pathname.startsWith('/admin/course-builder')) {
 			setAdminTopnavContext(null);
 		}
 	}, [location.pathname]);
 
-	const loadMessagesUnreadCount = React.useCallback(async () => {
-		if (!user) {
-			setMessagesUnreadCount(0);
-			return;
-		}
-
-		if (Date.now() < unreadPollingCooldownUntilRef.current) {
-			return;
-		}
-
-		// Avoid overlapping polls when backend is slow.
-		if (unreadPollingInFlightRef.current) {
-			return;
-		}
-		unreadPollingInFlightRef.current = true;
-
-		try {
-			const total = await messagesService.getUnreadCount();
-			setMessagesUnreadCount(Number.isFinite(Number(total)) ? Math.max(0, Number(total)) : 0);
-			unreadPollingFailuresRef.current = 0;
-		} catch (err) {
-			const status = err?.response?.status;
-			unreadPollingFailuresRef.current += 1;
-			if (status === 429 || unreadPollingFailuresRef.current >= 3) {
-				unreadPollingCooldownUntilRef.current = Date.now() + (status === 429 ? 120000 : 60000);
-				unreadPollingFailuresRef.current = 0;
-			}
-		} finally {
-			unreadPollingInFlightRef.current = false;
-		}
-	}, [user]);
-
-	React.useEffect(() => {
-		if (!user) {
-			setMessagesUnreadCount(0);
-			return;
-		}
-
-		let intervalId = null;
-		const syncUnreadPolling = () => {
-			if (intervalId) {
-				clearInterval(intervalId);
-				intervalId = null;
-			}
-
-			if (!document.hidden) {
-				loadMessagesUnreadCount();
-				intervalId = window.setInterval(loadMessagesUnreadCount, 30000);
-			}
-		};
-
-		syncUnreadPolling();
-		const handleVisibilityChange = () => syncUnreadPolling();
-		document.addEventListener('visibilitychange', handleVisibilityChange);
-
-		return () => {
-			document.removeEventListener('visibilitychange', handleVisibilityChange);
-			if (intervalId) clearInterval(intervalId);
-		};
-	}, [loadMessagesUnreadCount, user]);
-
-	React.useEffect(() => {
-		const handleConversationRead = () => {
-			setMessagesUnreadCount((current) => Math.max(0, current - 1));
-			window.setTimeout(() => {
-				loadMessagesUnreadCount();
-			}, 120);
-		};
-
-		window.addEventListener('formely:conversation-read', handleConversationRead);
-		return () => window.removeEventListener('formely:conversation-read', handleConversationRead);
-	}, [loadMessagesUnreadCount]);
-	
-	// Track navigation context for messages page
-	React.useEffect(() => {
-		if (hasStaffAdminShell) {
-			if (isAdminPage) {
-				// We're on an admin page - mark that we're in admin context, clear student preview
-				sessionStorage.setItem('messagesFromAdmin', 'true');
-				sessionStorage.removeItem('studentPreviewFromAdmin');
-				setCameFromAdmin(true);
-			} else if (isLibraryPage) {
-				// Biblioteca este parte din shell-ul admin pentru staff; Mesagerie trebuie să rămână în context admin.
-				sessionStorage.setItem('messagesFromAdmin', 'true');
-				setCameFromAdmin(true);
-			} else if (isMessagesPage) {
-				// We're on messages - check if we came from admin
-				const fromAdmin = sessionStorage.getItem('messagesFromAdmin') === 'true';
-				setCameFromAdmin(fromAdmin);
-			} else {
-				// We're on a user page (not messages) - clear admin context
-				sessionStorage.setItem('messagesFromAdmin', 'false');
-				setCameFromAdmin(false);
-			}
-		}
-	}, [location.pathname, hasStaffAdminShell, isAdminPage, isLibraryPage, isMessagesPage]);
-
-	// Student preview mode: admin viewing as student - no admin UI, 100% student experience
-	const isStudentPreviewMode = isTrueAdminAccount && showUserLayout && sessionStorage.getItem('studentPreviewFromAdmin') === 'true';
+	const isStudentPreviewMode = isTrueAdminAccount
+		&& showUserLayout
+		&& (adminViewMode === 'student' || sessionStorage.getItem('studentPreviewFromAdmin') === 'true');
 
 	const topnavStaffRoleLabel = getTopnavStaffRoleLabel(user, isStudentPreviewMode);
 
 	const handleAdminViewSwitch = useCallback(() => {
 		if (isUserPage) {
+			sessionStorage.removeItem('studentPreviewFromAdmin');
 			setAdminViewMode('admin');
 			navigate('/admin', { replace: true });
 		} else {
+			sessionStorage.setItem('studentPreviewFromAdmin', 'true');
 			setAdminViewMode('student');
 			navigate('/courses', { replace: true });
 		}
 	}, [isUserPage, setAdminViewMode, navigate]);
-	
-	// Update toggle state when location changes
-	React.useEffect(() => {
-		if (hasStaffAdminShell) {
-			// Admin view is active when on admin pages or messages from admin context
-			setIsAdminView((!isUserPage || (isMessagesPage && cameFromAdmin)) && isAdmin);
-		}
-	}, [location.pathname, hasStaffAdminShell, isUserPage, isMessagesPage, cameFromAdmin, isAdmin]);
 	
 	// Save sidebar state to localStorage and update body class
 	React.useEffect(() => {
@@ -507,6 +420,14 @@ function Layout({ children }) {
 			document.body.classList.remove('admin-view');
 		};
 	}, [showUserLayout, hasStaffAdminShell]);
+
+	React.useEffect(() => {
+		const useBottomNav = Boolean(showUserLayout && isMobile && user);
+		document.body.classList.toggle('student-has-bottom-nav', useBottomNav);
+		return () => {
+			document.body.classList.remove('student-has-bottom-nav');
+		};
+	}, [showUserLayout, isMobile, user]);
 	
 	// Check must_change_password - handle boolean, number, or string values
 	const mustChangePassword = user?.must_change_password === true || 
@@ -518,9 +439,6 @@ function Layout({ children }) {
 	// Determine courses path based on user role and current view
 	// All users use /courses (which redirects appropriately based on role)
 	const coursesPath = '/courses';
-	const renderMessagesNavBadge = () => messagesUnreadCount > 0 ? (
-		<span className="messages-menu-badge">{messagesUnreadCount > 99 ? '99+' : messagesUnreadCount}</span>
-	) : null;
 
 	/* Ordine aliniată cu LMS Pro (Formely): Cursuri → Evenimente → … → Profil la final */
 	const navItems = [
@@ -532,35 +450,35 @@ function Layout({ children }) {
 				<BookOpenText size={20} weight="duotone" aria-hidden />
 			)
 		},
-		{ 
-			path: '/exam-results', 
-			label: 'Rezultate Teste', 
+		{
+			path: '/exam-results',
+			label: 'Rezultate',
+			title: 'Rezultate teste din cursuri și examene din catalog',
+			matchPaths: ['/exam-results', '/catalog-exam-results'],
+			prefetchPaths: ['/exam-results', '/catalog-exam-results'],
 			icon: (
 				<CheckCircle size={20} weight="duotone" aria-hidden />
-			)
-		},
-		{ 
-			path: '/events', 
-			label: 'Evenimente', 
-			icon: (
-				<CalendarDots size={20} weight="duotone" aria-hidden />
-			)
-		},
-		{
-			path: '/library',
-			label: 'Bibliotecă',
-			title: 'Materiale partajate: cărți, PDF-uri și documente',
-			icon: (
-				<Books size={20} weight="duotone" aria-hidden />
 			),
 		},
-		{ 
-			path: '/messages', 
-			label: 'Mesagerie', 
-			icon: (
-				<ChatsCircle size={20} weight="duotone" aria-hidden />
-			)
-		},
+		...(companyHasFeature(user, 'events')
+			? [{
+				path: '/events',
+				label: 'Evenimente',
+				icon: (
+					<CalendarDots size={20} weight="duotone" aria-hidden />
+				),
+			}]
+			: []),
+		...(companyHasFeature(user, 'library')
+			? [{
+				path: '/library',
+				label: 'Bibliotecă',
+				title: 'Materiale partajate: cărți, PDF-uri și documente',
+				icon: (
+					<Books size={20} weight="duotone" aria-hidden />
+				),
+			}]
+			: []),
 		{ 
 			path: '/profile', 
 			label: 'Profil', 
@@ -570,30 +488,43 @@ function Layout({ children }) {
 		},
 		{
 			path: '/settings',
-			label: 'Setari',
+			label: 'Setări',
 			icon: (
 				<GearSix size={20} weight="duotone" aria-hidden />
 			)
 		},
 	];
 
+	const isStudentNavItemActive = useCallback((item, pathname, linkActive) => {
+		if (item.path === '/exam-results' || item.matchPaths?.includes('/exam-results')) {
+			return pathname === '/exam-results'
+				|| pathname.startsWith('/exam-results/')
+				|| pathname === '/catalog-exam-results'
+				|| pathname.startsWith('/catalog-exam-results/');
+		}
+		if (item.path === '/courses') {
+			return pathname === '/courses' || pathname.startsWith('/courses/map');
+		}
+		if (item.matchPaths?.length) {
+			return item.matchPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+		}
+		if (linkActive) return true;
+		return pathname === item.path || pathname.startsWith(`${item.path}/`);
+	}, []);
+
 	const mobileTopnavTitle = React.useMemo(() => {
 		const pathname = location.pathname;
-		const navMatch = navItems.find((item) => {
-			if (item.path === '/courses') {
-				return pathname === '/courses' || pathname.startsWith('/courses/map');
-			}
-			return pathname === item.path || pathname.startsWith(`${item.path}/`);
-		});
+		const navMatch = navItems.find((item) => isStudentNavItemActive(item, pathname, false));
 		if (navMatch) return navMatch.label;
-		if (pathname.startsWith('/lessons') || /\/lesson(s)?(\/|$)/.test(pathname)) return 'Lecții';
+		if (/^\/courses\/(?!map(?:\/|$))[^/]+$/.test(pathname)) return lessonCourseTitle || 'Curs';
+		if (pathname.startsWith('/lessons') || /\/lesson(s)?(\/|$)/.test(pathname)) return lessonCourseTitle || 'Lecții';
 		if (pathname.startsWith('/exams/')) return 'Test';
 		if (pathname.startsWith('/achievements')) return 'Realizări';
-		return 'Formely';
-	}, [location.pathname]);
+		return companyName;
+	}, [location.pathname, companyName, lessonCourseTitle, navItems]);
 
-	/* Admin: același flux ca Pro — conținut & evenimente sus, apoi oameni, activitate, mesagerie, analize, setări */
-	const adminNavItemsAll = [
+	/* Admin academie: conținut & evenimente, apoi oameni, activitate, analize, setări */
+	const academyAdminNavItemsAll = [
 		{
 			path: '/admin',
 			label: 'Panou',
@@ -624,20 +555,15 @@ function Layout({ children }) {
 						{ path: '/admin/content', search: '?tab=banks', label: 'Întrebări' },
 					],
 		},
-		{
-			path: '/admin/events',
-			label: 'Evenimente',
-			icon: (
-				<CalendarDots size={18} weight="duotone" aria-hidden />
-			)
-		},
-		{
-			path: '/messages',
-			label: 'Mesagerie',
-			icon: (
-				<ChatsCircle size={18} weight="duotone" aria-hidden />
-			)
-		},
+		...(companyHasFeature(user, 'events')
+			? [{
+				path: '/admin/events',
+				label: 'Evenimente',
+				icon: (
+					<CalendarDots size={18} weight="duotone" aria-hidden />
+				)
+			}]
+			: []),
 		{
 			path: '/admin/users',
 			label: 'Utilizatori',
@@ -646,10 +572,10 @@ function Layout({ children }) {
 			)
 		},
 		{
-			path: '/admin/team-members',
-			label: 'Echipe',
+			path: '/admin/teams',
+			label: 'Organizație',
 			icon: (
-				<UsersThree size={18} weight="duotone" aria-hidden />
+				<TreeStructure size={18} weight="duotone" aria-hidden />
 			)
 		},
 		{
@@ -666,13 +592,15 @@ function Layout({ children }) {
 				<ChartLineUp size={18} weight="duotone" aria-hidden />
 			)
 		},
-		{
-			path: '/library',
-			label: 'Bibliotecă',
-			icon: (
-				<Books size={18} weight="duotone" aria-hidden />
-			),
-		},
+		...(companyHasFeature(user, 'library')
+			? [{
+				path: '/library',
+				label: 'Bibliotecă',
+				icon: (
+					<Books size={18} weight="duotone" aria-hidden />
+				),
+			}]
+			: []),
 		{
 			path: '/admin/settings',
 			label: 'Setări',
@@ -681,9 +609,10 @@ function Layout({ children }) {
 			)
 		},
 	];
+	const adminNavItemsAll = academyAdminNavItemsAll;
 	const instructorHiddenAdminNavPaths = new Set([
 		'/admin/events',
-		'/admin/team-members',
+		'/admin/teams',
 		'/admin/users',
 		'/admin/activity-logs',
 		'/admin/statistics',
@@ -752,12 +681,14 @@ function Layout({ children }) {
 								aria-expanded={isSidebarExpanded}
 								aria-label={isSidebarExpanded ? 'Restrânge meniul' : 'Extinde meniul'}
 							>
-								<span className="modern-sidebar-logo va-logo-text">
-									<span className="va-logo-icon-img" aria-hidden="true">F</span>
-								</span>
+								<img
+									className="modern-sidebar-logo-img"
+									src="/logo.png"
+									alt="Formely"
+								/>
 							</button>
 							{isSidebarExpanded && (
-								<span className="modern-sidebar-brand-text">Formely</span>
+								<span className="modern-sidebar-brand-text">{companyName}</span>
 							)}
 						</div>
 
@@ -783,7 +714,7 @@ function Layout({ children }) {
 														onMouseEnter={() => prefetchRoute(item.path)}
 													>
 														<span className="modern-nav-item-icon va-nav-icon">{item.icon}</span>
-														<span className="modern-nav-item-label va-nav-label">{item.label}</span>{item.path === '/messages' ? renderMessagesNavBadge() : null}
+														<span className="modern-nav-item-label va-nav-label">{item.label}</span>
 														<span className="modern-nav-submenu-chevron" aria-hidden>
 															<CaretDown size={14} weight="bold" aria-hidden />
 														</span>
@@ -802,7 +733,7 @@ function Layout({ children }) {
 														}}
 													>
 														<span className="modern-nav-item-icon va-nav-icon">{item.icon}</span>
-														<span className="modern-nav-item-label va-nav-label">{item.label}</span>{item.path === '/messages' ? renderMessagesNavBadge() : null}
+														<span className="modern-nav-item-label va-nav-label">{item.label}</span>
 													</button>
 												)}
 												{contentSubmenuOpen && isSidebarExpanded && (
@@ -818,7 +749,7 @@ function Layout({ children }) {
 																	onMouseEnter={() => prefetchRoute(child.path)}
 																	onClick={() => {
 																		setContentSubmenuOpen(false);
-																		if (window.innerWidth <= 768) setIsSidebarExpanded(false);
+																		if (window.matchMedia('(max-width: 768px)').matches) setIsSidebarExpanded(false);
 																	}}
 																>
 																	<span className="modern-nav-item-label va-nav-label">{child.label}</span>
@@ -835,14 +766,14 @@ function Layout({ children }) {
 												title={!isSidebarExpanded ? item.label : undefined}
 												data-tooltip={!isSidebarExpanded ? item.label : undefined}
 												className={({ isActive }) => ['modern-nav-item', 'va-nav-btn', isActive ? 'active is-active' : ''].join(' ').trim()}
-												end={item.path === '/admin'}
+												end={item.path === '/admin' || item.path === '/admin/platform'}
 												onMouseEnter={() => prefetchRoute(item.path)}
 												onClick={() => {
-													if (window.innerWidth <= 768) setIsSidebarExpanded(false);
+													if (window.matchMedia('(max-width: 768px)').matches) setIsSidebarExpanded(false);
 												}}
 											>
 												<span className="modern-nav-item-icon va-nav-icon">{item.icon}</span>
-												<span className="modern-nav-item-label va-nav-label">{item.label}</span>{item.path === '/messages' ? renderMessagesNavBadge() : null}
+												<span className="modern-nav-item-label va-nav-label">{item.label}</span>
 											</NavLink>
 										)
 									)}
@@ -861,11 +792,11 @@ function Layout({ children }) {
 												end={false}
 												onMouseEnter={() => prefetchRoute(item.path)}
 												onClick={() => {
-													if (window.innerWidth <= 768) setIsSidebarExpanded(false);
+													if (window.matchMedia('(max-width: 768px)').matches) setIsSidebarExpanded(false);
 												}}
 											>
 												<span className="modern-nav-item-icon va-nav-icon">{item.icon}</span>
-												<span className="modern-nav-item-label va-nav-label">{item.label}</span>{item.path === '/messages' ? renderMessagesNavBadge() : null}
+												<span className="modern-nav-item-label va-nav-label">{item.label}</span>
 											</NavLink>
 										))}
 								</div>
@@ -906,7 +837,7 @@ function Layout({ children }) {
 												onMouseEnter={() => prefetchRoute(child.path)}
 												onClick={() => {
 													setContentSubmenuOpen(false);
-													if (window.innerWidth <= 768) setIsSidebarExpanded(false);
+													if (window.matchMedia('(max-width: 768px)').matches) setIsSidebarExpanded(false);
 												}}
 											>
 												<span className="modern-nav-item-label va-nav-label">{child.label}</span>
@@ -918,7 +849,7 @@ function Layout({ children }) {
 							)}
 
 						{/* View switcher mobil (tema e în Setări) */}
-						{isMobile && isSidebarExpanded && (
+						{isMobile && isSidebarExpanded && !isPlatformAdmin(user) && (
 							<div className="sidebar-mobile-controls">
 								<div className="sidebar-mobile-control-item sidebar-mobile-control-item--view-switch">
 									<div className="sidebar-mobile-control-content sidebar-mobile-control-content--view-switch">
@@ -955,14 +886,15 @@ function Layout({ children }) {
 							<button
 								className="mobile-sidebar-toggle"
 								onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-								title="Deschide meniul"
-								aria-label="Deschide meniul"
+								title={isSidebarExpanded ? 'Închide meniul' : 'Deschide meniul'}
+								aria-label={isSidebarExpanded ? 'Închide meniul' : 'Deschide meniul'}
+								aria-expanded={isSidebarExpanded}
 							>
 								<ListBullets size={24} weight="bold" aria-hidden />
 							</button>
 							{!isMobile && (
 								<span className="va-logo-text">
-									<span className="va-logo-icon-img" aria-hidden="true">F</span>
+									<img className="va-logo-icon-img" src="/logo.png" alt="Formely" />
 								</span>
 							)}
 							{adminTopnavContext && (
@@ -981,21 +913,23 @@ function Layout({ children }) {
 							)}
 							{/* Formely text - shown when sidebar is closed on mobile */}
 							{isMobile && !isSidebarExpanded && (
-								<span className="va-topnav-page-title">Formely</span>
+								<span className="va-topnav-page-title">{companyName}</span>
 							)}
 						</div>
 						
 						<div className="modern-topnav-right">
 							{/* Search and Notifications */}
-							<AdminTopNavControls />
+							{!isPlatformAdmin(user) && <AdminTopNavControls />}
 
 							{/* View Switcher - Desktop only */}
-							<div className="admin-topnav-control desktop-only">
-								<AdminViewSwitcher
-									isStudentView={isUserPage}
-									onSwitch={handleAdminViewSwitch}
-								/>
-							</div>
+							{!isPlatformAdmin(user) && (
+								<div className="admin-topnav-control desktop-only">
+									<AdminViewSwitcher
+										isStudentView={isUserPage}
+										onSwitch={handleAdminViewSwitch}
+									/>
+								</div>
+							)}
 
 							{/* User Info */}
 							{user && (
@@ -1029,7 +963,10 @@ function Layout({ children }) {
 					</header>
 
 					<div className="va-shell-main va-shell-main-topnav">
-						<main className="va-main">{children}</main>
+						<main className="va-main">
+							<AdminOnboardingBanner />
+							{children}
+						</main>
 					</div>
 					
 				</>
@@ -1046,7 +983,11 @@ function Layout({ children }) {
 					)}
 
 					{/* Student Sidebar — mobil (drawer) */}
-					<aside className={`modern-sidebar va-sidebar student-sidebar ${isSidebarExpanded ? 'expanded open' : ''}`}>
+					<aside
+						className={`modern-sidebar va-sidebar student-sidebar ${isSidebarExpanded ? 'open' : ''}`}
+						inert={!isSidebarExpanded ? true : undefined}
+						aria-hidden={!isSidebarExpanded}
+					>
 						<div className="sidebar-mobile-header">
 							<button
 								type="button"
@@ -1058,8 +999,12 @@ function Layout({ children }) {
 								<X size={22} weight="bold" aria-hidden />
 							</button>
 							<div className="sidebar-mobile-header-brand">
-								<span className="va-logo-icon-img sidebar-mobile-header-logo" aria-hidden="true">F</span>
-								<span className="modern-sidebar-brand-text">Formely</span>
+								<img
+									className="modern-sidebar-logo-img sidebar-mobile-header-logo"
+									src="/logo.png"
+									alt="Formely"
+								/>
+								<span className="modern-sidebar-brand-text">{companyName}</span>
 							</div>
 						</div>
 
@@ -1070,18 +1015,23 @@ function Layout({ children }) {
 										key={item.path}
 										to={item.path}
 										title={item.title || item.label}
-										className={({ isActive }) => ['modern-nav-item', 'va-nav-btn', isActive ? 'active is-active' : ''].join(' ').trim()}
+										className={({ isActive }) => {
+											const active = isStudentNavItemActive(item, location.pathname, isActive);
+											return ['modern-nav-item', 'va-nav-btn', active ? 'active is-active' : ''].join(' ').trim();
+										}}
 										end={item.path === '/courses'}
-										onMouseEnter={() => prefetchRoute(item.path)}
+										onMouseEnter={() => {
+											prefetchRoute(item.path);
+											(item.prefetchPaths || []).forEach((path) => prefetchRoute(path));
+										}}
 										onClick={() => {
-											if (window.innerWidth <= 768) {
+											if (window.matchMedia('(max-width: 768px)').matches) {
 												setIsSidebarExpanded(false);
 											}
 										}}
 									>
 										<span className="modern-nav-item-icon va-nav-icon">{item.icon}</span>
 										<span className="modern-nav-item-label va-nav-label">{item.label}</span>
-										{item.path === '/messages' ? renderMessagesNavBadge() : null}
 									</NavLink>
 								))}
 							</div>
@@ -1089,7 +1039,7 @@ function Layout({ children }) {
 
 						{(user || (isTrueAdminAccount && !isStudentPreviewMode)) && (
 							<div className="sidebar-mobile-footer">
-								{isTrueAdminAccount && !isStudentPreviewMode && (
+								{isTrueAdminAccount && !isStudentPreviewMode && !isPlatformAdmin(user) && (
 									<div className="sidebar-mobile-footer-switch">
 										<AdminViewSwitcher
 											isStudentView={isUserPage}
@@ -1116,24 +1066,37 @@ function Layout({ children }) {
 
 					<header className={`modern-topnav va-topnav ${isSidebarExpanded ? 'sidebar-expanded' : ''}`}>
 						<div className="modern-topnav-left va-topnav-brand">
-							{/* Mobile hamburger button */}
-							<button
-								className="mobile-sidebar-toggle"
-								onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-								title="Deschide meniul"
-								aria-label="Deschide meniul"
-							>
-								<ListBullets size={24} weight="bold" aria-hidden />
-							</button>
+							{isMobile && showUserLayout && isStudentLessonPath(location.pathname) ? (
+								<button
+									type="button"
+									className="admin-topnav-notification-btn va-topnav-lessons-btn"
+									onClick={() => window.dispatchEvent(new Event('formely-open-lessons-sidebar'))}
+									title="Lecții"
+									aria-label="Deschide meniul lecțiilor"
+								>
+									<ListBullets size={20} weight="duotone" aria-hidden />
+								</button>
+							) : null}
+							{!(isMobile && showUserLayout) ? (
+								<button
+									className="mobile-sidebar-toggle"
+									onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+									title={isSidebarExpanded ? 'Închide meniul' : 'Deschide meniul'}
+									aria-label={isSidebarExpanded ? 'Închide meniul' : 'Deschide meniul'}
+									aria-expanded={isSidebarExpanded}
+								>
+									<ListBullets size={24} weight="bold" aria-hidden />
+								</button>
+							) : null}
 							{!isMobile && (
 								<span className="va-logo-text">
-									<span className="va-logo-icon-img" aria-hidden="true">F</span>
+									<img className="va-logo-icon-img" src="/logo.png" alt="Formely" />
 								</span>
 							)}
-							{isMobile && !isSidebarExpanded && (
-								<span className="va-topnav-page-title">{mobileTopnavTitle}</span>
-							)}
 						</div>
+						{isMobile && !isSidebarExpanded ? (
+							<span className="va-topnav-page-title">{mobileTopnavTitle}</span>
+						) : null}
 
 						<nav className="modern-topnav-nav va-topnav-nav desktop-only">
 							{navItems.map((item) => (
@@ -1141,12 +1104,18 @@ function Layout({ children }) {
 									key={item.path}
 									to={item.path}
 									title={item.title || item.label}
-									className={({ isActive }) => ['modern-topnav-item', 'va-topnav-btn', isActive ? 'active is-active' : ''].join(' ').trim()}
+									className={({ isActive }) => {
+										const active = isStudentNavItemActive(item, location.pathname, isActive);
+										return ['modern-topnav-item', 'va-topnav-btn', active ? 'active is-active' : ''].join(' ').trim();
+									}}
 									end={item.path === '/courses'}
-									onMouseEnter={() => prefetchRoute(item.path)}
+									onMouseEnter={() => {
+										prefetchRoute(item.path);
+										(item.prefetchPaths || []).forEach((path) => prefetchRoute(path));
+									}}
 								>
 									<span className="modern-topnav-item-icon va-topnav-icon">{item.icon}</span>
-									<span className="modern-topnav-item-label va-topnav-label">{item.label}</span>{item.path === '/messages' ? renderMessagesNavBadge() : null}
+									<span className="modern-topnav-item-label va-topnav-label">{item.label}</span>
 								</NavLink>
 							))}
 						</nav>
@@ -1154,12 +1123,25 @@ function Layout({ children }) {
 						<div className="modern-topnav-right">
 							{user && (
 								<>
-									<StudentTopNavCalendar />
-									{/* Notifications - studenți */}
+									{isStudentPreviewMode && (
+										<button
+											type="button"
+											className="student-preview-back-to-admin student-preview-back-to-admin--topnav"
+											onClick={() => {
+												sessionStorage.removeItem('studentPreviewFromAdmin');
+												setAdminViewMode('admin');
+												navigate('/admin', { replace: true });
+											}}
+											title="Înapoi la Admin"
+											aria-label="Înapoi la Admin"
+										>
+											<ArrowLeft size={14} weight="bold" aria-hidden /> Admin
+										</button>
+									)}
 									<StudentTopNavNotifications />
 
 									{/* View Switcher (only for admins, hidden in student preview mode) - Desktop only */}
-									{isTrueAdminAccount && !isStudentPreviewMode && (
+									{isTrueAdminAccount && !isStudentPreviewMode && !isPlatformAdmin(user) && (
 										<div className="admin-topnav-control desktop-only">
 											<AdminViewSwitcher
 												isStudentView={isUserPage}
@@ -1199,27 +1181,20 @@ function Layout({ children }) {
 						</div>
 					</header>
 
+					{isMobile && showUserLayout && user ? (
+						<StudentBottomNav
+							onOpenMenu={() => setIsSidebarExpanded((open) => !open)}
+						/>
+					) : null}
+
 					<div className="va-shell-main va-shell-main-topnav">
 						<main className="va-main">{children}</main>
 					</div>
-					
-
-					{/* Înapoi la Admin - minimal button when admin views as student */}
-					{isStudentPreviewMode && (
-						<button
-							type="button"
-							className="student-preview-back-to-admin"
-							onClick={() => {
-								sessionStorage.removeItem('studentPreviewFromAdmin');
-								setAdminViewMode('admin');
-								navigate('/admin/courses', { replace: true });
-							}}
-							title="Înapoi la Admin"
-							aria-label="Înapoi la Admin"
-						>
-							<ArrowLeft size={14} weight="bold" aria-hidden /> Admin
-						</button>
-					)}
+					{isTrueAdminAccount && !isStudentPreviewMode && !isPlatformAdmin(user) && canUseAiFeature(user, 'ai_builder') ? (
+						<Suspense fallback={null}>
+							<AiAssistantWidget />
+						</Suspense>
+					) : null}
 				</>
 			)}
 		</div>
@@ -1240,6 +1215,7 @@ function App() {
 			<ToastProvider>
 				<AuthProvider>
 					<Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+						<CompanyBrandingProvider>
 						<ScrollToTop />
 						<GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
 				<Routes>
@@ -1248,6 +1224,10 @@ function App() {
 					<Route path="/" element={authExperienceElement} />
 					<Route path="/login" element={authExperienceElement} />
 					<Route path="/register" element={authExperienceElement} />
+					<Route path="/forgot-password" element={authExperienceElement} />
+					<Route path="/reset-password" element={authExperienceElement} />
+					<Route path="/accept-invite" element={authExperienceElement} />
+					<Route path="/register/invite/:token" element={<RedirectInviteRegister />} />
 					
 					{/* Protected routes */}
 					<Route
@@ -1279,28 +1259,6 @@ function App() {
 											</UserRoute>
 										}
 									/>
-									<Route
-							path="/pro-dashboard"
-							element={
-								<UserRoute>
-									<Suspense fallback={<PageLoader />}>
-										<ProDashboard />
-									</Suspense>
-								</UserRoute>
-							}
-						/>
-
-						<Route
-							path="/pro-courses"
-							element={
-								<UserRoute>
-									<Suspense fallback={<PageLoader />}>
-										<ProCourses />
-									</Suspense>
-								</UserRoute>
-							}
-						/>
-
 						{/* Course Lessons Page - Main course view */}
 									<Route
 										path="/courses/:courseId"
@@ -1369,9 +1327,11 @@ function App() {
 										path="/events"
 										element={
 											<UserRoute>
-												<Suspense fallback={<PageLoader />}>
-													<EventsPage />
-												</Suspense>
+												<FeatureRoute feature="events">
+													<Suspense fallback={<PageLoader />}>
+														<EventsPage />
+													</Suspense>
+												</FeatureRoute>
 											</UserRoute>
 										}
 									/>
@@ -1379,9 +1339,11 @@ function App() {
 										path="/events/:id"
 										element={
 											<UserRoute>
-												<Suspense fallback={<PageLoader />}>
-													<EventDetailPage />
-												</Suspense>
+												<FeatureRoute feature="events">
+													<Suspense fallback={<PageLoader />}>
+														<EventDetailPage />
+													</Suspense>
+												</FeatureRoute>
 											</UserRoute>
 										}
 									/>
@@ -1389,9 +1351,35 @@ function App() {
 										path="/library"
 										element={
 											<UserRoute>
-												<Suspense fallback={<PageLoader />}>
-													<LibraryPage />
-												</Suspense>
+												<FeatureRoute feature="library">
+													<Suspense fallback={<PageLoader />}>
+														<LibraryPage />
+													</Suspense>
+												</FeatureRoute>
+											</UserRoute>
+										}
+									/>
+									<Route
+										path="/library/compose"
+										element={
+											<UserRoute>
+												<FeatureRoute feature="library">
+													<Suspense fallback={<PageLoader />}>
+														<LibraryComposePage />
+													</Suspense>
+												</FeatureRoute>
+											</UserRoute>
+										}
+									/>
+									<Route
+										path="/library/compose/:itemId"
+										element={
+											<UserRoute>
+												<FeatureRoute feature="library">
+													<Suspense fallback={<PageLoader />}>
+														<LibraryComposePage />
+													</Suspense>
+												</FeatureRoute>
 											</UserRoute>
 										}
 									/>
@@ -1399,11 +1387,21 @@ function App() {
 										path="/library/items/:itemId"
 										element={
 											<UserRoute>
-												<Suspense fallback={<PageLoader />}>
-													<LibraryReaderPage />
-												</Suspense>
+												<FeatureRoute feature="library">
+													<Suspense fallback={<PageLoader />}>
+														<LibraryReaderPage />
+													</Suspense>
+												</FeatureRoute>
 											</UserRoute>
 										}
+									/>
+									<Route
+										path="/learning-paths/:pathId"
+										element={<Navigate to="/courses" replace />}
+									/>
+									<Route
+										path="/learning-paths"
+										element={<Navigate to="/courses" replace />}
 									/>
 									<Route
 										path="/exam-results"
@@ -1411,6 +1409,16 @@ function App() {
 											<UserRoute>
 												<Suspense fallback={<PageLoader />}>
 													<ExamResultsPage />
+												</Suspense>
+											</UserRoute>
+										}
+									/>
+									<Route
+										path="/catalog-exam-results"
+										element={
+											<UserRoute>
+												<Suspense fallback={<PageLoader />}>
+													<CatalogExamResultsPage />
 												</Suspense>
 											</UserRoute>
 										}
@@ -1448,22 +1456,16 @@ function App() {
 									<Route
 										path="/profile/activity"
 										element={
-											<UserRoute>
+											<AdminRoute>
 												<Suspense fallback={<PageLoader />}>
 													<StudentActivityPage />
 												</Suspense>
-											</UserRoute>
+											</AdminRoute>
 										}
 									/>
 									<Route
 										path="/messages"
-										element={
-											<UserRoute>
-												<Suspense fallback={<PageLoader />}>
-													<MessagesPage />
-												</Suspense>
-											</UserRoute>
-										}
+										element={<Navigate to="/courses" replace />}
 									/>
 									<Route
 										path="/completed-courses"
@@ -1516,6 +1518,10 @@ function App() {
 												</Suspense>
 											</AdminRoute>
 										}
+									/>
+									<Route
+										path="/admin/learning-paths/:pathId"
+										element={<Navigate to="/admin/content" replace />}
 									/>
 									<Route
 										path="/admin/maps/:mapId"
@@ -1707,13 +1713,7 @@ function App() {
 									/>
 									<Route
 										path="/admin/team-members"
-										element={
-											<AdminRoute>
-												<Suspense fallback={<PageLoader />}>
-													<AdminTeamsPage />
-												</Suspense>
-											</AdminRoute>
-										}
+										element={<Navigate to="/admin/users?tab=staff" replace />}
 									/>
 									<Route
 										path="/admin/users"
@@ -1721,6 +1721,16 @@ function App() {
 											<AdminRoute>
 												<Suspense fallback={<PageLoader />}>
 													<AdminUsersPage />
+												</Suspense>
+											</AdminRoute>
+										}
+									/>
+									<Route
+										path="/admin/users/invite"
+										element={
+											<AdminRoute>
+												<Suspense fallback={<PageLoader />}>
+													<AdminInviteUsersPage />
 												</Suspense>
 											</AdminRoute>
 										}
@@ -1754,6 +1764,14 @@ function App() {
 												</Suspense>
 											</AdminRoute>
 										}
+									/>
+									<Route
+										path="/admin/platform"
+										element={<Navigate to="/admin" replace />}
+									/>
+									<Route
+										path="/admin/platform/companies"
+										element={<Navigate to="/admin" replace />}
 									/>
 									<Route
 										path="/admin/top-courses"
@@ -1810,6 +1828,7 @@ function App() {
 						}
 					/>
 				</Routes>
+						</CompanyBrandingProvider>
 			</Router>
 		</AuthProvider>
 		</ToastProvider>

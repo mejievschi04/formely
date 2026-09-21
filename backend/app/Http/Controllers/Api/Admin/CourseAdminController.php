@@ -13,6 +13,7 @@ use App\Models\CourseTest;
 use App\Models\ActivityLog;
 use App\Services\CourseProgressService;
 use App\Services\CourseBuilderService;
+use App\Services\EnrollmentAssignmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -313,11 +314,9 @@ class CourseAdminController extends Controller
                 },
                 'teacher',
                 'teams',
-                'assignedUsers' => function ($query) {
+                'assignedUsers' => function ($query) use ($course) {
                     $query->select('users.id', 'users.name', 'users.email', 'users.role');
-                    if (Schema::hasTable('course_user') && Schema::hasColumn('course_user', 'enrolled')) {
-                        $query->wherePivot('enrolled', true);
-                    }
+                    app(EnrollmentAssignmentService::class)->constrainToManualAssignedUsers($query, $course);
                 },
                 'courseTests.test' => function($query) {
                     $query->with('questions');
@@ -587,11 +586,27 @@ class CourseAdminController extends Controller
             'comments_enabled' => 'nullable|boolean',
             'visibility' => 'nullable|in:public,private,hidden',
             'permissions' => 'nullable|array',
+            'settings' => 'nullable|array',
+            'settings.ai_tutor' => 'nullable|array',
+            'settings.ai_tutor.enabled' => 'nullable|boolean',
+            'settings.ai_tutor.tone' => 'nullable|in:friendly,professional,encouraging,casual',
+            'settings.ai_tutor.depth' => 'nullable|in:basic,medium,advanced',
+            'settings.ai_tutor.allowed_topics' => 'nullable|array',
+            'settings.ai_tutor.allowed_topics.*' => 'nullable|string|max:120',
+            'settings.ai_tutor.restricted_topics' => 'nullable|array',
+            'settings.ai_tutor.restricted_topics.*' => 'nullable|string|max:120',
         ];
 
         // For updates, image is optional. Validate only when a new file is uploaded.
         if ($request->hasFile('image')) {
             $rules['image'] = 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048';
+        }
+
+        if ($request->has('settings') && is_string($request->input('settings'))) {
+            $decodedSettings = json_decode($request->input('settings'), true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decodedSettings)) {
+                $request->merge(['settings' => $decodedSettings]);
+            }
         }
 
         $validated = $request->validate($rules);
@@ -637,6 +652,11 @@ class CourseAdminController extends Controller
         // Use CourseBuilderService to update course
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image');
+        }
+
+        if (isset($validated['settings']) && is_array($validated['settings'])) {
+            $currentSettings = is_array($course->settings) ? $course->settings : [];
+            $data['settings'] = array_replace_recursive($currentSettings, $validated['settings']);
         }
 
         $previousStatus = $course->status;
@@ -702,19 +722,34 @@ class CourseAdminController extends Controller
         }
 
         $validated = $request->validate([
-            'team_ids' => 'required|array',
+            'team_ids' => 'present|array',
             'team_ids.*' => 'exists:teams,id',
         ]);
 
-        $course->teams()->sync($validated['team_ids']);
+        $existingTeamIds = $course->teams()->pluck('teams.id')->map(fn ($id) => (int) $id)->all();
+        $requestedTeamIds = array_map('intval', $validated['team_ids']);
+        $newTeamIds = array_values(array_diff($requestedTeamIds, $existingTeamIds));
+        $removedTeamIds = array_values(array_diff($existingTeamIds, $requestedTeamIds));
+
+        $course->teams()->sync($requestedTeamIds);
+
+        $assignment = app(EnrollmentAssignmentService::class);
+        if ($newTeamIds !== []) {
+            $assignment->autoEnrollCourseForTeams(
+                $course,
+                $newTeamIds,
+                ['assigned_by' => auth()->user()]
+            );
+        }
+        if ($removedTeamIds !== []) {
+            $assignment->revokeCourseAccessForRemovedTeams($course, $removedTeamIds, $requestedTeamIds);
+        }
 
         return response()->json([
             'message' => 'Echipe atașate cu succes',
-            'course' => $course->load(['modules', 'teacher', 'teams', 'assignedUsers' => function ($q) {
+            'course' => $course->load(['modules', 'teacher', 'teams', 'assignedUsers' => function ($q) use ($course) {
                 $q->select('users.id', 'users.name', 'users.email', 'users.role');
-                if (Schema::hasTable('course_user') && Schema::hasColumn('course_user', 'enrolled')) {
-                    $q->wherePivot('enrolled', true);
-                }
+                app(EnrollmentAssignmentService::class)->constrainToManualAssignedUsers($q, $course);
             }]),
         ]);
     }
@@ -792,18 +827,6 @@ class CourseAdminController extends Controller
         $userIds = array_values(array_unique(array_map('intval', $validated['user_ids'])));
         $isMandatory = $validated['is_mandatory'] ?? true;
 
-        if ($isMandatory) {
-            $hasRequiredTest = CourseTest::where('course_id', $course->id)
-                ->where('required', true)
-                ->exists();
-            if (! $hasRequiredTest) {
-                return response()->json([
-                    'error' => 'Cursurile obligatorii trebuie să aibă cel puțin un test obligatoriu',
-                    'message' => 'Acest curs nu are teste obligatorii. Bifează „opțional” sau adaugă un test obligatoriu.',
-                ], 422);
-            }
-        }
-
         $teamIdsForInstructor = null;
         if (auth()->user()->isInstructor()) {
             $teamIdsForInstructor = $course->teams()->pluck('teams.id');
@@ -814,50 +837,24 @@ class CourseAdminController extends Controller
             }
         }
 
-        foreach ($userIds as $userId) {
-            $user = User::find($userId);
-            if (! $user || $user->role !== 'student') {
-                return response()->json([
-                    'message' => 'Poți atribui cursul doar utilizatorilor cu rolul de elev (student).',
-                    'user_id' => $userId,
-                ], 422);
-            }
-            if ($user->isLearningActivityExempt()) {
-                return response()->json([
-                    'message' => 'Nu atribuim cursuri pentru acest tip de utilizator.',
-                    'user_id' => $userId,
-                ], 422);
-            }
-            if ($teamIdsForInstructor !== null) {
-                $inLinkedTeam = $user->teams()->whereIn('teams.id', $teamIdsForInstructor)->exists();
-                if (! $inLinkedTeam) {
-                    return response()->json([
-                        'message' => 'Elevul trebuie să fie într-o echipă la care este deja atașat acest curs.',
-                        'user_id' => $userId,
-                    ], 422);
-                }
-            }
-        }
-
-        $pivot = [
+        $result = app(EnrollmentAssignmentService::class)->assignCourseToUsers($course, $userIds, [
             'is_mandatory' => $isMandatory,
-            'assigned_at' => now(),
-            'enrolled' => true,
-            'enrolled_at' => now(),
-        ];
+            'assigned_by' => auth()->user(),
+            'allowed_team_ids' => $teamIdsForInstructor?->all(),
+        ]);
 
-        foreach ($userIds as $userId) {
-            $user = User::findOrFail($userId);
-            $user->assignedCourses()->syncWithoutDetaching([$course->id => $pivot]);
-            Cache::forget("dashboard_user_{$user->id}_stats");
-            Cache::forget("profile_user_{$user->id}");
+        if ($result['errors'] !== []) {
+            $userId = array_key_first($result['errors']);
+
+            return response()->json([
+                'message' => $result['errors'][$userId],
+                'user_id' => $userId,
+            ], 422);
         }
 
-        $course->load(['assignedUsers' => function ($q) {
+        $course->load(['assignedUsers' => function ($q) use ($course) {
             $q->select('users.id', 'users.name', 'users.email', 'users.role');
-            if (Schema::hasTable('course_user') && Schema::hasColumn('course_user', 'enrolled')) {
-                $q->wherePivot('enrolled', true);
-            }
+            app(EnrollmentAssignmentService::class)->constrainToManualAssignedUsers($q, $course);
         }]);
 
         return response()->json([
@@ -880,15 +877,13 @@ class CourseAdminController extends Controller
             ], 404);
         }
 
-        $user->assignedCourses()->detach($course->id);
+        app(EnrollmentAssignmentService::class)->revokeManualCourseAssignment($user, $course);
         Cache::forget("dashboard_user_{$user->id}_stats");
         Cache::forget("profile_user_{$user->id}");
 
-        $course->load(['assignedUsers' => function ($q) {
+        $course->load(['assignedUsers' => function ($q) use ($course) {
             $q->select('users.id', 'users.name', 'users.email', 'users.role');
-            if (Schema::hasTable('course_user') && Schema::hasColumn('course_user', 'enrolled')) {
-                $q->wherePivot('enrolled', true);
-            }
+            app(EnrollmentAssignmentService::class)->constrainToManualAssignedUsers($q, $course);
         }]);
 
         return response()->json([

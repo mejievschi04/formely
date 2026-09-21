@@ -3,23 +3,28 @@
  * Păstrată în sync cu fallback-urile din admin (carduri, modale).
  */
 export const TEAM_ACCENT_COLORS = [
-	'#6366f1',
-	'#ec4899',
-	'#14b8a6',
-	'#f59e0b',
-	'#8b5cf6',
-	'#06b6d4',
-	'#84cc16',
-	'#f43f5e',
+	'#0891b2',
+	'#22d3ee',
+	'#0e7490',
+	'#155e75',
+	'#38bdf8',
+	'#0284c7',
+	'#67e8f9',
+	'#0f172a',
 ];
 
 export const TEAM_ACCENT_NEUTRAL = '#94a3b8';
+
+function readTeamAccentColor(team) {
+	if (!team) return null;
+	return team.accent_color || team.accentColor || null;
+}
 
 /**
  * Culoare afișată în liste/chip-uri: doar API sau gri neutru.
  */
 export function teamAccentNeutral(team) {
-	return (team && team.accent_color) || TEAM_ACCENT_NEUTRAL;
+	return readTeamAccentColor(team) || TEAM_ACCENT_NEUTRAL;
 }
 
 /**
@@ -27,12 +32,12 @@ export function teamAccentNeutral(team) {
  */
 export function teamAccentByTeamId(team) {
 	if (!team) return TEAM_ACCENT_NEUTRAL;
-	return team.accent_color || TEAM_ACCENT_COLORS[(team.id || 0) % TEAM_ACCENT_COLORS.length];
+	return readTeamAccentColor(team) || TEAM_ACCENT_COLORS[(team.id || 0) % TEAM_ACCENT_COLORS.length];
 }
 
 /**
  * Culoare în grilă ordonată: API sau paletă după poziția din listă.
  */
 export function teamAccentByListIndex(team, index) {
-	return team?.accent_color || TEAM_ACCENT_COLORS[(Number(index) || 0) % TEAM_ACCENT_COLORS.length];
+	return readTeamAccentColor(team) || TEAM_ACCENT_COLORS[(Number(index) || 0) % TEAM_ACCENT_COLORS.length];
 }

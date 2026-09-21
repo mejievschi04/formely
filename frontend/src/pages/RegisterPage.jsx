@@ -59,9 +59,6 @@ const RegisterPage = () => {
 							<span className="modern-auth-logo-text">Formely</span>
 						</div>
 						<h1 className="modern-auth-title">Creează-ți contul</h1>
-						<p className="modern-auth-subtitle">
-							Începe-ți călătoria de învățare astăzi
-						</p>
 					</div>
 
 					{/* Form */}

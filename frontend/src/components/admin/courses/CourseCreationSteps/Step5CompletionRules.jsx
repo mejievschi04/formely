@@ -39,8 +39,11 @@ const Step5CompletionRules = ({ data, onUpdate }) => {
 				</div>
 
 				<div className="step5-cr-section">
-					<label className="step5-cr-label">Scor minim la quiz pentru trecere (%)</label>
-					<p className="step5-cr-hint">Scorul minim necesar la testele atașate cursului pentru a considera cursul trecut.</p>
+					<label className="step5-cr-label">Scor minim pentru certificat (%)</label>
+					<p className="step5-cr-hint">
+						Pragul de scor necesar pentru emiterea certificatului. Promovarea la fiecare test atașat
+						cursului se configurează separat (prag <em>passing_score</em> pe test, în constructor).
+					</p>
 					<input
 						type="number"
 						min={0}

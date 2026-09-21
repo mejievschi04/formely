@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { coursesService, adminService } from '../services/api';
 import { Books, MagnifyingGlass, X } from '@phosphor-icons/react';
 import { useScrollResetOnOpen } from '../hooks/useScrollResetOnOpen';
+import './GlobalSearch.css';
 
 /**
  * GlobalSearch - Command Palette Style Search
@@ -178,7 +179,7 @@ const GlobalSearch = ({ isOpen, onClose }) => {
 						ref={inputRef}
 						type="text"
 						className="global-search-input"
-						placeholder="Caută cursuri, teste, lecții..."
+						placeholder="Caută în Formely — cursuri, lecții, teste..."
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
 					/>
@@ -195,6 +196,14 @@ const GlobalSearch = ({ isOpen, onClose }) => {
 							<X size={16} weight="bold" aria-hidden />
 						</button>
 					)}
+					<button
+						type="button"
+						className="global-search-close"
+						onClick={onClose}
+						aria-label="Închide căutarea"
+					>
+						<X size={16} weight="bold" aria-hidden />
+					</button>
 					<div className="global-search-shortcut">
 						<kbd>⌘</kbd>
 						<kbd>K</kbd>
@@ -247,7 +256,7 @@ const GlobalSearch = ({ isOpen, onClose }) => {
 				{/* Empty State */}
 				{!query && (
 					<div className="global-search-empty-state">
-						<p>Începe să scrii pentru a căuta...</p>
+						<p>Începe să scrii pentru a căuta în Formely...</p>
 						<div className="global-search-hints">
 							<div className="global-search-hint">
 								<kbd>↑</kbd>

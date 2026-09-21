@@ -19,8 +19,8 @@ class AdminMiddleware
             return response()->json(['error' => 'Neautentificat'], 401);
         }
 
-        if (auth()->user()->role !== 'admin') {
-            return response()->json(['error' => 'Acces interzis. Doar administratorii pot accesa această resursă.'], 403);
+        if (! auth()->user()->canManagePlatformSettings()) {
+            return response()->json(['error' => 'Acces interzis. Doar administratorul principal sau proprietarul companiei pot accesa această resursă.'], 403);
         }
 
         return $next($request);

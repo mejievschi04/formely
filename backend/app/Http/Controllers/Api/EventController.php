@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Company;
 use App\Models\Event;
+use App\Services\PlanEntitlementService;
+use App\Support\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -12,19 +15,55 @@ use Carbon\Carbon;
 
 class EventController extends Controller
 {
+    public function __construct(
+        private PlanEntitlementService $entitlements
+    ) {}
+
+    private function tenantHasEventsFeature(): bool
+    {
+        $companyId = TenantContext::companyId() ?: Auth::user()?->company_id;
+        if (! $companyId) {
+            return false;
+        }
+
+        $company = Company::withoutGlobalScopes()->find($companyId);
+        if (! $company) {
+            return false;
+        }
+
+        return $this->entitlements->companyCan($company, 'events');
+    }
+
     /**
      * List all published events (user-side)
      */
     public function index(Request $request)
     {
+        if (! $this->tenantHasEventsFeature()) {
+            return response()->json([
+                'data' => [],
+                'current_page' => 1,
+                'last_page' => 1,
+                'per_page' => (int) $request->get('per_page', 20),
+                'total' => 0,
+            ]);
+        }
+
         $query = Event::with(['instructor:id,name,email,avatar', 'course:id,title'])
             ->where(function ($q) {
-                $q->whereIn('status', ['published', 'upcoming', 'live', 'completed'])
+                $q->whereIn('status', ['published', 'upcoming', 'live'])
                     ->orWhere(function ($dateScoped) {
-                        $dateScoped->whereNotIn('status', ['draft', 'cancelled'])
+                        $dateScoped->whereNotIn('status', ['draft', 'cancelled', 'completed'])
                             ->whereNotNull('end_date');
                     });
+            })
+            ->where(function ($q) {
+                $q->whereNull('end_date')->orWhere('end_date', '>=', now());
             });
+
+        if (Schema::hasTable('event_team')) {
+            $query->with('teams:id,name');
+        }
 
         // Type filter
         if ($request->has('type') && $request->type !== 'all') {
@@ -47,7 +86,7 @@ class EventController extends Controller
                     break;
                 case 'past':
                 case 'completed':
-                    $query->where('end_date', '<', $now);
+                    $query->whereRaw('1 = 0');
                     break;
                 case 'live':
                     $query->where('start_date', '<=', $now)
@@ -64,6 +103,17 @@ class EventController extends Controller
 
         $perPage = $request->get('per_page', 20);
         $events = $query->paginate($perPage);
+
+        $user = Auth::user();
+        $userTeamIds = $user && method_exists($user, 'teams')
+            ? $user->teams()->pluck('teams.id')->all()
+            : [];
+
+        $events->setCollection(
+            $events->getCollection()
+                ->filter(fn ($event) => $this->eventVisibleToUser($event, $user, $userTeamIds))
+                ->values()
+        );
 
         // Add user-specific data if authenticated
         if (Auth::check()) {
@@ -91,6 +141,10 @@ class EventController extends Controller
      */
     public function show($id)
     {
+        if (! $this->tenantHasEventsFeature()) {
+            return response()->json(['message' => 'Evenimentele nu sunt incluse în plan.'], 403);
+        }
+
         $event = Event::with(['instructor', 'course'])
             ->where(function($q) {
                 $q->where('status', 'published')
@@ -403,5 +457,26 @@ class EventController extends Controller
         $event->user_replay_watched_at = $userEvent ? $userEvent->replay_watched_at : null;
 
         return $event;
+    }
+
+    private function eventVisibleToUser($event, $user, array $userTeamIds): bool
+    {
+        $audience = Schema::hasColumn('events', 'audience_type')
+            ? ($event->audience_type ?? 'all')
+            : 'all';
+        if ($audience !== 'teams') {
+            return true;
+        }
+        if (! $user) {
+            return false;
+        }
+        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
+            return true;
+        }
+        $eventTeamIds = $event->relationLoaded('teams')
+            ? $event->teams->pluck('id')->all()
+            : [];
+
+        return count(array_intersect($eventTeamIds, $userTeamIds)) > 0;
     }
 }

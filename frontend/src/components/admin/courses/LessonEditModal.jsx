@@ -6,7 +6,6 @@ import VideoLessonEditor from './LessonTypes/VideoLessonEditor';
 import TextLessonEditor from './LessonTypes/TextLessonEditor';
 import AssignmentLessonEditor from './LessonTypes/AssignmentLessonEditor';
 import LiveSessionEditor from './LessonTypes/LiveSessionEditor';
-import { notifyAiComingSoon } from '../../../utils/aiAvailability';
 import './LessonEditModal.css';
 
 /**
@@ -94,7 +93,7 @@ const LessonEditModal = ({ lesson, moduleId, courseId, onClose, onSave, onUpdate
 	}
 
 	return (
-		<div className="lesson-edit-modal-overlay" onClick={onClose}>
+		<div className="lesson-edit-modal-overlay">
 			<div className="lesson-edit-modal" onClick={(e) => e.stopPropagation()}>
 				<div className="lesson-edit-modal-header">
 					<h2>✏️ Editează Lecție</h2>
@@ -259,16 +258,6 @@ const LessonEditModal = ({ lesson, moduleId, courseId, onClose, onSave, onUpdate
 						<div className="admin-form-group">
 							<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
 								<label className="admin-form-label">Întrebări Quiz</label>
-								<button
-									type="button"
-									className="admin-btn admin-btn-sm admin-btn-secondary"
-									onClick={() => {
-										notifyAiComingSoon(showToast);
-									}}
-									title="Generează întrebări quiz cu AI"
-								>
-									🤖 Generează Întrebări
-								</button>
 							</div>
 							<RichTextEditor
 								value={editingLesson.content || ''}
@@ -277,7 +266,7 @@ const LessonEditModal = ({ lesson, moduleId, courseId, onClose, onSave, onUpdate
 									setEditingLesson(updated);
 									if (onUpdate) onUpdate(updated);
 								}}
-								placeholder="Scrie întrebările quiz aici sau folosește AI pentru a genera..."
+								placeholder="Scrie întrebările quiz aici sau folosește asistentul AI Formely pentru a genera..."
 								style={{ minHeight: '300px' }}
 							/>
 						</div>

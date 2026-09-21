@@ -2,15 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 
 class MediaAsset extends Model
 {
+    use BelongsToCompany;
     use HasFactory;
 
     protected $fillable = [
+        'company_id',
         'course_id',
         'uploaded_by_user_id',
         'disk',
@@ -38,8 +41,10 @@ class MediaAsset extends Model
     public function getUrlAttribute(): ?string
     {
         $disk = $this->disk ?: 'public';
-        if (!$this->path) return null;
+        if (! $this->path) {
+            return null;
+        }
+
         return Storage::disk($disk)->url($this->path);
     }
 }
-

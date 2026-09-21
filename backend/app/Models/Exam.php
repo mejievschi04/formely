@@ -3,14 +3,16 @@
 namespace App\Models;
 
 use App\Casts\SafeJsonArray;
+use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Exam extends Model
 {
-    use HasFactory;
+    use BelongsToCompany, HasFactory;
 
     protected $fillable = [
+        'company_id',
         'course_id',
         'created_by',
         'module_id',

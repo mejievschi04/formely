@@ -14,6 +14,7 @@ use App\Models\CourseTest;
 use App\Models\MediaAsset;
 use App\Services\CourseBuilderService;
 use App\Services\CourseBuilderValidator;
+use App\Support\CourseCatalog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -477,6 +478,23 @@ class CourseBuilderController extends Controller
         return response()->json($report);
     }
 
+    public function qualityAudit(Request $request, int $courseId)
+    {
+        $user = auth()->user();
+        $company = $user?->company_id
+            ? \App\Models\Company::withoutGlobalScopes()->find($user->company_id)
+            : null;
+        if (! $company || ! app(\App\Services\PlanEntitlementService::class)->companyCan($company, 'ai_qa')) {
+            abort(403, 'Auditul QA nu este inclus în planul organizației.');
+        }
+
+        $this->ensureCourseAccess($courseId);
+        $course = Course::findOrFail($courseId);
+        $report = $this->courseBuilderValidator->qualityAudit($course);
+
+        return response()->json($report);
+    }
+
     public function submitForReview(Request $request, int $courseId)
     {
         $this->ensureCourseAccess($courseId);
@@ -526,11 +544,14 @@ class CourseBuilderController extends Controller
         $validated = $request->validate([
             'team_ids' => 'nullable|array',
             'team_ids.*' => 'exists:teams,id',
+            'catalog_outside_map' => 'nullable|boolean',
         ]);
         $teamIds = $validated['team_ids'] ?? [];
+        $catalogOutsideMap = (bool) ($validated['catalog_outside_map'] ?? false);
 
-        DB::transaction(function () use ($course, $teamIds) {
+        DB::transaction(function () use ($course, $teamIds, $catalogOutsideMap) {
             $course->update(['status' => 'published', 'workflow_status' => 'published']);
+            CourseCatalog::applyOutsideMapFlag($course, $catalogOutsideMap);
             Module::where('course_id', $course->id)->where('status', '!=', 'published')->update(['status' => 'published']);
             Lesson::where('course_id', $course->id)->where('status', '!=', 'published')->update(['status' => 'published']);
             if (count($teamIds) > 0 && \Illuminate\Support\Facades\Schema::hasTable('course_team')) {

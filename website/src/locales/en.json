@@ -1,0 +1,438 @@
+{
+  "seo": {
+    "title": "Formely — Create courses. Develop teams. Track progress.",
+    "description": "Formely gives you one place to create courses, organize learners and track their progress — without complicated processes or scattered tools."
+  },
+  "nav": {
+    "product": "Product",
+    "solutions": "Solutions",
+    "how": "How it works",
+    "pricing": "Pricing",
+    "faq": "FAQ",
+    "login": "Sign in",
+    "cta": "Get started",
+    "menu": "Menu",
+    "close": "Close",
+    "skip": "Skip to content",
+    "lang": "Language"
+  },
+  "hero": {
+    "eyebrow": "Team training, all in one place",
+    "lines": ["Create courses.", "Develop teams.", "Track progress."],
+    "sub": "Formely gives you one place to create courses, organize learners and track their progress — without complicated processes or scattered tools.",
+    "ctaPrimary": "Get started with Formely",
+    "ctaSecondary": "Explore the platform"
+  },
+  "positioning": {
+    "title": "Built for people who turn knowledge into progress.",
+    "items": [
+      {
+        "title": "Companies",
+        "text": "Organize internal training and track your team's development from one place."
+      },
+      {
+        "title": "Academies",
+        "text": "Manage courses, learners and progress without unnecessary manual work."
+      },
+      {
+        "title": "Trainers",
+        "text": "Build training programs and manage learners with less administrative work."
+      }
+    ]
+  },
+  "problem": {
+    "title": "Training shouldn't mean files, spreadsheets and chaos.",
+    "items": [
+      {
+        "title": "Scattered content",
+        "text": "Materials and courses end up in too many places, and organization gets harder over time."
+      },
+      {
+        "title": "Progress hard to track",
+        "text": "Without a centralized view, it is difficult to see who is advancing and where attention is needed."
+      },
+      {
+        "title": "Unnecessary admin work",
+        "text": "Repetitive tasks consume time that could be spent on training."
+      }
+    ],
+    "solution": "Formely brings your courses, learners and progress together in one system."
+  },
+  "how": {
+    "eyebrow": "How it works",
+    "title": "From the first course to measurable progress, in one simple flow.",
+    "steps": [
+      {
+        "num": "01",
+        "title": "Create",
+        "text": "Structure courses and organize your training content."
+      },
+      {
+        "num": "02",
+        "title": "Assign",
+        "text": "Add learners and give them access to the right training."
+      },
+      {
+        "num": "03",
+        "title": "Track",
+        "text": "See progress and results directly from the platform."
+      }
+    ]
+  },
+  "showcase": {
+    "eyebrow": "Product",
+    "title": "Everything you need to make training a clear process.",
+    "items": [
+      {
+        "id": "courses",
+        "title": "Courses built around the way you teach",
+        "text": "Create structured courses and keep your training content organized in one place."
+      },
+      {
+        "id": "tests",
+        "title": "Assessments that show what was learned",
+        "text": "Add assessments to your training and review learner results."
+      },
+      {
+        "id": "progress",
+        "title": "Clear progress for every learner",
+        "text": "See how far each learner has progressed without building reports manually."
+      },
+      {
+        "id": "library",
+        "title": "Training resources, always within reach",
+        "text": "On Academie and Business plans: keep learning materials in an organized library that is easy to access."
+      }
+    ]
+  },
+  "useCases": {
+    "title": "One Formely. Multiple ways to organize training.",
+    "subtitle": "From individual courses to team programs, Formely gives you a clear view of activity and progress.",
+    "tabs": [
+      {
+        "id": "corporate",
+        "label": "Companies",
+        "title": "Organize internal training",
+        "text": "Organize internal training and track your team's development from one place.",
+        "points": ["Team training", "Visible progress", "Clear administration"]
+      },
+      {
+        "id": "academy",
+        "label": "Academies",
+        "title": "Manage courses and learners",
+        "text": "Manage courses, learners and progress without unnecessary manual work.",
+        "points": ["Structured courses", "Centralized progress", "Less manual work"]
+      },
+      {
+        "id": "instructor",
+        "label": "Trainers",
+        "title": "Build training programs",
+        "text": "Build training programs and manage learners with less administrative work.",
+        "points": ["Clear programs", "Learner management", "Simple flow"]
+      }
+    ]
+  },
+  "analytics": {
+    "title": "Clearer for administrators. Simpler for learners.",
+    "subtitle": "Formely removes unnecessary complexity from training, so your team can focus on learning instead of tools.",
+    "metrics": [
+      { "label": "Learner progress" },
+      { "label": "Assessment results" },
+      { "label": "Course activity" },
+      { "label": "Clear team overview" }
+    ]
+  },
+  "pricing": {
+    "eyebrow": "Pricing",
+    "title": "Start simple. Grow when you need to.",
+    "subtitle": "Choose the plan that fits your number of active learners.",
+    "recommended": "Recommended",
+    "perMonth": "/ month",
+    "from": "From",
+    "learners": "Up to {n} active learners",
+    "learnersUnlimited": "For more than 150 learners",
+    "staff": "up to {n} staff",
+    "cta": "Get started",
+    "note": "Activation happens after confirmation — no public checkout.",
+    "plans": {
+      "instructor": {
+        "name": "Instructor",
+        "features": [
+          "Courses, modules and lessons",
+          "Tests and progress",
+          "Teams and invites",
+          "Up to 50 active learners"
+        ]
+      },
+      "academie": {
+        "name": "Academy",
+        "features": [
+          "Everything in Instructor",
+          "Digital library",
+          "Events",
+          "Analyst role",
+          "Up to 150 active learners"
+        ]
+      },
+      "business": {
+        "name": "Business",
+        "features": [
+          "Everything in Academy",
+          "Higher learner volume",
+          "More staff seats",
+          "For growing organizations"
+        ]
+      }
+    }
+  },
+  "why": {
+    "title": "Training without unnecessary complexity.",
+    "subtitle": "The tools you need to organize team learning — in a clear platform that is easy to administer.",
+    "items": [
+      {
+        "title": "Clearer for administrators",
+        "text": "Formely reduces complexity around training so your team can focus on learning."
+      },
+      {
+        "title": "Simpler for learners",
+        "text": "Clear access to courses and progress, without scattered tools."
+      },
+      {
+        "title": "One system",
+        "text": "Courses, learners and progress — in one place."
+      },
+      {
+        "title": "Grow when you need to",
+        "text": "Start simple and move to a higher plan as your team grows."
+      }
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "What is Formely?",
+        "a": "Formely is a platform for creating and managing courses, organizing learners and tracking progress."
+      },
+      {
+        "q": "Who is Formely for?",
+        "a": "Formely is built for companies, academies and trainers who want to organize training in one system."
+      },
+      {
+        "q": "Can I track learner progress?",
+        "a": "Yes. Formely lets you see learner progress directly from the platform."
+      },
+      {
+        "q": "Can I create tests and assessments?",
+        "a": "Yes. Assessments can be integrated into the training process to track learner results."
+      },
+      {
+        "q": "How do I choose the right plan?",
+        "a": "Plans are differentiated mainly by the number of active learners. You can start with the plan that fits your team and move up as you grow."
+      }
+    ]
+  },
+  "contact": {
+    "title": "Get started with Formely",
+    "subtitle": "Tell us who you are and which plan you need. We will follow up with activation steps.",
+    "name": "Name",
+    "email": "Email",
+    "org": "Organization",
+    "plan": "Plan of interest",
+    "message": "Message (optional)",
+    "submit": "Submit request",
+    "sending": "Sending…",
+    "success": "Request sent. We will contact you soon.",
+    "error": "Could not send the request. Please try again.",
+    "consentBefore": "I agree that Formely may process the data in this form to contact me about activation, as described in the",
+    "consentLink": "privacy policy",
+    "consentAfter": ".",
+    "consentRequired": "Please accept data processing to submit."
+  },
+  "finalCta": {
+    "title": "Team training can be simpler.",
+    "description": "Create, organize and track training from one place.",
+    "cta": "Get started with Formely"
+  },
+  "footer": {
+    "tagline": "Team training, all in one place.",
+    "product": "Product",
+    "features": "Features",
+    "pricing": "Pricing",
+    "resources": "Resources",
+    "faq": "FAQ",
+    "contact": "Contact",
+    "legal": "Legal",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "cookies": "Cookies",
+    "languages": "Languages",
+    "credit": "Powered by Mejievski",
+    "rights": "© {year} Formely"
+  },
+  "frames": {
+    "browser": "formely.app",
+    "navAdmin": "Admin",
+    "navCourses": "Courses",
+    "navTests": "Tests",
+    "navStats": "Statistics",
+    "navUsers": "Users",
+    "dashboardTitle": "Dashboard",
+    "dashboardHint": "Courses · Progress · Results",
+    "courseBuilder": "Course builder",
+    "module": "Module",
+    "lesson": "Lesson",
+    "block": "Block",
+    "publish": "Publish",
+    "questionBank": "Question bank",
+    "test": "Test",
+    "attempts": "Attempts",
+    "progress": "Progress",
+    "unlocked": "Unlocked",
+    "locked": "Locked",
+    "team": "Team",
+    "department": "Department",
+    "invite": "Invite",
+    "assign": "Assign",
+    "library": "Library",
+    "events": "Events",
+    "metricProgress": "Learner progress",
+    "metricCompletion": "Completions",
+    "metricTests": "Test results",
+    "metricExport": "Export"
+  },
+  "legal": {
+    "updated": "Last updated: {date}",
+    "privacyTitle": "Privacy policy",
+    "privacyIntro": "This page explains what personal data the public Formely website collects and why. It covers the contact form and visits to the site, not learner data inside an academy that is already active.",
+    "controller": "The controller of this website is Formely. For requests about your data:",
+    "cookieTitle": "No tracking cookies",
+    "cookieBody": "We only store your language choice in your browser. This site does not use analytics or advertising cookies.",
+    "cookieMore": "Details",
+    "cookieOk": "Got it",
+    "privacySections": [
+      {
+        "title": "What this covers",
+        "paragraphs": [
+          "This policy applies to the Formely marketing site: public pages and the “Get started” form.",
+          "When an organization uses the platform, that organization is the controller for learner and staff data. Formely processes that data as a processor, under the contract with the organization. That processing is not described here."
+        ]
+      },
+      {
+        "title": "What we collect on the site",
+        "paragraphs": [
+          "From the form: name, email, organization, plan of interest, and your message if you write one.",
+          "We also store the time of consent and the IP address, so we can show the request was sent voluntarily and to limit abuse.",
+          "The server may keep short technical logs: IP address, browser type, page, and time, for security.",
+          "Your language choice stays in the browser (localStorage). We do not send it to the server."
+        ]
+      },
+      {
+        "title": "What we do not do",
+        "paragraphs": [
+          "We do not place third-party marketing or analytics cookies on this site. We do not sell the data, and sending the form does not create a public account."
+        ]
+      },
+      {
+        "title": "Why we use it",
+        "paragraphs": [
+          "To answer an activation request: your consent and steps before a contract.",
+          "To protect the site from abuse: legitimate interest (security).",
+          "To remember the language: so the site stays in the language you chose."
+        ]
+      },
+      {
+        "title": "How long we keep it",
+        "paragraphs": [
+          "Contact requests: up to 24 months after the last exchange, sooner if you ask us to delete them, or until they become part of a contract.",
+          "Security logs: up to 90 days.",
+          "Browser language: until you change it or clear site data."
+        ]
+      },
+      {
+        "title": "Who receives it",
+        "paragraphs": [
+          "The Formely team handling requests, the email provider (if internal notification is on), and the hosting provider. We do not send it to ad networks."
+        ]
+      },
+      {
+        "title": "Where it is stored",
+        "paragraphs": [
+          "We aim to store data in the European Economic Area. If a provider processes data outside the EEA, we use safeguards such as standard contractual clauses."
+        ]
+      },
+      {
+        "title": "Your rights",
+        "paragraphs": [
+          "You can ask for access, correction, deletion, restriction, objection, or a copy of the data. You can withdraw consent at any time. That does not undo processing already done.",
+          "Email us at the address above. You can also complain to the Romanian authority (ANSPDCP) or the supervisory authority in your country."
+        ]
+      },
+      {
+        "id": "cookies",
+        "title": "Cookies and local storage",
+        "paragraphs": [
+          "We do not set tracking cookies. We store the chosen language locally so we do not ask on every visit. You can clear that preference in your browser settings."
+        ]
+      },
+      {
+        "title": "Changes",
+        "paragraphs": [
+          "If we change this policy, we update the date on this page. Requests already sent follow the version in force at that time, plus the rights the law gives you anyway."
+        ]
+      }
+    ],
+    "termsTitle": "Website terms of use",
+    "termsIntro": "These terms apply to the public Formely website. The platform contract is signed separately, after the offer is confirmed.",
+    "termsSections": [
+      {
+        "title": "What the site is",
+        "paragraphs": [
+          "The pages describe the product. They are not a firm price offer and they do not by themselves open a service contract."
+        ]
+      },
+      {
+        "title": "Access to the platform",
+        "paragraphs": [
+          "Accounts are created after the offer is confirmed, by invitation. Use of an academy is governed by the contract with the organization, not by these pages."
+        ]
+      },
+      {
+        "title": "Contact form",
+        "paragraphs": [
+          "The information must be accurate. Do not send other people’s data without a lawful basis. Processing is described in the privacy policy."
+        ]
+      },
+      {
+        "title": "Content",
+        "paragraphs": [
+          "Formely text, brand, and interface are protected. Short quotation with attribution is fine. Do not copy the site for a competing product."
+        ]
+      },
+      {
+        "title": "Availability",
+        "paragraphs": [
+          "The site may be interrupted for maintenance. Commercial descriptions can change."
+        ]
+      },
+      {
+        "title": "Liability",
+        "paragraphs": [
+          "For use of the public site, liability is limited to foreseeable direct damage, to the extent the law allows. We do not exclude liability that cannot legally be excluded."
+        ]
+      },
+      {
+        "title": "Governing law",
+        "paragraphs": [
+          "Romanian law applies. This does not limit your right to contact a supervisory authority in your EU country."
+        ]
+      }
+    ],
+    "back": "Back to home"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "text": "This link does not lead anywhere on the Formely site.",
+    "cta": "Home"
+  }
+}

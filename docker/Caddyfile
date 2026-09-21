@@ -1,0 +1,41 @@
+# Formely — reverse proxy + TLS (Let's Encrypt)
+# Domenii: formely.org | api.formely.org | academy.formely.org | admin.formely.org
+#
+# Email ACME vine din env CADDY_EMAIL (docker-compose).
+
+{
+	email {$CADDY_EMAIL}
+}
+
+www.formely.org {
+	redir https://formely.org{uri} permanent
+}
+
+formely.org {
+	encode gzip
+	reverse_proxy website:80
+}
+
+api.formely.org {
+	encode gzip
+	request_body {
+		max_size 550MB
+	}
+	reverse_proxy nginx-backend:80
+}
+
+academy.formely.org {
+	encode gzip
+	request_body {
+		max_size 550MB
+	}
+	reverse_proxy frontend:80
+}
+
+admin.formely.org {
+	encode gzip
+	request_body {
+		max_size 550MB
+	}
+	reverse_proxy backoffice:80
+}

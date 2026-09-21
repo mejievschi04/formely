@@ -38,7 +38,7 @@ const AdminProblematicCoursesPage = () => {
 						← Înapoi la Dashboard
 					</button>
 					<h1 className="admin-page-title">Cursuri Problemice</h1>
-					<p className="admin-page-subtitle">Cursuri care necesită atenție</p>
+					<p className="admin-page-subtitle">Cursuri Formely cu rată scăzută de finalizare sau engagement redus.</p>
 				</div>
 			</div>
 			{error && (

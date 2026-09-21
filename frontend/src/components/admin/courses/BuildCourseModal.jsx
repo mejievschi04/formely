@@ -67,11 +67,6 @@ const BuildCourseModal = ({
 						<h2 id="build-course-modal-title" className="build-course-modal-title">
 							{isEdit ? 'Editează curs' : 'Creează curs nou'}
 						</h2>
-						<p className="build-course-modal-subtitle">
-							{isEdit
-								? 'Modifică informațiile de bază ale cursului.'
-								: 'Creare în pași: pornești cu titlul, apoi completezi opțional restul.'}
-						</p>
 						<div className="build-course-modal-stepper" aria-label="Pașii de creare">
 							<span className={step === 1 ? 'active' : ''}>Pas 1: Titlu</span>
 							<span className={step === 2 ? 'active' : ''}>Pas 2: Opțional</span>

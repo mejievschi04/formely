@@ -25,6 +25,14 @@ class CourseMapBuckets
             ->all();
     }
 
+    public static function defaultMapRecord(): ?CourseMap
+    {
+        return CourseMap::query()
+            ->where('name', self::DEFAULT_MAP_NAME)
+            ->orderBy('id')
+            ->first();
+    }
+
     public static function isDefaultMapId(int $mapId): bool
     {
         return in_array($mapId, self::defaultMapIds(), true);

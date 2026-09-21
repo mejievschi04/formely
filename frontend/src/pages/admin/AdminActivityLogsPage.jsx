@@ -179,7 +179,7 @@ const AdminActivityLogsPage = () => {
 				<div>
 					<h1 className="admin-page-title">Activitate elevi</h1>
 					<p className="admin-page-subtitle">
-						Implicit vezi tot jurnalul (poți restrânge din „Ce vrei să vezi” și „Tip eveniment”). Acțiunile tale ca administrator nu apar, decât dacă bifezi opțiunea de mai jos.
+						Jurnalul activității elevilor în Formely. Implicit vezi tot (poți restrânge din filtre). Acțiunile tale ca administrator nu apar, decât dacă bifezi opțiunea de mai jos.
 					</p>
 				</div>
 			</div>

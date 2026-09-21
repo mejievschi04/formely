@@ -8,6 +8,7 @@ use App\Models\Course;
 use App\Support\CourseMapBuckets;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 class CourseMapAdminController extends Controller
@@ -72,7 +73,10 @@ class CourseMapAdminController extends Controller
             return $this->showUnassignedMap();
         }
 
-        $map = CourseMap::with(['createdBy:id,name,email', 'courses' => fn ($q) => $q->orderBy('course_map_course.order')])
+        $map = CourseMap::with([
+            'createdBy:id,name,email',
+            'courses' => fn ($q) => $q->orderBy('course_map_course.order'),
+        ])
             ->withCount('courses')
             ->findOrFail($id);
 
@@ -106,8 +110,6 @@ class CourseMapAdminController extends Controller
                 'image_url' => $course->image_url ?? $course->image,
                 'estimated_duration_minutes' => $durationMinutes,
                 'views_count' => \App\Support\CourseViews::countForCourse($course),
-                'progress_percentage' => 0,
-                'completed_at' => null,
                 'teacher' => $course->teacher ? ['id' => $course->teacher->id, 'name' => $course->teacher->name] : null,
             ];
         })->values();
@@ -132,6 +134,9 @@ class CourseMapAdminController extends Controller
             'visibility' => 'nullable|in:public,private',
             'order' => 'nullable|integer|min:0',
             'accent_color' => ['nullable', 'string', 'max:32', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'header_bg_color' => ['nullable', 'string', 'max:32', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'header_text_color' => ['nullable', 'string', 'max:32', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'cover_focus' => 'nullable',
         ]);
 
         $validated['created_by'] = auth()->id();
@@ -139,6 +144,10 @@ class CourseMapAdminController extends Controller
         $validated['visibility'] = auth()->user()->isAdmin()
             ? ($validated['visibility'] ?? 'public')
             : 'public';
+
+        if (array_key_exists('cover_focus', $validated) && ! Schema::hasColumn('course_maps', 'cover_focus')) {
+            unset($validated['cover_focus']);
+        }
 
         $map = CourseMap::create($validated);
         $map->load('createdBy:id,name,email');
@@ -162,7 +171,14 @@ class CourseMapAdminController extends Controller
             'description' => 'nullable|string|max:5000',
             'order' => 'nullable|integer|min:0',
             'accent_color' => ['nullable', 'string', 'max:32', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'header_bg_color' => ['nullable', 'string', 'max:32', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'header_text_color' => ['nullable', 'string', 'max:32', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'cover_focus' => 'nullable',
         ]);
+
+        if (array_key_exists('cover_focus', $validated) && ! Schema::hasColumn('course_maps', 'cover_focus')) {
+            unset($validated['cover_focus']);
+        }
 
         $map->update($validated);
         $map->load('createdBy:id,name,email');
@@ -310,8 +326,14 @@ class CourseMapAdminController extends Controller
         }
 
         $map->cover_image_path = $path;
+        if ($request->exists('cover_focus') && Schema::hasColumn('course_maps', 'cover_focus')) {
+            $map->cover_focus = CourseMap::normalizeCoverFocus($request->input('cover_focus'));
+        }
         $map->save();
-        $map->load('createdBy:id,name,email');
+        $map->load([
+            'createdBy:id,name,email',
+            'courses' => fn ($q) => $q->orderBy('course_map_course.order'),
+        ]);
         $map->loadCount('courses');
 
         return response()->json($map);
@@ -331,10 +353,16 @@ class CourseMapAdminController extends Controller
                 Log::warning('Could not delete course map cover: ' . $e->getMessage());
             }
             $map->cover_image_path = null;
+            if (Schema::hasColumn('course_maps', 'cover_focus')) {
+                $map->cover_focus = null;
+            }
             $map->save();
         }
 
-        $map->load('createdBy:id,name,email');
+        $map->load([
+            'createdBy:id,name,email',
+            'courses' => fn ($q) => $q->orderBy('course_map_course.order'),
+        ]);
         $map->loadCount('courses');
 
         return response()->json($map);

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { ensureApiCsrfCookie } from '../api';
 import { authService } from '../services/api';
+import { isStaffAdminRole, computeAdminPermissions } from '../constants/staffRoles';
 
 export const AuthContext = createContext(null);
 
@@ -26,11 +27,11 @@ function writeStoredAdminView(mode) {
 function buildContextUser(rawUser, adminViewMode) {
 	if (!rawUser) return null;
 	const actualRole = rawUser.role ?? 'student';
-	if (actualRole !== 'admin') {
+	if (!['admin', 'company_owner'].includes(actualRole)) {
 		return { ...rawUser, actualRole };
 	}
-	const effectiveRole = adminViewMode === 'student' ? 'student' : 'admin';
-	return { ...rawUser, role: effectiveRole, actualRole: 'admin' };
+	const effectiveRole = adminViewMode === 'student' ? 'student' : actualRole;
+	return { ...rawUser, role: effectiveRole, actualRole };
 }
 
 export const useAuth = () => {
@@ -59,19 +60,19 @@ export const AuthProvider = ({ children }) => {
 
 	const canMutateInAdminArea = useMemo(() => {
 		if (!user) return false;
-		const ar = user.actualRole ?? 'student';
-		if (ar === 'analyst') return false;
-		if (ar === 'admin') return user.role === 'admin';
-		if (ar === 'instructor') return true;
-		return false;
+		if (user.permissions?.can_mutate_admin != null) {
+			return Boolean(user.permissions.can_mutate_admin);
+		}
+		return computeAdminPermissions(user.actualRole ?? user.role).can_mutate_admin;
 	}, [user]);
 
-	/** Admin în preview „student” sau instructor: poate deschide builder / editează curs, fără a depinde de canMutateInAdminArea. */
+	/** Admin în preview „student” sau instructor: poate deschide builder / editează curs. */
 	const canEditCoursesAsStaff = useMemo(() => {
 		if (!user) return false;
-		const ar = user.actualRole ?? user.role ?? 'student';
-		if (ar === 'analyst') return false;
-		return ar === 'admin' || ar === 'instructor';
+		if (user.permissions?.can_edit_courses != null) {
+			return Boolean(user.permissions.can_edit_courses);
+		}
+		return computeAdminPermissions(user.actualRole ?? user.role).can_edit_courses;
 	}, [user]);
 
 	useEffect(() => {
@@ -88,6 +89,18 @@ export const AuthProvider = ({ children }) => {
 	const checkAuth = async () => {
 		try {
 			const data = await authService.me();
+			if (data?.access_blocked || data?.suspended) {
+				setRawUser(null);
+				try {
+					sessionStorage.setItem(
+						'formelyAuthError',
+						data.message || 'Contul tău este suspendat.'
+					);
+				} catch {
+					/* ignore */
+				}
+				return;
+			}
 			setRawUser(data?.user ?? null);
 		} catch {
 			// Rețea / 5xx pe /auth/me: nu ștergem sesiunea din UI (evită logout fals).

@@ -529,13 +529,17 @@
    2. STUDENT MAIN CONTENT AREA
    ============================================ */
 .va-shell-topnav .va-shell-main {
-	padding-top: 64px; /* Compensate for fixed topnav (64px height) */
-	padding-bottom: 0 !important; /* Elimină bara neagră */
-	height: calc(100vh - 64px);
-	min-height: calc(100vh - 64px);
+	padding-top: 64px;
+	padding-bottom: 0 !important;
+	margin-top: 0;
+	height: 100vh;
+	height: 100dvh;
+	min-height: 100vh;
+	min-height: 100dvh;
 	overflow-y: auto;
 	-webkit-overflow-scrolling: touch;
 	background-color: var(--bg-primary) !important;
+	box-sizing: border-box;
 }
 
 .va-shell-topnav .va-main {
@@ -588,7 +592,7 @@
 .va-shell-topnav .unified-course-page,
 .va-shell-topnav .student-achievements-page,
 .va-shell-topnav .events-page {
-	padding: var(--space-2) var(--space-8);
+	padding: var(--space-2) var(--space-8) var(--space-8);
 	height: 100%;
 	overflow-y: auto; /* Allow scroll within container */
 	max-width: 1600px;
@@ -820,14 +824,20 @@
 
 	/* Courses page - padding redus pe mobile, fără suprapunere */
 	.va-shell-topnav .courses-page-modern {
-		padding: var(--space-2) var(--space-4) var(--space-6) !important;
+		padding: 2px var(--space-4) var(--space-6) !important;
 	}
 
 	.va-shell-topnav .exam-results-page {
-		padding: var(--space-3) var(--space-4) var(--space-6) !important;
+		padding: 2px var(--space-4) var(--space-6) !important;
 	}
 
 	.va-shell-topnav .va-profile-container {
-		padding: var(--space-3) var(--space-4) var(--space-6) !important;
+		padding: 2px var(--space-4) calc(var(--space-8) + 56px + env(safe-area-inset-bottom, 0px)) !important;
+	}
+
+	/* Lecție / examen: hamburgerul global se ciocnește cu „Lecții” și cu fluxul de răspuns */
+	body.student-lesson-player .va-shell-topnav .mobile-sidebar-toggle,
+	body.student-exam-player .va-shell-topnav .mobile-sidebar-toggle {
+		display: none !important;
 	}
 }

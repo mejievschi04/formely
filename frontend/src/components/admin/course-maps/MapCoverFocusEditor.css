@@ -1,0 +1,89 @@
+.map-cover-focus-editor {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: 100%;
+}
+
+.map-cover-focus-editor__stage {
+	position: relative;
+	width: 100%;
+	aspect-ratio: 5 / 4;
+	overflow: hidden;
+	border: 1px solid var(--border-primary);
+	border-radius: 10px;
+	background: #0f172a;
+	cursor: grab;
+	touch-action: none;
+	user-select: none;
+}
+
+.map-cover-focus-editor__stage:active {
+	cursor: grabbing;
+}
+
+.map-cover-focus-editor__stage.is-disabled {
+	cursor: default;
+	opacity: 0.7;
+}
+
+.map-cover-focus-editor__stage img {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	pointer-events: none;
+}
+
+.map-cover-focus-editor__hint {
+	position: absolute;
+	left: 8px;
+	right: 8px;
+	bottom: 8px;
+	z-index: 1;
+	padding: 4px 8px;
+	border-radius: 999px;
+	background: rgba(15, 23, 42, 0.72);
+	color: #fff;
+	font-size: 0.68rem;
+	font-weight: 600;
+	text-align: center;
+	pointer-events: none;
+}
+
+.map-cover-focus-editor__zoom {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	color: var(--text-secondary);
+	font-size: 0.72rem;
+	font-weight: 700;
+}
+
+.map-cover-focus-editor__zoom input {
+	width: 100%;
+	accent-color: var(--formely-primary, #0891b2);
+}
+
+.map-cover-focus-editor__zoom-ends {
+	display: flex;
+	justify-content: space-between;
+	font-weight: 600;
+	color: var(--text-tertiary);
+}
+
+.map-cover-focus-editor.is-compact {
+	width: 200px;
+	gap: 6px;
+}
+
+.map-cover-focus-editor.is-compact .map-cover-focus-editor__stage {
+	width: 200px;
+	height: 126px;
+	aspect-ratio: auto;
+}
+
+.map-cover-focus-editor.is-compact .map-cover-focus-editor__zoom {
+	font-size: 0.68rem;
+}

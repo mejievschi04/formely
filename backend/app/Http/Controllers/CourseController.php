@@ -7,6 +7,7 @@ use App\Models\ActivityLog;
 use App\Models\CourseTest;
 use App\Models\Exam;
 use App\Models\User;
+use App\Support\CourseCatalog;
 use App\Support\CourseViews;
 use App\Support\LearningVisibility;
 use Illuminate\Http\Request;
@@ -28,7 +29,7 @@ class CourseController extends Controller
 
             // For non-admin users (students), only show published courses
             $user = $request->user();
-            $isAdmin = $user && in_array($user->role ?? '', ['admin', 'instructor']);
+            $isAdmin = LearningVisibility::isStaff($user);
             if (!$isAdmin && \Illuminate\Support\Facades\Schema::hasColumn('courses', 'status')) {
                 $query->where('status', 'published');
             }
@@ -258,10 +259,44 @@ class CourseController extends Controller
                 ]);
             }
 
-            $this->appendLegacyExamsForLearners($course, $allExams, $showDraftLinkedTests, $user, $isStaff);
-
-            // Set course.exams array (Test / course_test + examene legacy din admin)
+            // Doar teste (course_test) în structura cursului — examenele (model Exam) sunt în tab-ul Examene, nu în curs.
             $course->exams = $allExams;
+
+            $courseLevelCourseTests = CourseTest::where('course_id', $course->id)
+                ->where('scope', 'course')
+                ->with(['test' => function ($q) {
+                    $q->select('id', 'title', 'description', 'type', 'status');
+                }])
+                ->orderBy('order')
+                ->get()
+                ->map(function ($courseTest) use ($showDraftLinkedTests) {
+                    if (! $courseTest->test) {
+                        return null;
+                    }
+                    if (! $showDraftLinkedTests && $courseTest->test->status !== 'published') {
+                        return null;
+                    }
+
+                    return [
+                        'id' => $courseTest->id,
+                        'test_id' => $courseTest->test_id,
+                        'required' => (bool) ($courseTest->required ?? false),
+                        'passing_score' => $courseTest->passing_score ?? 70,
+                        'order' => $courseTest->order ?? 0,
+                        'test' => [
+                            'id' => $courseTest->test->id,
+                            'title' => $courseTest->test->title,
+                            'description' => $courseTest->test->description,
+                            'type' => $courseTest->test->type,
+                            'status' => $courseTest->test->status,
+                        ],
+                    ];
+                })
+                ->filter()
+                ->values()
+                ->all();
+
+            $course->setAttribute('course_tests', $courseLevelCourseTests);
 
             // Add user progress if user is authenticated
             if ($user) {
@@ -363,6 +398,86 @@ class CourseController extends Controller
             $allExams[] = $entry;
             $existingIds[] = (int) $legacyExam->id;
         }
+    }
+
+    /**
+     * Cursuri publicate vizibile în catalog fără mapă (opțiune la publicare).
+     */
+    public function learnerStandaloneCourses(Request $request)
+    {
+        try {
+            $user = $request->user();
+            $courses = CourseCatalog::standalonePublishedQuery()
+                ->with([
+                    'teacher:id,name',
+                    'modules:id,course_id,estimated_duration_minutes',
+                ])
+                ->orderBy('title')
+                ->get();
+
+            $courseIds = $courses->pluck('id')->all();
+            $progress = $this->progressByCourseIds($user, $courseIds);
+
+            $payload = $courses->map(function ($course) use ($progress) {
+                $p = $progress[$course->id] ?? ['progress_percentage' => 0, 'completed_at' => null];
+                $durationMinutes = 0;
+                foreach ($course->modules ?? [] as $module) {
+                    $durationMinutes += (int) ($module->estimated_duration_minutes ?? 0);
+                }
+
+                return [
+                    'id' => $course->id,
+                    'title' => $course->title,
+                    'short_description' => $course->short_description,
+                    'description' => $course->description,
+                    'image_url' => $course->image_url ?? $course->image,
+                    'estimated_duration_minutes' => $durationMinutes,
+                    'views_count' => CourseViews::countForCourse($course),
+                    'progress_percentage' => $p['progress_percentage'],
+                    'completed_at' => $p['completed_at'],
+                    'teacher' => $course->teacher ? ['id' => $course->teacher->id, 'name' => $course->teacher->name] : null,
+                ];
+            })->values();
+
+            return response()->json(['data' => $payload]);
+        } catch (\Exception $e) {
+            \Log::error('Error in CourseController::learnerStandaloneCourses', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'error' => 'Nu s-au putut încărca cursurile',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * @param  array<int>  $courseIds
+     * @return array<int, array{progress_percentage: int, completed_at: mixed}>
+     */
+    private function progressByCourseIds($user, array $courseIds): array
+    {
+        $progress = [];
+        if (! $user || $courseIds === []) {
+            return $progress;
+        }
+
+        $rows = DB::table('course_user')
+            ->where('user_id', $user->id)
+            ->whereIn('course_id', $courseIds)
+            ->select('course_id', 'progress_percentage', 'completed_at')
+            ->get();
+
+        foreach ($rows as $row) {
+            $progress[$row->course_id] = [
+                'progress_percentage' => (int) $row->progress_percentage,
+                'completed_at' => $row->completed_at,
+            ];
+        }
+
+        return $progress;
     }
 
     /**

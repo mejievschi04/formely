@@ -800,6 +800,8 @@ class CourseBuilderService
             ]
         );
 
+        app(CourseProgressService::class)->recalculateCourseProgress($course);
+
         return $courseTest;
     }
 

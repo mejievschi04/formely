@@ -54,7 +54,7 @@ const AdminAlertsPage = () => {
 						← Înapoi la Dashboard
 					</button>
 					<h1 className="admin-page-title">Alerte</h1>
-					<p className="admin-page-subtitle">Acțiuni care necesită atenție</p>
+					<p className="admin-page-subtitle">Notificări Formely care necesită acțiune din partea ta.</p>
 				</div>
 			</div>
 			{error && (

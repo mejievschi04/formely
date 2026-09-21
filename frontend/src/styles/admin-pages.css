@@ -246,6 +246,12 @@
 	min-height: 100vh;
 }
 
+.admin-users-seats {
+	margin: 0.35rem 0 0;
+	font-size: 0.875rem;
+	color: var(--text-secondary, #64748b);
+}
+
 .admin-users-table {
 	width: 100%;
 	background-color: var(--bg-elevated);
@@ -377,6 +383,36 @@
 	outline: none;
 	border-color: var(--border-focus);
 	box-shadow: var(--shadow-focus);
+}
+
+.admin-settings-branding-colors {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-6);
+	align-items: center;
+}
+
+.admin-settings-branding-colors input[type='color'] {
+	width: 3rem;
+	height: 2.5rem;
+	padding: 0;
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-md);
+	cursor: pointer;
+}
+
+.admin-settings-branding-logo-preview {
+	display: block;
+	max-width: 200px;
+	max-height: 64px;
+	object-fit: contain;
+	margin-bottom: var(--space-3);
+}
+
+.admin-settings-branding-logo-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-3);
 }
 
 /* ============================================

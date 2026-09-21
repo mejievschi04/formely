@@ -17,9 +17,6 @@ const Step6Review = ({ data, onUpdate, onCreate, loading }) => {
 		<div className="step6-review">
 			<div className="step6-header">
 				<h3>Publicare</h3>
-				<p className="step6-description">
-					Alege dacă cursul este ciornă sau publicat, tipul de acces și tipul de înscriere. Apoi creează cursul.
-				</p>
 			</div>
 
 			<div className="step6-content">

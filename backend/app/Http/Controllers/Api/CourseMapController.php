@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\CourseMap;
 use App\Support\CourseMapBuckets;
+use App\Services\CourseProgressService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -59,6 +60,9 @@ class CourseMapController extends Controller
             }
             if ($hasCoverCol) {
                 $row['cover_image_url'] = $map->cover_image_url;
+                if (Schema::hasColumn('course_maps', 'cover_focus')) {
+                    $row['cover_focus'] = CourseMap::normalizeCoverFocus($map->cover_focus);
+                }
                 $cover = $map->cover_image_url;
                 if ($cover === null || $cover === '') {
                     $row['preview_image_url'] = $previewByMapId[$map->id] ?? null;
@@ -116,6 +120,9 @@ class CourseMapController extends Controller
         }
         if (Schema::hasColumn('course_maps', 'cover_image_path')) {
             $payload['cover_image_url'] = $map->cover_image_url;
+            if (Schema::hasColumn('course_maps', 'cover_focus')) {
+                $payload['cover_focus'] = CourseMap::normalizeCoverFocus($map->cover_focus);
+            }
         }
 
         return response()->json($payload);
@@ -163,6 +170,24 @@ class CourseMapController extends Controller
             $progress[$row->course_id] = [
                 'progress_percentage' => (int) $row->progress_percentage,
                 'completed_at' => $row->completed_at,
+            ];
+        }
+
+        $incompleteTests = app(CourseProgressService::class)
+            ->courseIdsWithIncompletePublishedTests($user, $courseIds);
+        foreach ($incompleteTests as $courseId => $_) {
+            $stored = $progress[$courseId] ?? ['progress_percentage' => 0, 'completed_at' => null];
+            if ((int) ($stored['progress_percentage'] ?? 0) < 100 && empty($stored['completed_at'])) {
+                continue;
+            }
+            $course = Course::find($courseId);
+            if (! $course) {
+                continue;
+            }
+            $pct = (int) round(app(CourseProgressService::class)->calculateCourseProgress($user, $course));
+            $progress[$courseId] = [
+                'progress_percentage' => $pct,
+                'completed_at' => null,
             ];
         }
 

@@ -62,7 +62,7 @@ const EventDetailPage = () => {
 			upcoming: { label: 'Viitor', color: 'var(--formely-white)' },
 			live: { label: 'Live', color: '#ef4444' },
 			completed: { label: 'Finalizat', color: 'var(--formely-white)' },
-			cancelled: { label: 'Anulat', color: '#f97316' },
+			cancelled: { label: 'Anulat', color: '#64748b' },
 		};
 		return badges[status] || null;
 	};

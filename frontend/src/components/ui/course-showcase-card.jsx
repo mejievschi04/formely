@@ -49,7 +49,8 @@ const CourseShowcaseCard = React.forwardRef(
 		}, [resolved]);
 
 		const showUrl = resolved && !coverBroken ? resolved : COURSE_SHOWCASE_FALLBACK_IMAGE;
-		const normalizedProgress = Number.isFinite(Number(progress))
+		const hasProgress = progress != null && progress !== '';
+		const normalizedProgress = hasProgress && Number.isFinite(Number(progress))
 			? Math.min(100, Math.max(0, Number(progress)))
 			: null;
 
@@ -100,7 +101,7 @@ const CourseShowcaseCard = React.forwardRef(
 					</div>
 					<div className="course-showcase-card__inner va-card-content">
 						<h3 className="course-showcase-card__title va-card-title">{title}</h3>
-						<p className="course-showcase-card__subtitle va-card-subtitle">{subtitle}</p>
+						{subtitle ? <p className="course-showcase-card__subtitle va-card-subtitle">{subtitle}</p> : null}
 						{normalizedProgress !== null ? (
 							<div className="course-showcase-card__progress va-card-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={normalizedProgress}>
 								<div className="course-showcase-card__progress-track va-card-progress-track">

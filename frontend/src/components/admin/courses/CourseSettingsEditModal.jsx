@@ -2,7 +2,22 @@ import React, { useState, useEffect, useRef } from 'react';
 import { adminService } from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContext';
 import { courseCoverSrc } from '../../../utils/imageUrl';
+import AITutorSettings from './AITutorSettings';
+import { useAuth } from '../../../contexts/AuthContext';
+import { canUseAiFeature, isAiEnabled } from '../../../utils/aiAvailability';
 import '../../../styles/admin-course-builder.css';
+
+const COURSE_ACCENT_COLORS = [
+	'#0891b2',
+	'#10b981',
+	'#38bdf8',
+	'#8b5cf6',
+	'#ec4899',
+	'#f43f5e',
+	'#f97316',
+	'#0f172a',
+	'#64748b',
+];
 
 function hydrateDraftFromCourse(course) {
 	const tags = Array.isArray(course?.marketing_tags) ? course.marketing_tags : [];
@@ -10,19 +25,11 @@ function hydrateDraftFromCourse(course) {
 	const courseSettings = course?.settings || {};
 	const certificateSettings = courseSettings?.certificate || {};
 	const accessSettings = courseSettings?.access || {};
-	const currentVisibility = course?.visibility || courseSettings?.visibility || 'public';
-	const currentLevel = course?.level || 'beginner';
-	const currentStatus = course?.status || 'draft';
-	const currentDuration = course?.estimated_duration_hours ?? '';
 	return {
 		title: course?.title || '',
 		description: course?.description || '',
 		short_description: course?.short_description || '',
-		card_color: course?.card_color || (colorTag ? String(colorTag).replace('card_color:', '') : '#5b72ff'),
-		level: currentLevel,
-		status: currentStatus,
-		visibility: currentVisibility,
-		estimated_duration_hours: currentDuration,
+		card_color: course?.card_color || (colorTag ? String(colorTag).replace('card_color:', '') : '#0891b2'),
 		sequential_unlock: course?.sequential_unlock !== false,
 		min_test_score: course?.min_test_score ?? certificateSettings?.min_score ?? 70,
 		has_certificate: course?.has_certificate === true || certificateSettings?.enabled === true,
@@ -36,11 +43,20 @@ function hydrateDraftFromCourse(course) {
  */
 const CourseSettingsEditModal = ({ open, onClose, course, onSaved }) => {
 	const { showToast } = useToast();
+	const { user } = useAuth();
+	const showAiTutorSettings = canUseAiFeature(user, 'ai_tutor');
 	const [courseEditSaving, setCourseEditSaving] = useState(false);
 	const [courseEditImageFile, setCourseEditImageFile] = useState(null);
 	const [courseEditImagePreviewUrl, setCourseEditImagePreviewUrl] = useState(null);
 	const courseEditImageInputRef = useRef(null);
 	const [courseEditDraft, setCourseEditDraft] = useState(() => hydrateDraftFromCourse({}));
+	const [aiTutorDraft, setAiTutorDraft] = useState(() => course?.settings?.ai_tutor || {
+		enabled: true,
+		tone: 'friendly',
+		depth: 'medium',
+		allowed_topics: [],
+		restricted_topics: [],
+	});
 
 	const openCourseEditImagePicker = () => courseEditImageInputRef.current?.click();
 	const wasOpenRef = useRef(false);
@@ -49,6 +65,13 @@ const CourseSettingsEditModal = ({ open, onClose, course, onSaved }) => {
 		if (open && course?.id) {
 			if (!wasOpenRef.current) {
 				setCourseEditDraft(hydrateDraftFromCourse(course));
+				setAiTutorDraft(course?.settings?.ai_tutor || {
+					enabled: true,
+					tone: 'friendly',
+					depth: 'medium',
+					allowed_topics: [],
+					restricted_topics: [],
+				});
 				setCourseEditImageFile(null);
 			}
 			wasOpenRef.current = true;
@@ -80,27 +103,33 @@ const CourseSettingsEditModal = ({ open, onClose, course, onSaved }) => {
 			payload.append('title', courseEditDraft.title.trim());
 			payload.append('description', courseEditDraft.description || '');
 			payload.append('short_description', courseEditDraft.short_description || '');
-			payload.append('card_color', courseEditDraft.card_color || '#5b72ff');
-			payload.append('level', courseEditDraft.level || 'beginner');
-			payload.append('status', courseEditDraft.status || 'draft');
-			payload.append('visibility', courseEditDraft.visibility || 'public');
+			payload.append('card_color', courseEditDraft.card_color || '#0891b2');
+			payload.append('level', course?.level || 'beginner');
+			payload.append('status', course?.status || 'draft');
+			payload.append('visibility', course?.visibility || course?.settings?.visibility || 'public');
 			payload.append('sequential_unlock', courseEditDraft.sequential_unlock !== false ? '1' : '0');
 			payload.append('min_test_score', String(courseEditDraft.min_test_score ?? 70));
 			payload.append('has_certificate', courseEditDraft.has_certificate ? '1' : '0');
-			if (courseEditDraft.estimated_duration_hours !== '' && courseEditDraft.estimated_duration_hours != null) {
-				payload.append('estimated_duration_hours', String(courseEditDraft.estimated_duration_hours));
+			if (course?.estimated_duration_hours != null && course.estimated_duration_hours !== '') {
+				payload.append('estimated_duration_hours', String(course.estimated_duration_hours));
 			}
 			payload.append('access_type', courseEditDraft.access_type || 'free');
 			payload.append('enrollment_type', courseEditDraft.enrollment_type || 'open');
 
 			const existingTags = Array.isArray(course?.marketing_tags) ? [...course.marketing_tags] : [];
 			const nonColorTags = existingTags.filter((tag) => !String(tag).startsWith('card_color:'));
-			const nextTags = [...nonColorTags, `card_color:${courseEditDraft.card_color || '#5b72ff'}`];
+			const nextTags = [...nonColorTags, `card_color:${courseEditDraft.card_color || '#0891b2'}`];
 			nextTags.forEach((tag, index) => payload.append(`marketing_tags[${index}]`, String(tag)));
 
 			if (courseEditImageFile) {
 				payload.append('image', courseEditImageFile);
 			}
+
+			const mergedSettings = {
+				...(course?.settings || {}),
+				ai_tutor: aiTutorDraft,
+			};
+			payload.append('settings', JSON.stringify(mergedSettings));
 
 			await adminService.updateCourse(course.id, payload);
 			showToast('Datele cursului au fost actualizate.', 'success');
@@ -116,232 +145,171 @@ const CourseSettingsEditModal = ({ open, onClose, course, onSaved }) => {
 
 	if (!open || !course?.id) return null;
 
+	const coverSrc = courseEditImagePreviewUrl || courseCoverSrc(course);
+	const accent = courseEditDraft.card_color || '#0891b2';
+	const coverChip = courseEditImageFile ? 'Imagine nouă' : coverSrc ? 'Copertă' : 'Fără imagine';
+
 	return (
 		<div className="admin-course-builder-test-modal-overlay" onClick={() => !courseEditSaving && onClose()}>
 			<div className="admin-course-builder-test-modal admin-course-builder-course-edit-modal" onClick={(e) => e.stopPropagation()}>
-				<h3>Editare curs</h3>
+				<header className="admin-course-builder-course-edit-header">
+					<h3>Editare curs</h3>
+					<p>Titlu, copertă și cum apare cursul în catalog.</p>
+				</header>
+
 				<div className="admin-course-builder-test-modal-form admin-course-builder-course-edit-form">
-					<div className="admin-course-builder-course-edit-grid">
-						<div className="admin-course-builder-course-edit-field">
-							<label htmlFor="course-settings-edit-title">Titlu curs *</label>
-							<input
-								id="course-settings-edit-title"
-								type="text"
-								value={courseEditDraft.title}
-								onChange={(e) => setCourseEditDraft((prev) => ({ ...prev, title: e.target.value }))}
-								placeholder="Titlu curs"
-								disabled={courseEditSaving}
-							/>
-						</div>
-						<div className="admin-course-builder-course-edit-field">
-							<label htmlFor="course-settings-edit-card-color">Culoare cartonaș</label>
-							<input
-								id="course-settings-edit-card-color"
-								type="color"
-								value={courseEditDraft.card_color || '#5b72ff'}
-								onChange={(e) => setCourseEditDraft((prev) => ({ ...prev, card_color: e.target.value }))}
-								disabled={courseEditSaving}
-							/>
-							<div
-								className="admin-course-builder-card-color-preview"
-								style={{ '--course-preview-accent': courseEditDraft.card_color || '#5b72ff' }}
-							>
-								<span className="admin-course-builder-card-color-preview-swatch" aria-hidden="true" />
-								<div className="admin-course-builder-card-color-preview-copy">
-									<strong>Previzualizare</strong>
-									<p>Cardul din listă va folosi această culoare.</p>
-								</div>
+					<section className="admin-course-builder-course-edit-hero">
+						<button
+							type="button"
+							className="admin-course-builder-course-edit-cover"
+							onClick={openCourseEditImagePicker}
+							disabled={courseEditSaving}
+							style={{ '--course-preview-accent': accent }}
+						>
+							{coverSrc ? (
+								<img src={coverSrc} alt="" />
+							) : (
+								<span>Adaugă copertă</span>
+							)}
+							<em>{coverChip}</em>
+						</button>
+						<input
+							ref={courseEditImageInputRef}
+							id="course-settings-edit-image"
+							type="file"
+							accept="image/*"
+							onChange={(e) => {
+								const file = e.target.files?.[0] || null;
+								e.target.value = '';
+								setCourseEditImageFile(file);
+							}}
+							disabled={courseEditSaving}
+							hidden
+						/>
+
+						<div className="admin-course-builder-course-edit-identity">
+							<div className="admin-course-builder-course-edit-field">
+								<label htmlFor="course-settings-edit-title">Titlu</label>
+								<input
+									id="course-settings-edit-title"
+									type="text"
+									value={courseEditDraft.title}
+									onChange={(e) => setCourseEditDraft((prev) => ({ ...prev, title: e.target.value }))}
+									placeholder="Numele cursului"
+									disabled={courseEditSaving}
+								/>
+							</div>
+							<div className="admin-course-builder-course-edit-field">
+								<label htmlFor="course-settings-edit-short-description">Rezumat</label>
+								<input
+									id="course-settings-edit-short-description"
+									type="text"
+									value={courseEditDraft.short_description}
+									onChange={(e) => setCourseEditDraft((prev) => ({ ...prev, short_description: e.target.value }))}
+									placeholder="Text scurt pe card"
+									disabled={courseEditSaving}
+								/>
+							</div>
+							<div className="admin-course-builder-course-edit-field">
+								<label htmlFor="course-settings-edit-description">Descriere</label>
+								<textarea
+									id="course-settings-edit-description"
+									rows={3}
+									value={courseEditDraft.description}
+									onChange={(e) => setCourseEditDraft((prev) => ({ ...prev, description: e.target.value }))}
+									placeholder="Opțional"
+									disabled={courseEditSaving}
+								/>
 							</div>
 						</div>
-					</div>
+					</section>
 
-					<div className="admin-course-builder-course-edit-field">
-						<label htmlFor="course-settings-edit-description">Descriere</label>
-						<textarea
-							id="course-settings-edit-description"
-							rows={4}
-							value={courseEditDraft.description}
-							onChange={(e) => setCourseEditDraft((prev) => ({ ...prev, description: e.target.value }))}
-							placeholder="Descrierea cursului"
-							disabled={courseEditSaving}
-						/>
-					</div>
-
-					<div className="admin-course-builder-course-edit-field">
-						<label htmlFor="course-settings-edit-short-description">Descriere scurtă</label>
-						<textarea
-							id="course-settings-edit-short-description"
-							rows={2}
-							value={courseEditDraft.short_description}
-							onChange={(e) => setCourseEditDraft((prev) => ({ ...prev, short_description: e.target.value }))}
-							placeholder="Rezumatul care apare în carduri sau liste"
-							disabled={courseEditSaving}
-						/>
-					</div>
-
-					<div className="admin-course-builder-course-edit-grid">
-						<div className="admin-course-builder-course-edit-field">
-							<label htmlFor="course-settings-edit-level">Nivel</label>
-							<select
-								id="course-settings-edit-level"
-								value={courseEditDraft.level || 'beginner'}
-								onChange={(e) => setCourseEditDraft((prev) => ({ ...prev, level: e.target.value }))}
-								disabled={courseEditSaving}
-							>
-								<option value="beginner">Începător</option>
-								<option value="intermediate">Intermediar</option>
-								<option value="advanced">Avansat</option>
-							</select>
-						</div>
-						<div className="admin-course-builder-course-edit-field">
-							<label htmlFor="course-settings-edit-status">Status</label>
-							<select
-								id="course-settings-edit-status"
-								value={courseEditDraft.status || 'draft'}
-								onChange={(e) => setCourseEditDraft((prev) => ({ ...prev, status: e.target.value }))}
-								disabled={courseEditSaving}
-							>
-								<option value="draft">Draft</option>
-								<option value="published">Publicat</option>
-							</select>
-						</div>
-					</div>
-
-					<div className="admin-course-builder-course-edit-grid">
-						<div className="admin-course-builder-course-edit-field">
-							<label htmlFor="course-settings-edit-visibility">Vizibilitate</label>
-							<select
-								id="course-settings-edit-visibility"
-								value={courseEditDraft.visibility || 'public'}
-								onChange={(e) => setCourseEditDraft((prev) => ({ ...prev, visibility: e.target.value }))}
-								disabled={courseEditSaving}
-							>
-								<option value="public">Public</option>
-								<option value="private">Privat</option>
-								<option value="hidden">Ascuns</option>
-							</select>
-						</div>
-						<div className="admin-course-builder-course-edit-field">
-							<label htmlFor="course-settings-edit-hours">Durată estimată (ore)</label>
-							<input
-								id="course-settings-edit-hours"
-								type="number"
-								min={1}
-								value={courseEditDraft.estimated_duration_hours}
-								onChange={(e) => setCourseEditDraft((prev) => ({
-									...prev,
-									estimated_duration_hours: e.target.value ? parseInt(e.target.value, 10) : '',
-								}))}
-								placeholder="Ex: 12"
-								disabled={courseEditSaving}
-							/>
-						</div>
-					</div>
-
-					<div className="admin-course-builder-course-edit-grid">
-						<div className="admin-course-builder-course-edit-field">
-							<label htmlFor="course-settings-edit-min-score">Scor minim quiz (%)</label>
-							<input
-								id="course-settings-edit-min-score"
-								type="number"
-								min={0}
-								max={100}
-								value={courseEditDraft.min_test_score ?? 70}
-								onChange={(e) => setCourseEditDraft((prev) => ({
-									...prev,
-									min_test_score: e.target.value ? parseInt(e.target.value, 10) : 70,
-								}))}
-								disabled={courseEditSaving}
-							/>
-						</div>
-						<div className="admin-course-builder-course-edit-field">
-							<div className="admin-course-builder-course-edit-media">
-								<div className="admin-course-builder-course-edit-media-preview">
-									{(courseEditImagePreviewUrl || courseCoverSrc(course)) ? (
-										<img src={courseEditImagePreviewUrl || courseCoverSrc(course)} alt="" />
-									) : (
-										<div className="admin-course-builder-course-edit-media-placeholder">
-											<span>Fără copertă</span>
-										</div>
-									)}
-								</div>
-								<div className="admin-course-builder-course-edit-media-copy">
-									<div className="admin-course-builder-course-edit-media-head">
-										<label htmlFor="course-settings-edit-image">Poză curs {courseCoverSrc(course) ? '' : '*'}</label>
-										<span className="admin-course-builder-course-edit-media-chip">
-											{courseEditImageFile ? 'Previzualizare nouă' : courseCoverSrc(course) ? 'Copertă curentă' : 'Lipsă'}
-										</span>
-									</div>
-									<p className="admin-course-builder-course-edit-media-note">
-										Thumbnail-ul apare în cardul cursului. Recomandat 16:9, max. 4MB.
-									</p>
-									<div className="admin-course-builder-course-edit-media-actions">
-										<button
-											type="button"
-											className="admin-course-builder-course-edit-media-button"
-											onClick={openCourseEditImagePicker}
-											disabled={courseEditSaving}
-										>
-											Alege imaginea
-										</button>
-										{courseEditImageFile ? (
-											<button
-												type="button"
-												className="admin-course-builder-course-edit-media-button admin-course-builder-course-edit-media-button--ghost"
-												onClick={() => {
-													setCourseEditImageFile(null);
-													if (courseEditImageInputRef.current) {
-														courseEditImageInputRef.current.value = '';
-													}
-												}}
-												disabled={courseEditSaving}
-											>
-												Renunță
-											</button>
-										) : null}
-									</div>
-									<input
-										ref={courseEditImageInputRef}
-										id="course-settings-edit-image"
-										type="file"
-										accept="image/*"
-										onChange={(e) => {
-											const file = e.target.files?.[0] || null;
-											e.target.value = '';
-											setCourseEditImageFile(file);
-										}}
+					<section className="admin-course-builder-course-edit-field">
+						<span className="admin-course-builder-course-edit-swatch-label">Culoare card</span>
+						<div className="admin-course-builder-course-edit-swatches" role="listbox" aria-label="Culoare card">
+							{COURSE_ACCENT_COLORS.map((color) => {
+								const selected = String(accent).toLowerCase() === color;
+								return (
+									<button
+										key={color}
+										type="button"
+										role="option"
+										aria-selected={selected}
+										className={`admin-course-builder-course-edit-swatch${selected ? ' is-selected' : ''}`}
+										style={{ background: color }}
+										onClick={() => setCourseEditDraft((prev) => ({ ...prev, card_color: color }))}
 										disabled={courseEditSaving}
-										hidden
+										title={color}
 									/>
-								</div>
-							</div>
+								);
+							})}
+							<label className="admin-course-builder-course-edit-swatch-custom">
+								<input
+									id="course-settings-edit-card-color"
+									type="color"
+									value={accent}
+									onChange={(e) => setCourseEditDraft((prev) => ({ ...prev, card_color: e.target.value }))}
+									disabled={courseEditSaving}
+									aria-label="Culoare personalizată"
+								/>
+							</label>
 						</div>
-					</div>
+					</section>
 
-					<div className="admin-course-builder-course-edit-checks">
-						<label className="admin-course-builder-course-edit-check">
+					<section className="admin-course-builder-course-edit-toggles">
+						<label className="admin-course-builder-course-edit-toggle">
 							<input
 								type="checkbox"
 								checked={courseEditDraft.sequential_unlock !== false}
 								onChange={(e) => setCourseEditDraft((prev) => ({ ...prev, sequential_unlock: e.target.checked }))}
 								disabled={courseEditSaving}
 							/>
-							<span>Deblocare secvențială</span>
+							<span>
+								<strong>Lecțiile se deschid pe rând</strong>
+								<small>Următoarea lecție rămâne blocată până se parcurge cea curentă.</small>
+							</span>
 						</label>
-						<label className="admin-course-builder-course-edit-check">
+						<label className="admin-course-builder-course-edit-toggle">
 							<input
 								type="checkbox"
 								checked={courseEditDraft.has_certificate === true}
 								onChange={(e) => setCourseEditDraft((prev) => ({ ...prev, has_certificate: e.target.checked }))}
 								disabled={courseEditSaving}
 							/>
-							<span>Certificat la finalizare</span>
+							<span>
+								<strong>Certificat la finalizare</strong>
+								<small>Se emite după ce cursul e completat.</small>
+							</span>
 						</label>
-					</div>
+						{courseEditDraft.has_certificate ? (
+							<div className="admin-course-builder-course-edit-field admin-course-builder-course-edit-score">
+								<label htmlFor="course-settings-edit-min-score">Prag certificat (%)</label>
+								<input
+									id="course-settings-edit-min-score"
+									type="number"
+									min={0}
+									max={100}
+									value={courseEditDraft.min_test_score ?? 70}
+									onChange={(e) => setCourseEditDraft((prev) => ({
+										...prev,
+										min_test_score: e.target.value ? parseInt(e.target.value, 10) : 70,
+									}))}
+									disabled={courseEditSaving}
+								/>
+							</div>
+						) : null}
+					</section>
 
-					<p className="admin-course-builder-course-edit-note">
-						Cursul rămâne gratuit și deschis implicit; aici ajustezi doar setările importante de publicare și finalizare.
-					</p>
+					{isAiEnabled() && showAiTutorSettings ? (
+						<AITutorSettings
+							courseData={{ ...course, settings: { ...(course?.settings || {}), ai_tutor: aiTutorDraft } }}
+							onUpdate={(updates) => {
+								if (updates?.ai_tutor) {
+									setAiTutorDraft(updates.ai_tutor);
+								}
+							}}
+						/>
+					) : null}
 				</div>
 
 				<div className="admin-course-builder-test-modal-actions">

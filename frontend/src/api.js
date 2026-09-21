@@ -1,8 +1,19 @@
 import axios from "axios";
 import { logger } from "./utils/logger";
 
-// Get API URL from environment variable, fallback to proxy
-const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
+function isLoopbackHost(hostname) {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
+
+/** Pe telefon (IP LAN) folosim proxy-ul Vite `/api`, nu localhost de pe telefon. */
+function resolveApiBaseUrl() {
+  if (typeof window !== "undefined" && !isLoopbackHost(window.location.hostname)) {
+    return "/api";
+  }
+  return import.meta.env.VITE_API_URL || "/api";
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 /** Optional: set by ToastProvider so 5xx/network errors show a toast */
 let apiErrorNotifier = null;

@@ -39,9 +39,6 @@ const CourseInsights = ({ insights, onViewCourse }) => {
 		<div className="admin-course-insights">
 			<div className="admin-course-insights-header">
 				<h3>Insights & Alerte</h3>
-				<p className="admin-course-insights-subtitle">
-					Cursuri care necesită atenție
-				</p>
 			</div>
 			<div className="admin-course-insights-list">
 				{insights.map((insight) => (

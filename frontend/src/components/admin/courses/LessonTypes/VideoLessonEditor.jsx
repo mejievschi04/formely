@@ -3,7 +3,7 @@ import { openaiService } from '../../../../services/openaiService';
 import { adminService } from '../../../../services/api';
 import { useToast } from '../../../../contexts/ToastContext';
 import { buildVideoLessonPrompt } from '../../../../utils/aiPrompts';
-import { runAiAction } from '../../../../utils/aiAvailability';
+import { isAiEnabled, runAiAction } from '../../../../utils/aiAvailability';
 
 /**
  * Video Lesson Editor - Conform defacut.md secțiunea 5.1
@@ -170,7 +170,7 @@ const VideoLessonEditor = ({ lesson, onUpdate, courseId }) => {
 			</div>
 
 			{/* AI processing button */}
-			{lesson.video_url && (
+			{lesson.video_url && isAiEnabled() ? (
 				<div className="admin-form-group">
 					<button
 						type="button"
@@ -184,7 +184,7 @@ const VideoLessonEditor = ({ lesson, onUpdate, courseId }) => {
 						Asistent AI va genera: transcriere, capitole, highlights, rezumat, context pentru Asistent AI și întrebări quiz
 					</p>
 				</div>
-			)}
+			) : null}
 
 			{/* AI results display */}
 			{aiResults.transcription && (
@@ -261,7 +261,7 @@ const VideoLessonEditor = ({ lesson, onUpdate, courseId }) => {
 					{/* Asistent AI context */}
 					{aiResults.tutorContext && (
 						<div className="ai-result-section">
-							<h5>⚡ Context Asistent AI</h5>
+							<h5>Context Formely AI</h5>
 							<textarea
 								className="admin-form-textarea"
 								value={aiResults.tutorContext}

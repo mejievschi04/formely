@@ -720,14 +720,14 @@ html[data-theme='dark'] .lms-btn-secondary.btn-danger:hover:not(:disabled) {
 
 /* Desktop - butoane PAGES ONLY (nu meniul) */
 @media (min-width: 769px) {
-	.va-shell-main button:not(.btn-sm):not(.btn-lg):not(.admin-settings-toggle-switch):not(.admin-exams-header-switch):not(.admin-course-card-action-btn):not(.admin-course-table-action-btn):not(.admin-course-map-delete-btn):not(.admin-course-map-edit-btn):not(.admin-course-map-plus-btn):not(.admin-courses-showcase-edit-btn),
+	.va-shell-main button:not(.btn-sm):not(.btn-lg):not(.admin-settings-toggle-switch):not(.admin-exams-header-switch):not(.admin-course-card-action-btn):not(.admin-course-table-action-btn):not(.admin-course-map-delete-btn):not(.admin-course-map-edit-btn):not(.admin-course-map-plus-btn):not(.admin-courses-showcase-edit-btn):not(.admin-action-icon-btn):not(.admin-users-icon-btn):not(.admin-org-icon-btn):not(.admin-course-map-cover-compact__thumb):not(.admin-course-map-cover-button):not(.admin-course-map-color-clear):not(.admin-team-modal-close):not(.admin-course-map-modal__dropzone):not(.passing-score-stepper-btn):not(.formely-number-stepper-btn):not(.qb-crumb):not(.qb-catalog-tile-main),
 	.va-shell-main .btn:not(.btn-sm):not(.btn-lg),
 	.va-shell-main .admin-btn:not(.admin-btn-sm):not(.btn-sm),
 	.va-shell-main .va-btn:not(.btn-sm),
 	.va-shell-main .lms-btn-primary,
 	.va-shell-main .admin-btn-create-course,
 	.va-shell-main .admin-btn-secondary,
-	.admin-container button:not(.btn-sm):not(.btn-lg):not(.admin-settings-toggle-switch):not(.admin-exams-header-switch):not(.admin-course-card-action-btn):not(.admin-course-table-action-btn):not(.admin-course-map-delete-btn):not(.admin-course-map-edit-btn):not(.admin-course-map-plus-btn):not(.admin-courses-showcase-edit-btn),
+	.admin-container button:not(.btn-sm):not(.btn-lg):not(.admin-settings-toggle-switch):not(.admin-exams-header-switch):not(.admin-course-card-action-btn):not(.admin-course-table-action-btn):not(.admin-course-map-delete-btn):not(.admin-course-map-edit-btn):not(.admin-course-map-plus-btn):not(.admin-courses-showcase-edit-btn):not(.admin-action-icon-btn):not(.admin-users-icon-btn):not(.admin-org-icon-btn):not(.admin-course-map-cover-compact__thumb):not(.admin-course-map-cover-button):not(.admin-course-map-color-clear):not(.admin-team-modal-close):not(.admin-course-map-modal__dropzone):not(.passing-score-stepper-btn):not(.formely-number-stepper-btn):not(.qb-crumb):not(.qb-catalog-tile-main),
 	.admin-container .btn:not(.btn-sm):not(.btn-lg),
 	.admin-container .admin-btn:not(.admin-btn-sm):not(.btn-sm),
 	.admin-container .va-btn:not(.btn-sm),

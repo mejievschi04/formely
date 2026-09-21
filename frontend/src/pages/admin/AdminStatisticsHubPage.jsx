@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { adminService } from '../../services/api';
+import AIStatisticsExportPanel from '../../components/admin/statistics/AIStatisticsExportPanel';
+import { useAuth } from '../../contexts/AuthContext';
+import { canUseAiFeature, isAiEnabled } from '../../utils/aiAvailability';
 import {
 	buildStructuredExcelRows,
 	downloadStructuredExcel,
@@ -15,6 +18,7 @@ const MENU_ITEMS = [
 	{ id: 'courses', label: 'Cursuri' },
 	{ id: 'tests', label: 'Teste' },
 	{ id: 'top-students', label: 'Top 10 studenți' },
+	{ id: 'ai-export', label: 'Export cu Formely AI', feature: 'ai_stats' },
 ];
 
 const formatLearningDuration = (totalSeconds) => {
@@ -27,6 +31,15 @@ const formatLearningDuration = (totalSeconds) => {
 };
 
 const AdminStatisticsHubPage = () => {
+	const { user } = useAuth();
+	const menuItems = useMemo(
+		() => MENU_ITEMS.filter((item) => {
+			if (!item.feature) return true;
+			if (!isAiEnabled()) return false;
+			return canUseAiFeature(user, item.feature);
+		}),
+		[user]
+	);
 	const [active, setActive] = useState('student-progress');
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
@@ -41,7 +54,7 @@ const AdminStatisticsHubPage = () => {
 		if (Number.isNaN(date.getTime())) return '—';
 		return date.toLocaleDateString('en-US');
 	};
-	const activeItem = MENU_ITEMS.find((item) => item.id === active);
+	const activeItem = menuItems.find((item) => item.id === active);
 
 	useEffect(() => {
 		const sectionsUsingStatistics = new Set(['student-progress', 'course-progress', 'test-progress', 'top-students', 'students', 'courses', 'tests']);
@@ -1406,7 +1419,7 @@ const AdminStatisticsHubPage = () => {
 				<div className="admin-page-header-content">
 					<h1 className="admin-page-title">Statistică</h1>
 					<p className="admin-page-subtitle">
-						Rapoarte de progres, cursuri, teste și clasamente — aliniate la datele din platformă
+						Rapoarte Formely de progres, cursuri, teste și clasamente — din datele live ale platformei
 					</p>
 				</div>
 			</header>
@@ -1415,12 +1428,18 @@ const AdminStatisticsHubPage = () => {
 				<aside className="admin-statistics-hub-sidebar" aria-label="Navigare rapoarte">
 					<p className="admin-statistics-hub-sidebar-title">Rapoarte</p>
 					<nav className="admin-statistics-hub-nav">
-						{MENU_ITEMS.map((item) => (
+						{menuItems.map((item) => (
 							<button
 								key={item.id}
 								type="button"
 								className={active === item.id ? 'is-active' : ''}
-								onClick={() => setActive(item.id)}
+								onClick={() => {
+									if (item.comingSoon) return;
+									setActive(item.id);
+								}}
+								disabled={item.comingSoon}
+								title={item.comingSoon ? 'Formely AI — în curând' : undefined}
+								aria-label={item.comingSoon ? 'Formely AI, în curând' : undefined}
 							>
 								{item.label}
 							</button>
@@ -1443,6 +1462,8 @@ const AdminStatisticsHubPage = () => {
 					renderCoursesOverview()
 				) : active === 'tests' ? (
 					renderTestsOverview()
+				) : active === 'ai-export' ? (
+					<AIStatisticsExportPanel dateFrom={dateFrom} dateTo={dateTo} />
 				) : (
 					<div className="admin-statistics-placeholder">
 						<h2 className="admin-statistics-section-heading">{activeItem?.label || 'Statistică'}</h2>

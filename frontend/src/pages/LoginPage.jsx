@@ -77,9 +77,6 @@ const LoginPage = () => {
 							<span className="modern-auth-logo-text">Formely</span>
 						</div>
 						<h1 className="modern-auth-title">Bine ai revenit</h1>
-						<p className="modern-auth-subtitle">
-							Autentifică-te pentru a continua călătoria ta de învățare
-						</p>
 					</div>
 
 					{/* Form */}

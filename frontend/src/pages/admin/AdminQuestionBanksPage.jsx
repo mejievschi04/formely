@@ -18,6 +18,7 @@ import { useToast } from '../../contexts/ToastContext';
 import FolderCard from '../../components/admin/question-banks/FolderCard';
 import { useAuth } from '../../contexts/AuthContext';
 import './AdminQuestionBanksPage.css';
+import { getQuestionTypeLabel } from '../../utils/questionTypeLabels';
 
 function stripHtmlPreview(raw, maxLen = 160) {
   if (raw == null || raw === '') return '';
@@ -29,19 +30,8 @@ function stripHtmlPreview(raw, maxLen = 160) {
   return `${plain.slice(0, maxLen)}...`;
 }
 
-const QUESTION_TYPE_LABELS = {
-  multiple_choice: 'Răspuns multiplu',
-  single_choice: 'Răspuns unic',
-  true_false: 'Adevărat/Fals',
-  matching: 'Potrivire',
-  ordering: 'Ordonare',
-  fill_in_blank: 'Completare',
-  open: 'Deschis',
-};
-
 function typeLabel(type) {
-  const t = String(type || '').trim();
-  return QUESTION_TYPE_LABELS[t] || t || '-';
+  return getQuestionTypeLabel(type, '-');
 }
 
 function isOrphanTestQuestion(row) {
@@ -598,10 +588,10 @@ const AdminQuestionBanksPage = ({ embedded = false }) => {
       <div className="qb-shell">
         <header className="qb-page-hero">
           <div className="qb-page-hero-text">
-            <p className="qb-page-eyebrow">Bibliotecă evaluare</p>
+            <p className="qb-page-eyebrow">Bibliotecă evaluare Formely</p>
             <h1>Întrebări</h1>
             <p className="qb-page-lead">
-              Organizează întrebările în foldere reutilizabile și curăță rapid întrebările rămase direct în teste.
+              Bancă reutilizabilă de întrebări — foldere, catalog și import în teste sau examene.
             </p>
           </div>
           <div className="qb-hero-actions">

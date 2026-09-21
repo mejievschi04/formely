@@ -8,7 +8,10 @@ const IncompleteLessonsWidget = ({ lessons }) => {
 		return (
 			<div className="student-widget student-incomplete-lessons-widget">
 				<div className="student-widget-header">
-					<h3>Lecții neterminate</h3>
+					<div>
+						<h3>Lecții neterminate</h3>
+						<p className="student-widget-subtitle">Începute, dar încă nefinalizate</p>
+					</div>
 				</div>
 				<div className="student-widget-content">
 					<p className="student-widget-empty">Toate lecțiile tale sunt finalizate! 🎉</p>
@@ -24,7 +27,10 @@ const IncompleteLessonsWidget = ({ lessons }) => {
 	return (
 		<div className="student-widget student-incomplete-lessons-widget">
 			<div className="student-widget-header">
-				<h3>Lecții neterminate</h3>
+				<div>
+					<h3>Lecții neterminate</h3>
+					<p className="student-widget-subtitle">Începute, dar încă nefinalizate</p>
+				</div>
 				<span className="student-widget-count">{lessons.length}</span>
 			</div>
 			<div className="student-widget-content">

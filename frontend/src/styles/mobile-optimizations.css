@@ -24,7 +24,7 @@
 
 @media (max-width: 768px) {
 	/* Buttons - PAGES ONLY (nu meniul). Touch target 44px. */
-	.va-shell-main button:not(.admin-settings-toggle-switch):not(.admin-exams-header-switch),
+	.va-shell-main button:not(.admin-settings-toggle-switch):not(.admin-exams-header-switch):not(.admin-action-icon-btn):not(.admin-users-icon-btn):not(.admin-org-icon-btn),
 	.va-shell-main .btn,
 	.va-shell-main .admin-btn,
 	.va-shell-main .va-btn,
@@ -33,7 +33,7 @@
 	.va-shell-main .admin-btn-secondary,
 	.va-shell-main [role="button"],
 	.va-shell-main a[role="button"],
-	.admin-container button:not(.admin-settings-toggle-switch):not(.admin-exams-header-switch):not(.admin-course-card-action-btn):not(.admin-course-table-action-btn):not(.admin-course-map-delete-btn):not(.admin-course-map-edit-btn):not(.admin-course-map-plus-btn):not(.admin-courses-showcase-edit-btn),
+	.admin-container button:not(.admin-settings-toggle-switch):not(.admin-exams-header-switch):not(.admin-course-card-action-btn):not(.admin-course-table-action-btn):not(.admin-course-map-delete-btn):not(.admin-course-map-edit-btn):not(.admin-course-map-plus-btn):not(.admin-courses-showcase-edit-btn):not(.admin-action-icon-btn):not(.admin-users-icon-btn):not(.admin-org-icon-btn),
 	.admin-container .btn,
 	.admin-container .admin-btn,
 	.admin-container .va-btn,
@@ -62,9 +62,9 @@
 	}
 
 	/* Icon buttons - pages only */
-	.va-shell-main button[aria-label]:not(.admin-settings-toggle-switch):not(.admin-exams-header-switch),
+	.va-shell-main button[aria-label]:not(.admin-settings-toggle-switch):not(.admin-exams-header-switch):not(.admin-action-icon-btn):not(.admin-users-icon-btn):not(.admin-org-icon-btn),
 	.va-shell-main .icon-btn,
-	.admin-container button[aria-label]:not(.admin-settings-toggle-switch):not(.admin-exams-header-switch):not(.admin-courses-showcase-edit-btn),
+	.admin-container button[aria-label]:not(.admin-settings-toggle-switch):not(.admin-exams-header-switch):not(.admin-courses-showcase-edit-btn):not(.admin-action-icon-btn):not(.admin-users-icon-btn):not(.admin-org-icon-btn),
 	.admin-container .icon-btn {
 		min-width: var(--btn-mobile-min-width);
 		min-height: var(--btn-mobile-min-height);
@@ -1401,7 +1401,6 @@
 	}
 
 	.messages-page,
-	.library-page,
 	.library-reader-page,
 	.lessons-page,
 	.lesson-page,
@@ -2244,20 +2243,33 @@
 
 	/* Profile Page - Already optimized, ensure consistency */
 	.va-profile-container {
-		padding: 0 var(--space-4) var(--space-6) !important;
+		padding: 0 var(--space-4) calc(var(--space-8) + 56px + env(safe-area-inset-bottom, 0px)) !important;
 		padding-top: var(--space-1) !important;
+		height: auto !important;
+		overflow: visible !important;
 	}
 
 	.va-profile-header {
 		margin-top: 0 !important;
-		margin-bottom: var(--space-5) !important;
+		margin-bottom: var(--space-4) !important;
+	}
+
+	.va-profile-section {
+		margin-bottom: calc(var(--space-4) + 8px);
+		padding-bottom: var(--space-5);
+	}
+
+	.va-profile-section .lms-btn-primary,
+	.va-profile-section .lms-btn-secondary {
+		margin-top: var(--space-3);
 	}
 
 	.va-profile-stats {
 		display: grid !important;
 		grid-template-columns: repeat(2, 1fr) !important;
 		gap: var(--space-3) !important;
-		margin-top: var(--space-4) !important;
+		margin-top: var(--space-3) !important;
+		margin-bottom: var(--space-4) !important;
 		width: 100% !important;
 	}
 
@@ -2442,6 +2454,58 @@
 		margin: 0;
 	}
 
+	.va-shell-topnav .messages-sidebar {
+		display: grid !important;
+		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-rows: auto minmax(0, 1fr);
+		width: 100% !important;
+		height: 100% !important;
+		border-right: none;
+	}
+
+	.va-shell-topnav .messages-search {
+		grid-column: 1;
+		grid-row: 1;
+		padding: 12px 8px 12px 16px;
+		border-bottom: none;
+		position: relative;
+		top: auto;
+		z-index: 2;
+		flex-shrink: 0;
+	}
+
+	.va-shell-topnav .messages-sidebar-header {
+		grid-column: 2;
+		grid-row: 1;
+		justify-content: flex-end;
+		align-items: center;
+		padding: 12px 16px 12px 0;
+		border-bottom: none;
+		position: relative;
+		top: auto;
+		background: transparent;
+		z-index: 2;
+	}
+
+	.va-shell-topnav .messages-sidebar-header-copy {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+
+	.va-shell-topnav .messages-conversations-list {
+		grid-column: 1 / -1;
+		grid-row: 2;
+		border-top: 1px solid var(--border-primary);
+		padding: 8px 12px 12px;
+	}
+
 	.messages-search {
 		padding: var(--space-3);
 		flex-shrink: 0;
@@ -2602,7 +2666,7 @@
 
 	/* Profile Container - Clean spacing */
 	.va-profile-container {
-		padding: var(--space-4) var(--space-4) var(--space-6);
+		padding: var(--space-4) var(--space-4) calc(var(--space-8) + 56px + env(safe-area-inset-bottom, 0px));
 		min-height: auto;
 		max-width: 100%;
 	}
@@ -2623,10 +2687,10 @@
 
 	/* Profile Header - Clean card design */
 	.va-profile-header {
-		margin-bottom: var(--space-6);
+		margin-bottom: var(--space-4);
 		background: var(--bg-elevated);
 		border-radius: var(--radius-xl);
-		padding: var(--space-5);
+		padding: var(--space-4);
 		border: 1px solid var(--border-primary);
 		box-shadow: var(--shadow-md);
 	}
@@ -2755,44 +2819,45 @@
 		display: grid;
 		grid-template-columns: repeat(2, 1fr);
 		gap: var(--space-3);
-		margin-bottom: var(--space-6);
+		margin-bottom: var(--space-4);
 	}
 
 	.va-stat-card {
 		background: var(--bg-elevated);
 		border: 1px solid var(--border-primary);
 		border-radius: var(--radius-lg);
-		padding: var(--space-5);
-		min-height: 100px;
+		padding: var(--space-4) var(--space-3);
+		min-height: 88px;
 		display: flex;
 		flex-direction: column;
-		align-items: flex-start;
-		gap: var(--space-3);
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-2);
 		box-shadow: var(--shadow-sm);
-		transition: all var(--transition-base);
+		text-align: center;
+		transition: box-shadow var(--transition-base), border-color var(--transition-base);
 	}
 
 	.va-stat-card:hover {
 		box-shadow: var(--shadow-md);
-		transform: translateY(-2px);
+		transform: none;
 	}
 
-	.va-stat-icon {
-		font-size: var(--font-size-2xl);
-		width: 48px;
-		height: 48px;
+	.va-profile-activity-cta {
 		display: flex;
-		align-items: center;
 		justify-content: center;
-		background: var(--bg-secondary);
-		border-radius: var(--radius-md);
-		flex-shrink: 0;
+	}
+
+	.va-profile-badges {
+		justify-content: center;
 	}
 
 	.va-stat-content {
 		width: 100%;
 		display: flex;
 		flex-direction: column;
+		align-items: center;
+		text-align: center;
 		gap: var(--space-1);
 	}
 
@@ -2840,15 +2905,17 @@
 		background: var(--bg-elevated);
 		border: 1px solid var(--border-primary);
 		border-radius: var(--radius-lg);
-		padding: var(--space-5);
+		padding: var(--space-4);
 		box-shadow: var(--shadow-sm);
+		margin-bottom: 16px;
 	}
 
 	.va-section-header {
 		display: flex;
 		flex-direction: row;
 		align-items: center;
-		justify-content: space-between;
+		justify-content: center;
+		gap: var(--space-2);
 		margin-bottom: var(--space-4);
 		padding-bottom: var(--space-3);
 		border-bottom: 1px solid var(--border-primary);
@@ -2912,11 +2979,18 @@
 		border: 1px solid var(--border-primary);
 		border-radius: var(--radius-md);
 		padding: var(--space-3) !important;
-		transition: all var(--transition-base);
+		transition: box-shadow var(--transition-base), border-color var(--transition-base);
 		box-shadow: var(--shadow-sm);
+		text-align: center;
 	}
 
 	.va-course-card-header {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		gap: var(--space-2);
 		margin-bottom: var(--space-2) !important;
 	}
 
@@ -2951,16 +3025,7 @@
 	.va-course-card:hover {
 		box-shadow: var(--shadow-md);
 		border-color: var(--border-secondary);
-		transform: translateY(-2px);
-	}
-
-	.va-course-card-header {
-		display: flex;
-		flex-direction: row;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: var(--space-3);
-		margin-bottom: var(--space-3);
+		transform: none;
 	}
 
 	.va-course-card-title {
@@ -3994,11 +4059,13 @@
 	}
 
 	.lessons-page-main-content {
-		padding-top: 65px !important;
+		padding-top: 2px !important;
 	}
 
 	.lessons-page-sidebar-toggle {
-		top: calc(56px + var(--space-2)) !important;
+		position: relative !important;
+		top: auto !important;
+		left: auto !important;
 		padding: var(--space-2) var(--space-4) !important;
 		font-size: var(--font-size-sm) !important;
 		min-height: 44px !important;
@@ -4123,14 +4190,14 @@
 
 @media (max-width: 480px) {
 	.lessons-page-main-content {
-		padding-top: 62px !important;
+		padding-top: 2px !important;
 	}
 
 	.lessons-page-sidebar-toggle {
 		padding: var(--space-2) var(--space-3) !important;
 		font-size: var(--font-size-sm) !important;
-		min-height: 44px !important;
-		left: var(--space-3) !important;
+		min-height: 40px !important;
+		margin-left: var(--space-3) !important;
 	}
 
 	.lessons-page-sidebar-toggle svg {
@@ -4365,9 +4432,12 @@
 		min-width: 600px;
 	}
 
-	.admin-users-actions .lms-btn-secondary {
-		min-height: 44px;
-		min-width: 44px;
+	.admin-action-icon-btn,
+	.admin-users-icon-btn {
+		width: 2.75rem;
+		height: 2.75rem;
+		min-width: 2.75rem;
+		min-height: 2.75rem;
 	}
 
 	.admin-users-modal {
@@ -5085,7 +5155,7 @@
 }
 
 /* ============================================
-   12i3. GLOBAL SEARCH, VOLT TUTOR, SHARED COMPONENTS - Mobile
+   12i3. GLOBAL SEARCH, AI TUTOR, SHARED COMPONENTS - Mobile
    ============================================ */
 
 @media (max-width: 768px) {
@@ -5332,7 +5402,27 @@
 
 	/* Pas 5 — restul paginilor student */
 	.library-page {
-		text-align: left !important;
+		text-align: center !important;
+	}
+
+	.library-page-header,
+	.library-page-header-copy,
+	.library-page-title,
+	.library-page-lead,
+	.library-section-title {
+		text-align: center !important;
+	}
+
+	.library-page-header-actions {
+		justify-content: center !important;
+		margin-inline: auto;
+	}
+
+	.library-book-grid {
+		justify-content: center !important;
+		margin-inline: auto;
+		padding-left: 0 !important;
+		padding-right: 0 !important;
 	}
 
 	.student-settings-page,
@@ -6323,6 +6413,114 @@
 	.splash-typewriter-cursor {
 		font-size: 1.25rem !important;
 	}
+
+	.modern-auth-container {
+		padding-top: max(var(--space-2), env(safe-area-inset-top)) !important;
+		padding-bottom: max(var(--space-2), env(safe-area-inset-bottom)) !important;
+		align-items: flex-start !important;
+		justify-content: center !important;
+	}
+
+	.modern-auth-content {
+		min-height: auto !important;
+		padding: var(--space-2) 0 !important;
+	}
+
+	.modern-auth-card {
+		padding: var(--space-4) var(--space-5) !important;
+		margin: var(--space-2) auto !important;
+	}
+
+	.modern-auth-header {
+		margin-bottom: var(--space-4) !important;
+	}
+
+	.modern-auth-logo {
+		margin-bottom: var(--space-2) !important;
+	}
+
+	.modern-auth-logo-img {
+		height: 36px !important;
+	}
+
+	.modern-auth-title {
+		font-size: var(--font-size-xl) !important;
+		margin-bottom: var(--space-1) !important;
+	}
+
+	.modern-auth-subtitle {
+		font-size: var(--font-size-xs) !important;
+		display: none !important; /* Save space in landscape */
+	}
+
+	.modern-auth-form {
+		gap: var(--space-4) !important;
+	}
+
+	.modern-form-input {
+		min-height: 44px !important;
+	}
+
+	.modern-auth-footer {
+		margin-top: var(--space-4) !important;
+		padding-top: var(--space-3) !important;
+	}
+}
+
+@media (max-width: 768px) {
+	.va-shell-topnav .student-sidebar,
+	.va-shell-topnav .modern-sidebar.student-sidebar {
+		position: fixed !important;
+		left: -100% !important;
+		top: 0 !important;
+		width: 280px !important;
+		max-width: 85vw !important;
+		height: 100dvh !important;
+		z-index: 1000 !important;
+	}
+
+	.va-shell-topnav .student-sidebar.open,
+	.va-shell-topnav .modern-sidebar.student-sidebar.open {
+		left: 0 !important;
+	}
+
+	.va-shell-topnav .messages-page {
+		left: 0 !important;
+		right: 0 !important;
+		width: 100% !important;
+		max-width: none !important;
+	}
+
+	.va-shell-topnav .messages-container,
+	.va-shell-topnav .messages-sidebar,
+	.va-shell-topnav .messages-main {
+		width: 100% !important;
+		max-width: none !important;
+		min-width: 0 !important;
+	}
+
+	.va-shell-topnav .messages-sidebar {
+		display: flex !important;
+		flex-direction: column !important;
+	}
+
+	.va-shell-topnav .messages-search,
+	.va-shell-topnav .messages-sidebar-header,
+	.va-shell-topnav .messages-conversations-list {
+		grid-column: auto;
+		grid-row: auto;
+	}
+
+	.va-shell-topnav .messages-sidebar-header-copy {
+		position: static !important;
+		width: auto !important;
+		height: auto !important;
+		margin: 0 !important;
+		overflow: visible !important;
+		clip: auto !important;
+		white-space: normal !important;
+	}
+}
 
 	.modern-auth-container {
 		padding-top: max(var(--space-2), env(safe-area-inset-top)) !important;

@@ -7,7 +7,6 @@ const RiskAlerts = ({ data }) => {
 		<div className="admin-risk-alerts">
 			<div className="admin-widget-header">
 				<h3>Riscuri și atenție necesară</h3>
-				<p className="admin-widget-subtitle">Probleme critice care necesită acțiune</p>
 			</div>
 
 			<div className="admin-alerts-list">

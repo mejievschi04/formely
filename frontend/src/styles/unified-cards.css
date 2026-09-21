@@ -364,7 +364,7 @@
 
 [data-theme="light"] .va-card-icon-btn {
 	background: #fff;
-	color: var(--formely-bg);
+	color: #0f172a;
 	border: 1px solid rgba(15, 23, 42, 0.2);
 	box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
 	backdrop-filter: none;
@@ -373,7 +373,7 @@
 
 [data-theme="light"] .va-card-icon-btn:hover {
 	background: rgba(15, 23, 42, 0.08);
-	color: var(--formely-bg);
+	color: #0f172a;
 	border-color: rgba(15, 23, 42, 0.32);
 }
 

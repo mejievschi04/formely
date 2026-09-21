@@ -7,7 +7,6 @@ const ActivityFeed = ({ activities, loading }) => {
 			<div className="admin-section-card">
 				<div className="admin-widget-header">
 					<h3>Recent Activity</h3>
-					<p className="admin-widget-subtitle">Latest platform events</p>
 				</div>
 				<div className="admin-activity-list">
 					{Array.from({ length: 5 }).map((_, index) => (
@@ -30,7 +29,6 @@ const ActivityFeed = ({ activities, loading }) => {
 			<div className="admin-section-card">
 				<div className="admin-widget-header">
 					<h3>Recent Activity</h3>
-					<p className="admin-widget-subtitle">Latest platform events</p>
 				</div>
 				<div className="admin-widget-empty">
 					<p>Nu există activitate recentă de afișat</p>
@@ -88,7 +86,6 @@ const ActivityFeed = ({ activities, loading }) => {
 		<div className="admin-section-card">
 			<div className="admin-widget-header">
 				<h3>Activitate recentă</h3>
-				<p className="admin-widget-subtitle">Ultimele evenimente pe platformă</p>
 			</div>
 			<div className="admin-activity-list">
 				{activities.slice(0, 8).map((activity, index) => (

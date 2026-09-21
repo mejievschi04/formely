@@ -48,7 +48,6 @@ const AlertsSection = ({ alerts, loading, onDismiss }) => {
 		<div className="admin-section-card">
 			<div className="admin-section-header">
 				<h2>Alerte și Task-uri</h2>
-				<p className="admin-section-subtitle">Acțiuni care necesită atenție</p>
 			</div>
 			<div className="admin-alerts-list">
 				{alerts.map((alert) => (

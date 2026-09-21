@@ -236,8 +236,8 @@ const AdminEventsPage = () => {
 				<div className="admin-page-header-content">
 					<h1 className="admin-page-title">Gestionare Evenimente</h1>
 					<p className="admin-page-subtitle">
-						Alege din meniu „Viitoare” sau „Trecute”. Evenimentele noi se publică automat; după data de
-						sfârșit trec singure la trecute. Calendar rapid: iconița din bară.
+						Calendarul evenimentelor Formely — viitoare și trecute. Evenimentele noi se publică automat;
+						după data de sfârșit trec singure la trecute. Calendar rapid: iconița din bară.
 					</p>
 				</div>
 				{canMutateInAdminArea && (

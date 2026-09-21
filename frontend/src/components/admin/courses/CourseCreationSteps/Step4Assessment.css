@@ -20,6 +20,17 @@
 	font-size: 0.95rem;
 }
 
+.step4-type-glossary {
+	margin: 0.5rem 0 0;
+	padding: 10px 12px;
+	border-radius: 8px;
+	border: 1px solid var(--border-primary);
+	background: var(--bg-elevated);
+	font-size: 0.85rem;
+	line-height: 1.45;
+	color: var(--text-muted);
+}
+
 .step4-content {
 	display: flex;
 	flex-direction: column;

@@ -3,6 +3,14 @@
  * Ordine: VITE_STORAGE_URL > VITE_API_URL (absolut) > fallback localhost:8000 > window.origin
  */
 function getStorageOrigin() {
+	if (typeof window !== 'undefined') {
+		try {
+			const pageHost = new URL(window.location.origin).hostname;
+			if (pageHost !== 'localhost' && pageHost !== '127.0.0.1' && pageHost !== '::1') {
+				return window.location.origin;
+			}
+		} catch {}
+	}
 	// 1. Explicit – cel mai sigur
 	const storageUrl = import.meta.env.VITE_STORAGE_URL;
 	if (storageUrl && (storageUrl.startsWith('http://') || storageUrl.startsWith('https://'))) {

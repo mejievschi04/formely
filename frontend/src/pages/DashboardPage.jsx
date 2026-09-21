@@ -36,7 +36,7 @@ const DashboardPage = () => {
 			<div className="student-dashboard-page">
 				<div className="student-dashboard-loading">
 					<div className="student-loading-spinner"></div>
-					<p>Se încarcă dashboard-ul...</p>
+					<p>Se încarcă panoul tău...</p>
 				</div>
 			</div>
 		);
@@ -72,13 +72,13 @@ const DashboardPage = () => {
 			<div className="student-dashboard-header">
 				<div className="student-dashboard-welcome">
 					<span className="student-dashboard-welcome-icon">👋</span>
-					<span>Bună ziua, {user?.name || 'Angajat'}!</span>
+					<span>Bună, {user?.name?.split(/\s+/)[0] || 'cursant'}!</span>
 				</div>
 				<h1 className="student-dashboard-title">
-					Platforma de Dezvoltare Profesională
+					Panoul tău de învățare
 				</h1>
 				<p className="student-dashboard-subtitle">
-					Urmărește-ți progresul, finalizează cursurile obligatorii și dezvoltă-ți competențele
+					În Formely vezi progresul, cursurile asignate și următorul pas — totul într-un singur loc.
 				</p>
 			</div>
 
@@ -169,7 +169,7 @@ const DashboardPage = () => {
 										<span className="student-widget-badge student-widget-badge-required">Obligatoriu</span>
 										Cursuri Obligatorii
 									</h3>
-									<p className="student-widget-subtitle">Finalizează aceste cursuri pentru a-ți îndeplini responsabilitățile</p>
+									<p className="student-widget-subtitle">Cerințe din organizația ta — finalizează-le la timp</p>
 								</div>
 								<span className="student-widget-count student-widget-count-urgent">{mandatoryCourses.length}</span>
 							</div>
@@ -192,7 +192,7 @@ const DashboardPage = () => {
 								<div className="student-widget-header">
 									<div>
 										<h3>Cursuri</h3>
-										<p className="student-widget-subtitle">Continuă dezvoltarea profesională</p>
+										<p className="student-widget-subtitle">Cursuri opționale și de interes, în ritmul tău</p>
 									</div>
 									<span className="student-widget-count">{otherCourses.length || active_courses.length}</span>
 								</div>
@@ -200,7 +200,7 @@ const DashboardPage = () => {
 									{active_courses.length === 0 ? (
 										<div className="student-widget-empty-state">
 											<div className="student-widget-empty-icon">📚</div>
-											<p className="student-widget-empty">Nu ai cursuri active momentan.</p>
+											<p className="student-widget-empty">Nu ai cursuri active. Explorează catalogul Formely.</p>
 											<button 
 												className="student-btn student-btn-primary"
 												onClick={() => navigate('/courses')}

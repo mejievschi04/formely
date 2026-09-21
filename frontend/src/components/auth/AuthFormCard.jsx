@@ -6,7 +6,7 @@ import React from 'react';
 export default function AuthFormCard({ title, subtitle, children, footer }) {
 	return (
 		<div className="modern-auth-card">
-			<div className="modern-auth-header modern-auth-header--compact">
+			<div className="modern-auth-header modern-auth-header--compact auth-rise" style={{ '--auth-rise-delay': '0.04s' }}>
 				<h1 className="modern-auth-title">{title}</h1>
 				{subtitle ? <p className="modern-auth-subtitle">{subtitle}</p> : null}
 			</div>

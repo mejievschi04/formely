@@ -5,16 +5,18 @@ import ConfirmModal from '../../../../components/common/ConfirmModal';
 import Modal from '../../../../components/common/Modal';
 import QuestionItemCard from './QuestionItemCard';
 import AIGenerateQuestionsModal from './AIGenerateQuestionsModal';
-import { isAiEnabled, notifyAiComingSoon } from '../../../../utils/aiAvailability';
+import { isAiEnabled, notifyAiComingSoon, canUseAiFeature, notifyAiPlanLocked } from '../../../../utils/aiAvailability';
+import { useAuth } from '../../../../contexts/AuthContext';
 
-const QUESTION_TYPE_OPTIONS = [
-	{ value: 'multiple_choice', label: 'Răspuns multiplu' },
-	{ value: 'true_false', label: 'Adevărat/Fals' },
-	{ value: 'matching', label: 'Potrivire' },
-	{ value: 'ordering', label: 'Ordonare' },
-];
+import {
+	QUESTION_TYPE_GLOSSARY,
+	QUESTION_TYPE_SELECT_OPTIONS,
+} from '../../../../utils/questionTypeLabels';
 
 const getQuestionTypeDefaults = (type) => {
+	if (type === 'short_answer') {
+		return [];
+	}
 	if (type === 'true_false') {
 		return [
 			{ text: 'Adevărat', is_correct: true },
@@ -80,6 +82,8 @@ const normalizeQuestionAnswers = (type, answers) => {
 
 const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 	const { showToast } = useToast();
+	const { user } = useAuth();
+	const aiTestAllowed = canUseAiFeature(user, 'ai_test_generation');
 	const [editingQuestion, setEditingQuestion] = useState(null);
 	const [questionFormErrors, setQuestionFormErrors] = useState({ content: '', answers: '', correct: '' });
 	const [questionForm, setQuestionForm] = useState({
@@ -499,8 +503,9 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 	};
 
 	const handleOpenAIModal = () => {
-		if (!isAiEnabled()) {
-			notifyAiComingSoon(showToast);
+		if (!aiTestAllowed) {
+			if (!isAiEnabled()) notifyAiComingSoon(showToast);
+			else notifyAiPlanLocked(showToast);
 			return;
 		}
 		setAiOptions({
@@ -689,6 +694,7 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 						<div className="admin-form-section" style={{ marginBottom: '1.5rem' }}>
 							<div className="admin-form-section-header">
 								<h3 className="admin-form-section-title">Adaugă Întrebări</h3>
+								{aiTestAllowed ? (
 								<button
 									type="button"
 									className="lms-btn-primary"
@@ -696,6 +702,7 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 								>
 									🤖 Generează cu AI
 								</button>
+								) : null}
 							</div>
 						</div>
 
@@ -719,12 +726,11 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 								});
 							}}
 						>
-							<option value="multiple_choice">Răspuns multiplu</option>
-							<option value="true_false">Adevărat/Fals</option>
-							<option value="matching">Potrivire</option>
-							<option value="ordering">Ordonare</option>
+							{QUESTION_TYPE_SELECT_OPTIONS.map((option) => (
+								<option key={option.value} value={option.value}>{option.label}</option>
+							))}
 						</select>
-						<p className="admin-form-hint">Răspuns multiplu = una sau mai multe variante corecte; Adevărat/Fals = două opțiuni; Potrivire = perechi; Ordonare = elemente mutate în ordine.</p>
+						<p className="admin-form-hint">{QUESTION_TYPE_GLOSSARY} Potrivire = perechi; Ordonare = elemente în ordine.</p>
 					</div>
 
 					<div className="admin-form-group">

@@ -15,6 +15,10 @@ use Illuminate\Support\Facades\DB;
  */
 class ProgressionEngine
 {
+    public function __construct(protected DripContentService $dripContentService)
+    {
+    }
+
     public function isLessonUnlocked(User $user, Lesson $lesson, Course $course): bool
     {
         if ($user->isLearningActivityExempt()) {
@@ -23,6 +27,14 @@ class ProgressionEngine
 
         if ($lesson->is_preview) {
             return true;
+        }
+
+        if (! $this->isUnlockAfterLessonRequirementMet($user, $lesson->unlock_after_lesson_id, $course)) {
+            return false;
+        }
+
+        if (! $this->dripContentService->isLessonReleased($user, $course, $lesson)) {
+            return false;
         }
 
         return $this->checkSequentialUnlock($user, $lesson, $course);
@@ -34,8 +46,12 @@ class ProgressionEngine
             return true;
         }
 
-        if ($module->is_locked) {
-            return $this->checkSequentialModuleUnlock($user, $module, $course);
+        if (! $this->isUnlockAfterLessonRequirementMet($user, $module->unlock_after_lesson_id, $course)) {
+            return false;
+        }
+
+        if (! $this->dripContentService->isModuleReleased($user, $course, $module)) {
+            return false;
         }
 
         return $this->checkSequentialModuleUnlock($user, $module, $course);
@@ -182,6 +198,34 @@ class ProgressionEngine
             ->where('test_id', $testId)
             ->where('percentage', '>=', $passingScore)
             ->where('passed', true)
+            ->exists();
+    }
+
+    protected function isUnlockAfterLessonRequirementMet(User $user, mixed $unlockAfterLessonId, Course $course): bool
+    {
+        if ($unlockAfterLessonId === null || $unlockAfterLessonId === '' || (int) $unlockAfterLessonId <= 0) {
+            return true;
+        }
+
+        $prerequisite = Lesson::with('module:id,course_id')->find((int) $unlockAfterLessonId);
+        if (! $prerequisite) {
+            return true;
+        }
+
+        $prerequisiteCourseId = (int) ($prerequisite->course_id ?: $prerequisite->module?->course_id);
+        if ($prerequisiteCourseId > 0 && $prerequisiteCourseId !== (int) $course->id) {
+            return true;
+        }
+
+        return $this->hasUserCompletedLesson($user, $prerequisite->id);
+    }
+
+    protected function hasUserCompletedLesson(User $user, int $lessonId): bool
+    {
+        return DB::table('lesson_progress')
+            ->where('user_id', $user->id)
+            ->where('lesson_id', $lessonId)
+            ->where('completed', true)
             ->exists();
     }
 }

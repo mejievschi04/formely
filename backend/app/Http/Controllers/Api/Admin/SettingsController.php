@@ -20,8 +20,8 @@ class SettingsController extends Controller
 {
     public function __construct()
     {
-        if (auth()->check() && auth()->user()->isInstructor()) {
-            abort(403, 'Doar administratorii pot accesa setările.');
+        if (auth()->check() && ! auth()->user()->canManagePlatformSettings()) {
+            abort(403, 'Nu ai drepturi pentru setările platformei.');
         }
     }
 

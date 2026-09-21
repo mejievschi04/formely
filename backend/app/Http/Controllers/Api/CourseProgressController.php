@@ -8,6 +8,7 @@ use App\Models\Lesson;
 use App\Models\Module;
 use App\Models\Exam;
 use App\Models\Test;
+use App\Models\User;
 use App\Models\ActivityLog;
 use App\Services\CourseProgressService;
 use App\Support\LearningVisibility;
@@ -25,10 +26,13 @@ class CourseProgressController extends Controller
         $this->progressService = $progressService;
     }
 
-    private function canSelfEnroll(Course $course): bool
+    private function isEnrolled(User $user, Course $course): bool
     {
-        return ($course->access_type ?? 'free') === 'free'
-            && in_array($course->enrollment_type ?? 'open', ['open'], true);
+        return DB::table('course_user')
+            ->where('user_id', $user->id)
+            ->where('course_id', $course->id)
+            ->where('enrolled', true)
+            ->exists();
     }
 
     /**
@@ -54,6 +58,68 @@ class CourseProgressController extends Controller
     }
 
     /**
+     * @param  array<string, mixed>  $accessStatus
+     * @return array<string, mixed>
+     */
+    private function withProgressNavigation(User $user, Course $course, array $accessStatus): array
+    {
+        if ($user->isLearningActivityExempt()) {
+            $accessStatus['next_lesson'] = null;
+            $accessStatus['next_exam'] = null;
+            $accessStatus['can_progress'] = true;
+            $accessStatus['course_complete'] = false;
+
+            return $accessStatus;
+        }
+
+        try {
+            $nextLesson = $this->progressService->getNextIncompleteLesson($user, $course);
+            $accessStatus['next_lesson'] = $nextLesson ? [
+                'id' => $nextLesson->id,
+                'title' => $nextLesson->title ?? '',
+                'module_id' => $nextLesson->module_id ?? null,
+            ] : null;
+        } catch (\Exception $e) {
+            \Log::warning('Error getting next lesson', [
+                'course_id' => $course->id,
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+            $accessStatus['next_lesson'] = null;
+        }
+
+        try {
+            $nextTest = $this->progressService->getNextIncompleteTest($user, $course);
+            $accessStatus['next_exam'] = $nextTest ? [
+                'id' => $nextTest->id,
+                'title' => $nextTest->title ?? '',
+                'module_id' => null,
+            ] : null;
+        } catch (\Exception $e) {
+            \Log::warning('Error getting next test', [
+                'course_id' => $course->id,
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+            $accessStatus['next_exam'] = null;
+        }
+
+        try {
+            $accessStatus['can_progress'] = $this->progressService->canUserProgress($user, $course);
+        } catch (\Exception $e) {
+            $accessStatus['can_progress'] = false;
+        }
+
+        try {
+            $accessStatus['course_complete'] = $this->progressService->isCourseComplete($user, $course);
+        } catch (\Exception $e) {
+            $accessStatus['course_complete'] = false;
+        }
+
+        return $accessStatus;
+    }
+
+    /**
      * Get user's progress for a course
      */
     public function getCourseProgress($courseId)
@@ -71,31 +137,6 @@ class CourseProgressController extends Controller
                 abort(404, 'Curs negăsit.');
             }
             $isLearningExempt = $user->isLearningActivityExempt();
-
-            // Check if user is enrolled
-            $enrollment = \DB::table('course_user')
-                ->where('user_id', $user->id)
-                ->where('course_id', $courseId)
-                ->where('enrolled', true)
-                ->first();
-
-            // If not enrolled, auto-enroll the user only for open/free courses
-            if (! $enrollment && ! $isLearningExempt && $this->canSelfEnroll($course)) {
-                \DB::table('course_user')->updateOrInsert(
-                    [
-                        'user_id' => $user->id,
-                        'course_id' => $courseId,
-                    ],
-                    [
-                        'enrolled' => true,
-                        'enrolled_at' => now(),
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]
-                );
-                StudentActivityLogger::logEnrolledCourse($user, $course, 'auto');
-                app(\App\Services\NotificationService::class)->notifyCourseEnrolled($user, $course);
-            }
 
             // Recalculate progress in real-time
             try {
@@ -123,7 +164,7 @@ class CourseProgressController extends Controller
                 ]);
                 // Return minimal access status if service fails
                 $accessStatus = [
-                    'enrolled' => true,
+                    'enrolled' => $this->isEnrolled($user, $course),
                     'progress_percentage' => 0,
                     'can_progress' => false,
                     'course_complete' => false,
@@ -153,63 +194,8 @@ class CourseProgressController extends Controller
                 return response()->json($accessStatus);
             }
 
-            // Get next incomplete lesson (for resume functionality)
-            try {
-                $nextLesson = $this->progressService->getNextIncompleteLesson($user, $course);
-                $accessStatus['next_lesson'] = $nextLesson ? [
-                    'id' => $nextLesson->id,
-                    'title' => $nextLesson->title ?? '',
-                    'module_id' => $nextLesson->module_id ?? null,
-                ] : null;
-            } catch (\Exception $e) {
-                \Log::warning('Error getting next lesson', [
-                    'course_id' => $courseId,
-                    'user_id' => $user->id,
-                    'error' => $e->getMessage(),
-                ]);
-                $accessStatus['next_lesson'] = null;
-            }
-
-            // Get next incomplete test (using getNextIncompleteTest instead of getNextIncompleteExam)
-            try {
-                $nextTest = $this->progressService->getNextIncompleteTest($user, $course);
-                $accessStatus['next_exam'] = $nextTest ? [
-                    'id' => $nextTest->id,
-                    'title' => $nextTest->title ?? '',
-                    'module_id' => null, // Tests are linked via CourseTest, not directly to modules
-                ] : null;
-            } catch (\Exception $e) {
-                \Log::warning('Error getting next test', [
-                    'course_id' => $courseId,
-                    'user_id' => $user->id,
-                    'error' => $e->getMessage(),
-                ]);
-                $accessStatus['next_exam'] = null;
-            }
-
-            // Check if user can progress (all required exams passed)
-            try {
-                $accessStatus['can_progress'] = $this->progressService->canUserProgress($user, $course);
-            } catch (\Exception $e) {
-                \Log::warning('Error checking if user can progress', [
-                    'course_id' => $courseId,
-                    'user_id' => $user->id,
-                    'error' => $e->getMessage(),
-                ]);
-                $accessStatus['can_progress'] = false;
-            }
-
-            // Check if course is complete
-            try {
-                $accessStatus['course_complete'] = $this->progressService->isCourseComplete($user, $course);
-            } catch (\Exception $e) {
-                \Log::warning('Error checking if course is complete', [
-                    'course_id' => $courseId,
-                    'user_id' => $user->id,
-                    'error' => $e->getMessage(),
-                ]);
-                $accessStatus['course_complete'] = false;
-            }
+            $accessStatus = $this->withProgressNavigation($user, $course, $accessStatus);
+            $accessStatus['enrolled'] = $this->isEnrolled($user, $course);
 
             return response()->json($accessStatus);
         } catch (\Exception $e) {
@@ -227,9 +213,7 @@ class CourseProgressController extends Controller
     }
 
     /**
-     * Enroll the current user in a course.
-     * Free/open courses can be joined directly; paid/invite-only courses
-     * must already have an assignment row.
+     * Enrollment is assignment-only. Opening a course never enrolls the learner.
      */
     public function enrollCourse($courseId)
     {
@@ -250,59 +234,21 @@ class CourseProgressController extends Controller
 
             $course = Course::findOrFail($courseId);
 
-            $existing = DB::table('course_user')
-                ->where('user_id', $user->id)
-                ->where('course_id', $course->id)
-                ->where('enrolled', true)
-                ->first();
+            if ($this->isEnrolled($user, $course)) {
+                $accessStatus = $this->progressService->getUserAccessStatus($user, $course);
+                $accessStatus['progress_percentage'] = $accessStatus['course_progress'] ?? 0;
 
-            if (!$existing) {
-                if (!$this->canSelfEnroll($course)) {
-                    return response()->json([
-                        'message' => 'Cursul nu permite inscriere libera.',
-                    ], 403);
-                }
-
-                DB::table('course_user')->updateOrInsert(
-                    [
-                        'user_id' => $user->id,
-                        'course_id' => $course->id,
-                    ],
-                    [
-                        'enrolled' => true,
-                        'enrolled_at' => now(),
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]
-                );
-            }
-
-            try {
-                $this->progressService->calculateCourseProgress($user, $course);
-            } catch (\Exception $e) {
-                \Log::warning('Error calculating course progress after enrollment', [
-                    'course_id' => $courseId,
-                    'user_id' => $user->id,
-                    'error' => $e->getMessage(),
+                return response()->json([
+                    'message' => 'Ești deja înscris la acest curs.',
+                    'enrolled' => true,
+                    'progress' => $accessStatus,
                 ]);
             }
 
-            $accessStatus = $this->progressService->getUserAccessStatus($user, $course);
-            $accessStatus['progress_percentage'] = $accessStatus['course_progress'] ?? 0;
-
-            if (! $existing) {
-                StudentActivityLogger::logEnrolledCourse($user, $course, 'manual');
-                app(\App\Services\NotificationService::class)->notifyCourseEnrolled($user, $course);
-            }
-
-            \Illuminate\Support\Facades\Cache::forget("dashboard_user_{$user->id}_stats");
-            \Illuminate\Support\Facades\Cache::forget("profile_user_{$user->id}");
-
             return response()->json([
-                'message' => 'Te-ai inscris la curs cu succes.',
-                'enrolled' => true,
-                'progress' => $accessStatus,
-            ]);
+                'message' => 'Înscrierea se face doar prin atribuire, nu prin accesarea cursului.',
+                'enrolled' => false,
+            ], 403);
         } catch (\Exception $e) {
             \Log::error('Error in CourseProgressController::enrollCourse', [
                 'course_id' => $courseId,
@@ -363,7 +309,7 @@ class CourseProgressController extends Controller
                 DB::table('course_user')->insert([
                     'user_id' => $user->id,
                     'course_id' => $course->id,
-                    'enrolled' => true,
+                    'enrolled' => false,
                     'enrolled_at' => now(),
                     'progress_percentage' => 100,
                     'completed_at' => now(),
@@ -440,27 +386,6 @@ class CourseProgressController extends Controller
             abort(404, 'Lecție negăsită.');
         }
 
-        $enrollment = \DB::table('course_user')
-            ->where('user_id', $user->id)
-            ->where('course_id', $course->id)
-            ->where('enrolled', true)
-            ->first();
-
-        if (!$enrollment && $this->canSelfEnroll($course)) {
-            \DB::table('course_user')->updateOrInsert(
-                [
-                    'user_id' => $user->id,
-                    'course_id' => $course->id,
-                ],
-                [
-                    'enrolled' => true,
-                    'enrolled_at' => now(),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]
-            );
-        }
-
         $isUnlocked = $this->progressService->isLessonUnlocked($user, $lesson, $module, $course);
         if (!$isUnlocked) {
             return response()->json([
@@ -473,6 +398,7 @@ class CourseProgressController extends Controller
             $this->progressService->getUserAccessStatus($user, $course)
         );
         $accessStatus['progress_percentage'] = $accessStatus['course_progress'] ?? 0;
+        $accessStatus = $this->withProgressNavigation($user, $course, $accessStatus);
 
         return response()->json([
             'message' => 'Lecție finalizată cu succes',
@@ -538,10 +464,14 @@ class CourseProgressController extends Controller
             ->where('completed', true)
             ->exists();
 
+        $dripUnlockAt = app(\App\Services\DripContentService::class)
+            ->getLessonUnlockAtForUser($user, $course, $lesson);
+
         return response()->json([
             'unlocked' => $isUnlocked,
             'completed' => $isCompleted,
             'is_preview' => $lesson->is_preview,
+            'drip_unlock_at' => $dripUnlockAt?->toIso8601String(),
         ]);
     }
 
@@ -650,11 +580,16 @@ class CourseProgressController extends Controller
         }
 
         $lastMilestoneReached = $incomingMilestone !== null
-            ? max((float) ($existingProgress->last_milestone_reached ?? 0), $incomingMilestone)
-            : (float) ($existingProgress->last_milestone_reached ?? 0);
+            ? max((float) ($existingProgress?->last_milestone_reached ?? 0), $incomingMilestone)
+            : (float) ($existingProgress?->last_milestone_reached ?? 0);
 
-        $shouldAutoComplete = $progressPercentage >= 100 || $lastMilestoneReached >= 100;
+        $shouldAutoComplete = ! $isAlreadyCompleted && ($progressPercentage >= 100 || $lastMilestoneReached >= 100);
         $didAutoCompleteNow = false;
+
+        if ($isAlreadyCompleted) {
+            $progressPercentage = 100;
+            $lastMilestoneReached = max($lastMilestoneReached, 100);
+        }
 
         if ($shouldAutoComplete && ! $isAlreadyCompleted) {
             $lesson->loadMissing(['module.course', 'course']);
@@ -662,11 +597,9 @@ class CourseProgressController extends Controller
             if ($course) {
                 $this->progressService->completeLesson($user, $lesson);
                 $didAutoCompleteNow = true;
-                $existingProgress = \DB::table('lesson_progress')
-                    ->where('user_id', $user->id)
-                    ->where('lesson_id', $lessonId)
-                    ->first();
                 $isAlreadyCompleted = true;
+                $progressPercentage = 100;
+                $lastMilestoneReached = 100;
             }
         }
 
@@ -684,10 +617,10 @@ class CourseProgressController extends Controller
         $payload = [
             'progress_percentage' => $progressPercentage,
             'time_spent_seconds' => $timeSpent,
-            'completed' => $shouldAutoComplete ? true : ($isAlreadyCompleted ? true : false),
-            'completed_at' => ($shouldAutoComplete && !$isAlreadyCompleted)
-                ? $now
-                : ($existingProgress ? ($existingProgress->completed_at ?? null) : null),
+            'completed' => $didAutoCompleteNow || $isAlreadyCompleted || $shouldAutoComplete,
+            'completed_at' => ($didAutoCompleteNow || $isAlreadyCompleted)
+                ? (($existingProgress?->completed_at) ?: $now)
+                : ($existingProgress?->completed_at),
             'started_at' => ($existingProgress && !empty($existingProgress->started_at))
                 ? $existingProgress->started_at
                 : $now,
@@ -711,7 +644,7 @@ class CourseProgressController extends Controller
             'message' => 'Progres actualizat',
             'progress_percentage' => $progressPercentage,
             'last_milestone_reached' => $lastMilestoneReached,
-            'completed' => $shouldAutoComplete ? true : ($isAlreadyCompleted ? true : false),
+            'completed' => $didAutoCompleteNow || $isAlreadyCompleted || $shouldAutoComplete,
             'auto_completed' => $didAutoCompleteNow,
         ]);
     }

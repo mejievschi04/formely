@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -12,9 +13,10 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Question extends Model
 {
-    use HasFactory;
+    use BelongsToCompany, HasFactory;
 
     protected $fillable = [
+        'company_id',
         'test_id',
         'question_bank_id',
         'type',
@@ -85,6 +87,13 @@ class Question extends Model
 
         // For other types, implement specific logic
         return false;
+    }
+
+    public function requiresManualGrading(): bool
+    {
+        $auto = ['multiple_choice', 'single_choice', 'true_false', 'matching', 'ordering'];
+
+        return ! in_array((string) ($this->type ?? 'multiple_choice'), $auto, true);
     }
 }
 

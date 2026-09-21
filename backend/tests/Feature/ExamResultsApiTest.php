@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Course;
 use App\Models\CourseTest;
+use App\Models\Exam;
+use App\Models\ExamResult;
 use App\Models\Question;
 use App\Models\Test;
 use App\Models\TestResult;
@@ -179,6 +181,7 @@ class ExamResultsApiTest extends TestCase
 
         $submit = $this->actingAs($student, 'sanctum')->postJson("/api/exams/{$test->id}/submit", [
             'course_id' => $course->id,
+            'started_at' => now()->subMinute()->toIso8601String(),
             'answers' => [
                 (string) $question->id => $correctDisplay,
             ],
@@ -196,5 +199,55 @@ class ExamResultsApiTest extends TestCase
         $reload->assertOk()
             ->assertJsonPath('questions.0.is_correct', true)
             ->assertJsonPath('questions.0.user_answer_index', $correctDisplay);
+    }
+
+    public function test_exam_results_index_excludes_standalone_exam_attempts(): void
+    {
+        $student = User::factory()->create(['role' => 'student']);
+        $owner = User::factory()->create(['role' => 'teacher']);
+        $exam = Exam::create([
+            'title' => 'Examen catalog',
+            'status' => 'published',
+            'created_by' => $owner->id,
+            'course_id' => null,
+            'passing_score' => 70,
+        ]);
+        ExamResult::create([
+            'exam_id' => $exam->id,
+            'user_id' => $student->id,
+            'score' => 80,
+            'total_points' => 100,
+            'percentage' => 80,
+            'passed' => true,
+            'attempt_number' => 1,
+            'answers' => [],
+            'completed_at' => now(),
+        ]);
+
+        $test = Test::factory()->published()->create([
+            'title' => 'Test modul',
+            'created_by' => $owner->id,
+        ]);
+        TestResult::create([
+            'test_id' => $test->id,
+            'user_id' => $student->id,
+            'score' => 60,
+            'max_score' => 100,
+            'percentage' => 60,
+            'passed' => false,
+            'attempt_number' => 1,
+            'answers' => [],
+            'completed_at' => now(),
+            'status' => 'completed',
+        ]);
+
+        $response = $this->actingAs($student, 'sanctum')->getJson('/api/exam-results');
+
+        $response->assertOk();
+        $results = collect($response->json());
+        $this->assertCount(1, $results);
+        $this->assertSame('test', $results->first()['type']);
+        $this->assertSame($test->id, $results->first()['test_id']);
+        $this->assertFalse($results->contains(fn ($row) => ($row['type'] ?? null) === 'exam'));
     }
 }

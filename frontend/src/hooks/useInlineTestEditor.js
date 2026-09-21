@@ -15,14 +15,20 @@ export function useInlineTestEditor({
   initialTestId = null,
   initialTab = 'questions',
 } = {}) {
+  const normalizeInlineTab = (tab) => {
+    if (tab === 'settings') return 'settings';
+    if (tab === 'statistics') return 'statistics';
+    return 'questions';
+  };
+
   const [inlineTest, setInlineTest] = useState({ ...TEST_EDITOR_DEFAULT });
   const [inlineQuestions, setInlineQuestions] = useState([]);
-  const [inlineTestTab, setInlineTestTab] = useState(initialTab === 'settings' ? 'settings' : 'questions');
+  const [inlineTestTab, setInlineTestTab] = useState(normalizeInlineTab(initialTab));
   const [inlineTestSaving, setInlineTestSaving] = useState(false);
   const [inlinePublishLoading, setInlinePublishLoading] = useState(false);
   const [creatingTest, setCreatingTest] = useState(false);
   const [addingQuestion, setAddingQuestion] = useState(false);
-  const [expandedQuestionId, setExpandedQuestionId] = useState(null);
+  const [expandedQuestionIds, setExpandedQuestionIds] = useState([]);
   const [openQuestionTypePickerId, setOpenQuestionTypePickerId] = useState(null);
   const [loadingTest, setLoadingTest] = useState(false);
 
@@ -125,6 +131,7 @@ export function useInlineTestEditor({
         randomize_answers: Boolean(inlineTest.randomize_answers),
         show_results_immediately: Boolean(inlineTest.show_results_immediately),
         show_correct_answers: Boolean(inlineTest.show_correct_answers),
+        show_only_submitted_answers: Boolean(inlineTest.show_only_submitted_answers),
         allow_review: Boolean(inlineTest.allow_review),
         requires_manual_verification: Boolean(inlineTest.requires_manual_verification),
       });
@@ -266,7 +273,7 @@ export function useInlineTestEditor({
       const list = Array.isArray(questions) ? questions : [];
       setInlineQuestions(list.map(normalizeBuilderQuestion));
       setInlineTestTab(tab === 'settings' ? 'settings' : 'questions');
-      setExpandedQuestionId(null);
+      setExpandedQuestionIds([]);
       setOpenQuestionTypePickerId(null);
     } catch (e) {
       console.error('Failed to load inline test:', e);
@@ -290,7 +297,7 @@ export function useInlineTestEditor({
     setInlineTest({ ...TEST_EDITOR_DEFAULT });
     setInlineQuestions([]);
     setInlineTestTab('questions');
-    setExpandedQuestionId(null);
+    setExpandedQuestionIds([]);
     setOpenQuestionTypePickerId(null);
     inlinePendingTestRef.current = {};
     inlineQuestionPendingRef.current = {};
@@ -310,7 +317,9 @@ export function useInlineTestEditor({
       const question = created?.question ?? created;
       if (question) {
         setInlineQuestions((prev) => [...prev, normalizeBuilderQuestion(question)]);
-        setExpandedQuestionId(question.id);
+        setExpandedQuestionIds((prev) => (
+          prev.includes(question.id) ? prev : [...prev, question.id]
+        ));
       }
     } catch (err) {
       console.error('Add inline question failed:', err);
@@ -521,6 +530,29 @@ export function useInlineTestEditor({
     }
   }, [ensureInlineTestCreated, flushAllInlineQuestionSaves, flushInlineTestPayloadForId, inlineQuestions.length, inlineTest.question_source, showToast]);
 
+  const isQuestionExpanded = useCallback((questionId) => (
+    expandedQuestionIds.includes(questionId)
+  ), [expandedQuestionIds]);
+
+  const toggleQuestionExpanded = useCallback((questionId) => {
+    setExpandedQuestionIds((prev) => (
+      prev.includes(questionId)
+        ? prev.filter((id) => id !== questionId)
+        : [...prev, questionId]
+    ));
+  }, []);
+
+  const toggleAllQuestionsExpanded = useCallback(() => {
+    setExpandedQuestionIds((prev) => {
+      const allIds = inlineQuestions.map((q) => q.id);
+      const allExpanded = allIds.length > 0 && allIds.every((id) => prev.includes(id));
+      return allExpanded ? [] : allIds;
+    });
+  }, [inlineQuestions]);
+
+  const allQuestionsExpanded = inlineQuestions.length > 0
+    && inlineQuestions.every((q) => expandedQuestionIds.includes(q.id));
+
   return {
     inlineTest,
     inlineQuestions,
@@ -530,8 +562,11 @@ export function useInlineTestEditor({
     inlinePublishLoading,
     creatingTest,
     addingQuestion,
-    expandedQuestionId,
-    setExpandedQuestionId,
+    expandedQuestionIds,
+    isQuestionExpanded,
+    toggleQuestionExpanded,
+    toggleAllQuestionsExpanded,
+    allQuestionsExpanded,
     openQuestionTypePickerId,
     setOpenQuestionTypePickerId,
     questionTypeMenuRef,

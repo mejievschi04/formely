@@ -8,10 +8,13 @@ const ResumeLearningWidget = ({ nextLesson }) => {
 		return (
 			<div className="student-widget student-resume-widget">
 				<div className="student-widget-header">
-					<h3>Continuă învățarea</h3>
+					<div>
+						<h3>Continuă învățarea</h3>
+						<p className="student-widget-subtitle">Reia exact de unde ai rămas</p>
+					</div>
 				</div>
 				<div className="student-widget-content">
-					<p className="student-widget-empty">Nu există lecții disponibile momentan.</p>
+					<p className="student-widget-empty">Nicio lecție în curs. Deschide un curs din catalogul Formely.</p>
 				</div>
 			</div>
 		);
@@ -24,7 +27,10 @@ const ResumeLearningWidget = ({ nextLesson }) => {
 	return (
 		<div className="student-widget student-resume-widget">
 			<div className="student-widget-header">
-				<h3>Continuă învățarea</h3>
+				<div>
+					<h3>Continuă învățarea</h3>
+					<p className="student-widget-subtitle">Reia exact de unde ai rămas</p>
+				</div>
 			</div>
 			<div className="student-widget-content">
 				<div className="student-resume-info">

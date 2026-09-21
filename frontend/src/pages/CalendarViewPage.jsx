@@ -48,9 +48,9 @@ const CalendarViewPage = () => {
 	const getEventTypeColor = (type) => {
 		const colors = {
 			curs: 'var(--formely-white)',
-			workshop: '#ffcc00',
-			examen: '#ff6b6b',
-			webinar: '#ffce54',
+			workshop: '#0891b2',
+			examen: '#ef4444',
+			webinar: '#22d3ee',
 		};
 		return colors[type] || 'var(--formely-white)';
 	};
@@ -149,15 +149,15 @@ const CalendarViewPage = () => {
 					<span>Curs</span>
 				</div>
 				<div className="va-calendar-legend-item">
-					<div className="va-calendar-legend-dot" style={{ backgroundColor: '#ffcc00' }}></div>
+					<div className="va-calendar-legend-dot" style={{ backgroundColor: '#0891b2' }}></div>
 					<span>Workshop</span>
 				</div>
 				<div className="va-calendar-legend-item">
-					<div className="va-calendar-legend-dot" style={{ backgroundColor: '#ff6b6b' }}></div>
+					<div className="va-calendar-legend-dot" style={{ backgroundColor: '#ef4444' }}></div>
 					<span>Examen</span>
 				</div>
 				<div className="va-calendar-legend-item">
-					<div className="va-calendar-legend-dot" style={{ backgroundColor: '#ffce54' }}></div>
+					<div className="va-calendar-legend-dot" style={{ backgroundColor: '#22d3ee' }}></div>
 					<span>Webinar</span>
 				</div>
 			</div>

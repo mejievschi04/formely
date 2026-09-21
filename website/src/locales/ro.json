@@ -1,0 +1,438 @@
+{
+  "seo": {
+    "title": "Formely — Creează cursuri. Dezvoltă echipe. Urmărește progresul.",
+    "description": "Formely îți oferă un singur loc pentru a crea cursuri, organiza cursanții și urmări progresul lor — fără procese complicate și instrumente împrăștiate."
+  },
+  "nav": {
+    "product": "Produs",
+    "solutions": "Soluții",
+    "how": "Cum funcționează",
+    "pricing": "Prețuri",
+    "faq": "Întrebări",
+    "login": "Autentificare",
+    "cta": "Începe",
+    "menu": "Meniu",
+    "close": "Închide",
+    "skip": "Sari la conținut",
+    "lang": "Limbă"
+  },
+  "hero": {
+    "eyebrow": "Trainingul echipei, într-un singur loc",
+    "lines": ["Creează cursuri.", "Dezvoltă echipe.", "Urmărește progresul."],
+    "sub": "Formely îți oferă un singur loc pentru a crea cursuri, organiza cursanții și urmări progresul lor — fără procese complicate și instrumente împrăștiate.",
+    "ctaPrimary": "Începe cu Formely",
+    "ctaSecondary": "Descoperă platforma"
+  },
+  "positioning": {
+    "title": "Creat pentru cei care transformă cunoștințele în progres.",
+    "items": [
+      {
+        "title": "Companii",
+        "text": "Organizează trainingul intern și urmărește dezvoltarea echipei într-un singur loc."
+      },
+      {
+        "title": "Academii",
+        "text": "Administrează cursuri, cursanți și progres fără procese manuale inutile."
+      },
+      {
+        "title": "Traineri",
+        "text": "Construiește programe de training și gestionează cursanții mai simplu."
+      }
+    ]
+  },
+  "problem": {
+    "title": "Trainingul nu trebuie să însemne fișiere, tabele și haos.",
+    "items": [
+      {
+        "title": "Conținut împrăștiat",
+        "text": "Materialele și cursurile ajung în prea multe locuri, iar organizarea devine tot mai dificilă."
+      },
+      {
+        "title": "Progres greu de urmărit",
+        "text": "Fără o imagine centralizată, este dificil să vezi cine avansează și unde este nevoie de atenție."
+      },
+      {
+        "title": "Administrare inutilă",
+        "text": "Taskurile repetitive consumă timpul care ar putea fi folosit pentru training."
+      }
+    ],
+    "solution": "Formely aduce cursurile, cursanții și progresul într-un singur sistem."
+  },
+  "how": {
+    "eyebrow": "Cum funcționează",
+    "title": "De la primul curs la progres, într-un singur flux.",
+    "steps": [
+      {
+        "num": "01",
+        "title": "Creezi",
+        "text": "Structurează cursurile și organizează conținutul într-un format clar."
+      },
+      {
+        "num": "02",
+        "title": "Atribui",
+        "text": "Adaugă cursanții și oferă-le acces la trainingul potrivit."
+      },
+      {
+        "num": "03",
+        "title": "Urmărești",
+        "text": "Vezi progresul și rezultatele direct din platformă."
+      }
+    ]
+  },
+  "showcase": {
+    "eyebrow": "Produs",
+    "title": "Tot ce ai nevoie pentru a transforma trainingul într-un proces clar.",
+    "items": [
+      {
+        "id": "courses",
+        "title": "Cursuri pe care le organizezi în ritmul tău",
+        "text": "Construiește cursuri structurate și păstrează materialele de training într-un singur loc."
+      },
+      {
+        "id": "tests",
+        "title": "Teste care arată ce s-a învățat",
+        "text": "Adaugă evaluări în procesul de training și verifică rezultatele cursanților."
+      },
+      {
+        "id": "progress",
+        "title": "Progres clar pentru fiecare cursant",
+        "text": "Vezi cât a parcurs fiecare persoană și urmărește evoluția fără rapoarte manuale."
+      },
+      {
+        "id": "library",
+        "title": "Materialele de training, mereu la îndemână",
+        "text": "Pe planurile Academie și Business: păstrează resursele într-o bibliotecă organizată, ușor de accesat atunci când sunt necesare."
+      }
+    ]
+  },
+  "useCases": {
+    "title": "Un singur Formely. Mai multe moduri de a organiza trainingul.",
+    "subtitle": "De la cursuri individuale până la programe pentru echipe, Formely îți oferă o imagine clară asupra activității și progresului.",
+    "tabs": [
+      {
+        "id": "corporate",
+        "label": "Companii",
+        "title": "Organizează trainingul intern",
+        "text": "Organizează trainingul intern și urmărește dezvoltarea echipei într-un singur loc.",
+        "points": ["Training pe echipe", "Progres vizibil", "Administrare clară"]
+      },
+      {
+        "id": "academy",
+        "label": "Academii",
+        "title": "Administrează cursuri și cursanți",
+        "text": "Administrează cursuri, cursanți și progres fără procese manuale inutile.",
+        "points": ["Cursuri structurate", "Progres centralizat", "Mai puțină muncă manuală"]
+      },
+      {
+        "id": "instructor",
+        "label": "Traineri",
+        "title": "Construiește programe de training",
+        "text": "Construiește programe de training și gestionează cursanții mai simplu.",
+        "points": ["Programe clare", "Gestionare cursanți", "Flux simplu"]
+      }
+    ]
+  },
+  "analytics": {
+    "title": "Mai clar pentru administratori. Mai simplu pentru cursanți.",
+    "subtitle": "Formely reduce complexitatea din jurul trainingului, astfel încât echipa să se poată concentra pe învățare, nu pe instrumente.",
+    "metrics": [
+      { "label": "Progres pe cursant" },
+      { "label": "Rezultate evaluări" },
+      { "label": "Activitate pe cursuri" },
+      { "label": "Imagine clară asupra echipei" }
+    ]
+  },
+  "pricing": {
+    "eyebrow": "Prețuri",
+    "title": "Începe simplu. Crește când ai nevoie.",
+    "subtitle": "Alege planul potrivit pentru numărul de cursanți activi.",
+    "recommended": "Recomandat",
+    "perMonth": "/ lună",
+    "from": "De la",
+    "learners": "Până la {n} de cursanți activi",
+    "learnersUnlimited": "Pentru peste 150 de cursanți",
+    "staff": "până la {n} staff",
+    "cta": "Începe",
+    "note": "Activarea se face după confirmare — fără checkout public.",
+    "plans": {
+      "instructor": {
+        "name": "Instructor",
+        "features": [
+          "Cursuri, module și lecții",
+          "Teste și progres",
+          "Echipe și invitații",
+          "Până la 50 de cursanți activi"
+        ]
+      },
+      "academie": {
+        "name": "Academie",
+        "features": [
+          "Tot din Instructor",
+          "Bibliotecă digitală",
+          "Evenimente",
+          "Rol analist",
+          "Până la 150 de cursanți activi"
+        ]
+      },
+      "business": {
+        "name": "Business",
+        "features": [
+          "Tot din Academie",
+          "Volum mai mare de cursanți",
+          "Mai multe locuri staff",
+          "Pentru organizații în creștere"
+        ]
+      }
+    }
+  },
+  "why": {
+    "title": "Training fără complexitate inutilă.",
+    "subtitle": "Instrumentele de care ai nevoie pentru a organiza învățarea echipei — într-o platformă clară și ușor de administrat.",
+    "items": [
+      {
+        "title": "Mai clar pentru administratori",
+        "text": "Formely reduce complexitatea din jurul trainingului, astfel încât echipa să se poată concentra pe învățare."
+      },
+      {
+        "title": "Mai simplu pentru cursanți",
+        "text": "Acces clar la cursuri și progres, fără instrumente împrăștiate."
+      },
+      {
+        "title": "Un singur sistem",
+        "text": "Cursuri, cursanți și progres — într-un singur loc."
+      },
+      {
+        "title": "Crește când ai nevoie",
+        "text": "Începi simplu și treci la un plan superior pe măsură ce echipa crește."
+      }
+    ]
+  },
+  "faq": {
+    "title": "Întrebări frecvente",
+    "items": [
+      {
+        "q": "Ce este Formely?",
+        "a": "Formely este o platformă pentru crearea și administrarea cursurilor, organizarea cursanților și urmărirea progresului."
+      },
+      {
+        "q": "Pentru cine este Formely?",
+        "a": "Formely este construit pentru companii, academii și traineri care vor să organizeze trainingul într-un singur sistem."
+      },
+      {
+        "q": "Pot urmări progresul cursanților?",
+        "a": "Da. Formely îți permite să vezi progresul cursanților direct din platformă."
+      },
+      {
+        "q": "Pot crea teste și evaluări?",
+        "a": "Da. Evaluările pot fi integrate în procesul de training pentru a urmări rezultatele cursanților."
+      },
+      {
+        "q": "Cum aleg planul potrivit?",
+        "a": "Planurile sunt diferențiate în principal după numărul de cursanți activi. Poți începe cu planul potrivit echipei tale și trece la unul superior pe măsură ce crești."
+      }
+    ]
+  },
+  "contact": {
+    "title": "Începe cu Formely",
+    "subtitle": "Spune-ne cine ești și ce plan te interesează. Revenim cu pașii de activare.",
+    "name": "Nume",
+    "email": "Email",
+    "org": "Organizație",
+    "plan": "Plan de interes",
+    "message": "Mesaj (opțional)",
+    "submit": "Trimite cererea",
+    "sending": "Se trimite…",
+    "success": "Cererea a fost trimisă. Te contactăm în curând.",
+    "error": "Nu am putut trimite solicitarea. Încearcă din nou.",
+    "consentBefore": "Sunt de acord ca Formely să prelucreze datele din acest formular pentru a mă contacta despre activare, conform",
+    "consentLink": "politicii de confidențialitate",
+    "consentAfter": ".",
+    "consentRequired": "Bifează acordul pentru prelucrarea datelor."
+  },
+  "finalCta": {
+    "title": "Trainingul echipei tale poate fi mai simplu.",
+    "description": "Creează, organizează și urmărește trainingul dintr-un singur loc.",
+    "cta": "Începe cu Formely"
+  },
+  "footer": {
+    "tagline": "Trainingul echipei, într-un singur loc.",
+    "product": "Produs",
+    "features": "Funcții",
+    "pricing": "Prețuri",
+    "resources": "Resurse",
+    "faq": "Întrebări",
+    "contact": "Contact",
+    "legal": "Legal",
+    "privacy": "Confidențialitate",
+    "terms": "Termeni",
+    "cookies": "Cookie-uri",
+    "languages": "Limbi",
+    "credit": "Powered by Mejievski",
+    "rights": "© {year} Formely"
+  },
+  "frames": {
+    "browser": "formely.app",
+    "navAdmin": "Admin",
+    "navCourses": "Cursuri",
+    "navTests": "Teste",
+    "navStats": "Statistici",
+    "navUsers": "Utilizatori",
+    "dashboardTitle": "Panou",
+    "dashboardHint": "Cursuri · Progres · Rezultate",
+    "courseBuilder": "Builder curs",
+    "module": "Modul",
+    "lesson": "Lecție",
+    "block": "Bloc",
+    "publish": "Publică",
+    "questionBank": "Bancă de întrebări",
+    "test": "Test",
+    "attempts": "Încercări",
+    "progress": "Progres",
+    "unlocked": "Deblocat",
+    "locked": "Blocat",
+    "team": "Echipă",
+    "department": "Departament",
+    "invite": "Invită",
+    "assign": "Atribuie",
+    "library": "Bibliotecă",
+    "events": "Evenimente",
+    "metricProgress": "Progres cursanți",
+    "metricCompletion": "Finalizări",
+    "metricTests": "Rezultate teste",
+    "metricExport": "Export"
+  },
+  "legal": {
+    "updated": "Ultima actualizare: {date}",
+    "privacyTitle": "Politica de confidențialitate",
+    "privacyIntro": "Această pagină explică ce date personale colectează site-ul public Formely și de ce. Acoperă formularul de contact și vizita pe site, nu datele cursanților dintr-o academie deja activată.",
+    "controller": "Operatorul site-ului este Formely. Pentru cereri privind datele tale:",
+    "cookieTitle": "Fără cookie-uri de urmărire",
+    "cookieBody": "Salvăm doar limba aleasă în browserul tău. Nu folosim cookie-uri de analiză sau publicitate pe acest site.",
+    "cookieMore": "Detalii",
+    "cookieOk": "Am înțeles",
+    "privacySections": [
+      {
+        "title": "Ce acoperă și ce nu",
+        "paragraphs": [
+          "Politica se aplică site-ului de prezentare Formely: pagini publice și formularul „Începe cu Formely”.",
+          "Când o organizație folosește platforma, ea este operator pentru datele cursanților și ale echipei. Formely prelucrează acele date ca persoană împuternicită, pe baza contractului cu organizația. Acea prelucrare nu este descrisă aici."
+        ]
+      },
+      {
+        "title": "Ce date colectăm pe site",
+        "paragraphs": [
+          "Din formular: nume, email, organizație, planul de interes și mesajul, dacă îl scrii.",
+          "Salvăm și momentul consimțământului plus adresa IP, ca să putem arăta că cererea a fost trimisă de bunăvoie și ca să limităm abuzul.",
+          "Serverul poate păstra jurnale tehnice scurte: adresă IP, tip de browser, pagină accesată și oră, pentru securitate.",
+          "Limba aleasă rămâne doar în browser (localStorage). Nu o trimitem către server."
+        ]
+      },
+      {
+        "title": "Ce nu facem",
+        "paragraphs": [
+          "Nu punem cookie-uri de marketing sau de analiză de la terți pe acest site. Nu vindem datele și nu creăm un cont public doar pentru că ai trimis formularul."
+        ]
+      },
+      {
+        "title": "De ce le folosim",
+        "paragraphs": [
+          "Ca să răspundem cererii de activare: consimțământul tău și pașii dinaintea unui contract.",
+          "Ca să protejăm site-ul de abuz: interes legitim (securitate).",
+          "Ca să ținem minte limba: ca să îți afișăm site-ul în limba pe care ai ales-o."
+        ]
+      },
+      {
+        "title": "Cât timp le păstrăm",
+        "paragraphs": [
+          "Cererea de contact: până la 24 de luni de la ultimul schimb, mai puțin dacă ceri ștergerea, sau până devine parte dintr-un contract.",
+          "Jurnalele de securitate: până la 90 de zile.",
+          "Limba din browser: până o schimbi sau ștergi datele site-ului din browser."
+        ]
+      },
+      {
+        "title": "Cui le transmitem",
+        "paragraphs": [
+          "Echipei Formely care tratează cererile, furnizorului de email (dacă notificarea internă este pornită) și furnizorului de găzduire. Nu le trimitem către rețele de publicitate."
+        ]
+      },
+      {
+        "title": "Unde sunt stocate",
+        "paragraphs": [
+          "Țintim stocarea în Spațiul Economic European. Dacă un furnizor prelucrează date în afara SEE, folosim garanții precum clauze contractuale standard."
+        ]
+      },
+      {
+        "title": "Drepturile tale",
+        "paragraphs": [
+          "Poți cere acces, rectificare, ștergere, restricționare, opoziție sau o copie a datelor. Poți retrage consimțământul oricând, fără să afecteze prelucrarea deja făcută.",
+          "Scrie-ne la adresa de mai sus. Poți depune plângere și la ANSPDCP (România) sau la autoritatea de supraveghere din țara ta."
+        ]
+      },
+      {
+        "id": "cookies",
+        "title": "Cookie-uri și stocare locală",
+        "paragraphs": [
+          "Nu setăm cookie-uri de urmărire. Salvăm local limba aleasă, ca să nu o cerem la fiecare vizită. Poți șterge preferința din setările browserului."
+        ]
+      },
+      {
+        "title": "Modificări",
+        "paragraphs": [
+          "Dacă schimbăm această politică, actualizăm data de pe pagină. Pentru cererile deja trimise se aplică varianta în vigoare la momentul trimiterii, plus drepturile pe care legea ți le dă oricum."
+        ]
+      }
+    ],
+    "termsTitle": "Termeni de utilizare a site-ului",
+    "termsIntro": "Acești termeni se aplică site-ului public Formely. Contractul pentru platformă se încheie separat, după confirmarea ofertei.",
+    "termsSections": [
+      {
+        "title": "Ce este site-ul",
+        "paragraphs": [
+          "Paginile prezintă produsul. Nu sunt o ofertă fermă de preț și nu deschid singure un contract de servicii."
+        ]
+      },
+      {
+        "title": "Acces la platformă",
+        "paragraphs": [
+          "Conturile se creează după confirmarea ofertei, prin invitație. Folosirea academiei este guvernată de contractul cu organizația, nu de aceste pagini."
+        ]
+      },
+      {
+        "title": "Formularul de contact",
+        "paragraphs": [
+          "Informațiile trebuie să fie corecte. Nu trimite date despre alte persoane fără un temei. Prelucrarea este descrisă în politica de confidențialitate."
+        ]
+      },
+      {
+        "title": "Conținut",
+        "paragraphs": [
+          "Textele, marca și interfața Formely sunt protejate. Poți face o citare scurtă cu sursa. Nu copia site-ul pentru un produs concurent."
+        ]
+      },
+      {
+        "title": "Disponibilitate",
+        "paragraphs": [
+          "Site-ul poate fi întrerupt pentru mentenanță. Descrierile comerciale se pot schimba."
+        ]
+      },
+      {
+        "title": "Răspundere",
+        "paragraphs": [
+          "Pentru utilizarea site-ului public, răspunderea este limitată la daunele directe previzibile, în măsura permisă de lege. Nu excludem răspunderea care nu poate fi exclusă legal."
+        ]
+      },
+      {
+        "title": "Legea aplicabilă",
+        "paragraphs": [
+          "Se aplică legea română. Acest lucru nu îți limitează dreptul de a te adresa unei autorități de supraveghere din țara ta din UE."
+        ]
+      }
+    ],
+    "back": "Înapoi la pagina principală"
+  },
+  "notFound": {
+    "title": "Pagina nu există",
+    "text": "Linkul nu duce nicăieri pe site-ul Formely.",
+    "cta": "Acasă"
+  }
+}

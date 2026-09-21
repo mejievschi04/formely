@@ -3,14 +3,14 @@
  * Fără module reale: lecțiile apar direct, fără grup „Lecții fără modul”.
  */
 
+import { getRootLessons } from './lessonOrder';
+
 export function getSortedCourseModules(course) {
 	return [...(course?.modules || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
 }
 
 export function getRootCourseLessons(course) {
-	return [...(course?.lessons || [])]
-		.filter((lesson) => lesson?.module_id == null)
-		.sort((a, b) => (a.order || 0) - (b.order || 0));
+	return getRootLessons(course);
 }
 
 /**

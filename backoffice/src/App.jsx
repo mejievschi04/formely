@@ -1,0 +1,49 @@
+import React from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { useAuth } from './auth';
+import Shell from './shell';
+import LoginPage from './pages/Login';
+import OverviewPage from './pages/Overview';
+import ClientsPage from './pages/Clients';
+import LeadsPage from './pages/Leads';
+import PlansPage from './pages/Plans';
+import InvoicesPage from './pages/Invoices';
+
+function Guard({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="bo-boot">Se încarcă…</div>;
+  if (!user) return <Navigate to="/login" replace />;
+  return children;
+}
+
+export default function App() {
+  const { user, loading } = useAuth();
+
+  if (loading) return <div className="bo-boot">Se încarcă…</div>;
+
+  return (
+    <Routes>
+      <Route
+        path="/login"
+        element={user ? <Navigate to="/" replace /> : <LoginPage />}
+      />
+      <Route
+        path="/*"
+        element={
+          <Guard>
+            <Shell>
+              <Routes>
+                <Route index element={<OverviewPage />} />
+                <Route path="clients" element={<ClientsPage />} />
+                <Route path="leads" element={<LeadsPage />} />
+                <Route path="plans" element={<PlansPage />} />
+                <Route path="invoices" element={<InvoicesPage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Shell>
+          </Guard>
+        }
+      />
+    </Routes>
+  );
+}

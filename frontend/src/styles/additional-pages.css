@@ -2377,6 +2377,21 @@ body.sidebar-expanded .messages-page {
 	top: 0;
 }
 
+.messages-sidebar-header-copy {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-1);
+	min-width: 0;
+	flex: 1;
+}
+
+.messages-page-lead {
+	margin: 0;
+	font-size: var(--font-size-xs);
+	color: var(--text-tertiary);
+	line-height: 1.35;
+}
+
 .messages-title {
 	font-size: var(--font-size-xl);
 	font-weight: var(--font-weight-semibold);
@@ -3280,6 +3295,10 @@ body.sidebar-expanded .messages-page {
 	font-size: 0.9375rem;
 	line-height: 1.55;
 	margin-bottom: var(--space-3);
+}
+
+.events-page .events-card-clickable {
+	cursor: pointer;
 }
 
 .events-page .events-card-actions {

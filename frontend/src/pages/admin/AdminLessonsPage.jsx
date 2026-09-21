@@ -117,7 +117,7 @@ const AdminLessonsPage = () => {
 			<div className="admin-page-header">
 				<div>
 					<h1 className="admin-page-title">Gestionare Lecții</h1>
-					<p className="admin-page-subtitle">Gestionează toate lecțiile din platformă</p>
+					<p className="admin-page-subtitle">Toate lecțiile din Formely — căutare, editare și organizare pe cursuri.</p>
 				</div>
 				{canMutateInAdminArea && (
 				<div className="admin-page-header-actions">

@@ -1,3 +1,35 @@
+.admin-tests-exams-notice {
+	margin: 0;
+	padding: 12px 14px;
+	border-radius: 8px;
+	border: 1px solid color-mix(in srgb, var(--color-primary) 28%, var(--border-primary));
+	background: color-mix(in srgb, var(--color-primary) 6%, var(--bg-elevated));
+	font-size: 0.9rem;
+	line-height: 1.5;
+	color: var(--text-secondary);
+}
+
+.admin-tests-exams-notice strong {
+	color: var(--text-primary);
+}
+
+.admin-tests-type-glossary,
+.admin-course-builder-test-type-glossary,
+.step4-type-glossary {
+	margin: 0;
+	padding: 10px 12px;
+	border-radius: 8px;
+	border: 1px solid var(--border-primary);
+	background: var(--bg-elevated);
+	font-size: 0.85rem;
+	line-height: 1.45;
+	color: var(--text-muted);
+}
+
+.admin-tests-type-glossary {
+	margin-top: -8px;
+}
+
 .admin-tests-page {
 	display: flex;
 	flex-direction: column;
@@ -371,6 +403,143 @@
 	cursor: pointer;
 	background: var(--bg-secondary);
 	color: var(--text-primary);
+}
+
+.admin-tests-compartments {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 4px;
+}
+
+.admin-tests-compartment-tab {
+	min-height: 40px;
+	padding: 0 16px;
+	border: 1px solid var(--border-primary);
+	border-radius: 8px;
+	background: var(--bg-elevated);
+	color: var(--text-secondary);
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.admin-tests-compartment-tab.is-active,
+.admin-tests-compartment-tab:hover {
+	border-color: color-mix(in srgb, var(--color-primary) 45%, var(--border-primary));
+	background: color-mix(in srgb, var(--color-primary) 10%, var(--bg-primary));
+	color: var(--text-primary);
+}
+
+.admin-tests-stats-layout {
+	display: grid;
+	grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+	gap: 16px;
+	align-items: start;
+}
+
+.admin-tests-stats-sidebar {
+	display: grid;
+	gap: 12px;
+	padding: 16px;
+	border: 1px solid var(--border-primary);
+	border-radius: 14px;
+	background: var(--bg-elevated);
+	max-height: calc(100vh - 220px);
+	position: sticky;
+	top: 16px;
+}
+
+.admin-tests-stats-sidebar-head h2 {
+	margin: 0;
+	font-size: 1rem;
+	font-weight: 800;
+}
+
+.admin-tests-stats-sidebar-head p {
+	margin: 4px 0 0;
+	color: var(--text-secondary);
+	font-size: 0.82rem;
+	line-height: 1.4;
+}
+
+.admin-tests-stats-sidebar-search input {
+	width: 100%;
+	min-height: 38px;
+	padding: 0 12px;
+	border: 1px solid var(--border-primary);
+	border-radius: 10px;
+	background: var(--bg-primary);
+	color: var(--text-primary);
+}
+
+.admin-tests-stats-sidebar-list {
+	display: grid;
+	gap: 6px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	overflow: auto;
+	max-height: min(58vh, 520px);
+}
+
+.admin-tests-stats-sidebar-item {
+	display: grid;
+	gap: 4px;
+	width: 100%;
+	padding: 12px;
+	border: 1px solid transparent;
+	border-radius: 10px;
+	background: var(--bg-primary);
+	text-align: left;
+	cursor: pointer;
+}
+
+.admin-tests-stats-sidebar-item:hover {
+	border-color: color-mix(in srgb, var(--color-primary) 30%, var(--border-primary));
+}
+
+.admin-tests-stats-sidebar-item.is-active {
+	border-color: color-mix(in srgb, var(--color-primary) 45%, var(--border-primary));
+	background: color-mix(in srgb, var(--color-primary) 10%, var(--bg-primary));
+	box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+.admin-tests-stats-sidebar-item-title {
+	font-weight: 750;
+	font-size: 0.9rem;
+	line-height: 1.35;
+	color: var(--text-primary);
+}
+
+.admin-tests-stats-sidebar-item-meta {
+	font-size: 0.76rem;
+	color: var(--text-secondary);
+}
+
+.admin-tests-stats-sidebar-empty {
+	padding: 16px 8px;
+	color: var(--text-secondary);
+	font-size: 0.86rem;
+	text-align: center;
+}
+
+.admin-tests-stats-main {
+	min-width: 0;
+}
+
+@media (max-width: 960px) {
+	.admin-tests-stats-layout {
+		grid-template-columns: 1fr;
+	}
+
+	.admin-tests-stats-sidebar {
+		position: static;
+		max-height: none;
+	}
+
+	.admin-tests-stats-sidebar-list {
+		max-height: 220px;
+	}
 }
 
 .admin-tests-modal-actions .is-primary {

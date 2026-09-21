@@ -39,7 +39,7 @@ const AdminActivityPage = () => {
 						← Înapoi la Dashboard
 					</button>
 					<h1 className="admin-page-title">Activitate Recentă</h1>
-					<p className="admin-page-subtitle">Ultimele evenimente din platformă</p>
+					<p className="admin-page-subtitle">Ultimele evenimente din Formely — înscrieri, finalizări și autentificări.</p>
 				</div>
 			</div>
 			{error && (

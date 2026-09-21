@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\UserRoles;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,8 +19,15 @@ class StaffAreaAccessMiddleware
             return response()->json(['error' => 'Neautentificat'], 401);
         }
 
-        $role = auth()->user()->role ?? 'student';
-        if (! in_array($role, ['admin', 'instructor', 'analyst'], true)) {
+        $user = auth()->user();
+        if ($user->isPlatformAdmin() && ! $request->is('api/admin/platform', 'api/admin/platform/*', 'api/platform', 'api/platform/*')) {
+            return response()->json([
+                'error' => 'Operatorul platformei accesează doar consola de control.',
+            ], 403);
+        }
+
+        $role = $user->role ?? UserRoles::EMPLOYEE;
+        if (! in_array($role, UserRoles::staffRoles(), true)) {
             return response()->json([
                 'error' => 'Acces interzis. Nu ai drepturi pentru zona de administrare.',
             ], 403);

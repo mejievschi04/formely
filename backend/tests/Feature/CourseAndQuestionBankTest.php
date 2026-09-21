@@ -76,7 +76,7 @@ class CourseAndQuestionBankTest extends TestCase
             ->assertJsonPath('exams.0.title', 'Quiz introductiv');
     }
 
-    public function test_course_show_includes_legacy_exam_linked_to_course(): void
+    public function test_course_show_does_not_include_legacy_exam_in_course_structure(): void
     {
         $student = User::factory()->create(['role' => 'student']);
 
@@ -93,10 +93,12 @@ class CourseAndQuestionBankTest extends TestCase
             'created_by' => User::factory()->create(['role' => 'admin'])->id,
         ]));
 
-        $this->actingAs($student, 'sanctum')
+        $response = $this->actingAs($student, 'sanctum')
             ->getJson("/api/courses/{$course->id}")
-            ->assertOk()
-            ->assertJsonFragment(['title' => 'Examen final legacy', 'legacy_exam' => true]);
+            ->assertOk();
+
+        $titles = collect($response->json('exams') ?? [])->pluck('title')->all();
+        $this->assertNotContains('Examen final legacy', $titles);
     }
 
     public function test_admin_can_create_question_bank_and_add_questions(): void

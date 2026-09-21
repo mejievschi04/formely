@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Http\Controllers\Concerns\AssertsPlanEntitlements;
 use App\Http\Controllers\Controller;
 use App\Models\Question;
 use App\Models\QuestionBank;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\Schema;
 
 class QuestionAdminController extends Controller
 {
+    use AssertsPlanEntitlements;
+
     /**
      * Move selected questions to another question bank (folder).
      */
@@ -98,6 +101,21 @@ class QuestionAdminController extends Controller
                     $qb->where('created_by', $uid);
                 });
             });
+        }
+
+        if ($request->filled('ids')) {
+            $ids = $request->input('ids');
+            if (is_string($ids)) {
+                $ids = explode(',', $ids);
+            }
+            $ids = array_values(array_unique(array_filter(array_map('intval', is_array($ids) ? $ids : []))));
+            if ($ids !== []) {
+                $query->whereIn('id', $ids);
+                $perPageHint = count($ids);
+                if (! $request->filled('per_page')) {
+                    $request->merge(['per_page' => max(1, min($perPageHint, 200))]);
+                }
+            }
         }
 
         if ($request->filled('search')) {
@@ -475,6 +493,8 @@ class QuestionAdminController extends Controller
 
     public function improveWithAi(Request $request, int $id)
     {
+        $this->assertCompanyFeature('ai_test_generation');
+
         $question = Question::with(['test', 'questionBank'])->findOrFail($id);
         if (auth()->user()->isInstructor()) {
             $ok = ($question->test_id && $question->test && (int) $question->test->created_by === (int) auth()->id())
@@ -523,6 +543,8 @@ class QuestionAdminController extends Controller
 
     public function autoTagWithAi(int $id)
     {
+        $this->assertCompanyFeature('ai_test_generation');
+
         $question = Question::with(['test', 'questionBank'])->findOrFail($id);
         if (auth()->user()->isInstructor()) {
             $ok = ($question->test_id && $question->test && (int) $question->test->created_by === (int) auth()->id())

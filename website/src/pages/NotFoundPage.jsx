@@ -1,19 +1,20 @@
 import { Link } from 'react-router-dom';
 import Seo from '../components/Seo';
+import { useI18n } from '../i18n/I18nContext';
 
 export default function NotFoundPage() {
+  const { t } = useI18n();
+
   return (
     <>
-      <Seo title="Pagină negăsită" path="/404" noindex />
-      <section className="section text-center">
-        <div className="container">
-          <h1>404</h1>
-          <p className="lead mx-auto">Pagina nu există.</p>
-          <Link to="/" className="btn btn--primary" style={{ marginTop: '1.5rem' }}>
-            Acasă
-          </Link>
-        </div>
-      </section>
+      <Seo title={t('notFound.title')} description={t('notFound.text')} path="/404" noindex />
+      <div className="page-center">
+        <h1>{t('notFound.title')}</h1>
+        <p>{t('notFound.text')}</p>
+        <Link className="btn btn-primary" to="/">
+          {t('notFound.cta')}
+        </Link>
+      </div>
     </>
   );
 }

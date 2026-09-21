@@ -1,0 +1,1 @@
+const c=["#6366f1","#ec4899","#14b8a6","#f59e0b","#8b5cf6","#06b6d4","#84cc16","#f43f5e"],t="#94a3b8";function e(n){return n&&(n.accent_color||n.accentColor)||null}function u(n){return e(n)||t}function o(n){return n?e(n)||c[(n.id||0)%c.length]:t}function a(n,r){return e(n)||c[(Number(r)||0)%c.length]}export{c as T,o as a,u as b,a as t};

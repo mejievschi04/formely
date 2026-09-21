@@ -12,15 +12,22 @@ use App\Http\Controllers\Api\QuizController;
 use App\Http\Controllers\Api\Admin\CourseAdminController;
 use App\Http\Controllers\Api\Admin\CourseBuilderController;
 use App\Http\Controllers\Api\Admin\QuestionAdminController;
+use App\Http\Controllers\Api\Admin\QuestionCatalogAdminController;
 use App\Http\Controllers\Api\Admin\ExamAdminController;
 use App\Http\Controllers\Api\Admin\EventAdminController;
 use App\Http\Controllers\Api\Admin\DashboardAdminController;
+use App\Http\Controllers\Api\Admin\DepartmentAdminController;
 use App\Http\Controllers\Api\Admin\TeamAdminController;
 use App\Http\Controllers\Api\Admin\UserAdminController;
+use App\Http\Controllers\Api\Admin\UserInvitationAdminController;
 use App\Http\Controllers\Api\Admin\ActivityLogAdminController;
 use App\Http\Controllers\Api\Admin\MediaAdminController;
 use App\Http\Controllers\Api\Admin\CourseMapAdminController;
 use App\Http\Controllers\Api\Admin\StatisticsAdminController;
+use App\Http\Controllers\Api\Admin\AIExportAdminController;
+use App\Http\Controllers\Api\Admin\CompanyAdminController;
+use App\Http\Controllers\Api\Admin\LeadAdminController;
+use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\LibraryController;
 
 /*
@@ -28,19 +35,40 @@ use App\Http\Controllers\Api\LibraryController;
 | GET /api/health → dacă răspunde 200, PHP + rutele merg; dacă 500, verifică DB / .env în container.
 */
 Route::get('/health', function () {
+    $checks = [
+        'database' => 'ok',
+        'queue' => config('queue.default'),
+        'cache' => config('cache.default'),
+    ];
+    $ok = true;
+
     try {
         DB::connection()->getPdo();
+        DB::select('select 1');
     } catch (\Throwable $e) {
+        $ok = false;
+        $checks['database'] = 'error';
         $expose = config('app.debug') || filter_var(env('FORMELY_EXPOSE_API_ERRORS', false), FILTER_VALIDATE_BOOLEAN);
         return response()->json([
             'ok' => false,
+            'checks' => $checks,
             'database' => 'error',
             'message' => $expose ? $e->getMessage() : 'Database connection failed.',
         ], 500);
     }
 
+    try {
+        if (config('queue.default') === 'database') {
+            DB::table('jobs')->limit(1)->count();
+            $checks['queue_table'] = 'ok';
+        }
+    } catch (\Throwable $e) {
+        $checks['queue_table'] = 'missing';
+    }
+
     return response()->json([
-        'ok' => true,
+        'ok' => $ok,
+        'checks' => $checks,
         'database' => 'connected',
         'session_driver' => config('session.driver'),
         'session_secure' => config('session.secure'),
@@ -49,14 +77,18 @@ Route::get('/health', function () {
         'app_url' => config('app.url'),
         'sanctum_stateful' => config('sanctum.stateful'),
         'cache_store' => config('cache.default'),
+        'queue_connection' => config('queue.default'),
+        'mail_mailer' => config('mail.default'),
     ]);
 })->withoutMiddleware([
     \App\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
 ]);
 
 // Public routes – throttle to prevent abuse (e.g. scraping, DoS)
-Route::middleware('throttle:120,1')->group(function () {
+// tenant.optional: never dump all tenants; guest → default company, auth → user company
+Route::middleware(['throttle:120,1', 'tenant.optional'])->group(function () {
     Route::get('/courses', [CourseController::class, 'index']);
+    Route::get('/courses/standalone', [CourseController::class, 'learnerStandaloneCourses']);
     Route::get('/courses/{id}', [CourseController::class, 'show']);
     Route::get('/lessons/{id}', [\App\Http\Controllers\Api\LessonController::class, 'show']);
     Route::get('/events', [EventController::class, 'index']);
@@ -87,34 +119,33 @@ if (config('app.debug')) {
 // Auth routes with rate limiting (prevent brute force attacks)
 Route::post('/auth/register', [\App\Http\Controllers\Api\AuthController::class, 'register'])->middleware('throttle:15,1'); // 15 attempts per minute
 Route::post('/auth/login', [\App\Http\Controllers\Api\AuthController::class, 'login'])->middleware('throttle:15,1'); // 15 attempts per minute
-Route::post('/auth/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout'])->middleware('auth:sanctum');
-Route::get('/auth/me', [\App\Http\Controllers\Api\AuthController::class, 'me'])->middleware('auth:sanctum');
-Route::post('/auth/change-password', [\App\Http\Controllers\Api\AuthController::class, 'changePassword'])->middleware(['auth:sanctum', 'throttle:60,1']);
+Route::post('/auth/forgot-password', [\App\Http\Controllers\Api\AuthController::class, 'forgotPassword'])->middleware('throttle:10,1');
+Route::post('/auth/reset-password', [\App\Http\Controllers\Api\AuthController::class, 'resetPassword'])->middleware('throttle:15,1');
+Route::get('/auth/invitations/validate', [\App\Http\Controllers\Api\InvitationAuthController::class, 'validateToken'])->middleware('throttle:30,1');
+Route::post('/auth/invitations/accept', [\App\Http\Controllers\Api\InvitationAuthController::class, 'accept'])->middleware('throttle:15,1');
+Route::get('/branding/{slug}', [\App\Http\Controllers\Api\CompanyBrandingController::class, 'showBySlug'])->middleware('throttle:60,1');
+Route::post('/leads', [LeadController::class, 'store'])->middleware('throttle:10,1');
+Route::get('/plans', function () {
+    return response()->json([
+        'public_register_enabled' => (bool) config('formely.public_register_enabled', false),
+        'plans' => collect(config('plans', []))->map(function (array $plan, string $key) {
+            return [
+                'id' => $key,
+                'label' => $plan['label'] ?? $key,
+                'max_active_learners' => $plan['max_active_learners'] ?? null,
+                'max_staff' => $plan['max_staff'] ?? null,
+                'features' => $plan['features'] ?? [],
+            ];
+        })->values(),
+    ]);
+})->middleware('throttle:60,1');
 
-// Mesagerie: limită dedicată — GET (polling) separat de POST/PATCH ca să nu dea 429 la trimiteri + polling simultan.
-Route::middleware(['auth:sanctum', 'throttle:api-messages-read'])->group(function () {
-    Route::get('/messages/unread-count', [\App\Http\Controllers\Api\MessageController::class, 'getUnreadCount']);
-    Route::get('/messages/conversations', [\App\Http\Controllers\Api\MessageController::class, 'getConversations']);
-    Route::get('/messages/conversations/search', [\App\Http\Controllers\Api\MessageController::class, 'searchConversations']);
-    Route::get('/messages/conversations/{id}/messages', [\App\Http\Controllers\Api\MessageController::class, 'getMessages']);
-    Route::get('/messages/conversations/{id}/participants', [\App\Http\Controllers\Api\MessageController::class, 'getParticipants']);
-    Route::get('/messages/available-users', [\App\Http\Controllers\Api\MessageController::class, 'getAvailableUsers']);
-});
-
-Route::middleware(['auth:sanctum', 'throttle:api-messages-write'])->group(function () {
-    Route::post('/messages/conversations', [\App\Http\Controllers\Api\MessageController::class, 'createConversation']);
-    Route::patch('/messages/conversations/{id}', [\App\Http\Controllers\Api\MessageController::class, 'updateConversation']);
-    Route::delete('/messages/conversations/{id}', [\App\Http\Controllers\Api\MessageController::class, 'destroyConversation']);
-    Route::post('/messages/conversations/{id}/leave', [\App\Http\Controllers\Api\MessageController::class, 'leaveGroup']);
-    Route::post('/messages/conversations/{id}/messages', [\App\Http\Controllers\Api\MessageController::class, 'sendMessage']);
-    Route::post('/messages/conversations/{id}/read', [\App\Http\Controllers\Api\MessageController::class, 'markAsRead']);
-    Route::post('/messages/conversations/{id}/participants', [\App\Http\Controllers\Api\MessageController::class, 'addParticipants']);
-    Route::patch('/messages/conversations/{id}/participants/{userId}', [\App\Http\Controllers\Api\MessageController::class, 'updateParticipantGroupRole']);
-    Route::delete('/messages/conversations/{id}/participants/{userId}', [\App\Http\Controllers\Api\MessageController::class, 'removeParticipant']);
-});
+Route::post('/auth/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout'])->middleware(['auth:sanctum', 'tenant']);
+Route::get('/auth/me', [\App\Http\Controllers\Api\AuthController::class, 'me'])->middleware(['auth:sanctum', 'tenant']);
+Route::post('/auth/change-password', [\App\Http\Controllers\Api\AuthController::class, 'changePassword'])->middleware(['auth:sanctum', 'tenant', 'throttle:60,1']);
 
 // Protected routes (require authentication) with rate limiting
-Route::middleware(['auth:sanctum', 'throttle:api-app'])->group(function () {
+Route::middleware(['auth:sanctum', 'tenant', 'throttle:api-app'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index']);
     Route::get('/profile', [ProfileController::class, 'index']);
     Route::put('/profile', [ProfileController::class, 'update']);
@@ -154,22 +185,31 @@ Route::middleware(['auth:sanctum', 'throttle:api-app'])->group(function () {
     // Course maps (student: list and show map with published courses)
     Route::get('/course-maps', [\App\Http\Controllers\Api\CourseMapController::class, 'index']);
     Route::get('/course-maps/{id}', [\App\Http\Controllers\Api\CourseMapController::class, 'show']);
-    
+
     // Exam endpoints (lista fără curs înainte de {examId})
     Route::get('/exams', [\App\Http\Controllers\Api\ExamController::class, 'learnerStandaloneExams']);
     Route::get('/exams/{examId}', [\App\Http\Controllers\Api\ExamController::class, 'show']);
+    Route::post('/exams/{examId}/progress', [\App\Http\Controllers\Api\ExamController::class, 'saveProgress']);
     Route::post('/exams/{examId}/submit', [\App\Http\Controllers\Api\ExamController::class, 'submit']);
     
-    // Exam Results
+    // Exam Results (TestResult — tests in courses)
     Route::get('/exam-results', [\App\Http\Controllers\Api\ExamResultController::class, 'index']);
     Route::get('/exam-results/{id}', [\App\Http\Controllers\Api\ExamResultController::class, 'show']);
 
+    // Catalog exam results (ExamResult — standalone exams only)
+    Route::get('/catalog-exam-results', [\App\Http\Controllers\Api\CatalogExamResultController::class, 'index']);
+    Route::get('/catalog-exam-results/{id}', [\App\Http\Controllers\Api\CatalogExamResultController::class, 'show']);
+
     // Bibliotecă materiale (cărți, PDF-uri etc.) — listare & descărcare toți utilizatorii autentificați
-    Route::get('/library/items', [LibraryController::class, 'index']);
-    Route::get('/library/items/{id}', [LibraryController::class, 'show']);
-    Route::post('/library/items', [LibraryController::class, 'store']);
-    Route::delete('/library/items/{id}', [LibraryController::class, 'destroy']);
-    Route::get('/library/items/{id}/download', [LibraryController::class, 'download']);
+    Route::middleware('company_feature:library')->group(function () {
+        Route::get('/library/items', [LibraryController::class, 'index']);
+        Route::get('/library/items/{id}', [LibraryController::class, 'show']);
+        Route::post('/library/items', [LibraryController::class, 'store']);
+        Route::put('/library/items/{id}', [LibraryController::class, 'update']);
+        Route::post('/library/items/{id}', [LibraryController::class, 'update']);
+        Route::delete('/library/items/{id}', [LibraryController::class, 'destroy']);
+        Route::get('/library/items/{id}/download', [LibraryController::class, 'download']);
+    });
 
     Route::post('/telemetry/events', [TelemetryController::class, 'store']);
     
@@ -177,19 +217,43 @@ Route::middleware(['auth:sanctum', 'throttle:api-app'])->group(function () {
     Route::get('/achievements', [\App\Http\Controllers\Api\AchievementController::class, 'index']);
     
     // User Events
-    Route::get('/events/my', [EventController::class, 'myEvents']);
-    Route::post('/events/{id}/register', [EventController::class, 'register']);
-    Route::post('/events/{id}/cancel-registration', [EventController::class, 'cancelRegistration']);
-    Route::post('/events/{id}/mark-attendance', [EventController::class, 'markAttendance']);
-    Route::post('/events/{id}/mark-replay-watched', [EventController::class, 'markReplayWatched']);
+    Route::middleware('company_feature:events')->group(function () {
+        Route::get('/events/my', [EventController::class, 'myEvents']);
+        Route::post('/events/{id}/register', [EventController::class, 'register']);
+        Route::post('/events/{id}/cancel-registration', [EventController::class, 'cancelRegistration']);
+        Route::post('/events/{id}/mark-attendance', [EventController::class, 'markAttendance']);
+        Route::post('/events/{id}/mark-replay-watched', [EventController::class, 'markReplayWatched']);
+    });
 
     // Admin AI Assistant
     Route::post('/ai/extract-document', [\App\Http\Controllers\AIController::class, 'extractDocumentContext']);
+    Route::post('/lessons/{lessonId}/tutor', [\App\Http\Controllers\AIController::class, 'studentTutor']);
+    Route::post('/lessons/{lessonId}/study-tools', [\App\Http\Controllers\AIController::class, 'generateLessonStudyTool']);
+});
+
+// Backoffice Formely — operatori platformă (clienți, lead-uri, facturi)
+Route::middleware([
+    'auth:sanctum',
+    'tenant',
+    'platform_admin',
+    'throttle:120,1',
+])->prefix('platform')->group(function () {
+    Route::get('/overview', [CompanyAdminController::class, 'overview']);
+    Route::get('/plans', [CompanyAdminController::class, 'plans']);
+    Route::get('/companies', [CompanyAdminController::class, 'index']);
+    Route::post('/companies', [CompanyAdminController::class, 'store']);
+    Route::get('/companies/{id}', [CompanyAdminController::class, 'show']);
+    Route::put('/companies/{id}', [CompanyAdminController::class, 'update']);
+    Route::post('/companies/{id}/invite-owner', [CompanyAdminController::class, 'sendOwnerInvite']);
+    Route::get('/leads', [LeadAdminController::class, 'index']);
+    Route::put('/leads/{id}', [LeadAdminController::class, 'update']);
+    Route::post('/leads/{id}/convert', [LeadAdminController::class, 'convert']);
 });
 
 // Admin routes (require admin role) with rate limiting
 Route::middleware([
     'auth:sanctum',
+    'tenant',
     \App\Http\Middleware\StaffAreaAccessMiddleware::class,
     \App\Http\Middleware\AnalystReadOnlyMiddleware::class,
     \App\Http\Middleware\InstructorContentScopeMiddleware::class,
@@ -255,6 +319,7 @@ Route::middleware([
         Route::get('/media/{mediaId}/file', [CourseBuilderController::class, 'serveMediaFile']);
 
         Route::post('/validate', [CourseBuilderController::class, 'validateCourse']);
+        Route::post('/quality-audit', [CourseBuilderController::class, 'qualityAudit']);
         Route::post('/submit-for-review', [CourseBuilderController::class, 'submitForReview']);
         Route::post('/publish', [CourseBuilderController::class, 'publish']);
         Route::post('/clone', [CourseBuilderController::class, 'clone']);
@@ -302,16 +367,26 @@ Route::middleware([
     Route::get('/tests', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'index']);
     Route::get('/tests/pending-reviews', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'getPendingReviews']);
     Route::post('/tests/pending-reviews/clear', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'clearPendingReviews']);
+    Route::get('/test-results/export', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'exportResultsCsv']);
+    Route::get('/tests/{id}/results/export', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'exportTestResultsCsv']);
     Route::get('/tests/{id}', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'show']);
+    Route::get('/tests/{id}/results', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'results']);
+    Route::get('/tests/{id}/statistics', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'statisticsSummary']);
+    Route::patch('/test-results/{id}/score', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'updateResultScore']);
+    Route::get('/test-results/{id}/breakdown', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'resultBreakdown']);
+    Route::get('/tests/{id}/question-analytics', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'questionAnalytics']);
     Route::post('/tests', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'store']);
     Route::put('/tests/{id}', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'update']);
     Route::delete('/tests/{id}', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'destroy']);
     Route::post('/tests/{id}/publish', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'publish']);
+    Route::post('/tests/{id}/promote-to-exam', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'promoteToStandaloneExam']);
     Route::post('/tests/{id}/selection-preview', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'selectionPreview']);
     Route::get('/tests/{id}/questions', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'getQuestions']);
     Route::post('/tests/{id}/questions', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'addQuestion']);
     Route::post('/tests/{id}/questions/reorder', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'reorderQuestions']);
     Route::get('/questions', [QuestionAdminController::class, 'index']);
+    Route::get('/question-catalog/maps', [QuestionCatalogAdminController::class, 'maps']);
+    Route::get('/question-catalog/maps/{mapId}/tests', [QuestionCatalogAdminController::class, 'tests']);
     Route::get('/questions/tag-suggestions', [QuestionAdminController::class, 'tagSuggestions']);
     Route::post('/questions/bulk-move', [QuestionAdminController::class, 'bulkMove']);
     Route::post('/questions/{id}/toggle-star', [QuestionAdminController::class, 'toggleStar']);
@@ -321,6 +396,11 @@ Route::middleware([
     Route::post('/questions/{id}/auto-tag', [QuestionAdminController::class, 'autoTagWithAi']);
     Route::post('/tests/{id}/link-to-course', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'linkToCourse']);
     Route::post('/tests/{id}/unlink-from-course', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'unlinkFromCourse']);
+    Route::post('/tests/ai/suggest-blueprint-from-course', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'suggestBlueprintFromCourse']);
+    Route::post('/tests/ai/preview-from-course', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'previewFromCourse']);
+    Route::post('/tests/ai/regenerate-question-from-course', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'regenerateQuestionFromCourse']);
+    Route::post('/tests/ai/create-from-course', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'createFromCourse']);
+    Route::post('/test-results/{id}/feedback-with-ai', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'suggestManualReviewFeedback']);
     
     // Question Banks Management
     Route::get('/question-banks', [\App\Http\Controllers\Api\Admin\QuestionBankAdminController::class, 'index']);
@@ -339,17 +419,27 @@ Route::middleware([
     Route::post('/question-banks/{id}/generate-from-text', [\App\Http\Controllers\Api\Admin\QuestionBankAdminController::class, 'generateFromText']);
     
     // Events Management
-    Route::get('/events', [EventAdminController::class, 'index']);
-    Route::get('/events/insights', [EventAdminController::class, 'insights']);
-    Route::get('/events/instructors/list', [EventAdminController::class, 'getInstructors']);
-    Route::post('/events/bulk-actions', [EventAdminController::class, 'bulkAction']);
-    Route::get('/events/{id}', [EventAdminController::class, 'show']);
-    Route::post('/events', [EventAdminController::class, 'store']);
-    Route::put('/events/{id}', [EventAdminController::class, 'update']);
-    Route::delete('/events/{id}', [EventAdminController::class, 'destroy']);
-    Route::post('/events/{id}/actions/{action}', [EventAdminController::class, 'quickAction']);
-    Route::put('/events/{id}/participants/{userId}/attendance', [EventAdminController::class, 'updateParticipantAttendance']);
+    Route::middleware('company_feature:events')->group(function () {
+        Route::get('/events', [EventAdminController::class, 'index']);
+        Route::get('/events/insights', [EventAdminController::class, 'insights']);
+        Route::get('/events/instructors/list', [EventAdminController::class, 'getInstructors']);
+        Route::post('/events/bulk-actions', [EventAdminController::class, 'bulkAction']);
+        Route::get('/events/{id}', [EventAdminController::class, 'show']);
+        Route::post('/events', [EventAdminController::class, 'store']);
+        Route::put('/events/{id}', [EventAdminController::class, 'update']);
+        Route::delete('/events/{id}', [EventAdminController::class, 'destroy']);
+        Route::post('/events/{id}/actions/{action}', [EventAdminController::class, 'quickAction']);
+        Route::put('/events/{id}/participants/{userId}/attendance', [EventAdminController::class, 'updateParticipantAttendance']);
+    });
     
+    // Organization: departments + teams
+    Route::get('/departments', [DepartmentAdminController::class, 'index']);
+    Route::get('/organization', [DepartmentAdminController::class, 'tree']);
+    Route::post('/departments', [DepartmentAdminController::class, 'store']);
+    Route::put('/departments/{id}', [DepartmentAdminController::class, 'update']);
+    Route::delete('/departments/{id}', [DepartmentAdminController::class, 'destroy']);
+    Route::post('/departments/reorder', [DepartmentAdminController::class, 'reorder']);
+
     // Teams Management
     Route::get('/teams', [TeamAdminController::class, 'index']);
     Route::post('/teams/reorder', [TeamAdminController::class, 'reorderTeams']);
@@ -362,15 +452,25 @@ Route::middleware([
     Route::post('/teams/{id}/courses', [TeamAdminController::class, 'attachCourses']);
     
     // Users Management
+    Route::get('/users/invitations', [UserInvitationAdminController::class, 'index']);
+    Route::post('/users/invitations', [UserInvitationAdminController::class, 'store']);
+    Route::post('/users/invitations/{id}/resend', [UserInvitationAdminController::class, 'resend']);
+    Route::post('/users/invitations/{id}/copy-link', [UserInvitationAdminController::class, 'copyLink']);
+    Route::delete('/users/invitations/{id}', [UserInvitationAdminController::class, 'destroy']);
     Route::get('/users', [UserAdminController::class, 'index']);
     Route::get('/users/{id}', [UserAdminController::class, 'show']);
     Route::post('/users', [UserAdminController::class, 'store']);
     Route::put('/users/{id}', [UserAdminController::class, 'update']);
+    Route::delete('/users/{id}/force', [UserAdminController::class, 'forceDestroy']);
     Route::delete('/users/{id}', [UserAdminController::class, 'destroy']);
     Route::post('/users/{id}/restore', [UserAdminController::class, 'restore']);
     Route::post('/users/{id}/approve', [UserAdminController::class, 'approve']);
     Route::post('/users/{id}/reject', [UserAdminController::class, 'reject']);
+    Route::post('/users/{id}/activate', [UserAdminController::class, 'activate']);
+    Route::post('/users/{id}/deactivate', [UserAdminController::class, 'deactivate']);
     Route::post('/users/{id}/courses', [UserAdminController::class, 'assignCourses']);
+    Route::post('/users/{id}/courses/{courseId}/complete', [UserAdminController::class, 'markCourseCompleted']);
+    Route::post('/users/{id}/tests/{testId}/extra-attempt', [UserAdminController::class, 'grantTestExtraAttempt']);
     Route::delete('/users/{id}/courses/{courseId}', [UserAdminController::class, 'removeCourse']);
     
     // Team Members Management
@@ -384,6 +484,8 @@ Route::middleware([
     
     // Statistici (doar admin)
     Route::get('/statistics/course-test-detail', [StatisticsAdminController::class, 'courseTestDetail']);
+    Route::get('/statistics/ai-export/datasets', [AIExportAdminController::class, 'datasets']);
+    Route::post('/statistics/ai-export', [AIExportAdminController::class, 'generate']);
 
     // Activity Logs
     Route::get('/activity-logs', [ActivityLogAdminController::class, 'index']);
@@ -395,6 +497,40 @@ Route::middleware([
     // Test Manual Review (Test model - standalone tests)
     Route::post('/test-results/{id}/manual-review', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'submitManualReview']);
     
+    // Company branding (tenant)
+    Route::get('/company/branding', [\App\Http\Controllers\Api\CompanyBrandingController::class, 'showMine']);
+    Route::put('/company/branding', [\App\Http\Controllers\Api\CompanyBrandingController::class, 'update']);
+    Route::post('/company/branding/logo', [\App\Http\Controllers\Api\CompanyBrandingController::class, 'uploadLogo']);
+    Route::delete('/company/branding/logo', [\App\Http\Controllers\Api\CompanyBrandingController::class, 'deleteLogo']);
+    Route::get('/company/entitlements', function (\Illuminate\Http\Request $request) {
+        $user = $request->user();
+        if (! $user?->company_id) {
+            return response()->json(['entitlements' => null]);
+        }
+        $company = \App\Models\Company::withoutGlobalScopes()->find($user->company_id);
+        if (! $company) {
+            return response()->json(['entitlements' => null]);
+        }
+
+        return response()->json([
+            'entitlements' => app(\App\Services\PlanEntitlementService::class)->entitlementsPayload($company),
+        ]);
+    });
+
+    // Platform console (legacy path — backoffice folosește /api/platform)
+    Route::middleware('super_admin')->prefix('platform')->group(function () {
+        Route::get('/overview', [CompanyAdminController::class, 'overview']);
+        Route::get('/plans', [CompanyAdminController::class, 'plans']);
+        Route::get('/companies', [CompanyAdminController::class, 'index']);
+        Route::post('/companies', [CompanyAdminController::class, 'store']);
+        Route::get('/companies/{id}', [CompanyAdminController::class, 'show']);
+        Route::put('/companies/{id}', [CompanyAdminController::class, 'update']);
+        Route::post('/companies/{id}/invite-owner', [CompanyAdminController::class, 'sendOwnerInvite']);
+        Route::get('/leads', [LeadAdminController::class, 'index']);
+        Route::put('/leads/{id}', [LeadAdminController::class, 'update']);
+        Route::post('/leads/{id}/convert', [LeadAdminController::class, 'convert']);
+    });
+
     // Admin Settings
     Route::get('/settings', [\App\Http\Controllers\Api\Admin\SettingsController::class, 'index']);
     Route::get('/settings/{key}', [\App\Http\Controllers\Api\Admin\SettingsController::class, 'show']);

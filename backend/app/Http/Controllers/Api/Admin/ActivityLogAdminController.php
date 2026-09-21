@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
+use App\Support\TenantContext;
 use Illuminate\Http\Request;
 
 class ActivityLogAdminController extends Controller
@@ -42,6 +43,7 @@ class ActivityLogAdminController extends Controller
         }
 
         $query = ActivityLog::with('user:id,name,email');
+        $this->constrainToTenant($query);
 
         if ($excludeSelf && ($viewer = $request->user())) {
             $query->where(function ($q) use ($viewer) {
@@ -112,7 +114,9 @@ class ActivityLogAdminController extends Controller
         $logs = $query->paginate($perPage);
 
         $actionsQuery = ActivityLog::query()->select('action')->distinct()->orderBy('action')->limit(400);
+        $this->constrainToTenant($actionsQuery);
         $modelTypesQuery = ActivityLog::query()->select('model_type')->whereNotNull('model_type')->where('model_type', '!=', '')->distinct()->orderBy('model_type')->limit(200);
+        $this->constrainToTenant($modelTypesQuery);
 
         return response()->json([
             'data' => $logs->items(),
@@ -141,6 +145,42 @@ class ActivityLogAdminController extends Controller
     public function show($id)
     {
         $log = ActivityLog::with('user:id,name,email')->findOrFail($id);
+        $this->assertLogVisible($log);
+
         return response()->json($log);
+    }
+
+    private function constrainToTenant($query): void
+    {
+        if (TenantContext::denyTenantData()) {
+            $query->whereRaw('1 = 0');
+
+            return;
+        }
+
+        if (! TenantContext::shouldScope()) {
+            return;
+        }
+
+        $companyId = TenantContext::companyId();
+        $query->whereHas('user', function ($q) use ($companyId) {
+            $q->where('company_id', $companyId);
+        });
+    }
+
+    private function assertLogVisible(ActivityLog $log): void
+    {
+        if (TenantContext::denyTenantData()) {
+            abort(404);
+        }
+
+        if (! TenantContext::shouldScope()) {
+            return;
+        }
+
+        $companyId = TenantContext::companyId();
+        if (! $log->user_id || (int) $log->user?->company_id !== (int) $companyId) {
+            abort(404);
+        }
     }
 }

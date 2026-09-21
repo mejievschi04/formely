@@ -30,18 +30,19 @@ import { logger } from '../utils/logger';
 import { estimatePdfContentPreviewHeight } from '../utils/pdfTextExtractor';
 import { getPdfPageCount, slicePdfFileByRange } from '../utils/pdfRangeUtils';
 import { toImageUrl } from '../utils/imageUrl';
+import { stripRichTextEditorChrome } from '../utils/richTextContent';
 import { adminService } from '../services/api';
 import './RichTextEditor.css';
 
 /** Paletă culori pentru text/fundal - o singură sursă pentru afișare corectă */
 const RTE_COLOR_PALETTE = [
-	'var(--formely-white)', '#ffcc00', '#ffd700', '#ffff00',
-	'#ffffff', '#cccccc', '#999999', '#666666', '#000000',
-	'#ff6b6b', '#ff5252', '#ff1744', '#d32f2f',
+	'#0891b2', '#22d3ee', '#0e7490', '#155e75',
+	'#ffffff', '#e2e8f0', '#94a3b8', '#475569', '#0f172a',
+	'#ef4444', '#f87171', '#dc2626', '#b91c1c',
 	'#4ade80', '#22c55e', '#10b981', '#059669',
-	'#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8',
-	'#a78bfa', '#8b5cf6', '#7c3aed', '#6d28d9',
-	'#f472b6', '#ec4899', '#db2777', '#be185d',
+	'#38bdf8', '#7dd3fc', '#0284c7', '#0369a1',
+	'#67e8f9', '#a5f3fc', '#cbd5e1', '#334155',
+	'#64748b', '#1e293b', '#e0f2fe', '#ecfeff',
 ];
 
 const RTE_CALLOUT_TYPES = [
@@ -116,6 +117,19 @@ const RteIcon = ({ name }) => {
 const RTE_PDF_IFRAME_PAD = 40;
 const RTE_IMAGE_MIN_WIDTH = 20;
 const RTE_IMAGE_MAX_WIDTH = 100;
+
+const IMAGE_SIZE_PRESETS = [
+	{ id: 'small', label: 'Mic', percent: 33 },
+	{ id: 'medium', label: 'Mediu', percent: 50 },
+	{ id: 'large', label: 'Mare', percent: 75 },
+	{ id: 'full', label: 'Complet', percent: 100 },
+];
+
+const IMAGE_ALIGN_OPTIONS = [
+	{ id: 'left', label: 'Stânga' },
+	{ id: 'center', label: 'Centru' },
+	{ id: 'right', label: 'Dreapta' },
+];
 
 function isLikelyPdfIframeSrc(src) {
 	if (!src || typeof src !== 'string') return false;
@@ -224,19 +238,245 @@ function readImageWidthPercent(img) {
 	return 100;
 }
 
-function applyImageLayout(img, widthPercent) {
+function readImageAlign(img) {
+	const align = img?.getAttribute('data-rte-image-align');
+	if (align === 'left' || align === 'right' || align === 'center') return align;
+	return 'center';
+}
+
+function snapImageWidthPercent(percent) {
+	const safe = Math.max(RTE_IMAGE_MIN_WIDTH, Math.min(RTE_IMAGE_MAX_WIDTH, Math.round(Number(percent) || 100)));
+	return IMAGE_SIZE_PRESETS.reduce((best, preset) => (
+		Math.abs(preset.percent - safe) < Math.abs(best.percent - safe) ? preset : best
+	)).percent;
+}
+
+function applyImageLayout(img, widthPercent, align = 'center') {
 	if (!img) return;
 	const safeWidth = Math.max(RTE_IMAGE_MIN_WIDTH, Math.min(RTE_IMAGE_MAX_WIDTH, Math.round(Number(widthPercent) || 100)));
+	const safeAlign = align === 'left' || align === 'right' ? align : 'center';
 	img.style.width = `${safeWidth}%`;
 	img.style.maxWidth = '100%';
 	img.style.height = 'auto';
 	img.style.display = 'block';
 	img.style.borderRadius = '8px';
-	img.style.margin = '1rem auto';
+	img.style.margin = safeAlign === 'left'
+		? '1rem 0'
+		: safeAlign === 'right'
+			? '1rem 0 1rem auto'
+			: '1rem auto';
 	img.setAttribute('data-rte-resizable-image', '1');
+	img.setAttribute('data-rte-image-align', safeAlign);
+	img.setAttribute('title', 'Click: selectează · Trage: mută · Dublu-click: setări');
+}
+
+function getCaretRangeFromPoint(clientX, clientY) {
+	if (typeof document.caretRangeFromPoint === 'function') {
+		return document.caretRangeFromPoint(clientX, clientY);
+	}
+	if (typeof document.caretPositionFromPoint === 'function') {
+		const pos = document.caretPositionFromPoint(clientX, clientY);
+		if (!pos) return null;
+		const range = document.createRange();
+		range.setStart(pos.offsetNode, pos.offset);
+		range.collapse(true);
+		return range;
+	}
+	return null;
+}
+
+function getImageMoveNode(img) {
+	return img.closest('[data-rte-image-wrap="1"]') || img;
+}
+
+function placeImageAtPoint(img, clientX, clientY, editor) {
+	if (!img || !editor) return false;
+
+	const range = getCaretRangeFromPoint(clientX, clientY);
+	if (!range) return false;
+
+	const container = range.commonAncestorContainer;
+	if (!(editor.contains(container) || container === editor)) return false;
+
+	const nodeToMove = getImageMoveNode(img);
+	if (nodeToMove.contains(container) || container === nodeToMove) return false;
+
+	range.collapse(true);
+	const parent = nodeToMove.parentNode;
+	if (!parent) return false;
+
+	parent.removeChild(nodeToMove);
+	range.insertNode(nodeToMove);
+
+	const selection = window.getSelection();
+	if (selection) {
+		const after = document.createRange();
+		after.setStartAfter(nodeToMove);
+		after.collapse(true);
+		selection.removeAllRanges();
+		selection.addRange(after);
+	}
+
+	return true;
+}
+
+function cleanPastedCssValue(value) {
+	return String(value || '')
+		.replace(/!important/gi, '')
+		.trim();
+}
+
+function isUsefulPastedColor(value) {
+	const color = cleanPastedCssValue(value);
+	return Boolean(color)
+		&& !/^(inherit|initial|revert|unset|currentcolor|transparent|windowtext|auto)$/i.test(color);
+}
+
+function getDeclarationColor(declarations, propertyName) {
+	if (!declarations || typeof document === 'undefined') return '';
+	const probe = document.createElement('span');
+	probe.style.cssText = declarations;
+	const parsed = cleanPastedCssValue(probe.style.getPropertyValue(propertyName));
+	if (isUsefulPastedColor(parsed)) return parsed;
+
+	const escapedProperty = propertyName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	const rawMatch = declarations.match(new RegExp(`(?:^|;)\\s*${escapedProperty}\\s*:\\s*([^;]+)`, 'i'));
+	const raw = cleanPastedCssValue(rawMatch?.[1]);
+	return isUsefulPastedColor(raw) ? raw : '';
+}
+
+function extractPastedStyleSheets(doc) {
+	return Array.from(doc.querySelectorAll('style'))
+		.map((styleTag) => styleTag.textContent || '')
+		.join('\n')
+		.replace(/<!--|-->/g, '')
+		.replace(/\/\*[\s\S]*?\*\//g, '');
+}
+
+function applyPastedCssColorRules(doc) {
+	const css = extractPastedStyleSheets(doc);
+	const rulePattern = /([^{}]+)\{([^{}]+)\}/g;
+	let match;
+
+	while ((match = rulePattern.exec(css)) !== null) {
+		const selectors = String(match[1] || '').split(',');
+		const declarations = String(match[2] || '');
+		const color = getDeclarationColor(declarations, 'color')
+			|| getDeclarationColor(declarations, '-webkit-text-fill-color');
+		const backgroundColor = getDeclarationColor(declarations, 'background-color')
+			|| getDeclarationColor(declarations, 'background');
+		if (!color && !backgroundColor) continue;
+
+		selectors.forEach((selector) => {
+			const trimmedSelector = selector.trim();
+			if (!trimmedSelector || trimmedSelector.startsWith('@') || /:(?!not\()/.test(trimmedSelector)) return;
+			try {
+				doc.body.querySelectorAll(trimmedSelector).forEach((node) => {
+					if (color && !isUsefulPastedColor(node.style.getPropertyValue('color'))) {
+						node.style.setProperty('color', color);
+					}
+					if (backgroundColor && !isUsefulPastedColor(node.style.getPropertyValue('background-color'))) {
+						node.style.setProperty('background-color', backgroundColor);
+					}
+				});
+			} catch {
+				// Clipboard CSS often contains browser/editor-only selectors. Invalid selectors can be ignored safely.
+			}
+		});
+	}
+}
+
+function collectPastedClassColorRules(doc) {
+	const rulesByClass = new Map();
+	const css = Array.from(doc.querySelectorAll('style'))
+		.map((styleTag) => styleTag.textContent || '')
+		.join('\n')
+		.replace(/<!--|-->/g, '')
+		.replace(/\/\*[\s\S]*?\*\//g, '');
+
+	const rulePattern = /([^{}]+)\{([^{}]+)\}/g;
+	let match;
+	while ((match = rulePattern.exec(css)) !== null) {
+		const selectors = String(match[1] || '').split(',');
+		const declarations = String(match[2] || '');
+		const color = getDeclarationColor(declarations, 'color');
+		const backgroundColor = getDeclarationColor(declarations, 'background-color')
+			|| getDeclarationColor(declarations, 'background');
+		if (!color && !backgroundColor) continue;
+
+		selectors.forEach((selector) => {
+			const trimmedSelector = selector.trim();
+			if (!/^(?:[a-z][\w-]*)?(?:\.[_a-zA-Z][\w-]*)+$/i.test(trimmedSelector)) return;
+			const classMatches = trimmedSelector.match(/\.[_a-zA-Z][\w-]*/g) || [];
+			classMatches.forEach((classMatch) => {
+				const className = classMatch.slice(1);
+				const current = rulesByClass.get(className) || {};
+				rulesByClass.set(className, {
+					color: current.color || color || '',
+					backgroundColor: current.backgroundColor || backgroundColor || '',
+				});
+			});
+		});
+	}
+
+	return rulesByClass;
+}
+
+function normalizePastedHtmlForRichText(html) {
+	if (!html || typeof DOMParser === 'undefined') return html;
+	const doc = new DOMParser().parseFromString(html, 'text/html');
+	applyPastedCssColorRules(doc);
+	const rulesByClass = collectPastedClassColorRules(doc);
+
+	Array.from(doc.body.querySelectorAll('*')).forEach((node) => {
+		const inlineColor = cleanPastedCssValue(node.style.getPropertyValue('color'))
+			|| cleanPastedCssValue(node.style.getPropertyValue('-webkit-text-fill-color'));
+		const inlineBackgroundColor = cleanPastedCssValue(node.style.getPropertyValue('background-color'));
+		const fontColor = node.tagName === 'FONT' ? cleanPastedCssValue(node.getAttribute('color')) : '';
+
+		let classColor = '';
+		let classBackgroundColor = '';
+		Array.from(node.classList || []).some((className) => {
+			const rule = rulesByClass.get(className);
+			if (!rule) return false;
+			if (!classColor && rule.color) classColor = rule.color;
+			if (!classBackgroundColor && rule.backgroundColor) classBackgroundColor = rule.backgroundColor;
+			return classColor && classBackgroundColor;
+		});
+
+		const nextColor = isUsefulPastedColor(inlineColor)
+			? inlineColor
+			: (isUsefulPastedColor(fontColor) ? fontColor : classColor);
+		const nextBackgroundColor = isUsefulPastedColor(inlineBackgroundColor)
+			? inlineBackgroundColor
+			: classBackgroundColor;
+
+		if (isUsefulPastedColor(nextColor)) {
+			node.style.setProperty('color', nextColor);
+		}
+		if (isUsefulPastedColor(nextBackgroundColor)) {
+			node.style.setProperty('background-color', nextBackgroundColor);
+		}
+	});
+
+	doc.querySelectorAll('style').forEach((styleTag) => styleTag.remove());
+	return doc.body.innerHTML || html;
 }
 
 /** 'crop' = marginea de sus (decupare); 'height' = înălțime vizibilă (margine jos / laterale) */
+function getClipboardImageFile(clipboardData) {
+	if (!clipboardData) return null;
+
+	const items = Array.from(clipboardData.items || []);
+	const imageItem = items.find((item) => item.kind === 'file' && item.type.startsWith('image/'));
+	if (imageItem) {
+		return imageItem.getAsFile();
+	}
+
+	const files = Array.from(clipboardData.files || []);
+	return files.find((file) => file.type.startsWith('image/')) || null;
+}
+
 function attachPdfLayoutPointerDrag(figure, kind, startClientY, onCommit) {
 	const { viewportHeight: startH, cropTop: startC } = readRtePdfFigureLayout(figure);
 	const ctx = { startY: startClientY, startH, startC };
@@ -261,10 +501,80 @@ function attachPdfLayoutPointerDrag(figure, kind, startClientY, onCommit) {
 	window.addEventListener('pointercancel', onUp);
 }
 
+const BASIC_FONT_OPTIONS = [
+	{ label: 'Arial', value: 'Arial, Helvetica, sans-serif' },
+	{ label: 'Verdana', value: 'Verdana, Geneva, sans-serif' },
+	{ label: 'Trebuchet MS', value: '"Trebuchet MS", Helvetica, sans-serif' },
+	{ label: 'Georgia', value: 'Georgia, "Times New Roman", serif' },
+	{ label: 'Times New Roman', value: '"Times New Roman", Times, serif' },
+	{ label: 'Courier New', value: '"Courier New", Courier, monospace' },
+	{ label: 'Comic Sans MS', value: '"Comic Sans MS", "Comic Sans", cursive' },
+];
+
+const BASIC_FONT_DEFAULT = BASIC_FONT_OPTIONS[0].value;
+
+function matchBasicFontOption(fontFamily) {
+	const families = String(fontFamily || '')
+		.toLowerCase()
+		.split(',')
+		.map((part) => part.trim().replace(/["']/g, ''));
+
+	for (const option of BASIC_FONT_OPTIONS) {
+		const primary = option.value.split(',')[0].trim().replace(/["']/g, '').toLowerCase();
+		if (families.some((name) => name === primary || name.includes(primary) || primary.includes(name))) {
+			return option.value;
+		}
+	}
+
+	if (families.some((name) => name.includes('courier') || name.includes('monospace'))) {
+		return BASIC_FONT_OPTIONS.find((option) => option.label === 'Courier New')?.value || BASIC_FONT_DEFAULT;
+	}
+	if (families.some((name) => name.includes('georgia') || name.includes('times') || name.includes('serif'))) {
+		return BASIC_FONT_OPTIONS.find((option) => option.label === 'Georgia')?.value || BASIC_FONT_DEFAULT;
+	}
+	if (families.some((name) => name.includes('comic'))) {
+		return BASIC_FONT_OPTIONS.find((option) => option.label === 'Comic Sans MS')?.value || BASIC_FONT_DEFAULT;
+	}
+	if (families.some((name) => name.includes('trebuchet'))) {
+		return BASIC_FONT_OPTIONS.find((option) => option.label === 'Trebuchet MS')?.value || BASIC_FONT_DEFAULT;
+	}
+	if (families.some((name) => name.includes('verdana'))) {
+		return BASIC_FONT_OPTIONS.find((option) => option.label === 'Verdana')?.value || BASIC_FONT_DEFAULT;
+	}
+
+	return BASIC_FONT_DEFAULT;
+}
+
+function getBasicFontAtSelection(editor) {
+	if (!editor) return BASIC_FONT_DEFAULT;
+
+	const selection = window.getSelection();
+	if (!selection || selection.rangeCount === 0) {
+		return matchBasicFontOption(window.getComputedStyle(editor).fontFamily);
+	}
+
+	let node = selection.anchorNode;
+	if (!node || !editor.contains(node)) {
+		return matchBasicFontOption(window.getComputedStyle(editor).fontFamily);
+	}
+
+	let element = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+	while (element && element !== editor) {
+		if (element.style?.fontFamily) {
+			return matchBasicFontOption(element.style.fontFamily);
+		}
+		element = element.parentElement;
+	}
+
+	const base = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+	return matchBasicFontOption(window.getComputedStyle(base || editor).fontFamily);
+}
+
 const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVariant = 'full', courseId = null, showSideTools = true }) => {
 	const { warning: showWarning, error: showError } = useToast();
 	const editorRef = useRef(null);
 	const savedSelectionRef = useRef(null);
+	const skipNextValueSyncRef = useRef(false);
 	const [isFocused, setIsFocused] = useState(false);
 	const [internalValue, setInternalValue] = useState(value || '');
 	const [showColorPicker, setShowColorPicker] = useState(false);
@@ -275,8 +585,8 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 	const [contextMenu, setContextMenu] = useState({ open: false, x: 0, y: 0 });
 	const [colorType, setColorType] = useState('foreground'); // 'foreground' or 'background'
 	const [linkUrl, setLinkUrl] = useState('');
-	const [selectedColor, setSelectedColor] = useState('var(--formely-white)');
-	const [selectedCalloutColor, setSelectedCalloutColor] = useState('var(--formely-white)');
+	const [selectedColor, setSelectedColor] = useState('#0891b2');
+	const [selectedCalloutColor, setSelectedCalloutColor] = useState('#0891b2');
 	const [selectedCalloutType, setSelectedCalloutType] = useState('soft');
 	const [pdfFile, setPdfFile] = useState(null);
 	const [pdfFileName, setPdfFileName] = useState('');
@@ -285,11 +595,19 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 	const [pdfEndPage, setPdfEndPage] = useState(1);
 	const [uploadingPdf, setUploadingPdf] = useState(false);
 	const [sideToolsExpanded, setSideToolsExpanded] = useState(false);
+	const [basicFontValue, setBasicFontValue] = useState(BASIC_FONT_DEFAULT);
 	const fileInputRef = useRef(null);
 	const imageInputRef = useRef(null);
 	const [pdfEditHost, setPdfEditHost] = useState(null);
-	const [imageEditHost, setImageEditHost] = useState(null);
-	const [imageWidthPercent, setImageWidthPercent] = useState(100);
+	const imageEditTargetRef = useRef(null);
+	const imageDragRef = useRef({ img: null, moved: false });
+	const selectedImageRef = useRef(null);
+	const [showImageEditModal, setShowImageEditModal] = useState(false);
+	const [imageEditDraft, setImageEditDraft] = useState({
+		widthPercent: 100,
+		align: 'center',
+		previewSrc: '',
+	});
 
 	const getApiFriendlyError = (error, fallbackMessage) => {
 		const data = error?.response?.data;
@@ -338,8 +656,9 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 	// Initialize editor content
 	useEffect(() => {
 		if (editorRef.current && !editorRef.current.innerHTML && value) {
-			editorRef.current.innerHTML = value;
-			setInternalValue(value);
+			const cleaned = stripRichTextEditorChrome(value);
+			editorRef.current.innerHTML = cleaned;
+			setInternalValue(cleaned);
 		}
 	}, []);
 
@@ -347,12 +666,17 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 	useEffect(() => {
 		if (!editorRef.current) return;
 		if (value === undefined) return;
-		const currentContent = editorRef.current.innerHTML;
-		if (currentContent !== value) {
-			editorRef.current.innerHTML = value || '';
-			setInternalValue(value || '');
+		if (showImageEditModal) return;
+		if (skipNextValueSyncRef.current) {
+			skipNextValueSyncRef.current = false;
+			return;
 		}
-	}, [value]);
+		const cleaned = stripRichTextEditorChrome(value || '');
+		if (editorRef.current.innerHTML !== cleaned) {
+			editorRef.current.innerHTML = cleaned;
+			setInternalValue(cleaned);
+		}
+	}, [value, showImageEditModal]);
 
 	const handleInput = (e) => {
 		const newValue = e.target.innerHTML;
@@ -365,7 +689,11 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 	const syncEditorFromDom = () => {
 		const ed = editorRef.current;
 		if (!ed) return;
-		const newValue = ed.innerHTML;
+		const rawValue = ed.innerHTML;
+		const newValue = stripRichTextEditorChrome(rawValue);
+		if (newValue !== rawValue) {
+			ed.innerHTML = newValue;
+		}
 		setInternalValue(newValue);
 		if (onChange) onChange(newValue);
 	};
@@ -375,11 +703,119 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 		setPdfEditHost(figure);
 	};
 
-	const openImageLayoutEditor = useCallback((img) => {
-		if (!img || !editorRef.current?.contains(img)) return;
-		setImageEditHost(img);
-		setImageWidthPercent(readImageWidthPercent(img));
+	const clearSelectedImage = useCallback(() => {
+		const prev = selectedImageRef.current;
+		if (prev?.isConnected) {
+			prev.classList.remove('rte-image--selected');
+		}
+		selectedImageRef.current = null;
 	}, []);
+
+	const selectImage = useCallback((img) => {
+		if (!img) return;
+		const prev = selectedImageRef.current;
+		if (prev && prev !== img && prev.isConnected) {
+			prev.classList.remove('rte-image--selected');
+		}
+		selectedImageRef.current = img;
+		img.classList.add('rte-image--selected');
+	}, []);
+
+	const openImageEditModal = useCallback((img) => {
+		if (!img || !editorRef.current?.contains(img)) return;
+		imageEditTargetRef.current = img;
+		setImageEditDraft({
+			widthPercent: snapImageWidthPercent(readImageWidthPercent(img)),
+			align: readImageAlign(img),
+			previewSrc: img.getAttribute('src') || '',
+		});
+		setShowImageEditModal(true);
+	}, []);
+
+	const applyImageEdit = () => {
+		const img = imageEditTargetRef.current;
+		if (img?.isConnected) {
+			applyImageLayout(img, imageEditDraft.widthPercent, imageEditDraft.align);
+			syncEditorFromDom();
+			skipNextValueSyncRef.current = true;
+			selectImage(img);
+		}
+		imageEditTargetRef.current = null;
+		setShowImageEditModal(false);
+	};
+
+	const cancelImageEdit = () => {
+		imageEditTargetRef.current = null;
+		setShowImageEditModal(false);
+		clearSelectedImage();
+	};
+
+	const deleteEditingImage = () => {
+		const img = imageEditTargetRef.current;
+		if (img?.isConnected) {
+			const wrap = img.closest('[data-rte-image-wrap="1"]');
+			(wrap || img).remove();
+			syncEditorFromDom();
+			skipNextValueSyncRef.current = true;
+		}
+		imageEditTargetRef.current = null;
+		clearSelectedImage();
+		setShowImageEditModal(false);
+	};
+
+	const handleEditorMouseDown = (e) => {
+		const editor = editorRef.current;
+		if (!editor || showImageEditModal || pdfEditHost || e.button !== 0) return;
+
+		const img = findEditableImage(e.target, editor);
+		if (!img) {
+			clearSelectedImage();
+			return;
+		}
+
+		selectImage(img);
+		e.preventDefault();
+
+		const dragState = {
+			img,
+			startX: e.clientX,
+			startY: e.clientY,
+			moved: false,
+		};
+		imageDragRef.current = dragState;
+
+		const onMove = (ev) => {
+			if (!imageDragRef.current.img) return;
+			const dx = Math.abs(ev.clientX - dragState.startX);
+			const dy = Math.abs(ev.clientY - dragState.startY);
+			if (dx > 5 || dy > 5) {
+				dragState.moved = true;
+				imageDragRef.current.moved = true;
+				dragState.img.classList.add('rte-image--dragging');
+			}
+		};
+
+		const onUp = (ev) => {
+			const activeImg = imageDragRef.current.img;
+			const didMove = imageDragRef.current.moved;
+			imageDragRef.current = { img: null, moved: false };
+
+			if (activeImg) {
+				activeImg.classList.remove('rte-image--dragging');
+				if (didMove && editor.contains(activeImg) && placeImageAtPoint(activeImg, ev.clientX, ev.clientY, editor)) {
+					syncEditorFromDom();
+				}
+			}
+
+			window.removeEventListener('pointermove', onMove);
+			window.removeEventListener('pointerup', onUp);
+			window.removeEventListener('pointercancel', onUp);
+		};
+
+		window.addEventListener('pointermove', onMove);
+		window.addEventListener('pointerup', onUp);
+		window.addEventListener('pointercancel', onUp);
+	};
 
 	const handleEditorDoubleClick = (e) => {
 		const editor = editorRef.current;
@@ -388,7 +824,10 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 		if (img) {
 			e.preventDefault();
 			e.stopPropagation();
-			openImageLayoutEditor(img);
+			imageDragRef.current = { img: null, moved: false };
+			img.classList.remove('rte-image--dragging');
+			selectImage(img);
+			openImageEditModal(img);
 			return;
 		}
 		const figure = findRtePdfFigure(e.target, editor);
@@ -408,10 +847,29 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 		setPdfEditHost(null);
 	}, [onChange]);
 
-	const closeImageInlineEdit = useCallback(() => {
-		syncEditorFromDom();
-		setImageEditHost(null);
-	}, []);
+	useEffect(() => {
+		if (!showImageEditModal) return undefined;
+		const onKey = (e) => {
+			if (e.key === 'Escape') {
+				e.preventDefault();
+				cancelImageEdit();
+			}
+		};
+		window.addEventListener('keydown', onKey, true);
+		return () => {
+			window.removeEventListener('keydown', onKey, true);
+		};
+	}, [showImageEditModal]);
+
+	useEffect(() => {
+		const onKey = (e) => {
+			if (e.key === 'Escape' && selectedImageRef.current && !showImageEditModal) {
+				clearSelectedImage();
+			}
+		};
+		window.addEventListener('keydown', onKey, true);
+		return () => window.removeEventListener('keydown', onKey, true);
+	}, [showImageEditModal, clearSelectedImage]);
 
 	useEffect(() => {
 		if (!pdfEditHost) return undefined;
@@ -434,48 +892,14 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 	}, [pdfEditHost, closePdfInlineEdit]);
 
 	useEffect(() => {
-		if (!imageEditHost) return undefined;
-		const onKey = (e) => {
-			if (e.key === 'Escape') {
-				e.preventDefault();
-				closeImageInlineEdit();
-			}
-		};
-		const onDown = (e) => {
-			if (imageEditHost.contains(e.target)) return;
-			closeImageInlineEdit();
-		};
-		window.addEventListener('keydown', onKey, true);
-		document.addEventListener('mousedown', onDown, true);
-		return () => {
-			window.removeEventListener('keydown', onKey, true);
-			document.removeEventListener('mousedown', onDown, true);
-		};
-	}, [imageEditHost, closeImageInlineEdit]);
-
-	useEffect(() => {
 		if (pdfEditHost && !pdfEditHost.isConnected) {
 			setPdfEditHost(null);
 		}
 	}, [value, pdfEditHost]);
 
-	useEffect(() => {
-		if (imageEditHost && !imageEditHost.isConnected) {
-			setImageEditHost(null);
-		}
-	}, [value, imageEditHost]);
-
-	const handlePaste = (e) => {
-		e.preventDefault();
+	const insertClipboardContent = (contentToInsert, insertAsHtml) => {
 		const editor = editorRef.current;
-		if (!editor) return;
-
-		const html = e.clipboardData.getData('text/html');
-		const text = e.clipboardData.getData('text/plain');
-		const contentToInsert = html || text;
-		if (!contentToInsert) return;
-
-		const insertAsHtml = Boolean(html);
+		if (!editor || !contentToInsert) return false;
 		const selection = window.getSelection();
 
 		const insertAtSelection = () => {
@@ -516,6 +940,60 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 		const newValue = editor.innerHTML;
 		setInternalValue(newValue);
 		if (onChange) onChange(newValue);
+		return true;
+	};
+
+	const insertImageFile = async (file) => {
+		if (!file) return;
+		if (!file.type.startsWith('image/')) {
+			showWarning('Te rugăm să selectezi un fișier imagine.');
+			return;
+		}
+
+		try {
+			if (courseId) {
+				const formData = new FormData();
+				formData.append('file', file);
+				formData.append('type', 'image');
+				const result = await adminService.builderUploadContentFile(courseId, formData);
+				restoreSelection();
+				insertImageByUrl(result?.url || '');
+			} else {
+				const dataUrl = await new Promise((resolve, reject) => {
+					const reader = new FileReader();
+					reader.onload = () => resolve(reader.result);
+					reader.onerror = reject;
+					reader.readAsDataURL(file);
+				});
+				restoreSelection();
+				insertImageByUrl(String(dataUrl || ''));
+			}
+		} catch (error) {
+			logger.error('Error uploading image for editor:', error);
+			showError(getApiFriendlyError(error, 'Eroare la încărcarea imaginii.'));
+		}
+	};
+
+	const handlePaste = async (e) => {
+		const clipboardData = e.clipboardData;
+		if (!clipboardData) return;
+
+		const imageFile = getClipboardImageFile(clipboardData);
+		if (imageFile) {
+			e.preventDefault();
+			saveSelection();
+			await insertImageFile(imageFile);
+			return;
+		}
+
+		e.preventDefault();
+		const html = clipboardData.getData('text/html');
+		const text = clipboardData.getData('text/plain');
+		const normalizedHtml = html ? normalizePastedHtmlForRichText(html) : '';
+		const contentToInsert = normalizedHtml || text;
+		if (!contentToInsert) return;
+
+		insertClipboardContent(contentToInsert, Boolean(normalizedHtml));
 	};
 
 	const saveSelection = () => {
@@ -526,6 +1004,16 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 		if (editor.contains(range.commonAncestorContainer) || editor === range.commonAncestorContainer) {
 			savedSelectionRef.current = range.cloneRange();
 		}
+	};
+
+	const refreshBasicFontFromSelection = () => {
+		if (toolbarVariant !== 'basic') return;
+		setBasicFontValue(getBasicFontAtSelection(editorRef.current));
+	};
+
+	const handleEditorSelectionChange = () => {
+		saveSelection();
+		refreshBasicFontFromSelection();
 	};
 
 	const restoreSelection = () => {
@@ -543,6 +1031,10 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 	const handleToolMouseDown = (e) => {
 		e.preventDefault();
 		restoreSelection();
+	};
+
+	const handleFontSelectPointerDown = () => {
+		handleEditorSelectionChange();
 	};
 
 	const execCommand = (command, value = null) => {
@@ -845,34 +1337,8 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 	const handleImageSelected = async (event) => {
 		const file = event.target.files?.[0];
 		if (!file) return;
-		if (!file.type.startsWith('image/')) {
-			showWarning('Te rugăm să selectezi un fișier imagine.');
-			event.target.value = '';
-			return;
-		}
-
-		try {
-			if (courseId) {
-				const formData = new FormData();
-				formData.append('file', file);
-				formData.append('type', 'image');
-				const result = await adminService.builderUploadContentFile(courseId, formData);
-				insertImageByUrl(result?.url || '');
-			} else {
-				const reader = new FileReader();
-				const dataUrl = await new Promise((resolve, reject) => {
-					reader.onload = () => resolve(reader.result);
-					reader.onerror = reject;
-					reader.readAsDataURL(file);
-				});
-				insertImageByUrl(String(dataUrl || ''));
-			}
-		} catch (error) {
-			logger.error('Error uploading image for editor:', error);
-			showError(getApiFriendlyError(error, 'Eroare la încărcarea imaginii.'));
-		} finally {
-			event.target.value = '';
-		}
+		await insertImageFile(file);
+		event.target.value = '';
 	};
 
 	const insertVideoFromPrompt = () => {
@@ -924,6 +1390,35 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 	};
 
 	const handlePastePlainFromClipboard = async () => {
+		try {
+			restoreSelection();
+			editorRef.current?.focus();
+
+			if (navigator.clipboard?.read) {
+				const items = await navigator.clipboard.read();
+				for (const item of items) {
+					if (!item.types?.includes('text/html')) continue;
+					const blob = await item.getType('text/html');
+					const html = await blob.text();
+					const normalizedHtml = normalizePastedHtmlForRichText(html);
+					if (insertClipboardContent(normalizedHtml, true)) {
+						return;
+					}
+				}
+
+				for (const item of items) {
+					if (!item.types?.includes('text/plain')) continue;
+					const blob = await item.getType('text/plain');
+					const text = await blob.text();
+					if (insertClipboardContent(text, false)) {
+						return;
+					}
+				}
+			}
+		} catch (error) {
+			logger.error('Clipboard rich read failed:', error);
+		}
+
 		const dispatchInputUpdate = () => {
 			if (editorRef.current) {
 				const event = new Event('input', { bubbles: true });
@@ -987,6 +1482,76 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 		</button>
 	);
 
+	const dispatchEditorInput = () => {
+		if (!editorRef.current) return;
+		const event = new Event('input', { bubbles: true });
+		editorRef.current.dispatchEvent(event);
+	};
+
+	const applyBasicFontFamily = (fontFamily) => {
+		restoreSelection();
+		const editor = editorRef.current;
+		const selection = window.getSelection();
+		if (!editor || !selection || selection.rangeCount === 0) {
+			editor?.focus();
+			return;
+		}
+
+		const range = selection.getRangeAt(0);
+		if (!editor.contains(range.commonAncestorContainer)) {
+			editor.focus();
+			return;
+		}
+
+		const wrapRangeWithSpan = (targetRange, span) => {
+			try {
+				targetRange.surroundContents(span);
+				return span;
+			} catch {
+				const fragment = targetRange.extractContents();
+				span.appendChild(fragment);
+				targetRange.insertNode(span);
+				return span;
+			}
+		};
+
+		if (!fontFamily) {
+			editor.focus();
+			return;
+		}
+
+		const span = document.createElement('span');
+		span.style.fontFamily = fontFamily;
+		span.setAttribute('data-rte-font', '1');
+
+		if (range.collapsed) {
+			range.insertNode(span);
+			const caret = document.createRange();
+			caret.setStart(span, 0);
+			caret.collapse(true);
+			selection.removeAllRanges();
+			selection.addRange(caret);
+			savedSelectionRef.current = caret.cloneRange();
+		} else {
+			const wrapped = wrapRangeWithSpan(range, span);
+			const after = document.createRange();
+			after.selectNodeContents(wrapped);
+			after.collapse(false);
+			selection.removeAllRanges();
+			selection.addRange(after);
+			savedSelectionRef.current = after.cloneRange();
+		}
+
+		editor.focus();
+		dispatchEditorInput();
+		setBasicFontValue(fontFamily);
+	};
+
+	const handleBasicFontChange = (fontFamily) => {
+		if (!fontFamily) return;
+		applyBasicFontFamily(fontFamily);
+	};
+
 	const sideToolGroups = [
 		[
 			{ key: 'h1', label: 'Titlu H1', icon: 'h1', onClick: () => execCommand('formatBlock', 'h1') },
@@ -1015,8 +1580,46 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 	];
 
 	return (
-		<div className="rte-container" style={style}>
-			{toolbarVariant !== 'side-only' && (
+		<div className={`rte-container ${toolbarVariant === 'basic' ? 'rte-container-basic' : ''}`} style={style}>
+			{toolbarVariant === 'basic' && (
+				<div className="rte-toolbar rte-toolbar-basic">
+					<div className="rte-toolbar-group rte-toolbar-group-labeled">
+						<span className="rte-toolbar-label">Font</span>
+						<select
+							className="rte-toolbar-select rte-toolbar-select-basic"
+							value={basicFontValue}
+							onMouseDown={handleFontSelectPointerDown}
+							onPointerDown={handleFontSelectPointerDown}
+							onChange={(e) => {
+								handleBasicFontChange(e.target.value);
+							}}
+							title="Fontul textului selectat sau de la cursor"
+						>
+							{BASIC_FONT_OPTIONS.map((option) => (
+								<option
+									key={option.value}
+									value={option.value}
+									style={{ fontFamily: option.value }}
+								>
+									{option.label}
+								</option>
+							))}
+						</select>
+					</div>
+					<div className="rte-toolbar-separator" />
+					<ToolbarButton onClick={() => execCommand('underline')} icon={<u>U</u>} title="Subliniat" />
+					<ToolbarButton
+						onClick={() => {
+							setColorType('foreground');
+							setShowColorPicker(true);
+						}}
+						icon="A"
+						title="Culoare text"
+						className="rte-toolbar-btn-color"
+					/>
+				</div>
+			)}
+			{toolbarVariant === 'full' && (
 				<div className="rte-toolbar">
 					<div className="rte-toolbar-group rte-toolbar-group-labeled">
 						<span className="rte-toolbar-label" id="rte-format-label">Stil:</span>
@@ -1130,22 +1733,38 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 					contentEditable
 					className={`rte-editor ${isFocused ? 'focused' : ''}`}
 					onInput={handleInput}
+					onMouseDown={handleEditorMouseDown}
 					onDoubleClick={handleEditorDoubleClick}
 					onPaste={handlePaste}
-					onContextMenu={(e) => {
+					onContextMenu={toolbarVariant === 'basic' ? undefined : (e) => {
 						e.preventDefault();
 						saveSelection();
-						setContextMenu({ open: true, x: e.clientX, y: e.clientY });
+						const imageTarget = findEditableImage(e.target, editorRef.current);
+						setContextMenu({
+							open: true,
+							x: e.clientX,
+							y: e.clientY,
+							imageTarget: imageTarget || null,
+						});
 					}}
-					onMouseUp={saveSelection}
+					onMouseUp={handleEditorSelectionChange}
 					onKeyDown={handleEditorKeyDown}
-					onKeyUp={saveSelection}
-					onFocus={() => setIsFocused(true)}
+					onKeyUp={handleEditorSelectionChange}
+					onFocus={() => {
+						setIsFocused(true);
+						refreshBasicFontFromSelection();
+					}}
 					onBlur={(e) => {
+						const container = e.currentTarget.closest('.rte-container');
+						const nextFocus = e.relatedTarget;
+						if (nextFocus && container?.contains(nextFocus)) {
+							handleEditorSelectionChange();
+							return;
+						}
+						saveSelection();
 						// Trimite ultima versiune din DOM înainte de flush la părinte (formatări din toolbar, paste etc. pot să nu fi declanșat încă onInput).
 						syncEditorFromDom();
 						setIsFocused(false);
-						saveSelection();
 						if (onBlur) onBlur(e);
 					}}
 					data-placeholder={placeholder}
@@ -1192,12 +1811,28 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 					style={{ top: contextMenu.y, left: contextMenu.x }}
 					onClick={(e) => e.stopPropagation()}
 				>
+					{contextMenu.imageTarget ? (
+						<>
+							<button
+								type="button"
+								onMouseDown={handleToolMouseDown}
+								onClick={() => {
+									openImageEditModal(contextMenu.imageTarget);
+									setContextMenu((prev) => ({ ...prev, open: false, imageTarget: null }));
+								}}
+							>
+								<span className="rte-context-menu-icon"><RteIcon name="image" /></span>
+								<span>Setări imagine</span>
+							</button>
+							<span className="rte-context-menu-separator" aria-hidden="true" />
+						</>
+					) : null}
 					<button
 						type="button"
 						onMouseDown={handleToolMouseDown}
 						onClick={() => {
 							imageInputRef.current?.click();
-							setContextMenu((prev) => ({ ...prev, open: false }));
+							setContextMenu((prev) => ({ ...prev, open: false, imageTarget: null }));
 						}}
 					>
 						<span className="rte-context-menu-icon"><RteIcon name="image" /></span>
@@ -1247,7 +1882,7 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 						}}
 					>
 						<span className="rte-context-menu-icon"><RteIcon name="paste" /></span>
-						<span>Lipește text simplu</span>
+						<span>Lipește</span>
 					</button>
 				</div>
 			)}
@@ -1323,20 +1958,15 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 				)
 				: null}
 
-			{imageEditHost
-				? createPortal(
-					<ImageInlineEditChrome
-						image={imageEditHost}
-						widthPercent={imageWidthPercent}
-						onWidthChange={(nextWidth) => {
-							setImageWidthPercent(nextWidth);
-							applyImageLayout(imageEditHost, nextWidth);
-							syncEditorFromDom();
-						}}
-					/>,
-					document.body,
-				)
-				: null}
+			{showImageEditModal && (
+				<ImageEditModal
+					draft={imageEditDraft}
+					onDraftChange={setImageEditDraft}
+					onApply={applyImageEdit}
+					onClose={cancelImageEdit}
+					onDelete={deleteEditingImage}
+				/>
+			)}
 		</div>
 	);
 };
@@ -1393,64 +2023,69 @@ const PdfInlineEditChrome = ({ figure, onSync }) => {
 	);
 };
 
-const IMAGE_PRESET_WIDTHS = [25, 40, 60, 80, 100];
-
-const ImageInlineEditChrome = ({ image, widthPercent, onWidthChange }) => {
-	const [position, setPosition] = useState(null);
-
-	useLayoutEffect(() => {
-		image.classList.add('rte-image--editing');
-		const updatePosition = () => {
-			if (!image.isConnected) return;
-			const rect = image.getBoundingClientRect();
-			setPosition({
-				top: Math.max(12, rect.top - 88),
-				left: rect.left + rect.width / 2,
-			});
-		};
-		updatePosition();
-		window.addEventListener('resize', updatePosition);
-		window.addEventListener('scroll', updatePosition, true);
-		return () => {
-			image.classList.remove('rte-image--editing');
-			window.removeEventListener('resize', updatePosition);
-			window.removeEventListener('scroll', updatePosition, true);
-		};
-	}, [image]);
-
-	if (!position) {
-		return null;
-	}
+const ImageEditModal = ({ draft, onDraftChange, onApply, onClose, onDelete }) => {
+	const previewAlignClass = `rte-image-preview-wrap--${draft.align}`;
 
 	return (
-		<div
-			className="rte-image-chrome"
-			contentEditable={false}
-			style={{ top: position.top, left: position.left }}
-		>
-			<div className="rte-image-toolbar" onMouseDown={(e) => e.preventDefault()}>
-				<span className="rte-image-toolbar__label">Dimensiune imagine</span>
-				<input
-					type="range"
-					min={RTE_IMAGE_MIN_WIDTH}
-					max={RTE_IMAGE_MAX_WIDTH}
-					step="5"
-					value={widthPercent}
-					onChange={(e) => onWidthChange(Number(e.target.value))}
-				/>
-				<span className="rte-image-toolbar__value">{Math.round(widthPercent)}%</span>
-			</div>
-			<div className="rte-image-presets" onMouseDown={(e) => e.preventDefault()}>
-				{IMAGE_PRESET_WIDTHS.map((preset) => (
-					<button
-						key={preset}
-						type="button"
-						className={`rte-image-preset${Math.round(widthPercent) === preset ? ' is-active' : ''}`}
-						onClick={() => onWidthChange(preset)}
-					>
-						{preset}%
-					</button>
-				))}
+		<div className="rte-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="rte-image-edit-title" onClick={onClose}>
+			<div className="rte-modal rte-image-edit-modal" onClick={(e) => e.stopPropagation()}>
+				<div className="rte-modal-header">
+					<h3 id="rte-image-edit-title" className="rte-modal-title">Setări imagine</h3>
+					<button type="button" onClick={onClose} className="rte-modal-close" aria-label="Închide">×</button>
+				</div>
+
+				<div className="rte-modal-body">
+					<div className={`rte-image-preview-wrap ${previewAlignClass}`}>
+						<img
+							src={draft.previewSrc}
+							alt="Previzualizare imagine"
+							className="rte-image-preview"
+							style={{ width: `${draft.widthPercent}%` }}
+						/>
+					</div>
+
+					<div className="rte-image-edit-section">
+						<p className="rte-image-edit-label">Dimensiune</p>
+						<div className="rte-image-size-options">
+							{IMAGE_SIZE_PRESETS.map((preset) => (
+								<button
+									key={preset.id}
+									type="button"
+									className={`rte-image-size-btn${draft.widthPercent === preset.percent ? ' is-active' : ''}`}
+									onClick={() => onDraftChange({ ...draft, widthPercent: preset.percent })}
+								>
+									{preset.label}
+								</button>
+							))}
+						</div>
+					</div>
+
+					<div className="rte-image-edit-section">
+						<p className="rte-image-edit-label">Aliniere</p>
+						<div className="rte-image-align-options">
+							{IMAGE_ALIGN_OPTIONS.map((option) => (
+								<button
+									key={option.id}
+									type="button"
+									className={`rte-image-align-btn${draft.align === option.id ? ' is-active' : ''}`}
+									onClick={() => onDraftChange({ ...draft, align: option.id })}
+								>
+									{option.label}
+								</button>
+							))}
+						</div>
+					</div>
+
+					<div className="rte-image-edit-actions">
+						<button type="button" className="rte-image-delete-btn" onClick={onDelete}>
+							Șterge imaginea
+						</button>
+						<div className="rte-image-edit-actions__main">
+							<button type="button" className="rte-image-modal-btn rte-image-modal-btn--secondary" onClick={onClose}>Anulează</button>
+							<button type="button" className="rte-image-modal-btn rte-image-modal-btn--primary" onClick={onApply}>Aplică</button>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	);
@@ -1458,10 +2093,10 @@ const ImageInlineEditChrome = ({ image, widthPercent, onWidthChange }) => {
 
 // Color Picker Modal Component
 const ColorPickerModal = ({ palette = RTE_COLOR_PALETTE, selectedColor, onColorSelect, onClose, type }) => {
-	const [customColor, setCustomColor] = useState(selectedColor || 'var(--formely-white)');
+	const [customColor, setCustomColor] = useState(selectedColor || '#0891b2');
 
 	useEffect(() => {
-		setCustomColor(selectedColor || 'var(--formely-white)');
+		setCustomColor(selectedColor || '#0891b2');
 	}, [selectedColor]);
 
 	const colors = Array.isArray(palette) && palette.length > 0 ? palette : RTE_COLOR_PALETTE;
@@ -1469,7 +2104,6 @@ const ColorPickerModal = ({ palette = RTE_COLOR_PALETTE, selectedColor, onColorS
 	return (
 		<div
 			className="rte-modal-overlay"
-			onClick={onClose}
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="rte-color-picker-title"
@@ -1537,7 +2171,7 @@ const ColorPickerModal = ({ palette = RTE_COLOR_PALETTE, selectedColor, onColorS
 								style={{
 									width: '60px',
 									height: '40px',
-									border: '1px solid rgba(var(--formely-white-rgb), 0.3)',
+									border: '1px solid rgba(8,145,178,0.3)',
 									borderRadius: '8px',
 									cursor: 'pointer',
 									background: 'transparent',
@@ -1547,12 +2181,12 @@ const ColorPickerModal = ({ palette = RTE_COLOR_PALETTE, selectedColor, onColorS
 								type="text"
 								value={customColor}
 								onChange={(e) => setCustomColor(e.target.value)}
-								placeholder="var(--formely-white)"
+								placeholder="#0891b2"
 								style={{
 									flex: 1,
 									padding: '0.75rem',
 									background: 'rgba(255,255,255,0.05)',
-									border: '1px solid rgba(var(--formely-white-rgb), 0.2)',
+									border: '1px solid rgba(8,145,178,0.2)',
 									borderRadius: '10px',
 									color: '#fff',
 									fontSize: '0.95rem',
@@ -1563,20 +2197,20 @@ const ColorPickerModal = ({ palette = RTE_COLOR_PALETTE, selectedColor, onColorS
 								onClick={() => onColorSelect(customColor)}
 								style={{
 									padding: '0.75rem 1.5rem',
-									background: 'linear-gradient(135deg, rgba(var(--formely-white-rgb), 0.2), rgba(var(--formely-white-rgb), 0.15))',
-									border: '1px solid rgba(var(--formely-white-rgb), 0.4)',
+									background: 'linear-gradient(135deg, rgba(8,145,178,0.2), rgba(8,145,178,0.15))',
+									border: '1px solid rgba(8,145,178,0.4)',
 									borderRadius: '10px',
-									color: 'var(--formely-white)',
+									color: '#0891b2',
 									fontWeight: 700,
 									cursor: 'pointer',
 									transition: 'all 0.3s ease',
 								}}
 								onMouseEnter={(e) => {
-									e.currentTarget.style.background = 'linear-gradient(135deg, rgba(var(--formely-white-rgb), 0.3), rgba(var(--formely-white-rgb), 0.2))';
+									e.currentTarget.style.background = 'linear-gradient(135deg, rgba(8,145,178,0.3), rgba(8,145,178,0.2))';
 									e.currentTarget.style.transform = 'translateY(-2px)';
 								}}
 								onMouseLeave={(e) => {
-									e.currentTarget.style.background = 'linear-gradient(135deg, rgba(var(--formely-white-rgb), 0.2), rgba(var(--formely-white-rgb), 0.15))';
+									e.currentTarget.style.background = 'linear-gradient(135deg, rgba(8,145,178,0.2), rgba(8,145,178,0.15))';
 									e.currentTarget.style.transform = 'translateY(0)';
 								}}
 							>
@@ -1602,7 +2236,6 @@ const CalloutDialogModal = ({
 }) => (
 	<div
 		className="rte-modal-overlay"
-		onClick={onClose}
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="rte-callout-title"
@@ -1763,7 +2396,6 @@ const LinkDialogModal = ({ linkUrl, setLinkUrl, onInsert, onClose }) => {
 	return (
 		<div
 			className="rte-modal-overlay"
-			onClick={onClose}
 		>
 			<div
 				className="rte-modal"
@@ -1772,7 +2404,7 @@ const LinkDialogModal = ({ linkUrl, setLinkUrl, onInsert, onClose }) => {
 				<div className="rte-modal-header">
 					<h3 style={{
 						margin: 0,
-						background: 'linear-gradient(135deg, #ffffff, var(--formely-white))',
+						background: 'linear-gradient(135deg, #ffffff, #0891b2)',
 						WebkitBackgroundClip: 'text',
 						WebkitTextFillColor: 'transparent',
 						backgroundClip: 'text',
@@ -1816,18 +2448,18 @@ const LinkDialogModal = ({ linkUrl, setLinkUrl, onInsert, onClose }) => {
 								width: '100%',
 								padding: '1rem',
 								background: 'rgba(255,255,255,0.05)',
-								border: '1px solid rgba(var(--formely-white-rgb), 0.2)',
+								border: '1px solid rgba(8,145,178,0.2)',
 								borderRadius: '12px',
 								color: '#fff',
 								fontSize: '1rem',
 								transition: 'all 0.3s ease',
 							}}
 							onFocus={(e) => {
-								e.target.style.borderColor = 'rgba(var(--formely-white-rgb), 0.4)';
+								e.target.style.borderColor = 'rgba(8,145,178,0.4)';
 								e.target.style.background = 'rgba(255,255,255,0.08)';
 							}}
 							onBlur={(e) => {
-								e.target.style.borderColor = 'rgba(var(--formely-white-rgb), 0.2)';
+								e.target.style.borderColor = 'rgba(8,145,178,0.2)';
 								e.target.style.background = 'rgba(255,255,255,0.05)';
 							}}
 						/>
@@ -1877,28 +2509,28 @@ const LinkDialogModal = ({ linkUrl, setLinkUrl, onInsert, onClose }) => {
 							style={{
 								padding: '0.75rem 1.5rem',
 								background: linkUrl.trim()
-									? 'linear-gradient(135deg, rgba(var(--formely-white-rgb), 0.2), rgba(var(--formely-white-rgb), 0.15))'
+									? 'linear-gradient(135deg, rgba(8,145,178,0.2), rgba(8,145,178,0.15))'
 									: 'rgba(255,255,255,0.05)',
 								border: linkUrl.trim()
-									? '1px solid rgba(var(--formely-white-rgb), 0.4)'
+									? '1px solid rgba(8,145,178,0.4)'
 									: '1px solid rgba(255,255,255,0.1)',
 								borderRadius: '10px',
-								color: linkUrl.trim() ? 'var(--formely-white)' : 'rgba(255,255,255,0.5)',
+								color: linkUrl.trim() ? '#0891b2' : 'rgba(255,255,255,0.5)',
 								fontWeight: 700,
 								cursor: linkUrl.trim() ? 'pointer' : 'not-allowed',
 								transition: 'all 0.3s ease',
 							}}
 							onMouseEnter={(e) => {
 								if (linkUrl.trim()) {
-									e.currentTarget.style.background = 'linear-gradient(135deg, rgba(var(--formely-white-rgb), 0.3), rgba(var(--formely-white-rgb), 0.2))';
-									e.currentTarget.style.borderColor = 'rgba(var(--formely-white-rgb), 0.5)';
+									e.currentTarget.style.background = 'linear-gradient(135deg, rgba(8,145,178,0.3), rgba(8,145,178,0.2))';
+									e.currentTarget.style.borderColor = 'rgba(8,145,178,0.5)';
 									e.currentTarget.style.transform = 'translateY(-2px)';
 								}
 							}}
 							onMouseLeave={(e) => {
 								if (linkUrl.trim()) {
-									e.currentTarget.style.background = 'linear-gradient(135deg, rgba(var(--formely-white-rgb), 0.2), rgba(var(--formely-white-rgb), 0.15))';
-									e.currentTarget.style.borderColor = 'rgba(var(--formely-white-rgb), 0.4)';
+									e.currentTarget.style.background = 'linear-gradient(135deg, rgba(8,145,178,0.2), rgba(8,145,178,0.15))';
+									e.currentTarget.style.borderColor = 'rgba(8,145,178,0.4)';
 									e.currentTarget.style.transform = 'translateY(0)';
 								}
 							}}
@@ -1934,7 +2566,6 @@ const PdfUploadModal = ({
 	return (
 		<div
 			className="rte-modal-overlay"
-			onClick={onClose}
 		>
 			<div
 				className="rte-modal"
@@ -1944,7 +2575,7 @@ const PdfUploadModal = ({
 				<div className="rte-modal-header">
 					<h3 style={{
 						margin: 0,
-						background: 'linear-gradient(135deg, #ffffff, var(--formely-white))',
+						background: 'linear-gradient(135deg, #ffffff, #0891b2)',
 						WebkitBackgroundClip: 'text',
 						WebkitTextFillColor: 'transparent',
 						backgroundClip: 'text',
@@ -1968,28 +2599,28 @@ const PdfUploadModal = ({
 						<div
 							onClick={onFileSelect}
 							style={{
-								border: '2px dashed rgba(var(--formely-white-rgb), 0.3)',
+								border: '2px dashed rgba(8,145,178,0.3)',
 								borderRadius: '16px',
 								padding: '3rem 2rem',
 								textAlign: 'center',
 								cursor: 'pointer',
 								transition: 'all 0.3s ease',
-								background: 'rgba(var(--formely-white-rgb), 0.05)',
+								background: 'rgba(8,145,178,0.05)',
 							}}
 							onMouseEnter={(e) => {
-								e.currentTarget.style.borderColor = 'rgba(var(--formely-white-rgb), 0.5)';
-								e.currentTarget.style.background = 'rgba(var(--formely-white-rgb), 0.1)';
+								e.currentTarget.style.borderColor = 'rgba(8,145,178,0.5)';
+								e.currentTarget.style.background = 'rgba(8,145,178,0.1)';
 								e.currentTarget.style.transform = 'translateY(-2px)';
 							}}
 							onMouseLeave={(e) => {
-								e.currentTarget.style.borderColor = 'rgba(var(--formely-white-rgb), 0.3)';
-								e.currentTarget.style.background = 'rgba(var(--formely-white-rgb), 0.05)';
+								e.currentTarget.style.borderColor = 'rgba(8,145,178,0.3)';
+								e.currentTarget.style.background = 'rgba(8,145,178,0.05)';
 								e.currentTarget.style.transform = 'translateY(0)';
 							}}
 						>
 							<div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📄</div>
 							<div style={{
-								color: 'var(--formely-white)',
+								color: '#0891b2',
 								fontSize: '1.1rem',
 								fontWeight: 700,
 								marginBottom: '0.5rem',
@@ -2006,8 +2637,8 @@ const PdfUploadModal = ({
 					) : (
 						<div style={{
 							padding: '1.5rem',
-							background: 'rgba(var(--formely-white-rgb), 0.1)',
-							border: '1px solid rgba(var(--formely-white-rgb), 0.3)',
+							background: 'rgba(8,145,178,0.1)',
+							border: '1px solid rgba(8,145,178,0.3)',
 							borderRadius: '16px',
 							marginBottom: '1.5rem',
 						}}>
@@ -2020,7 +2651,7 @@ const PdfUploadModal = ({
 								<div style={{ fontSize: '2.5rem' }}>📄</div>
 								<div style={{ flex: 1 }}>
 									<div style={{
-										color: 'var(--formely-white)',
+										color: '#0891b2',
 										fontWeight: 700,
 										marginBottom: '0.25rem',
 									}}>
@@ -2101,7 +2732,7 @@ const PdfUploadModal = ({
 										/>
 									</label>
 									<div style={{
-										color: isPartialRange ? 'var(--formely-white)' : 'rgba(255,255,255,0.55)',
+										color: isPartialRange ? '#0891b2' : 'rgba(255,255,255,0.55)',
 										fontSize: '0.8rem',
 										fontWeight: 600,
 									}}>
@@ -2148,13 +2779,13 @@ const PdfUploadModal = ({
 							style={{
 								padding: '0.75rem 1.5rem',
 								background: pdfFile && !uploadingPdf
-									? 'linear-gradient(135deg, rgba(var(--formely-white-rgb), 0.2), rgba(var(--formely-white-rgb), 0.15))'
+									? 'linear-gradient(135deg, rgba(8,145,178,0.2), rgba(8,145,178,0.15))'
 									: 'rgba(255,255,255,0.05)',
 								border: pdfFile && !uploadingPdf
-									? '1px solid rgba(var(--formely-white-rgb), 0.4)'
+									? '1px solid rgba(8,145,178,0.4)'
 									: '1px solid rgba(255,255,255,0.1)',
 								borderRadius: '10px',
-								color: pdfFile && !uploadingPdf ? 'var(--formely-white)' : 'rgba(255,255,255,0.5)',
+								color: pdfFile && !uploadingPdf ? '#0891b2' : 'rgba(255,255,255,0.5)',
 								fontWeight: 700,
 								cursor: pdfFile && !uploadingPdf ? 'pointer' : 'not-allowed',
 								transition: 'all 0.3s ease',
@@ -2164,15 +2795,15 @@ const PdfUploadModal = ({
 							}}
 							onMouseEnter={(e) => {
 								if (pdfFile && !uploadingPdf) {
-									e.currentTarget.style.background = 'linear-gradient(135deg, rgba(var(--formely-white-rgb), 0.3), rgba(var(--formely-white-rgb), 0.2))';
-									e.currentTarget.style.borderColor = 'rgba(var(--formely-white-rgb), 0.5)';
+									e.currentTarget.style.background = 'linear-gradient(135deg, rgba(8,145,178,0.3), rgba(8,145,178,0.2))';
+									e.currentTarget.style.borderColor = 'rgba(8,145,178,0.5)';
 									e.currentTarget.style.transform = 'translateY(-2px)';
 								}
 							}}
 							onMouseLeave={(e) => {
 								if (pdfFile && !uploadingPdf) {
-									e.currentTarget.style.background = 'linear-gradient(135deg, rgba(var(--formely-white-rgb), 0.2), rgba(var(--formely-white-rgb), 0.15))';
-									e.currentTarget.style.borderColor = 'rgba(var(--formely-white-rgb), 0.4)';
+									e.currentTarget.style.background = 'linear-gradient(135deg, rgba(8,145,178,0.2), rgba(8,145,178,0.15))';
+									e.currentTarget.style.borderColor = 'rgba(8,145,178,0.4)';
 									e.currentTarget.style.transform = 'translateY(0)';
 								}
 							}}

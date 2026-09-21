@@ -1,0 +1,1 @@
+import{j as o}from"./index-CBJSEqFs.js";import{n as s,s as a}from"./richTextContent-CAjnCwvb.js";function x({html:n,className:i,as:r="div",fallback:e=null}){const t=s(n);return a(t)?o.jsx(r,{className:i,dangerouslySetInnerHTML:{__html:t}}):e}export{x as R};

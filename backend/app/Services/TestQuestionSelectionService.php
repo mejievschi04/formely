@@ -78,7 +78,19 @@ class TestQuestionSelectionService
             ];
         }
 
-        if ($test->question_source !== 'bank') {
+        $questionIds = is_array($selection['question_ids'] ?? null)
+            ? array_values(array_unique(array_filter(array_map('intval', $selection['question_ids']))))
+            : [];
+        $folderIds = is_array($selection['folder_ids'] ?? null)
+            ? array_values(array_unique(array_filter(array_map('intval', $selection['folder_ids']))))
+            : [];
+        $countHint = max(0, (int) ($selection['count'] ?? 0));
+        $hasPoolRules = $test->question_source === 'bank'
+            || $questionIds !== []
+            || $folderIds !== []
+            || ((string) ($selection['mode'] ?? '') === 'random' && $countHint > 0);
+
+        if (! $hasPoolRules) {
             $direct = $all;
             if ($test->randomize_questions) {
                 $direct = $this->orderDeterministic($direct, $seedBase);
@@ -145,26 +157,18 @@ class TestQuestionSelectionService
         }
 
         $selected = $matched;
-        if ($includeStarred) {
-            // Starred questions are mandatory for everyone (same shared core).
-            $starred = $matched
-                ->filter(fn ($q) => (bool) $q->is_starred)
-                ->sortBy('id')
-                ->values();
-
-            $nonStarred = $matched
-                ->reject(fn ($q) => (bool) $q->is_starred)
-                ->values();
-
-            // count applies to variable (non-starred) questions.
-            if ($count > 0) {
-                $nonStarred = $nonStarred->take($count)->values();
+        if ($count > 0 && $count < $matched->count()) {
+            if ($includeStarred) {
+                $starred = $matched->filter(fn ($q) => (bool) $q->is_starred)->sortBy('id')->values();
+                $nonStarred = $matched->reject(fn ($q) => (bool) $q->is_starred)->values();
+                $selected = $starred->take($count)->values();
+                $remaining = $count - $selected->count();
+                if ($remaining > 0) {
+                    $selected = $selected->concat($nonStarred->take($remaining))->values();
+                }
+            } else {
+                $selected = $matched->take($count)->values();
             }
-
-            $selected = $starred->concat($nonStarred)->unique('id')->values();
-        } elseif ($count > 0) {
-            // Without starred inclusion, count is the total selected size.
-            $selected = $selected->take($count)->values();
         }
 
         return [
@@ -177,13 +181,22 @@ class TestQuestionSelectionService
 
     protected function basePool(Test $test, array $selection): Collection
     {
-        if ($test->question_source !== 'bank') {
-            return $test->questions()->orderBy('order')->get();
+        $questionIds = is_array($selection['question_ids'] ?? null)
+            ? array_values(array_unique(array_filter(array_map('intval', $selection['question_ids']))))
+            : [];
+        if ($questionIds !== []) {
+            $byId = Question::query()->whereIn('id', $questionIds)->get()->keyBy('id');
+
+            return collect($questionIds)->map(fn ($id) => $byId->get($id))->filter()->values();
         }
 
         $folderIds = is_array($selection['folder_ids'] ?? null)
             ? array_values(array_unique(array_filter(array_map('intval', $selection['folder_ids']))))
             : [];
+
+        if ($test->question_source !== 'bank' && $folderIds === []) {
+            return $test->questions()->orderBy('order')->get();
+        }
 
         if (!empty($folderIds)) {
             return Question::query()

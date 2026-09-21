@@ -17,6 +17,10 @@ class EnsureFrontendRequestsAreStateful extends SanctumEnsureFrontendRequestsAre
             return true;
         }
 
+        if (app()->environment(['local', 'development']) && self::requestFromPrivateLan($request)) {
+            return true;
+        }
+
         $host = strtolower((string) $request->getHttpHost());
         if ($host === '') {
             return false;
@@ -47,5 +51,32 @@ class EnsureFrontendRequestsAreStateful extends SanctumEnsureFrontendRequestsAre
         }
 
         return false;
+    }
+
+    protected static function requestFromPrivateLan($request): bool
+    {
+        foreach ([$request->headers->get('origin'), $request->headers->get('referer')] as $url) {
+            if (! is_string($url) || $url === '') {
+                continue;
+            }
+            $host = parse_url($url, PHP_URL_HOST);
+            if (is_string($host) && self::isPrivateLanIp($host)) {
+                return true;
+            }
+        }
+
+        $httpHost = (string) $request->getHttpHost();
+        $host = strtolower(Str::before($httpHost, ':'));
+
+        return $host !== '' && self::isPrivateLanIp($host);
+    }
+
+    protected static function isPrivateLanIp(string $host): bool
+    {
+        if (filter_var($host, FILTER_VALIDATE_IP) === false) {
+            return false;
+        }
+
+        return filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
     }
 }

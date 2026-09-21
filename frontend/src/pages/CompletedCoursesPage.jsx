@@ -61,9 +61,6 @@ const CompletedCoursesPage = () => {
 						<span>Înapoi la Profil</span>
 					</button>
 					<h1 className="admin-page-title">Cursuri Finalizate</h1>
-					<p className="admin-page-subtitle">
-						{coursesCompleted.length} curs{coursesCompleted.length !== 1 ? 'uri' : ''} completat{coursesCompleted.length !== 1 ? 'e' : ''}
-					</p>
 				</div>
 			</div>
 

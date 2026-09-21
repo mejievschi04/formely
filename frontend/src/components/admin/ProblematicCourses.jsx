@@ -36,7 +36,6 @@ const ProblematicCourses = ({ courses, loading }) => {
 		<div className="admin-section-card">
 			<div className="admin-section-header">
 				<h2>Cursuri Problemice</h2>
-				<p className="admin-section-subtitle">Cursuri care necesită atenție</p>
 			</div>
 			<div className="admin-courses-list">
 				{courses.map((course) => {

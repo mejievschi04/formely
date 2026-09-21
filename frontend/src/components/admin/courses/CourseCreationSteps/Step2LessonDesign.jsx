@@ -21,7 +21,7 @@ const Step2LessonDesign = ({ data, onUpdate }) => {
 	
 	const difficultyLevels = [
 		{ id: 'easy', label: 'Ușor', color: '#10b981' },
-		{ id: 'medium', label: 'Mediu', color: '#f59e0b' },
+		{ id: 'medium', label: 'Mediu', color: '#0e7490' },
 		{ id: 'hard', label: 'Dificil', color: '#ef4444' },
 	];
 	
@@ -48,9 +48,6 @@ const Step2LessonDesign = ({ data, onUpdate }) => {
 		<div className="step2-lesson-design">
 			<div className="step2-header">
 				<h3>Designul Lecțiilor</h3>
-				<p className="step2-description">
-					Configurează designul pedagogic pentru fiecare lecție. Conținutul efectiv se adaugă în pasul următor.
-				</p>
 			</div>
 			
 			<div className="step2-content">

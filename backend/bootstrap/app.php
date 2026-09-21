@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Sanctum SPA: sesiune + CSRF doar pentru request-uri stateful (fără StartSession duplicat).
         $middleware->api(prepend: [
+            \App\Http\Middleware\ResetTenantContext::class,
             \App\Http\Middleware\HandleCors::class,
             \App\Http\Middleware\SecurityHeaders::class,
             \App\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
@@ -26,6 +27,17 @@ return Application::configure(basePath: dirname(__DIR__))
         // $middleware->api(append: [
         //     \Illuminate\Session\Middleware\AuthenticateSession::class,
         // ]);
+        $middleware->validateCsrfTokens(except: [
+            'api/leads',
+            'leads',
+        ]);
+        $middleware->alias([
+            'tenant' => \App\Http\Middleware\SetTenantFromUser::class,
+            'tenant.optional' => \App\Http\Middleware\SetOptionalTenant::class,
+            'platform_admin' => \App\Http\Middleware\EnsureSuperAdmin::class,
+            'super_admin' => \App\Http\Middleware\EnsureSuperAdmin::class,
+            'company_feature' => \App\Http\Middleware\EnsureCompanyFeature::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Suppress Laravel 12 ServeCommand parsing errors (non-critical)

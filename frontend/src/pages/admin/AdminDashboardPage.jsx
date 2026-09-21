@@ -162,11 +162,11 @@ const AdminDashboardPage = () => {
 
 	const funnelBarData = useMemo(() => ([
 		{ key: 'enrolled', label: 'Înscrieri active', short: 'Înscrieri', count: readMetricValue(learningFunnel.enrolled), fill: '#64748b' },
-		{ key: 'started', label: 'Cu început înregistrat', short: 'Început', count: readMetricValue(learningFunnel.started), fill: '#3b82f6' },
-		{ key: 'p25', label: 'Progres ≥ 25%', short: '≥25%', count: readMetricValue(learningFunnel.progress_25), fill: '#8b5cf6' },
-		{ key: 'p50', label: 'Progres ≥ 50%', short: '≥50%', count: readMetricValue(learningFunnel.progress_50), fill: '#ca8a04' },
-		{ key: 'p75', label: 'Progres ≥ 75%', short: '≥75%', count: readMetricValue(learningFunnel.progress_75), fill: '#f97316' },
-		{ key: 'completed', label: 'Finalizat curs', short: 'Finalizat', count: readMetricValue(learningFunnel.completed), fill: '#22c55e' },
+		{ key: 'started', label: 'Cu început înregistrat', short: 'Început', count: readMetricValue(learningFunnel.started), fill: '#38bdf8' },
+		{ key: 'p25', label: 'Progres ≥ 25%', short: '≥25%', count: readMetricValue(learningFunnel.progress_25), fill: '#22d3ee' },
+		{ key: 'p50', label: 'Progres ≥ 50%', short: '≥50%', count: readMetricValue(learningFunnel.progress_50), fill: '#0891b2' },
+		{ key: 'p75', label: 'Progres ≥ 75%', short: '≥75%', count: readMetricValue(learningFunnel.progress_75), fill: '#0e7490' },
+		{ key: 'completed', label: 'Finalizat curs', short: 'Finalizat', count: readMetricValue(learningFunnel.completed), fill: '#10b981' },
 	]), [learningFunnel]);
 
 	const funnelTotal = useMemo(
@@ -264,7 +264,7 @@ const AdminDashboardPage = () => {
 				<div>
 					<h1 className="admin-dashboard-clean-title">Panou de control</h1>
 					<p className="admin-dashboard-clean-subtitle">
-						Metrici conectate la elevi, cursuri, teste și activitate reală din platformă.
+						Vedere de ansamblu Formely — elevi, cursuri, teste și activitate reală din platformă.
 					</p>
 					<p className="admin-dashboard-clean-meta">
 						Utilizatori noi: <strong>{formatNumber(newUsers)}</strong> · Cursuri în sistem: <strong>{formatNumber(totalCourses)}</strong>
@@ -279,12 +279,12 @@ const AdminDashboardPage = () => {
 				<article className="hero-stat">
 					<p className="hero-stat-label">Total elevi</p>
 					<p className="hero-stat-value">{formatNumber(totalUsersNum)}</p>
-					<p className="hero-stat-meta">Înregistrați în platformă</p>
+					<p className="hero-stat-meta">Înregistrați în Formely</p>
 				</article>
 				<article className="hero-stat">
 					<p className="hero-stat-label">Elevi activi</p>
 					<p className="hero-stat-value">{formatNumber(activeUsersNum)}</p>
-					<p className="hero-stat-meta">Activitate în {periodLabel.toLowerCase()}</p>
+					<p className="hero-stat-meta">Au deschis aplicația în {periodLabel.toLowerCase()}</p>
 				</article>
 				<article className="hero-stat hero-stat-green">
 					<p className="hero-stat-label">Cursuri publicate</p>

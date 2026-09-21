@@ -10,17 +10,26 @@ use App\Models\Test;
 use App\Models\User;
 use App\Models\CourseTest;
 use App\Models\ActivityLog;
+use App\Models\Scopes\CompanyScope;
 use App\Support\StudentActivityLogger;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 
 class CourseProgressService
 {
+    private const COURSE_COMPLETION_TEST_PERCENT = 80;
+
+    private const COURSE_TEST_PROGRESS_SHARE = 10.0;
+
     protected ProgressionEngine $progressionEngine;
 
-    public function __construct(ProgressionEngine $progressionEngine)
+    protected DripContentService $dripContentService;
+
+    public function __construct(ProgressionEngine $progressionEngine, DripContentService $dripContentService)
     {
         $this->progressionEngine = $progressionEngine;
+        $this->dripContentService = $dripContentService;
     }
 
     protected function getCourseRootLessons(Course $course)
@@ -58,75 +67,65 @@ class CourseProgressService
             return 0;
         }
 
-        $modules = $course->modules()->where('status', 'published')->get();
-        $rootLessons = $this->getCourseRootLessons($course);
-
-        if ($modules->isEmpty() && $rootLessons->isEmpty()) {
-            return 0;
-        }
-
-        $totalLessons = 0;
-        $completedLessons = 0;
-
-        foreach ($modules as $module) {
-            $moduleLessons = $module->lessons()->where('status', 'published')->get();
-            $totalLessons += $moduleLessons->count();
-
-            foreach ($moduleLessons as $lesson) {
-                // Check if lesson is completed (either marked as completed OR has 100% progress)
-                $lessonProgress = DB::table('lesson_progress')
-                    ->where('user_id', $user->id)
-                    ->where('lesson_id', $lesson->id)
-                    ->first();
-                
-                $isCompleted = false;
-                if ($lessonProgress) {
-                    $progressPercentage = $lessonProgress->progress_percentage ?? 0;
-                    // Lesson is completed if marked as completed OR has 100% progress
-                    $isCompleted = ($lessonProgress->completed ?? false) || ($progressPercentage >= 100);
-                }
-
-                if ($isCompleted) {
-                    $completedLessons++;
-                }
-            }
-        }
-
-        $totalLessons += $rootLessons->count();
-        foreach ($rootLessons as $lesson) {
-            if ($this->isLessonMarkedComplete($user, $lesson->id)) {
-                $completedLessons++;
-            }
-        }
-
-        if ($totalLessons === 0) {
-            return 0;
-        }
-
-        $progress = ($completedLessons / $totalLessons) * 100;
-        
-        // Check if course is complete (100% progress + all required tests passed)
-        $isComplete = false;
-        if ($progress >= 100) {
-            $isComplete = $this->isCourseComplete($user, $course);
-        }
-        
-        // Update course_user progress and completion status
-        // Cast to int - course_user.progress_percentage is integer
-        $updateData = [
-            'progress_percentage' => (int) round($progress, 0),
-            'updated_at' => Carbon::now(),
-        ];
-        
-        // If course is complete, mark it as completed
-        if ($isComplete) {
-            $updateData['completed_at'] = Carbon::now();
-        }
-        
-        DB::table('course_user')
+        $row = DB::table('course_user')
             ->where('user_id', $user->id)
             ->where('course_id', $course->id)
-            ->update($updateData);
+            ->first();
+
+        if ($row && Schema::hasColumn('course_user', 'manually_completed') && ($row->manually_completed ?? false)) {
+            return 100.0;
+        }
+
+        $lessonIds = Lesson::query()
+            ->where('status', 'published')
+            ->where(function ($query) use ($course) {
+                $query->where(function ($root) use ($course) {
+                    $root->where('course_id', $course->id)->whereNull('module_id');
+                })->orWhereHas('module', function ($module) use ($course) {
+                    $module->where('course_id', $course->id)->where('status', 'published');
+                });
+            })
+            ->pluck('id');
+        $totalLessons = $lessonIds->count();
+        $completedLessons = $lessonIds->filter(fn ($id) => $this->isLessonMarkedComplete($user, (int) $id))->count();
+
+        $publishedTests = $this->publishedAttachedTests($course);
+        $hasTests = $publishedTests->isNotEmpty();
+        $testsPassed = ! $hasTests || $this->allCourseTestsMeetCompletionThreshold($user, $course, $publishedTests);
+
+        if ($totalLessons === 0 && ! $hasTests) {
+            return 0;
+        }
+
+        $lessonPct = $totalLessons === 0 ? 100.0 : ($completedLessons / $totalLessons) * 100;
+        $progress = $hasTests
+            ? ($lessonPct * ((100 - self::COURSE_TEST_PROGRESS_SHARE) / 100)) + ($testsPassed ? self::COURSE_TEST_PROGRESS_SHARE : 0)
+            : $lessonPct;
+
+        $isComplete = $this->isCourseComplete($user, $course);
+        if ($isComplete) {
+            $progress = 100.0;
+        } elseif ($hasTests && ! $testsPassed) {
+            $progress = min($progress, 99.0);
+        }
+
+        $intPct = (int) round($progress, 0);
+        $shouldBeCompleted = $isComplete;
+        $hasCompletedAt = $row && ! empty($row->completed_at);
+        if ($row && (
+            (int) ($row->progress_percentage ?? 0) !== $intPct
+            || ($shouldBeCompleted && ! $hasCompletedAt)
+            || (! $shouldBeCompleted && $hasCompletedAt)
+        )) {
+            DB::table('course_user')
+                ->where('user_id', $user->id)
+                ->where('course_id', $course->id)
+                ->update([
+                    'progress_percentage' => $intPct,
+                    'completed_at' => $shouldBeCompleted ? ($row->completed_at ?: Carbon::now()) : null,
+                    'updated_at' => Carbon::now(),
+                ]);
+        }
 
         return round($progress, 2);
     }
@@ -271,6 +270,7 @@ class CourseProgressService
             ],
             [
                 'completed' => true,
+                'progress_percentage' => 100,
                 'completed_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
                 'created_at' => $existing ? $existing->created_at : Carbon::now(),
@@ -297,51 +297,9 @@ class CourseProgressService
         // Update lesson completion count
         $lesson->increment('completions_count');
 
-        // Recalculate module progress (real-time)
-        if ($lesson->module) {
-            $moduleProgress = $this->calculateModuleProgress($user, $lesson->module);
-            
-            // Check if module is now complete
-            $isModuleComplete = $this->isModuleComplete($user, $lesson->module);
-            
-            if ($isModuleComplete) {
-                // Module is complete, update course progress
-                if ($lesson->module->course) {
-                    $this->calculateCourseProgress($user, $lesson->module->course);
-                    
-                    // Check if course is now complete
-                    $isCourseComplete = $this->isCourseComplete($user, $lesson->module->course);
-                    
-                    if ($isCourseComplete) {
-                        $course = $lesson->module->course;
-                        $existingCourseProgress = DB::table('course_user')
-                            ->where('user_id', $user->id)
-                            ->where('course_id', $course->id)
-                            ->first();
-                        $wasCompleted = $existingCourseProgress && !empty($existingCourseProgress->completed_at);
-
-                        // Mark course as completed
-                        DB::table('course_user')
-                            ->where('user_id', $user->id)
-                            ->where('course_id', $course->id)
-                            ->update([
-                                'completed_at' => Carbon::now(),
-                                'updated_at' => Carbon::now(),
-                            ]);
-
-                        if (! $wasCompleted && StudentActivityLogger::logCompletedCourseIfFirst($user, $course)) {
-                            app(\App\Services\NotificationService::class)->notifyCourseCompleted($user, $course);
-                        }
-                    }
-                }
-            } else {
-                // Module not complete yet, but still update course progress
-                if ($lesson->module->course) {
-                    $this->calculateCourseProgress($user, $lesson->module->course);
-                }
-            }
-        } elseif ($lesson->course) {
-            $this->calculateCourseProgress($user, $lesson->course);
+        $course = $lesson->module?->course ?: $lesson->course;
+        if ($course) {
+            $this->syncStoredCourseCompletion($user, $course);
         }
 
         return true;
@@ -391,7 +349,7 @@ class CourseProgressService
                 $hasPassed = DB::table('test_results')
                     ->where('user_id', $user->id)
                     ->where('test_id', $test->id)
-                    ->where('percentage', '>=', $courseTest->passing_score)
+                    ->where('percentage', '>=', self::COURSE_COMPLETION_TEST_PERCENT)
                     ->where('passed', true)
                     ->exists();
 
@@ -416,7 +374,7 @@ class CourseProgressService
             $hasPassed = DB::table('test_results')
                 ->where('user_id', $user->id)
                 ->where('test_id', $test->id)
-                ->where('percentage', '>=', $courseTest->passing_score)
+                ->where('percentage', '>=', self::COURSE_COMPLETION_TEST_PERCENT)
                 ->where('passed', true)
                 ->exists();
 
@@ -437,96 +395,160 @@ class CourseProgressService
             return true;
         }
 
-        $modules = $course->modules()->where('status', 'published')->get();
-        $rootLessons = $this->getCourseRootLessons($course);
+        if (Schema::hasColumn('course_user', 'manually_completed')) {
+            $manual = DB::table('course_user')
+                ->where('user_id', $user->id)
+                ->where('course_id', $course->id)
+                ->value('manually_completed');
+            if ($manual) {
+                return true;
+            }
+        }
 
-        if ($modules->isEmpty() && $rootLessons->isEmpty()) {
+        $lessonIds = Lesson::query()
+            ->where('status', 'published')
+            ->where(function ($query) use ($course) {
+                $query->where(function ($root) use ($course) {
+                    $root->where('course_id', $course->id)->whereNull('module_id');
+                })->orWhereHas('module', function ($module) use ($course) {
+                    $module->where('course_id', $course->id)->where('status', 'published');
+                });
+            })
+            ->pluck('id');
+
+        $publishedTests = $this->publishedAttachedTests($course);
+        if ($lessonIds->isEmpty() && $publishedTests->isEmpty()) {
             return false;
         }
 
-        foreach ($rootLessons as $lesson) {
-            if (!$this->isLessonMarkedComplete($user, $lesson->id)) {
+        foreach ($lessonIds as $lessonId) {
+            if (! $this->isLessonMarkedComplete($user, (int) $lessonId)) {
                 return false;
             }
+        }
 
-            $lessonTests = CourseTest::where('course_id', $course->id)
-                ->where('scope', 'lesson')
-                ->where('scope_id', $lesson->id)
-                ->get();
+        return $this->allCourseTestsMeetCompletionThreshold($user, $course, $publishedTests);
+    }
 
-            foreach ($lessonTests as $courseTest) {
-                $test = $courseTest->test;
-                if (!$test || $test->status !== 'published') {
+    private function syncStoredCourseCompletion(User $user, Course $course): void
+    {
+        $existing = DB::table('course_user')
+            ->where('user_id', $user->id)
+            ->where('course_id', $course->id)
+            ->first();
+        $wasCompleted = $existing && ! empty($existing->completed_at);
+
+        $this->calculateCourseProgress($user, $course);
+
+        if ($this->isCourseComplete($user, $course) && ! $wasCompleted) {
+            if (StudentActivityLogger::logCompletedCourseIfFirst($user, $course)) {
+                app(NotificationService::class)->notifyCourseCompleted($user, $course);
+            }
+        }
+    }
+
+    private function publishedAttachedTests(Course $course)
+    {
+        $rows = CourseTest::where('course_id', $course->id)->orderBy('order')->get();
+        if ($rows->isEmpty()) {
+            return $rows;
+        }
+
+        $tests = Test::query()
+            ->withoutGlobalScope(CompanyScope::class)
+            ->whereIn('id', $rows->pluck('test_id')->filter()->all())
+            ->where('status', 'published')
+            ->get(['id', 'title', 'status', 'type'])
+            ->keyBy('id');
+
+        return $rows->filter(function ($row) use ($tests) {
+            $test = $tests->get((int) $row->test_id);
+            if (! $test) {
+                return false;
+            }
+            $row->setRelation('test', $test);
+
+            return true;
+        })->values();
+    }
+
+    /**
+     * @param  array<int>  $courseIds
+     * @return array<int, true>
+     */
+    public function courseIdsWithIncompletePublishedTests(User $user, array $courseIds): array
+    {
+        $courseIds = array_values(array_unique(array_map('intval', $courseIds)));
+        if ($courseIds === [] || $user->isLearningActivityExempt()) {
+            return [];
+        }
+
+        $rows = CourseTest::query()
+            ->whereIn('course_id', $courseIds)
+            ->get(['course_id', 'test_id']);
+        if ($rows->isEmpty()) {
+            return [];
+        }
+
+        $publishedIds = Test::query()
+            ->withoutGlobalScope(CompanyScope::class)
+            ->whereIn('id', $rows->pluck('test_id')->filter()->all())
+            ->where('status', 'published')
+            ->pluck('id')
+            ->all();
+        $publishedSet = array_fill_keys(array_map('intval', $publishedIds), true);
+
+        $incomplete = [];
+        foreach ($rows->groupBy('course_id') as $courseId => $courseRows) {
+            foreach ($courseRows as $row) {
+                $testId = (int) $row->test_id;
+                if ($testId <= 0 || ! isset($publishedSet[$testId])) {
                     continue;
                 }
-
-                $hasPassed = DB::table('test_results')
-                    ->where('user_id', $user->id)
-                    ->where('test_id', $test->id)
-                    ->where('percentage', '>=', $courseTest->passing_score)
-                    ->where('passed', true)
-                    ->exists();
-
-                if (!$hasPassed) {
-                    return false;
+                if (! $this->hasPassedCourseTestThreshold($user, $testId, (int) $courseId)) {
+                    $incomplete[(int) $courseId] = true;
+                    break;
                 }
             }
         }
 
-        // Check if all modules are complete
-        foreach ($modules as $module) {
-            if (!$this->isModuleComplete($user, $module)) {
-                return false;
-            }
-        }
+        return $incomplete;
+    }
 
-        // Р вЂњР вЂ№n special: testul final (type='final') trebuie promovat
-        $finalTests = CourseTest::where('course_id', $course->id)
-            ->whereHas('test', fn ($q) => $q->where('type', 'final'))
-            ->get();
-
-        foreach ($finalTests as $courseTest) {
-            $test = $courseTest->test;
-            if (!$test || $test->status !== 'published') {
+    private function allCourseTestsMeetCompletionThreshold(User $user, Course $course, $publishedTests = null): bool
+    {
+        $publishedTests ??= $this->publishedAttachedTests($course);
+        foreach ($publishedTests as $courseTest) {
+            $testId = (int) ($courseTest->test_id ?? $courseTest->test?->id);
+            if ($testId <= 0) {
                 continue;
             }
-
-            $hasPassed = DB::table('test_results')
-                ->where('user_id', $user->id)
-                ->where('test_id', $test->id)
-                ->where('percentage', '>=', $courseTest->passing_score)
-                ->where('passed', true)
-                ->exists();
-
-            if (!$hasPassed) {
-                return false;
-            }
-        }
-
-        // Check if all course-level tests are passed (cursul nu se finalizeazР вЂќРЎвЂњ fР вЂќРЎвЂњrР вЂќРЎвЂњ test)
-        $courseLevelTests = CourseTest::where('course_id', $course->id)
-            ->where('scope', 'course')
-            ->get();
-
-        foreach ($courseLevelTests as $courseTest) {
-            $test = $courseTest->test;
-            if (!$test || $test->status !== 'published') {
-                continue;
-            }
-
-            $hasPassed = DB::table('test_results')
-                ->where('user_id', $user->id)
-                ->where('test_id', $test->id)
-                ->where('percentage', '>=', $courseTest->passing_score)
-                ->where('passed', true)
-                ->exists();
-
-            if (!$hasPassed) {
+            if (! $this->hasPassedCourseTestThreshold($user, $testId, (int) $course->id)) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    private function hasPassedCourseTestThreshold(User $user, int $testId, int $courseId): bool
+    {
+        $query = DB::table('test_results')
+            ->where('user_id', $user->id)
+            ->where('test_id', $testId)
+            ->where(function ($q) use ($courseId) {
+                $q->where('course_id', $courseId)->orWhereNull('course_id');
+            })
+            ->where('percentage', '>=', self::COURSE_COMPLETION_TEST_PERCENT)
+            ->whereNotIn('status', ['in_progress', 'pending_review']);
+
+        if (Schema::hasColumn('test_results', 'needs_manual_review')) {
+            $query->where(function ($q) {
+                $q->whereNull('needs_manual_review')->orWhere('needs_manual_review', false);
+            });
+        }
+
+        return $query->exists();
     }
 
     /**
@@ -554,11 +576,114 @@ class CourseProgressService
      */
     public function canFinalizeCourse(User $user, Course $course): bool
     {
-        if ($this->isCourseComplete($user, $course)) {
-            return true;
+        return $this->isCourseComplete($user, $course);
+    }
+
+    /**
+     * Admin migration: mark a course completed for a learner without them retaking content.
+     */
+    public function markCourseCompletedByAdmin(User $user, Course $course): void
+    {
+        $lessonIds = Lesson::query()
+            ->where('status', 'published')
+            ->where(function ($query) use ($course) {
+                $query->where(function ($root) use ($course) {
+                    $root->where('course_id', $course->id)->whereNull('module_id');
+                })->orWhereHas('module', function ($module) use ($course) {
+                    $module->where('course_id', $course->id)->where('status', 'published');
+                });
+            })
+            ->pluck('id');
+
+        foreach ($lessonIds as $lessonId) {
+            DB::table('lesson_progress')->updateOrInsert(
+                [
+                    'user_id' => $user->id,
+                    'lesson_id' => $lessonId,
+                ],
+                [
+                    'completed' => true,
+                    'progress_percentage' => 100,
+                    'completed_at' => Carbon::now(),
+                    'updated_at' => Carbon::now(),
+                    'created_at' => Carbon::now(),
+                ]
+            );
         }
 
-        return $this->hasPassedLegacyCourseExam($user, $course);
+        $publishedTests = CourseTest::where('course_id', $course->id)
+            ->whereHas('test', fn ($q) => $q->where('status', 'published'))
+            ->with('test:id,status')
+            ->get();
+
+        foreach ($publishedTests as $courseTest) {
+            $testId = (int) ($courseTest->test_id ?? $courseTest->test?->id);
+            if ($testId <= 0) {
+                continue;
+            }
+            $existing = DB::table('test_results')
+                ->where('user_id', $user->id)
+                ->where('test_id', $testId)
+                ->where(function ($q) use ($course) {
+                    $q->where('course_id', $course->id)->orWhereNull('course_id');
+                })
+                ->orderByDesc('attempt_number')
+                ->first();
+            $payload = [
+                'percentage' => self::COURSE_COMPLETION_TEST_PERCENT,
+                'passed' => true,
+                'status' => 'completed',
+                'score' => self::COURSE_COMPLETION_TEST_PERCENT,
+                'max_score' => 100,
+                'completed_at' => Carbon::now(),
+                'updated_at' => Carbon::now(),
+            ];
+            if (Schema::hasColumn('test_results', 'needs_manual_review')) {
+                $payload['needs_manual_review'] = false;
+            }
+            if ($existing) {
+                DB::table('test_results')->where('id', $existing->id)->update($payload);
+            } else {
+                $insert = array_merge($payload, [
+                    'user_id' => $user->id,
+                    'test_id' => $testId,
+                    'course_id' => $course->id,
+                    'attempt_number' => 1,
+                    'created_at' => Carbon::now(),
+                ]);
+                if (Schema::hasColumn('test_results', 'answers')) {
+                    $insert['answers'] = json_encode([]);
+                }
+                DB::table('test_results')->insert($insert);
+            }
+        }
+
+        $courseUser = [
+            'enrolled' => true,
+            'progress_percentage' => 100,
+            'completed_at' => Carbon::now(),
+            'updated_at' => Carbon::now(),
+        ];
+        if (Schema::hasColumn('course_user', 'manually_completed')) {
+            $courseUser['manually_completed'] = true;
+        }
+
+        $exists = DB::table('course_user')
+            ->where('user_id', $user->id)
+            ->where('course_id', $course->id)
+            ->exists();
+        if ($exists) {
+            DB::table('course_user')
+                ->where('user_id', $user->id)
+                ->where('course_id', $course->id)
+                ->update($courseUser);
+        } else {
+            DB::table('course_user')->insert(array_merge($courseUser, [
+                'user_id' => $user->id,
+                'course_id' => $course->id,
+                'created_at' => Carbon::now(),
+            ]));
+        }
     }
 
     /**
@@ -615,38 +740,50 @@ class CourseProgressService
      */
     public function getNextIncompleteTest(User $user, Course $course): ?Test
     {
-        $rootLessons = $this->getCourseRootLessons($course);
-        foreach ($rootLessons as $lesson) {
-            if (!$this->isLessonUnlocked($user, $lesson, null, $course)) {
-                continue;
-            }
+        $published = $this->publishedAttachedTests($course);
+        if ($published->isEmpty()) {
+            return null;
+        }
 
-            if (!$this->isLessonMarkedComplete($user, $lesson->id)) {
-                continue;
-            }
-
-            $lessonTests = CourseTest::where('course_id', $course->id)
-                ->where('scope', 'lesson')
-                ->where('scope_id', $lesson->id)
-                ->orderBy('order')
-                ->get();
-
-            foreach ($lessonTests as $courseTest) {
+        $firstUnpassedUnlocked = function ($rows) use ($user, $course): ?Test {
+            foreach ($rows as $courseTest) {
                 $test = $courseTest->test;
-                if (!$test || $test->status !== 'published') {
+                if (! $test) {
                     continue;
                 }
-
-                $hasPassed = DB::table('test_results')
-                    ->where('user_id', $user->id)
-                    ->where('test_id', $test->id)
-                    ->where('percentage', '>=', $courseTest->passing_score)
-                    ->where('passed', true)
-                    ->exists();
-
-                if (!$hasPassed && $this->isTestUnlocked($user, $test, $course)) {
+                if ($this->hasPassedCourseTestThreshold($user, (int) $test->id, (int) $course->id)) {
+                    continue;
+                }
+                if ($this->isTestUnlocked($user, $test, $course)) {
                     return $test;
                 }
+            }
+
+            return null;
+        };
+
+        $byScope = $published->groupBy(function ($row) {
+            $sid = $row->scope_id;
+
+            return $row->scope . ':' . ($sid === null || $sid === '' ? 'null' : (string) $sid);
+        });
+
+        $rootLessons = $this->getCourseRootLessons($course);
+        $allRootLessonsComplete = true;
+        foreach ($rootLessons as $lesson) {
+            if (! $this->isLessonUnlocked($user, $lesson, null, $course)) {
+                $allRootLessonsComplete = false;
+                continue;
+            }
+
+            if (! $this->isLessonMarkedComplete($user, $lesson->id)) {
+                $allRootLessonsComplete = false;
+                continue;
+            }
+
+            $found = $firstUnpassedUnlocked($byScope->get('lesson:' . $lesson->id, collect()));
+            if ($found) {
+                return $found;
             }
         }
 
@@ -655,8 +792,11 @@ class CourseProgressService
             ->orderBy('order')
             ->get();
 
+        $allCourseLessonsComplete = $allRootLessonsComplete;
+
         foreach ($modules as $module) {
-            if (!$this->isModuleUnlocked($user, $module, $course)) {
+            if (! $this->isModuleUnlocked($user, $module, $course)) {
+                $allCourseLessonsComplete = false;
                 continue;
             }
 
@@ -665,91 +805,39 @@ class CourseProgressService
                 ->orderBy('order')
                 ->get();
 
+            $allModuleLessonsComplete = true;
             foreach ($lessons as $lesson) {
-                if (!$this->isLessonUnlocked($user, $lesson, $module, $course)) {
+                if (! $this->isLessonUnlocked($user, $lesson, $module, $course)) {
+                    $allModuleLessonsComplete = false;
+                    $allCourseLessonsComplete = false;
                     continue;
                 }
 
-                $lessonCompleted = DB::table('lesson_progress')
-                    ->where('user_id', $user->id)
-                    ->where('lesson_id', $lesson->id)
-                    ->where('completed', true)
-                    ->exists();
-
-                if (!$lessonCompleted) {
+                if (! $this->isLessonMarkedComplete($user, $lesson->id)) {
+                    $allModuleLessonsComplete = false;
+                    $allCourseLessonsComplete = false;
                     continue;
                 }
 
-                $lessonTests = CourseTest::where('course_id', $course->id)
-                    ->where('scope', 'lesson')
-                    ->where('scope_id', $lesson->id)
-                    ->orderBy('order')
-                    ->get();
-
-                foreach ($lessonTests as $courseTest) {
-                    $test = $courseTest->test;
-                    if (!$test || $test->status !== 'published') {
-                        continue;
-                    }
-
-                    $hasPassed = DB::table('test_results')
-                        ->where('user_id', $user->id)
-                        ->where('test_id', $test->id)
-                        ->where('percentage', '>=', $courseTest->passing_score)
-                        ->where('passed', true)
-                        ->exists();
-
-                    if (!$hasPassed && $this->isTestUnlocked($user, $test, $course)) {
-                        return $test;
-                    }
+                $found = $firstUnpassedUnlocked($byScope->get('lesson:' . $lesson->id, collect()));
+                if ($found) {
+                    return $found;
                 }
             }
 
-            $moduleTests = CourseTest::where('course_id', $course->id)
-                ->where('scope', 'module')
-                ->where('scope_id', $module->id)
-                ->orderBy('order')
-                ->get();
-
-            foreach ($moduleTests as $courseTest) {
-                $test = $courseTest->test;
-                if (!$test || $test->status !== 'published') {
-                    continue;
-                }
-
-                $hasPassed = DB::table('test_results')
-                    ->where('user_id', $user->id)
-                    ->where('test_id', $test->id)
-                    ->where('percentage', '>=', $courseTest->passing_score)
-                    ->where('passed', true)
-                    ->exists();
-
-                if (!$hasPassed && $this->isTestUnlocked($user, $test, $course)) {
-                    return $test;
+            if ($allModuleLessonsComplete) {
+                $found = $firstUnpassedUnlocked($byScope->get('module:' . $module->id, collect()));
+                if ($found) {
+                    return $found;
                 }
             }
         }
 
-        $courseTests = CourseTest::where('course_id', $course->id)
-            ->where('scope', 'course')
-            ->orderBy('order')
-            ->get();
-
-        foreach ($courseTests as $courseTest) {
-            $test = $courseTest->test;
-            if (!$test || $test->status !== 'published') {
-                continue;
-            }
-
-            $hasPassed = DB::table('test_results')
-                ->where('user_id', $user->id)
-                ->where('test_id', $test->id)
-                ->where('percentage', '>=', $courseTest->passing_score)
-                ->where('passed', true)
-                ->exists();
-
-            if (!$hasPassed && $this->isTestUnlocked($user, $test, $course)) {
-                return $test;
+        if ($allCourseLessonsComplete) {
+            $courseLevel = $published->filter(fn ($row) => $row->scope === 'course')->values();
+            $found = $firstUnpassedUnlocked($courseLevel);
+            if ($found) {
+                return $found;
             }
         }
 
@@ -765,21 +853,12 @@ class CourseProgressService
             return true;
         }
 
-        // Aliniat cu isCourseComplete: orice test publicat legat de curs trebuie promovat
-        foreach (CourseTest::where('course_id', $course->id)->with('test')->get() as $courseTest) {
-            $test = $courseTest->test;
-            if (!$test || $test->status !== 'published') {
+        foreach ($this->publishedAttachedTests($course) as $courseTest) {
+            $testId = (int) ($courseTest->test_id ?? $courseTest->test?->id);
+            if ($testId <= 0) {
                 continue;
             }
-
-            $hasPassed = DB::table('test_results')
-                ->where('user_id', $user->id)
-                ->where('test_id', $test->id)
-                ->where('percentage', '>=', $courseTest->passing_score)
-                ->where('passed', true)
-                ->exists();
-
-            if (!$hasPassed) {
+            if (! $this->hasPassedCourseTestThreshold($user, $testId, (int) $course->id)) {
                 return false;
             }
         }
@@ -819,17 +898,12 @@ class CourseProgressService
             'course_level_tests' => [],
         ];
 
-        $allCourseTests = CourseTest::where('course_id', $course->id)
-            ->with(['test' => function ($q) {
-                $q->select('id', 'title', 'status', 'type');
-            }])
-            ->orderBy('order')
-            ->get();
+        $allCourseTests = $this->publishedAttachedTests($course);
 
         $ctByKey = $allCourseTests->groupBy(function ($row) {
             $sid = $row->scope_id;
 
-            return $row->scope . ':' . ($sid === null ? 'null' : (string) $sid);
+            return $row->scope . ':' . ($sid === null || $sid === '' ? 'null' : (string) $sid);
         });
 
         $progressForCourseTest = function (CourseTest $courseTest) use ($user, $course): ?array {
@@ -838,12 +912,7 @@ class CourseProgressService
                 return null;
             }
 
-            $hasPassed = DB::table('test_results')
-                ->where('user_id', $user->id)
-                ->where('test_id', $test->id)
-                ->where('percentage', '>=', $courseTest->passing_score)
-                ->where('passed', true)
-                ->exists();
+            $hasPassed = $this->hasPassedCourseTestThreshold($user, (int) $test->id, (int) $course->id);
 
             return [
                 'test_id' => $test->id,
@@ -898,12 +967,15 @@ class CourseProgressService
                     ->values()
                     ->all();
 
+                $dripUnlockAt = $this->dripContentService->getLessonUnlockAtForUser($user, $course, $lesson);
+
                 $moduleData['lessons'][] = [
                     'id' => $lesson->id,
                     'unlocked' => $isLessonUnlocked,
                     'completed' => $isCompleted,
                     'progress_percentage' => $progressPercentage,
                     'is_preview' => $lesson->is_preview,
+                    'drip_unlock_at' => $dripUnlockAt?->toIso8601String(),
                     'tests' => $lessonTestsProgress,
                 ];
             }
@@ -918,6 +990,7 @@ class CourseProgressService
                 ->first();
 
             $progressPercentage = $lessonProgress->progress_percentage ?? 0;
+            $dripUnlockAt = $this->dripContentService->getLessonUnlockAtForUser($user, $course, $lesson);
 
             return [
                 'id' => $lesson->id,
@@ -925,6 +998,7 @@ class CourseProgressService
                 'completed' => ($lessonProgress->completed ?? false) || ($progressPercentage >= 100),
                 'progress_percentage' => $progressPercentage,
                 'is_preview' => $lesson->is_preview,
+                'drip_unlock_at' => $dripUnlockAt?->toIso8601String(),
                 'tests' => $ctByKey->get('lesson:' . $lesson->id, collect())
                     ->map($progressForCourseTest)
                     ->filter()
@@ -933,7 +1007,8 @@ class CourseProgressService
             ];
         })->values()->all();
 
-        $accessStatus['course_level_tests'] = $ctByKey->get('course:null', collect())
+        $accessStatus['course_level_tests'] = $allCourseTests
+            ->filter(fn ($row) => $row->scope === 'course')
             ->map($progressForCourseTest)
             ->filter()
             ->values()

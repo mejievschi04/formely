@@ -16,7 +16,8 @@ export default function AdminTestBuilderPage() {
   const { canMutateInAdminArea } = useAuth();
 
   const testId = Number(testIdParam);
-  const section = searchParams.get('section') === 'settings' ? 'settings' : 'questions';
+  const sectionParam = searchParams.get('section');
+  const section = sectionParam === 'settings' || sectionParam === 'statistics' ? sectionParam : 'questions';
 
   const editor = useInlineTestEditor({
     showToast,
@@ -31,7 +32,7 @@ export default function AdminTestBuilderPage() {
   }, []);
 
   const handleSectionChange = (nextSection) => {
-    const tab = nextSection === 'settings' ? 'settings' : 'questions';
+    const tab = nextSection === 'settings' || nextSection === 'statistics' ? nextSection : 'questions';
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.set('section', tab);
@@ -86,8 +87,8 @@ export default function AdminTestBuilderPage() {
               ...editor,
               setInlineTestTab: (tab) => handleSectionChange(tab),
             }}
-            subtitle="Configurezi întrebările și setările testului într-un workspace clar."
             showBuilderSummary
+            showStatisticsTab
           />
         </div>
       </div>

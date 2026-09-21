@@ -15,11 +15,14 @@ use App\Models\TestResult;
 use App\Models\Notification;
 use App\Models\ActivityLog;
 use App\Support\StudentSessionLogger;
+use App\Support\TenantContext;
+use App\Support\TenantQuery;
 use App\Models\Question;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\Request;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Carbon\Carbon;
 
 class DashboardAdminController extends Controller
@@ -89,19 +92,20 @@ class DashboardAdminController extends Controller
 
             // Statistici cursuri și teste (admin: toate; instructor: doar ale lui)
             $userCacheScope = (int)($request->user()?->id ?? 0);
+            $tenantCache = $this->dashboardTenantCacheSegment();
             $courseTestStats = Cache::remember(
-                "dashboard:course_test_stats:{$userCacheScope}",
+                "dashboard:course_test_stats:{$tenantCache}:{$userCacheScope}",
                 180,
                 fn () => $this->getCourseAndTestStats($request)
             );
             $telemetryKpis = Cache::remember(
-                'dashboard:telemetry_kpis:' . $dateRange['start']->format('YmdHi') . ':' . $dateRange['end']->format('YmdHi'),
+                'dashboard:telemetry_kpis:' . $tenantCache . ':' . $dateRange['start']->format('YmdHi') . ':' . $dateRange['end']->format('YmdHi'),
                 300,
                 fn () => $this->getTelemetryKpis($dateRange)
             );
 
             $hourlyActivity = Cache::remember(
-                'dashboard:hourly_sessions:v5:' . $dateRange['start']->format('YmdHi') . ':' . $dateRange['end']->format('YmdHi'),
+                'dashboard:hourly_sessions:v5:' . $tenantCache . ':' . $dateRange['start']->format('YmdHi') . ':' . $dateRange['end']->format('YmdHi'),
                 300,
                 fn () => $this->getHourlyActivity($dateRange)
             );
@@ -134,6 +138,41 @@ class DashboardAdminController extends Controller
                 'message' => config('app.debug') ? $e->getMessage() : 'An error occurred',
             ], 500);
         }
+    }
+
+    private function dashboardTenantCacheSegment(): string
+    {
+        if (TenantContext::denyTenantData()) {
+            return 'deny';
+        }
+
+        $id = TenantContext::companyId();
+
+        return $id ? 'c' . $id : 'none';
+    }
+
+    private function applyTenantUsersConstraint(QueryBuilder $query, string $usersAlias = 'users'): QueryBuilder
+    {
+        return TenantQuery::constrainUsers($query, $usersAlias);
+    }
+
+    private function courseUserQuery(): QueryBuilder
+    {
+        return $this->applyTenantUsersConstraint(
+            DB::table('course_user')->join('users', 'users.id', '=', 'course_user.user_id')
+        );
+    }
+
+    private function usersTableQuery(): QueryBuilder
+    {
+        return $this->applyTenantUsersConstraint(DB::table('users'), 'users');
+    }
+
+    private function lessonProgressQuery(): QueryBuilder
+    {
+        return $this->applyTenantUsersConstraint(
+            DB::table('lesson_progress')->join('users', 'users.id', '=', 'lesson_progress.user_id')
+        );
     }
 
     private function getDateRange($period)
@@ -232,6 +271,42 @@ class DashboardAdminController extends Controller
         return Schema::hasTable('payments');
     }
 
+    /**
+     * Elevi care au deschis aplicația în interval (login sau session_started).
+     */
+    private function activeStudentIds(Carbon $start, Carbon $end)
+    {
+        $studentIds = $this->usersTableQuery()->where('role', 'student')->pluck('users.id');
+        if ($studentIds->isEmpty()) {
+            return collect();
+        }
+
+        $ids = $this->usersTableQuery()
+            ->where('role', 'student')
+            ->whereBetween('users.last_login_at', [$start, $end])
+            ->pluck('users.id');
+
+        if (Schema::hasTable('activity_logs')) {
+            $ids = $ids->merge(
+                ActivityLog::query()
+                    ->where('action', StudentSessionLogger::ACTION)
+                    ->whereBetween('created_at', [$start, $end])
+                    ->whereIn('user_id', $studentIds)
+                    ->distinct()
+                    ->pluck('user_id')
+            );
+        }
+
+        return $ids->map(fn ($id) => (int) $id)->filter()->unique()->values();
+    }
+
+    private function countActiveStudents(Carbon $start, Carbon $end, ?int $totalStudents = null): int
+    {
+        $active = $this->activeStudentIds($start, $end)->count();
+
+        return $totalStudents === null ? $active : min($active, $totalStudents);
+    }
+
     private function calculateKPIs($dateRange)
     {
         $start = $dateRange['start'];
@@ -282,61 +357,13 @@ class DashboardAdminController extends Controller
             ? round((($newCoursesCurrentPeriod - $newCoursesPreviousPeriod) / $newCoursesPreviousPeriod) * 100, 1)
             : ($newCoursesCurrentPeriod > 0 ? 100 : 0);
 
-        // Active Users (users who had activity in period - enrolled, completed, or updated courses)
-        // Get users with course activity in period
-        $usersWithCourseActivity = collect([]);
-        if (Schema::hasTable('course_user')) {
-            $query = DB::table('course_user')
-                ->join('users', 'users.id', '=', 'course_user.user_id')
-                ->where('users.role', 'student')
-                ->where(function ($q) use ($start, $end) {
-                    $q->whereBetween('course_user.updated_at', [$start, $end]);
-                    if (Schema::hasColumn('course_user', 'enrolled_at')) {
-                        $q->orWhereBetween('course_user.enrolled_at', [$start, $end]);
-                    }
-                    if (Schema::hasColumn('course_user', 'completed_at')) {
-                        $q->orWhereBetween('course_user.completed_at', [$start, $end]);
-                    }
-                });
-
-            $usersWithCourseActivity = $query->distinct()->pluck('course_user.user_id');
-        }
-
-        $usersUpdated = DB::table('users')
-            ->where('role', 'student')
-            ->whereBetween('users.updated_at', [$start, $end])
-            ->pluck('id');
-        
-        $activeUsers = $usersWithCourseActivity->merge($usersUpdated)->unique()->count();
+        $activeUsers = $this->countActiveStudents($start, $end, $totalUsers);
 
         // Previous period for trend
         $prevStart = $start->copy()->subDays($start->diffInDays($end));
         $prevEnd = $start;
-        
-        $prevUsersWithCourseActivity = collect([]);
-        if (Schema::hasTable('course_user')) {
-            $query = DB::table('course_user')
-                ->join('users', 'users.id', '=', 'course_user.user_id')
-                ->where('users.role', 'student')
-                ->where(function ($q) use ($prevStart, $prevEnd) {
-                    $q->whereBetween('course_user.updated_at', [$prevStart, $prevEnd]);
-                    if (Schema::hasColumn('course_user', 'enrolled_at')) {
-                        $q->orWhereBetween('course_user.enrolled_at', [$prevStart, $prevEnd]);
-                    }
-                    if (Schema::hasColumn('course_user', 'completed_at')) {
-                        $q->orWhereBetween('course_user.completed_at', [$prevStart, $prevEnd]);
-                    }
-                });
 
-            $prevUsersWithCourseActivity = $query->distinct()->pluck('course_user.user_id');
-        }
-
-        $prevUsersUpdated = DB::table('users')
-            ->where('role', 'student')
-            ->whereBetween('users.updated_at', [$prevStart, $prevEnd])
-            ->pluck('id');
-        
-        $previousActiveUsers = $prevUsersWithCourseActivity->merge($prevUsersUpdated)->unique()->count();
+        $previousActiveUsers = $this->countActiveStudents($prevStart, $prevEnd, $totalUsers);
 
         $activeUsersTrend = $previousActiveUsers > 0 
             ? round((($activeUsers - $previousActiveUsers) / $previousActiveUsers) * 100, 1)
@@ -346,15 +373,13 @@ class DashboardAdminController extends Controller
         $newEnrollments = 0;
         $previousEnrollments = 0;
         if (Schema::hasTable('course_user') && Schema::hasColumn('course_user', 'enrolled_at')) {
-            $newEnrollments = DB::table('course_user')
-                ->join('users', 'users.id', '=', 'course_user.user_id')
+            $newEnrollments = $this->courseUserQuery()
                 ->where('users.role', 'student')
                 ->whereBetween('course_user.enrolled_at', [$start, $end])
                 ->where('course_user.enrolled', true)
                 ->count();
 
-            $previousEnrollments = DB::table('course_user')
-                ->join('users', 'users.id', '=', 'course_user.user_id')
+            $previousEnrollments = $this->courseUserQuery()
                 ->where('users.role', 'student')
                 ->whereBetween('course_user.enrolled_at', [
                     $start->copy()->subDays($start->diffInDays($end)),
@@ -372,15 +397,13 @@ class DashboardAdminController extends Controller
         $totalEnrollments = 0;
         $completedEnrollments = 0;
         if (Schema::hasTable('course_user')) {
-            $totalEnrollments = DB::table('course_user')
-                ->join('users', 'users.id', '=', 'course_user.user_id')
+            $totalEnrollments = $this->courseUserQuery()
                 ->where('users.role', 'student')
                 ->where('course_user.enrolled', true)
                 ->count();
 
             if (Schema::hasColumn('course_user', 'completed_at')) {
-                $completedEnrollments = DB::table('course_user')
-                    ->join('users', 'users.id', '=', 'course_user.user_id')
+                $completedEnrollments = $this->courseUserQuery()
                     ->where('users.role', 'student')
                     ->where('course_user.enrolled', true)
                     ->whereNotNull('course_user.completed_at')
@@ -397,15 +420,13 @@ class DashboardAdminController extends Controller
         if (Schema::hasTable('course_user')) {
             $prevEnd = $start->copy()->subDay();
             $prevStart = $prevEnd->copy()->subDays($start->diffInDays($end));
-            $previousTotal = DB::table('course_user')
-                ->join('users', 'users.id', '=', 'course_user.user_id')
+            $previousTotal = $this->courseUserQuery()
                 ->where('users.role', 'student')
                 ->where('course_user.enrolled', true)
                 ->where('course_user.enrolled_at', '<=', $prevEnd)
                 ->count();
             if (Schema::hasColumn('course_user', 'completed_at')) {
-                $previousCompleted = DB::table('course_user')
-                    ->join('users', 'users.id', '=', 'course_user.user_id')
+                $previousCompleted = $this->courseUserQuery()
                     ->where('users.role', 'student')
                     ->where('course_user.enrolled', true)
                     ->where('course_user.enrolled_at', '<=', $prevEnd)
@@ -419,8 +440,7 @@ class DashboardAdminController extends Controller
         // Engagement (average progress across all enrollments)
         $avgProgress = 0;
         if (Schema::hasTable('course_user') && Schema::hasColumn('course_user', 'progress_percentage')) {
-            $avgProgress = DB::table('course_user')
-                ->join('users', 'users.id', '=', 'course_user.user_id')
+            $avgProgress = $this->courseUserQuery()
                 ->where('users.role', 'student')
                 ->where('course_user.enrolled', true)
                 ->whereNotNull('course_user.progress_percentage')
@@ -431,8 +451,7 @@ class DashboardAdminController extends Controller
         $previousAvgProgress = 0;
         if (Schema::hasTable('course_user') && Schema::hasColumn('course_user', 'progress_percentage')) {
             $prevEnd = $start->copy()->subDay();
-            $previousAvgProgress = DB::table('course_user')
-                ->join('users', 'users.id', '=', 'course_user.user_id')
+            $previousAvgProgress = $this->courseUserQuery()
                 ->where('users.role', 'student')
                 ->where('course_user.enrolled', true)
                 ->where('course_user.updated_at', '<', $start)
@@ -465,8 +484,7 @@ class DashboardAdminController extends Controller
 
         $avgMinutesAllTime = 0.0;
         if (Schema::hasTable('lesson_progress')) {
-            $avgSecondsAllTime = (float) DB::table('lesson_progress')
-                ->join('users', 'users.id', '=', 'lesson_progress.user_id')
+            $avgSecondsAllTime = (float) $this->lessonProgressQuery()
                 ->where('users.role', 'student')
                 ->where('lesson_progress.time_spent_seconds', '>', 0)
                 ->avg('lesson_progress.time_spent_seconds');
@@ -587,8 +605,7 @@ class DashboardAdminController extends Controller
 
             $enrollments = 0;
             if (Schema::hasTable('course_user') && Schema::hasColumn('course_user', 'enrolled_at')) {
-                $enrollments = DB::table('course_user')
-                    ->join('users', 'users.id', '=', 'course_user.user_id')
+                $enrollments = $this->courseUserQuery()
                     ->where('users.role', 'student')
                     ->whereBetween('course_user.enrolled_at', [$date, $dateEnd])
                     ->where('course_user.enrolled', true)
@@ -605,8 +622,7 @@ class DashboardAdminController extends Controller
 
             $usersWithCourseActivity = collect([]);
             if (Schema::hasTable('course_user')) {
-                $activityQuery = DB::table('course_user')
-                    ->join('users', 'users.id', '=', 'course_user.user_id')
+                $activityQuery = $this->courseUserQuery()
                     ->where('users.role', 'student')
                     ->where(function ($q) use ($date, $dateEnd) {
                         $q->whereBetween('course_user.updated_at', [$date, $dateEnd]);
@@ -621,7 +637,7 @@ class DashboardAdminController extends Controller
                 $usersWithCourseActivity = $activityQuery->distinct()->pluck('course_user.user_id');
             }
 
-            $usersUpdated = DB::table('users')
+            $usersUpdated = $this->usersTableQuery()
                 ->where('role', 'student')
                 ->whereBetween('users.updated_at', [$date, $dateEnd])
                 ->pluck('id');
@@ -728,8 +744,7 @@ class DashboardAdminController extends Controller
                 
                 if (Schema::hasTable('course_user')) {
                     if (Schema::hasColumn('course_user', 'enrolled_at')) {
-                        $enrollments = DB::table('course_user')
-                            ->join('users', 'users.id', '=', 'course_user.user_id')
+                        $enrollments = $this->courseUserQuery()
                             ->where('users.role', 'student')
                             ->where('course_user.course_id', $course->id)
                             ->where('course_user.enrolled', true)
@@ -738,16 +753,14 @@ class DashboardAdminController extends Controller
                     }
 
                     if (Schema::hasColumn('course_user', 'completed_at')) {
-                        $completed = DB::table('course_user')
-                            ->join('users', 'users.id', '=', 'course_user.user_id')
+                        $completed = $this->courseUserQuery()
                             ->where('users.role', 'student')
                             ->where('course_user.course_id', $course->id)
                             ->whereNotNull('course_user.completed_at')
                             ->count();
                     }
 
-                    $totalEnrollments = DB::table('course_user')
-                        ->join('users', 'users.id', '=', 'course_user.user_id')
+                    $totalEnrollments = $this->courseUserQuery()
                         ->where('users.role', 'student')
                         ->where('course_user.course_id', $course->id)
                         ->where('course_user.enrolled', true)
@@ -785,16 +798,14 @@ class DashboardAdminController extends Controller
                 $started = 0;
                 
                 if (Schema::hasTable('course_user')) {
-                    $enrollments = DB::table('course_user')
-                        ->join('users', 'users.id', '=', 'course_user.user_id')
+                    $enrollments = $this->courseUserQuery()
                         ->where('users.role', 'student')
                         ->where('course_user.course_id', $course->id)
                         ->where('course_user.enrolled', true)
                         ->count();
 
                     if (Schema::hasColumn('course_user', 'completed_at')) {
-                        $completed = DB::table('course_user')
-                            ->join('users', 'users.id', '=', 'course_user.user_id')
+                        $completed = $this->courseUserQuery()
                             ->where('users.role', 'student')
                             ->where('course_user.course_id', $course->id)
                             ->whereNotNull('course_user.completed_at')
@@ -802,8 +813,7 @@ class DashboardAdminController extends Controller
                     }
 
                     if (Schema::hasColumn('course_user', 'started_at')) {
-                        $started = DB::table('course_user')
-                            ->join('users', 'users.id', '=', 'course_user.user_id')
+                        $started = $this->courseUserQuery()
                             ->where('users.role', 'student')
                             ->where('course_user.course_id', $course->id)
                             ->whereNotNull('course_user.started_at')
@@ -853,16 +863,14 @@ class DashboardAdminController extends Controller
             ];
         }
 
-        $enrolled = DB::table('course_user')
-            ->join('users', 'users.id', '=', 'course_user.user_id')
+        $enrolled = $this->courseUserQuery()
             ->where('users.role', 'student')
             ->where('course_user.enrolled', true)
             ->count();
 
         $started = 0;
         if (Schema::hasColumn('course_user', 'started_at')) {
-            $started = DB::table('course_user')
-                ->join('users', 'users.id', '=', 'course_user.user_id')
+            $started = $this->courseUserQuery()
                 ->where('users.role', 'student')
                 ->where('course_user.enrolled', true)
                 ->whereNotNull('course_user.started_at')
@@ -873,8 +881,7 @@ class DashboardAdminController extends Controller
 
         $completed = 0;
         if (Schema::hasColumn('course_user', 'completed_at')) {
-            $completed = DB::table('course_user')
-                ->join('users', 'users.id', '=', 'course_user.user_id')
+            $completed = $this->courseUserQuery()
                 ->where('users.role', 'student')
                 ->where('course_user.enrolled', true)
                 ->whereNotNull('course_user.completed_at')
@@ -885,20 +892,17 @@ class DashboardAdminController extends Controller
         $progress50 = 0;
         $progress75 = 0;
         if (Schema::hasColumn('course_user', 'progress_percentage')) {
-            $progress25 = DB::table('course_user')
-                ->join('users', 'users.id', '=', 'course_user.user_id')
+            $progress25 = $this->courseUserQuery()
                 ->where('users.role', 'student')
                 ->where('course_user.enrolled', true)
                 ->where('course_user.progress_percentage', '>=', 25)
                 ->count();
-            $progress50 = DB::table('course_user')
-                ->join('users', 'users.id', '=', 'course_user.user_id')
+            $progress50 = $this->courseUserQuery()
                 ->where('users.role', 'student')
                 ->where('course_user.enrolled', true)
                 ->where('course_user.progress_percentage', '>=', 50)
                 ->count();
-            $progress75 = DB::table('course_user')
-                ->join('users', 'users.id', '=', 'course_user.user_id')
+            $progress75 = $this->courseUserQuery()
                 ->where('users.role', 'student')
                 ->where('course_user.enrolled', true)
                 ->where('course_user.progress_percentage', '>=', 75)
@@ -946,8 +950,7 @@ class DashboardAdminController extends Controller
         }
 
         if (Schema::hasColumn('course_user', 'progress_percentage')) {
-            $highlyEngagedIds = DB::table('course_user')
-                ->join('users', 'course_user.user_id', '=', 'users.id')
+            $highlyEngagedIds = $this->courseUserQuery()
                 ->where('users.role', 'student')
                 ->where('course_user.enrolled', true)
                 ->where('course_user.progress_percentage', '>=', 50)
@@ -959,22 +962,19 @@ class DashboardAdminController extends Controller
         $cutoff14d = now()->subDays(14);
         $cutoff30d = now()->subDays(30);
 
-        $usersActive14d = DB::table('course_user')
-            ->join('users', 'users.id', '=', 'course_user.user_id')
+        $usersActive14d = $this->courseUserQuery()
             ->where('users.role', 'student')
             ->where('course_user.updated_at', '>=', $cutoff14d)
             ->distinct()
             ->pluck('course_user.user_id');
 
-        $usersActive30d = DB::table('course_user')
-            ->join('users', 'users.id', '=', 'course_user.user_id')
+        $usersActive30d = $this->courseUserQuery()
             ->where('users.role', 'student')
             ->where('course_user.updated_at', '>=', $cutoff30d)
             ->distinct()
             ->pluck('course_user.user_id');
 
-        $enrolledStartedNotCompleted = DB::table('course_user')
-            ->join('users', 'course_user.user_id', '=', 'users.id')
+        $enrolledStartedNotCompleted = $this->courseUserQuery()
             ->where('users.role', 'student')
             ->where('course_user.enrolled', true)
             ->where(function ($q) {
@@ -1006,8 +1006,7 @@ class DashboardAdminController extends Controller
         // Recent course completions
         $recentCompletions = collect([]);
         if (Schema::hasTable('course_user') && Schema::hasColumn('course_user', 'completed_at')) {
-            $recentCompletions = DB::table('course_user')
-                ->join('users', 'users.id', '=', 'course_user.user_id')
+            $recentCompletions = $this->courseUserQuery()
                 ->where('users.role', 'student')
                 ->whereNotNull('course_user.completed_at')
                 ->orderBy('course_user.completed_at', 'desc')
@@ -1300,16 +1299,14 @@ class DashboardAdminController extends Controller
         if (!Schema::hasTable('course_user') || !Schema::hasColumn('course_user', 'completed_at')) {
             return 50;
         }
-        $total = DB::table('course_user')
-            ->join('users', 'users.id', '=', 'course_user.user_id')
+        $total = $this->courseUserQuery()
             ->where('users.role', 'student')
             ->where('course_user.enrolled', true)
             ->count();
         if ($total === 0) {
             return 50;
         }
-        $completed = DB::table('course_user')
-            ->join('users', 'users.id', '=', 'course_user.user_id')
+        $completed = $this->courseUserQuery()
             ->where('users.role', 'student')
             ->where('course_user.enrolled', true)
             ->whereNotNull('course_user.completed_at')
@@ -1342,8 +1339,7 @@ class DashboardAdminController extends Controller
                     return false;
                 }
                 
-                $enrollments = DB::table('course_user')
-                    ->join('users', 'users.id', '=', 'course_user.user_id')
+                $enrollments = $this->courseUserQuery()
                     ->where('users.role', 'student')
                     ->where('course_user.course_id', $course->id)
                     ->where('course_user.enrolled', true)
@@ -1355,8 +1351,7 @@ class DashboardAdminController extends Controller
 
                 $completed = 0;
                 if (Schema::hasColumn('course_user', 'completed_at')) {
-                    $completed = DB::table('course_user')
-                        ->join('users', 'users.id', '=', 'course_user.user_id')
+                    $completed = $this->courseUserQuery()
                         ->where('users.role', 'student')
                         ->where('course_user.course_id', $course->id)
                         ->whereNotNull('course_user.completed_at')
@@ -1406,15 +1401,13 @@ class DashboardAdminController extends Controller
             $enrollments = 0;
             $completed = 0;
             if (Schema::hasTable('course_user')) {
-                $enrollments = DB::table('course_user')
-                    ->join('users', 'users.id', '=', 'course_user.user_id')
+                $enrollments = $this->courseUserQuery()
                     ->where('users.role', 'student')
                     ->where('course_user.course_id', $course->id)
                     ->where('course_user.enrolled', true)
                     ->count();
                 if ($enrollments > 0 && Schema::hasColumn('course_user', 'completed_at')) {
-                    $completed = DB::table('course_user')
-                        ->join('users', 'users.id', '=', 'course_user.user_id')
+                    $completed = $this->courseUserQuery()
                         ->where('users.role', 'student')
                         ->where('course_user.course_id', $course->id)
                         ->where('course_user.enrolled', true)

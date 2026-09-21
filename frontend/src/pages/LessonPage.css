@@ -620,3 +620,186 @@ html[data-theme='dark'] .lesson-page-main .lesson-page-body {
 	opacity: 0;
 	pointer-events: none;
 }
+
+.lesson-study-tools {
+	margin-top: var(--space-8);
+	padding: var(--space-5);
+	border: 1px solid color-mix(in srgb, var(--formely-primary, #0891b2) 40%, var(--border-primary));
+	border-radius: var(--radius-xl);
+	background:
+		linear-gradient(135deg, color-mix(in srgb, var(--formely-primary, #0891b2) 12%, transparent), transparent 48%),
+		var(--bg-elevated);
+	box-shadow: var(--shadow-sm);
+}
+
+.lesson-study-header {
+	display: flex;
+	justify-content: space-between;
+	gap: var(--space-4);
+	align-items: flex-start;
+}
+
+.lesson-study-eyebrow {
+	display: inline-flex;
+	margin-bottom: var(--space-1);
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-bold);
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--color-brand-hover, #0e7490);
+}
+
+.lesson-study-header h2 {
+	margin: 0;
+	color: var(--text-primary);
+	font-size: var(--font-size-xl);
+}
+
+.lesson-study-header p {
+	margin: var(--space-1) 0 0;
+	color: var(--text-secondary);
+	font-size: var(--font-size-sm);
+	line-height: 1.5;
+}
+
+.lesson-study-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2);
+	margin-top: var(--space-4);
+}
+
+.lesson-study-tool-btn {
+	padding: var(--space-2) var(--space-4);
+	border-radius: 999px;
+	border: 1px solid color-mix(in srgb, var(--formely-primary, #0891b2) 55%, var(--border-primary));
+	background: color-mix(in srgb, var(--formely-primary, #0891b2) 12%, var(--bg-elevated));
+	color: var(--text-primary);
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-semibold);
+	cursor: pointer;
+	transition: transform var(--transition-base), border-color var(--transition-base), background-color var(--transition-base);
+}
+
+.lesson-study-tool-btn:hover:not(:disabled) {
+	transform: translateY(-1px);
+	border-color: var(--color-brand-hover, #0e7490);
+	background: color-mix(in srgb, var(--formely-primary, #0891b2) 22%, var(--bg-elevated));
+}
+
+.lesson-study-tool-btn:disabled {
+	opacity: 0.65;
+	cursor: not-allowed;
+}
+
+.lesson-study-error {
+	margin-top: var(--space-3);
+	padding: var(--space-3);
+	border-radius: var(--radius-md);
+	border: 1px solid color-mix(in srgb, #ef4444 35%, var(--border-primary));
+	background: color-mix(in srgb, #ef4444 8%, var(--bg-elevated));
+	color: var(--text-primary);
+}
+
+.lesson-study-result {
+	margin-top: var(--space-5);
+	padding: var(--space-4);
+	border-radius: var(--radius-lg);
+	border: 1px solid var(--border-primary);
+	background: var(--bg-secondary);
+}
+
+.lesson-study-result-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: var(--space-3);
+	margin-bottom: var(--space-4);
+}
+
+.lesson-study-result-header h3 {
+	margin: 0;
+	color: var(--text-primary);
+	font-size: var(--font-size-lg);
+}
+
+.lesson-study-result-header span {
+	padding: var(--space-1) var(--space-3);
+	border-radius: 999px;
+	background: var(--formely-primary, #0891b2);
+	color: #ffffff;
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-bold);
+}
+
+.lesson-study-text-result,
+.lesson-study-plan,
+.lesson-study-quiz-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+	color: var(--text-primary);
+	line-height: 1.6;
+}
+
+.lesson-study-list-section ul,
+.lesson-study-question ul {
+	margin: var(--space-2) 0 0 var(--space-5);
+}
+
+.lesson-study-takeaway {
+	padding: var(--space-3);
+	border-radius: var(--radius-md);
+	background: color-mix(in srgb, var(--formely-primary, #0891b2) 12%, var(--bg-elevated));
+	font-weight: var(--font-weight-semibold);
+}
+
+.lesson-study-result-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: var(--space-3);
+}
+
+.lesson-study-flashcard,
+.lesson-study-question,
+.lesson-study-plan-step {
+	padding: var(--space-3);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-md);
+	background: var(--bg-elevated);
+}
+
+.lesson-study-flashcard strong,
+.lesson-study-question strong,
+.lesson-study-plan-step strong {
+	color: var(--text-primary);
+}
+
+.lesson-study-flashcard p,
+.lesson-study-question p,
+.lesson-study-plan-step p {
+	margin: var(--space-2) 0 0;
+	color: var(--text-secondary);
+}
+
+.lesson-study-question li.is-correct {
+	font-weight: var(--font-weight-bold);
+	color: #166534;
+}
+
+.lesson-study-plan-step {
+	display: flex;
+	gap: var(--space-3);
+}
+
+.lesson-study-plan-step > span {
+	flex: 0 0 auto;
+	min-width: 54px;
+	text-align: center;
+	padding: var(--space-1) var(--space-2);
+	border-radius: 999px;
+	background: var(--formely-primary, #0891b2);
+	color: #ffffff;
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-bold);
+}

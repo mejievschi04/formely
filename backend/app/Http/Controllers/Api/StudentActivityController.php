@@ -40,6 +40,9 @@ class StudentActivityController extends Controller
         }
 
         $user = Auth::user();
+        if (! $user || ! method_exists($user, 'isAdmin') || ! $user->isAdmin()) {
+            abort(403, 'Doar administratorul poate vedea jurnalul de activitate.');
+        }
         $perPage = min(50, max(5, (int) $request->get('per_page', 20)));
         $scope = (string) $request->get('scope', 'progress');
         $action = $request->get('action');

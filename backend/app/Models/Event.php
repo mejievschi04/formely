@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Event extends Model
 {
-    use HasFactory;
+    use BelongsToCompany, HasFactory;
 
     protected $fillable = [
+        'company_id',
         'title',
         'description',
         'short_description',
@@ -23,6 +25,7 @@ class Event extends Model
         'max_capacity',
         'instructor_id',
         'access_type', // free, paid, course_included
+        'audience_type',
         'price',
         'currency',
         'course_id',
@@ -59,6 +62,11 @@ class Event extends Model
     public function course()
     {
         return $this->belongsTo(Course::class, 'course_id');
+    }
+
+    public function teams()
+    {
+        return $this->belongsToMany(Team::class, 'event_team')->withTimestamps();
     }
 
     /**

@@ -1,5 +1,8 @@
+# Formely — Docker Compose (bază)
+# Producție VPS: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Vezi docs/DEPLOY.md
+
 services:
-  # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
     container_name: formely-postgres
@@ -20,7 +23,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Backend Laravel
   backend:
     build:
       context: ./backend
@@ -34,12 +36,13 @@ services:
       - ./backend:/var/www/html
       - backend_storage:/var/www/html/storage
       - backend_cache:/var/www/html/bootstrap/cache
-    environment:
+    environment: &backend_env
       APP_NAME: ${APP_NAME:-Formely}
       APP_ENV: ${APP_ENV:-production}
       APP_KEY: ${APP_KEY:-}
       APP_DEBUG: ${APP_DEBUG:-false}
       APP_URL: ${APP_URL:-http://localhost:8000}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Europe/Bucharest}
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: 5432
@@ -47,14 +50,22 @@ services:
       DB_USERNAME: ${DB_USERNAME:-formely_user}
       DB_PASSWORD: ${DB_PASSWORD:-formely_password}
       DB_SSLMODE: ${DB_SSLMODE:-prefer}
-      # Forțat file: dacă folosești ${SESSION_DRIVER} din .env cu `database` fără tabela `sessions` → 500 la toate rutele API.
-      # Pentru sesiuni în DB pe mai multe instanțe, schimbă explicit aici în `database` și rulează migrate.
       SESSION_DRIVER: file
       CACHE_STORE: file
       SESSION_LIFETIME: ${SESSION_LIFETIME:-120}
       SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-false}
       SESSION_SAME_SITE: ${SESSION_SAME_SITE:-lax}
+      SESSION_DOMAIN: ${SESSION_DOMAIN:-}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      FORMELY_BACKOFFICE_URL: ${FORMELY_BACKOFFICE_URL:-http://localhost:5180}
+      FORMELY_LMS_URL: ${FORMELY_LMS_URL:-}
+      FORMELY_LEADS_NOTIFY_EMAIL: ${FORMELY_LEADS_NOTIFY_EMAIL:-}
+      FORMELY_PUBLIC_REGISTER_ENABLED: ${FORMELY_PUBLIC_REGISTER_ENABLED:-false}
+      FORMELY_TRIAL_DAYS: ${FORMELY_TRIAL_DAYS:-15}
+      FORMELY_PLATFORM_OPERATOR_EMAIL: ${FORMELY_PLATFORM_OPERATOR_EMAIL:-}
+      FORMELY_PLATFORM_OPERATOR_NAME: ${FORMELY_PLATFORM_OPERATOR_NAME:-}
+      FORMELY_PLATFORM_OPERATOR_PASSWORD: ${FORMELY_PLATFORM_OPERATOR_PASSWORD:-}
+      SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-}
       AI_PROVIDER: ${AI_PROVIDER:-groq}
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       GROQ_API_URL: ${GROQ_API_URL:-https://api.groq.com/openai/v1}
@@ -74,15 +85,69 @@ services:
       AI_VERIFY_SSL: ${AI_VERIFY_SSL:-true}
       LOG_CHANNEL: stack
       LOG_LEVEL: ${LOG_LEVEL:-error}
+      QUEUE_CONNECTION: ${QUEUE_CONNECTION:-database}
+      MAIL_MAILER: ${MAIL_MAILER:-log}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@localhost}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Formely}
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - formely-network
-    # Expune portul pentru PHP-FPM (dacă folosești Nginx separat)
-    # Sau poți folosi un reverse proxy
 
-  # Nginx Reverse Proxy pentru Backend
+  queue:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+      network: host
+    container_name: formely-queue
+    restart: unless-stopped
+    working_dir: /var/www/html
+    command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+    volumes:
+      - ./backend:/var/www/html
+      - backend_storage:/var/www/html/storage
+      - backend_cache:/var/www/html/bootstrap/cache
+    environment:
+      <<: *backend_env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    networks:
+      - formely-network
+
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+      network: host
+    container_name: formely-scheduler
+    restart: unless-stopped
+    working_dir: /var/www/html
+    command: sh -c "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"
+    volumes:
+      - ./backend:/var/www/html
+      - backend_storage:/var/www/html/storage
+      - backend_cache:/var/www/html/bootstrap/cache
+    environment:
+      <<: *backend_env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    networks:
+      - formely-network
+
   nginx-backend:
     image: nginx:alpine
     container_name: formely-nginx-backend
@@ -97,7 +162,7 @@ services:
     networks:
       - formely-network
 
-  # Frontend React
+  # LMS — academy.formely.org (în prod, via Caddy)
   frontend:
     build:
       context: ./frontend
@@ -105,13 +170,50 @@ services:
       target: production
       network: host
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000/api}
+        VITE_API_URL: ${VITE_API_URL:-/api}
+        VITE_BACKOFFICE_URL: ${VITE_BACKOFFICE_URL:-https://admin.formely.org}
+        VITE_STORAGE_URL: ${VITE_STORAGE_URL:-}
+        VITE_APP_ENV: ${VITE_APP_ENV:-production}
     container_name: frontend
     restart: unless-stopped
     ports:
       - "${FRONTEND_PORT:-3001}:80"
-    environment:
-      - VITE_API_URL=${VITE_API_URL:-http://localhost:8000/api}
+    depends_on:
+      - nginx-backend
+    networks:
+      - formely-network
+
+  # Marketing site — formely.org
+  website:
+    build:
+      context: ./website
+      dockerfile: Dockerfile
+      target: production
+      network: host
+      args:
+        VITE_SITE_URL: ${VITE_SITE_URL:-https://formely.org}
+        VITE_APP_URL: ${VITE_APP_URL:-https://academy.formely.org}
+        VITE_API_URL: ${VITE_WEBSITE_API_URL:-https://api.formely.org}
+        VITE_LEGAL_NAME: ${VITE_LEGAL_NAME:-}
+        VITE_LEGAL_ADDRESS: ${VITE_LEGAL_ADDRESS:-}
+    container_name: formely-website
+    restart: unless-stopped
+    ports:
+      - "${WEBSITE_PORT:-4322}:80"
+    networks:
+      - formely-network
+
+  # Platform ops — admin.formely.org
+  backoffice:
+    build:
+      context: ./backoffice
+      dockerfile: Dockerfile
+      target: production
+      network: host
+    container_name: formely-backoffice
+    restart: unless-stopped
+    ports:
+      - "${BACKOFFICE_PORT:-5181}:80"
     depends_on:
       - nginx-backend
     networks:

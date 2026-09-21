@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import {
 	ArrowRight,
 	CircleNotch,
@@ -11,6 +11,7 @@ import {
 	WarningCircle,
 } from '@phosphor-icons/react';
 import { useAuth } from '../../contexts/AuthContext';
+import { fetchPublicConfig } from '../../utils/publicConfig';
 import AuthFormCard from './AuthFormCard';
 
 export default function RegisterFormCard() {
@@ -22,6 +23,15 @@ export default function RegisterFormCard() {
 	const [loading, setLoading] = useState(false);
 	const { register } = useAuth();
 	const navigate = useNavigate();
+	const [registerEnabled, setRegisterEnabled] = useState(false);
+	const [configReady, setConfigReady] = useState(false);
+
+	useEffect(() => {
+		fetchPublicConfig().then((cfg) => {
+			setRegisterEnabled(cfg.publicRegisterEnabled);
+			setConfigReady(true);
+		});
+	}, []);
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
@@ -55,10 +65,17 @@ export default function RegisterFormCard() {
 		}
 	};
 
+	if (!configReady) {
+		return null;
+	}
+
+	if (!registerEnabled) {
+		return <Navigate to="/login" replace />;
+	}
+
 	return (
 		<AuthFormCard
 			title="Creează-ți contul"
-			subtitle="Completează datele de mai jos"
 			footer={
 				<p className="modern-auth-footer-text">
 					Ai deja cont?{' '}

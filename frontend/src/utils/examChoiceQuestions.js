@@ -1,8 +1,15 @@
 /** Tipuri cu o singură variantă selectabilă. */
-const SINGLE_SELECT_TYPES = new Set(['single_choice', 'true_false']);
+import { getQuestionTypeLabel } from './questionTypeLabels';
 
 export function getQuestionType(question) {
 	return question?.type || question?.question_type || 'multiple_choice';
+}
+
+/** Tipuri cu răspuns text liber (evaluare manuală). */
+const TEXT_ANSWER_TYPES = new Set(['short_answer', 'essay', 'fill_in_blank']);
+
+export function isTextAnswerQuestion(question) {
+	return TEXT_ANSWER_TYPES.has(getQuestionType(question));
 }
 
 /** Răspuns multiplu = mai multe variante corecte bifabile de student. */
@@ -11,9 +18,11 @@ export function isMultiSelectChoiceQuestion(question) {
 }
 
 export function getChoiceTypeLabel(question) {
-	if (isMultiSelectChoiceQuestion(question)) return 'Răspuns multiplu';
-	if (SINGLE_SELECT_TYPES.has(getQuestionType(question))) return 'Răspuns unic';
-	return 'Alegere';
+	const type = getQuestionType(question);
+	if (isTextAnswerQuestion(question)) {
+		return getQuestionTypeLabel(type, 'Răspuns scurt');
+	}
+	return getQuestionTypeLabel(type, 'Alegere');
 }
 
 export function normalizeAnswerIndex(value) {
@@ -90,6 +99,9 @@ export function isChoiceAnswered(question, value) {
 	const type = getQuestionType(question);
 	if (type === 'matching' || type === 'ordering') {
 		return Array.isArray(value) && value.length > 0;
+	}
+	if (isTextAnswerQuestion(question)) {
+		return typeof value === 'string' && value.trim() !== '';
 	}
 	if (isMultiSelectChoiceQuestion(question)) {
 		return Array.isArray(value) && value.length > 0;

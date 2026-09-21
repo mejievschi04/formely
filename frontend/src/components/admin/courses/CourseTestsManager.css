@@ -27,6 +27,26 @@
 	font-size: var(--font-size-sm);
 }
 
+.course-tests-vs-exam-hint {
+	margin: 0 0 var(--space-6);
+	padding: 10px 12px;
+	border-radius: 8px;
+	border: 1px solid color-mix(in srgb, var(--color-primary) 22%, var(--border-primary));
+	background: color-mix(in srgb, var(--color-primary) 5%, var(--bg-elevated));
+	font-size: 0.85rem;
+	line-height: 1.45;
+	color: var(--text-secondary);
+}
+
+.course-tests-vs-exam-hint strong {
+	color: var(--text-primary);
+}
+
+.course-tests-vs-exam-hint a {
+	color: var(--color-primary);
+	font-weight: 600;
+}
+
 .course-tests-list {
 	display: flex;
 	flex-direction: column;

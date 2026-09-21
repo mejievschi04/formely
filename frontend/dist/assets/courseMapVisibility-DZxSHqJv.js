@@ -1,0 +1,1 @@
+function t(r){return String(r||"").trim().toLowerCase().normalize("NFD").replace(/\p{M}/gu,"")}function a(r){if(!r||r.is_virtual||String(r.id)==="unassigned")return!0;const e=t(r.name);return e?!!(e==="fara mapa"||e.includes("fara mapa")||e==="cursuri fara mapa"||e.startsWith("cursuri fara mapa")):!1}function i(r){return!r||r.id==null?!1:!a(r)}export{i};

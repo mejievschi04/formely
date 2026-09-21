@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { filterPublishedCourseTests } from '../../utils/testVisibility';
-import { useNavigate } from 'react-router-dom';
-import { buildCourseModuleList } from '../../utils/courseModuleDisplay';
+import { getRootLessons } from '../../utils/lessonOrder';
+import { isLessonMarkedComplete } from '../../utils/lessonProgress';
 
 const CourseStructure = ({ course, progress, onLessonClick, onExamClick }) => {
-	const navigate = useNavigate();
 	const [expandedModules, setExpandedModules] = useState({});
-	const renderableModules = buildCourseModuleList(course);
+	const modules = [...(course?.modules || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
+	const rootLessons = getRootLessons(course);
 
 	const toggleModule = (moduleId) => {
 		setExpandedModules(prev => ({
@@ -15,12 +15,11 @@ const CourseStructure = ({ course, progress, onLessonClick, onExamClick }) => {
 		}));
 	};
 
-	// Initialize: expand first module by default
 	React.useEffect(() => {
-		if (renderableModules.length > 0 && Object.keys(expandedModules).length === 0) {
-			setExpandedModules({ [renderableModules[0].id]: true });
+		if (modules.length > 0 && Object.keys(expandedModules).length === 0) {
+			setExpandedModules({ [modules[0].id]: true });
 		}
-	}, [renderableModules, expandedModules]);
+	}, [modules, expandedModules]);
 
 	if (!course) return null;
 
@@ -30,15 +29,17 @@ const CourseStructure = ({ course, progress, onLessonClick, onExamClick }) => {
 	};
 
 	const getLessonStatus = (lesson) => {
-		const lessonProgress = progress?.modules
-			?.flatMap(m => m.lessons || [])
-			?.find(l => l.id === lesson.id);
-
-		if (lessonProgress?.completed) {
+		if (isLessonMarkedComplete(progress, lesson.id)) {
 			return { status: 'completed', icon: '✓', color: '#10b981' };
 		}
+
+		const lessonProgress = progress?.modules
+			?.flatMap(m => m.lessons || [])
+			?.find(l => l.id === lesson.id)
+			|| progress?.root_lessons?.find(l => l.id === lesson.id);
+
 		if (lessonProgress?.unlocked || lesson.is_preview) {
-			return { status: 'in_progress', icon: '▶', color: '#ffd700' };
+			return { status: 'in_progress', icon: '▶', color: '#0891b2' };
 		}
 		return { status: 'locked', icon: '🔒', color: '#6b7280' };
 	};
@@ -52,77 +53,73 @@ const CourseStructure = ({ course, progress, onLessonClick, onExamClick }) => {
 			return { status: 'passed', icon: '✓', color: '#10b981' };
 		}
 		if (examProgress?.unlocked) {
-			return { status: 'available', icon: '📝', color: '#ffd700' };
+			return { status: 'available', icon: '📝', color: '#0891b2' };
 		}
 		return { status: 'locked', icon: '🔒', color: '#6b7280' };
+	};
+
+	const renderLesson = (lesson) => {
+		const lessonStatus = getLessonStatus(lesson);
+		const isClickable = lessonStatus.status !== 'locked' || lesson.is_preview;
+
+		return (
+			<div
+				key={lesson.id}
+				className={`student-course-structure-lesson ${lessonStatus.status} ${isClickable ? 'clickable' : ''}`}
+				onClick={() => {
+					if (isClickable && onLessonClick) {
+						onLessonClick(lesson);
+					}
+				}}
+			>
+				<div className="student-course-structure-lesson-icon">
+					{lesson.type === 'video' ? '🎥' :
+					 lesson.type === 'text' ? '📄' :
+					 lesson.type === 'live' ? '🔴' : '📚'}
+				</div>
+				<div className="student-course-structure-lesson-content">
+					<div className="student-course-structure-lesson-title">
+						{lesson.title}
+						{lesson.is_preview && (
+							<span className="student-course-structure-lesson-preview">Previzualizare</span>
+						)}
+					</div>
+					{lesson.duration_minutes && (
+						<div className="student-course-structure-lesson-duration">
+							⏱️ {lesson.duration_minutes} min
+						</div>
+					)}
+				</div>
+				<div
+					className="student-course-structure-lesson-status"
+					style={{ color: lessonStatus.color }}
+				>
+					{lessonStatus.icon}
+				</div>
+			</div>
+		);
 	};
 
 	return (
 		<div className="student-course-structure">
 			<h2 className="student-course-structure-title">Structura cursului</h2>
-			
+
 			<div className="student-course-structure-modules">
-				{renderableModules.map((module, moduleIndex) => {
+				{rootLessons.length > 0 && (
+					<div className="student-course-structure-root-lessons">
+						{rootLessons.map((lesson) => renderLesson(lesson))}
+					</div>
+				)}
+
+				{modules.map((module, moduleIndex) => {
 					const moduleProgress = getModuleProgress(module.id);
 					const isExpanded = expandedModules[module.id];
 					const moduleLessons = module.lessons || [];
 					const moduleExams = filterPublishedCourseTests(module.exams || []);
 
-					if (module.hideGroupHeader) {
-						return (
-							<div key={module.id} className="student-course-structure-root-lessons">
-								{moduleLessons.length > 0 && (
-									<div className="student-course-structure-lessons">
-										{moduleLessons.map((lesson) => {
-											const lessonStatus = getLessonStatus(lesson);
-											const isClickable = lessonStatus.status !== 'locked' || lesson.is_preview;
-
-											return (
-												<div
-													key={lesson.id}
-													className={`student-course-structure-lesson ${lessonStatus.status} ${isClickable ? 'clickable' : ''}`}
-													onClick={() => {
-														if (isClickable && onLessonClick) {
-															onLessonClick(lesson);
-														}
-													}}
-												>
-													<div className="student-course-structure-lesson-icon">
-														{lesson.type === 'video' ? '🎥' :
-														 lesson.type === 'text' ? '📄' :
-														 lesson.type === 'live' ? '🔴' : '📚'}
-													</div>
-													<div className="student-course-structure-lesson-content">
-														<div className="student-course-structure-lesson-title">
-															{lesson.title}
-															{lesson.is_preview && (
-																<span className="student-course-structure-lesson-preview">Previzualizare</span>
-															)}
-														</div>
-														{lesson.duration_minutes && (
-															<div className="student-course-structure-lesson-duration">
-																⏱️ {lesson.duration_minutes} min
-															</div>
-														)}
-													</div>
-													<div
-														className="student-course-structure-lesson-status"
-														style={{ color: lessonStatus.color }}
-													>
-														{lessonStatus.icon}
-													</div>
-												</div>
-											);
-										})}
-									</div>
-								)}
-							</div>
-						);
-					}
-
 					return (
 						<div key={module.id} className="student-course-structure-module">
-							<div 
+							<div
 								className="student-course-structure-module-header"
 								onClick={() => toggleModule(module.id)}
 							>
@@ -148,12 +145,12 @@ const CourseStructure = ({ course, progress, onLessonClick, onExamClick }) => {
 								</div>
 								<div className="student-course-structure-module-actions">
 									<div className="student-course-structure-module-progress-bar">
-										<div 
+										<div
 											className="student-course-structure-module-progress-fill"
 											style={{ width: `${moduleProgress}%` }}
 										></div>
 									</div>
-									<button 
+									<button
 										className="student-course-structure-module-toggle"
 										aria-expanded={isExpanded}
 									>
@@ -164,54 +161,12 @@ const CourseStructure = ({ course, progress, onLessonClick, onExamClick }) => {
 
 							{isExpanded && (
 								<div className="student-course-structure-module-content-expanded">
-									{/* Lessons */}
 									{moduleLessons.length > 0 && (
 										<div className="student-course-structure-lessons">
-											{moduleLessons.map((lesson, lessonIndex) => {
-												const lessonStatus = getLessonStatus(lesson);
-												const isClickable = lessonStatus.status !== 'locked' || lesson.is_preview;
-
-												return (
-													<div
-														key={lesson.id}
-														className={`student-course-structure-lesson ${lessonStatus.status} ${isClickable ? 'clickable' : ''}`}
-														onClick={() => {
-															if (isClickable && onLessonClick) {
-																onLessonClick(lesson);
-															}
-														}}
-													>
-														<div className="student-course-structure-lesson-icon">
-															{lesson.type === 'video' ? '🎥' : 
-															 lesson.type === 'text' ? '📄' : 
-															 lesson.type === 'live' ? '🔴' : '📚'}
-														</div>
-														<div className="student-course-structure-lesson-content">
-															<div className="student-course-structure-lesson-title">
-																{lesson.title}
-																{lesson.is_preview && (
-																	<span className="student-course-structure-lesson-preview">Previzualizare</span>
-																)}
-															</div>
-															{lesson.duration_minutes && (
-																<div className="student-course-structure-lesson-duration">
-																	⏱️ {lesson.duration_minutes} min
-																</div>
-															)}
-														</div>
-														<div 
-															className="student-course-structure-lesson-status"
-															style={{ color: lessonStatus.color }}
-														>
-															{lessonStatus.icon}
-														</div>
-													</div>
-												);
-											})}
+											{moduleLessons.map((lesson) => renderLesson(lesson))}
 										</div>
 									)}
 
-									{/* Exams */}
 									{moduleExams.length > 0 && (
 										<div className="student-course-structure-exams">
 											{moduleExams.map((exam) => {
@@ -242,7 +197,7 @@ const CourseStructure = ({ course, progress, onLessonClick, onExamClick }) => {
 																</div>
 															)}
 														</div>
-														<div 
+														<div
 															className="student-course-structure-exam-status"
 															style={{ color: examStatus.color }}
 														>

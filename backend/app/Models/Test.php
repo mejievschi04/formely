@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -13,9 +14,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Test extends Model
 {
-    use HasFactory, SoftDeletes;
+    use BelongsToCompany, HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'company_id',
         'title',
         'description',
         'type',
@@ -27,6 +29,7 @@ class Test extends Model
         'randomize_answers',
         'show_results_immediately',
         'show_correct_answers',
+        'show_only_submitted_answers',
         'allow_review',
         'requires_manual_verification',
         'question_set_id',
@@ -44,6 +47,7 @@ class Test extends Model
         'randomize_answers' => 'boolean',
         'show_results_immediately' => 'boolean',
         'show_correct_answers' => 'boolean',
+        'show_only_submitted_answers' => 'boolean',
         'allow_review' => 'boolean',
         'requires_manual_verification' => 'boolean',
         'question_selection' => 'array',

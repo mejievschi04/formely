@@ -22,19 +22,10 @@ import QuestionRow from '../../components/admin/question-banks/QuestionRow';
 import Tag from '../../components/admin/question-banks/Tag';
 import QuestionBuilderEditor from '../../components/admin/question-banks/QuestionBuilderEditor';
 import AIGenerateQuestionsModal from '../../components/admin/question-banks/QuestionBankBuilderSteps/AIGenerateQuestionsModal';
-import { isAiEnabled, notifyAiComingSoon } from '../../utils/aiAvailability';
+import { isAiEnabled, notifyAiComingSoon, canUseAiFeature, notifyAiPlanLocked } from '../../utils/aiAvailability';
 import { useAuth } from '../../contexts/AuthContext';
 import './AdminQuestionBanksPage.css';
-
-const QUESTION_TYPE_LABELS = {
-  single_choice: 'Răspuns unic',
-  multiple_choice: 'Răspuns multiplu',
-  true_false: 'Adevărat/Fals',
-  matching: 'Potrivire',
-  ordering: 'Ordonare',
-  fill_in_blank: 'Completare spații',
-  open: 'Deschis',
-};
+import { getQuestionTypeLabel } from '../../utils/questionTypeLabels';
 
 const stripHtml = (value = '') => String(value).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
@@ -42,7 +33,7 @@ const normalizeSearch = (value = '') => stripHtml(value).toLowerCase();
 
 const AdminQuestionBankFolderDetailsPage = () => {
   const { id } = useParams();
-  const { canMutateInAdminArea } = useAuth();
+  const { canMutateInAdminArea, user } = useAuth();
   const readOnly = !canMutateInAdminArea;
   const { success, error } = useToast();
   const [folder, setFolder] = useState(null);
@@ -294,6 +285,10 @@ const AdminQuestionBankFolderDetailsPage = () => {
       notifyAiComingSoon(showToast);
       return;
     }
+    if (!canUseAiFeature(user, 'ai_test_generation')) {
+      notifyAiPlanLocked(showToast);
+      return;
+    }
     setAiOptions({
       numberOfQuestions: 10,
       difficulty: 'medium',
@@ -459,7 +454,6 @@ const AdminQuestionBankFolderDetailsPage = () => {
           <div className="qb-detail-title-area">
             <p className="qb-page-eyebrow">Folder întrebări</p>
             <h1>{folder?.title || 'Detalii folder'}</h1>
-            {folder?.description ? <p className="qb-detail-description">{folder.description}</p> : null}
             <div className="qb-folder-tags">
               {(folder?.tags || []).map((tag) => (
                 <Tag key={tag.id}>{tag.name}</Tag>
@@ -477,10 +471,12 @@ const AdminQuestionBankFolderDetailsPage = () => {
                 <Plus size={17} aria-hidden />
                 Întrebare
               </button>
+              {canUseAiFeature(user, 'ai_test_generation') ? (
               <button type="button" className="lms-btn-primary qb-action-button" onClick={handleOpenAIModal}>
                 <Sparkles size={17} aria-hidden />
                 Generează cu AI
               </button>
+              ) : null}
             </div>
           ) : null}
         </header>
@@ -541,7 +537,7 @@ const AdminQuestionBankFolderDetailsPage = () => {
               <option value="all">Toate tipurile</option>
               {uniqueTypes.map((type) => (
                 <option key={type} value={type}>
-                  {QUESTION_TYPE_LABELS[type] || type}
+                  {getQuestionTypeLabel(type, type)}
                 </option>
               ))}
             </select>

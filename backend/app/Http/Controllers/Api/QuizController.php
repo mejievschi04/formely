@@ -194,6 +194,10 @@ class QuizController extends Controller
      */
     protected function examQuestionsToQuizWire(Exam $exam, bool $withSolutions): array
     {
+        $settings = is_array($exam->settings) ? $exam->settings : [];
+        $submittedOnly = (bool) ($settings['show_only_submitted_answers'] ?? false);
+        $includeSolutions = $withSolutions && ! $submittedOnly;
+
         return $exam->questions->map(function ($question) {
             $answers = $question->answers;
             $correctAnswerIndex = null;
@@ -225,8 +229,8 @@ class QuizController extends Controller
                 'matching' => $matching,
                 'ordering' => $ordering,
             ];
-        })->values()->map(function (array $row) use ($withSolutions) {
-            if ($withSolutions) {
+        })->values()->map(function (array $row) use ($includeSolutions) {
+            if ($includeSolutions) {
                 return $row;
             }
             $row['answerIndex'] = null;
@@ -280,6 +284,7 @@ class QuizController extends Controller
         }
 
         $questionsWire = $this->examQuestionsToQuizWire($exam, $latestResult !== null);
+        $settings = is_array($exam->settings) ? $exam->settings : [];
 
         return response()->json([
             'id' => $exam->id,
@@ -287,6 +292,7 @@ class QuizController extends Controller
             'courseId' => $course->id,
             'maxScore' => $exam->max_score,
             'maxAttempts' => $exam->max_attempts,
+            'show_only_submitted_answers' => (bool) ($settings['show_only_submitted_answers'] ?? false),
             'questions' => $questionsWire,
             'hasResult' => $latestResult !== null,
             'currentAttempt' => $currentAttempt,
@@ -469,9 +475,8 @@ class QuizController extends Controller
                             'completed_at' => $isCompleted ? now() : null,
                             'started_at' => now(),
                             'is_mandatory' => false,
-                            'enrolled' => true,
+                            'enrolled' => false,
                             'enrolled_at' => now(),
-                            'assigned_at' => now(),
                             'created_at' => now(),
                             'updated_at' => now(),
                         ]);
@@ -488,12 +493,15 @@ class QuizController extends Controller
             }
         }
         
+        $settings = is_array($exam->settings) ? $exam->settings : [];
+
         return response()->json([
             'score' => $score,
             'total' => $totalPoints,
             'maxScore' => $exam->max_score,
             'passed' => $passed,
             'percentage' => $percentage,
+            'show_only_submitted_answers' => (bool) ($settings['show_only_submitted_answers'] ?? false),
             'review_questions' => $this->examQuestionsToQuizWire($exam, true),
         ]);
     }

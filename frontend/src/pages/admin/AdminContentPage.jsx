@@ -2,9 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus } from '@phosphor-icons/react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useToast } from '../../contexts/ToastContext';
 import AICourseChat from '../../components/admin/ai/AICourseChat';
-import { notifyAiComingSoon } from '../../utils/aiAvailability';
+import { canUseAiFeature } from '../../utils/aiAvailability';
 import AdminCoursesPage from './AdminCoursesPage';
 import AdminCourseMapsPage from './AdminCourseMapsPage';
 import AdminQuestionBanksPage from './AdminQuestionBanksPage';
@@ -14,7 +13,6 @@ import AdminManualReviewPage from './AdminManualReviewPage';
 
 const AdminContentPage = () => {
 	const { user, canMutateInAdminArea } = useAuth();
-	const { showToast } = useToast();
 	const navigate = useNavigate();
 	const [searchParams, setSearchParams] = useSearchParams();
 	const [showCreateMenu, setShowCreateMenu] = useState(false);
@@ -96,12 +94,14 @@ const AdminContentPage = () => {
 										</button>
 										{showCreateMenu && (
 											<div className="admin-courses-create-menu">
-												<button onClick={() => { setShowCreateMenu(false); navigate('/admin/courses/new'); }}>
+												<button type="button" onClick={() => { setShowCreateMenu(false); navigate('/admin/courses/new'); }}>
 													Curs nou
 												</button>
-												<button onClick={() => { setShowCreateMenu(false); notifyAiComingSoon(showToast); }}>
-													Curs cu AI
-												</button>
+												{canUseAiFeature(user, 'ai_creator') ? (
+													<button type="button" onClick={() => { setShowCreateMenu(false); setShowAiCourseChat(true); }}>
+														Curs cu Formely AI
+													</button>
+												) : null}
 											</div>
 										)}
 									</div>

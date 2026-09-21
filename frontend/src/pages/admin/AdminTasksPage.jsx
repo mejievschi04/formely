@@ -20,7 +20,7 @@ const AdminTasksPage = () => {
 						← Înapoi la Dashboard
 					</button>
 					<h1 className="admin-page-title">Taskuri</h1>
-					<p className="admin-page-subtitle">Verificări și urmăriri rapide</p>
+					<p className="admin-page-subtitle">Scurtături către verificări și conținut în Formely.</p>
 				</div>
 			</div>
 

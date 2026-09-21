@@ -34,9 +34,6 @@ const Step0Context = ({ data, onUpdate }) => {
 		<div className="step0-context">
 			<div className="step0-header">
 				<h3>Setare curs</h3>
-				<p className="step0-description">
-					Titlu, descriere, categorie, etichete, dificultate, durată și vizibilitate.
-				</p>
 			</div>
 
 			<div className="step0-content">

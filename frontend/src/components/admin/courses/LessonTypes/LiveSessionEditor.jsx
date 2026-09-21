@@ -3,7 +3,7 @@ import RichTextEditor from '../../../RichTextEditor';
 import { openaiService } from '../../../../services/openaiService';
 import { useToast } from '../../../../contexts/ToastContext';
 import { buildLiveSessionAgendaPrompt } from '../../../../utils/aiPrompts';
-import { runAiAction } from '../../../../utils/aiAvailability';
+import { isAiEnabled, runAiAction } from '../../../../utils/aiAvailability';
 
 /**
  * Live Session Editor - Conform defacut.md secțiunea 5.4
@@ -110,6 +110,7 @@ const LiveSessionEditor = ({ lesson, onUpdate }) => {
 			</div>
 
 			{/* Generate Agenda Button */}
+			{isAiEnabled() ? (
 			<div className="admin-form-group">
 				<button
 					type="button"
@@ -123,6 +124,7 @@ const LiveSessionEditor = ({ lesson, onUpdate }) => {
 					AI va genera o agendă detaliată pentru sesiunea live
 				</p>
 			</div>
+			) : null}
 
 			{/* Generated Agenda */}
 			{generatedAgenda && generatedAgenda.agenda && (

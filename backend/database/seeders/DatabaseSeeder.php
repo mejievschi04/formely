@@ -16,7 +16,24 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // --- Admin User ---
+        // Operator Formely — backoffice, fără academie
+        User::withoutGlobalScopes()->updateOrCreate(
+            ['email' => 'platform@formely.local'],
+            [
+                'name' => 'Platform Admin',
+                'password' => Hash::make('formely2025'),
+                'role' => 'platform_operator',
+                'company_id' => null,
+                'status' => 'active',
+                'avatar' => null,
+                'bio' => 'Operator platformă Formely (backoffice)',
+            ]
+        );
+        User::withoutGlobalScopes()
+            ->where('email', 'platform@formely.local')
+            ->update(['company_id' => null, 'role' => 'platform_operator']);
+
+        // --- Admin User (tenant default) ---
         $admin = User::firstOrCreate(
             ['email' => 'admin@formely.local'],
             [

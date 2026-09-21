@@ -109,6 +109,14 @@
 		0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
+.modern-sidebar-logo-img {
+	display: block;
+	width: 2rem;
+	height: 2rem;
+	object-fit: contain;
+	border-radius: 6px;
+}
+
 .modern-sidebar-logo,
 .va-logo-text {
 	display: flex;

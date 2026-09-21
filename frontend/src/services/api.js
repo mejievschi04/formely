@@ -34,6 +34,12 @@ export const coursesService = {
     const response = await api.post(`/courses/${id}/finish`);
     return response.data;
   },
+
+  /** Cursuri publicate vizibile direct în catalog, fără mapă. */
+  listStandalone: async () => {
+    const response = await api.get('/courses/standalone');
+    return response.data?.data ?? response.data ?? [];
+  },
 };
 
 /** Mape de curs pentru studenți (foldere care grupează cursuri). */
@@ -70,6 +76,14 @@ export const lessonsService = {
     const response = await api.post(`/lessons/${id}/complete`);
     return response.data;
   },
+
+  generateStudyTool: async (id, tool) => {
+    assertAiEnabled();
+    const response = await api.post(`/lessons/${id}/study-tools`, { tool }, {
+      timeout: parseInt(import.meta.env.VITE_AI_API_TIMEOUT || '120000', 10),
+    });
+    return response.data;
+  },
 };
 
 export const notificationsService = {
@@ -89,6 +103,8 @@ export const notificationsService = {
     const response = await api.post('/notifications/mark-all-read');
     return response.data;
   },
+};
+
 };
 
 /** Extrage ID numeric din notificări persistate (student: stored_12, admin: 12). */
@@ -208,7 +224,7 @@ export const lessonNotesService = {
 };
 
 export const examService = {
-  /** Examene legacy fără curs (published, vizibile pentru utilizatorul curent) */
+  /** Examene publicate (Admin → Examene), fără teste din curs */
   listStandaloneExams: async () => {
     const response = await api.get('/exams');
     return response.data?.data ?? response.data ?? [];
@@ -357,6 +373,18 @@ export const examResultsService = {
   },
 };
 
+export const catalogExamResultsService = {
+  getAll: async () => {
+    const response = await api.get('/catalog-exam-results');
+    return response.data;
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/catalog-exam-results/${id}`);
+    return response.data;
+  },
+};
+
 export const libraryService = {
   listItems: async (params = {}) => {
     const response = await api.get('/library/items', { params });
@@ -385,6 +413,49 @@ export const libraryService = {
 
   deleteItem: async (id) => {
     const response = await api.delete(`/library/items/${id}`);
+    return response.data;
+  },
+
+  createTextItem: async ({ title, description, body, cover, removeCover = false }) => {
+    await ensureApiCsrfCookie();
+    const formData = new FormData();
+    formData.append('content_type', 'text');
+    formData.append('title', title);
+    if (description) formData.append('description', description);
+    formData.append('body', body);
+    if (cover instanceof Blob) {
+      formData.append('cover', cover, cover.name || 'cover.jpg');
+    }
+    const response = await api.post('/library/items', formData, {
+      timeout: parseInt(import.meta.env.VITE_UPLOAD_TIMEOUT || '600000'),
+    });
+    return response.data;
+  },
+
+  updateTextItem: async (id, { title, description, body, cover, removeCover = false }) => {
+    await ensureApiCsrfCookie();
+    const hasCoverChange = cover instanceof Blob || removeCover;
+
+    if (hasCoverChange) {
+      const formData = new FormData();
+      formData.append('title', title);
+      if (description) formData.append('description', description);
+      formData.append('body', body);
+      if (removeCover) formData.append('remove_cover', '1');
+      if (cover instanceof Blob) {
+        formData.append('cover', cover, cover.name || 'cover.jpg');
+      }
+      const response = await api.post(`/library/items/${id}`, formData, {
+        timeout: parseInt(import.meta.env.VITE_UPLOAD_TIMEOUT || '600000'),
+      });
+      return response.data;
+    }
+
+    const response = await api.put(`/library/items/${id}`, {
+      title,
+      description: description || undefined,
+      body,
+    });
     return response.data;
   },
 
@@ -439,6 +510,15 @@ export const authService = {
       if (error.response?.status === 401) {
         return { user: null };
       }
+      if (error.response?.status === 403 && (error.response?.data?.access_blocked || error.response?.data?.suspended)) {
+        return {
+          user: null,
+          access_blocked: true,
+          suspended: Boolean(error.response?.data?.suspended),
+          inactive: Boolean(error.response?.data?.inactive),
+          message: error.response?.data?.message || 'Accesul la cont este restricționat.',
+        };
+      }
       throw error;
     }
   },
@@ -449,6 +529,39 @@ export const authService = {
       current_password: currentPassword,
       new_password: newPassword,
       new_password_confirmation: newPasswordConfirmation,
+    });
+    return response.data;
+  },
+
+  forgotPassword: async (email) => {
+    await ensureApiCsrfCookie();
+    const response = await api.post('/auth/forgot-password', { email });
+    return response.data;
+  },
+
+  resetPassword: async ({ token, email, password, password_confirmation }) => {
+    await ensureApiCsrfCookie();
+    const response = await api.post('/auth/reset-password', {
+      token,
+      email,
+      password,
+      password_confirmation,
+    });
+    return response.data;
+  },
+
+  validateInvitation: async (token) => {
+    const response = await api.get('/auth/invitations/validate', { params: { token } });
+    return response.data;
+  },
+
+  acceptInvitation: async ({ token, name, password, password_confirmation }) => {
+    await ensureApiCsrfCookie();
+    const response = await api.post('/auth/invitations/accept', {
+      token,
+      name,
+      password,
+      password_confirmation,
     });
     return response.data;
   },
@@ -515,12 +628,6 @@ export const adminService = {
           return rest;
         })();
     const response = await api.post('/admin/courses', payload, config);
-    return response.data;
-  },
-  
-  generateCourseStructure: async (courseInfo) => {
-    assertAiEnabled();
-    const response = await api.post('/admin/ai/generate-course-structure', courseInfo);
     return response.data;
   },
   
@@ -693,9 +800,59 @@ export const adminService = {
     const response = await api.get(`/admin/tests/${id}`);
     return response.data;
   },
+
+  getTestResults: async (id, params = {}) => {
+    const response = await api.get(`/admin/tests/${id}/results`, { params });
+    return response.data;
+  },
+
+  getTestQuestionAnalytics: async (id, params = {}) => {
+    const response = await api.get(`/admin/tests/${id}/question-analytics`, { params });
+    return response.data;
+  },
+
+  getTestStatisticsSummary: async (testId) => {
+    const response = await api.get(`/admin/tests/${testId}/statistics`);
+    return response.data;
+  },
+
+  getTestResultBreakdown: async (resultId) => {
+    const response = await api.get(`/admin/test-results/${resultId}/breakdown`);
+    return response.data;
+  },
+
+  updateTestResultScore: async (resultId, score, note = '') => {
+    const response = await api.patch(`/admin/test-results/${resultId}/score`, {
+      score,
+      note: note || undefined,
+    });
+    return response.data;
+  },
+
+  exportTestResultsCsv: async (params = {}) => {
+    const response = await api.get('/admin/test-results/export', {
+      params,
+      responseType: 'blob',
+    });
+    return response;
+  },
+
+  exportSingleTestResultsCsv: async (testId, params = {}) => {
+    const response = await api.get(`/admin/tests/${testId}/results/export`, {
+      params,
+      responseType: 'blob',
+    });
+    return response;
+  },
   
   createTest: async (testData) => {
     const response = await api.post('/admin/tests', testData);
+    return response.data;
+  },
+
+  /** Creează examen independent (catalog elevi) dintr-un test existent */
+  promoteTestToStandaloneExam: async (testId) => {
+    const response = await api.post(`/admin/tests/${testId}/promote-to-exam`);
     return response.data;
   },
   
@@ -836,9 +993,12 @@ export const adminService = {
     return response.data;
   },
 
-  uploadCourseMapCover: async (mapId, file) => {
+  uploadCourseMapCover: async (mapId, file, focus) => {
     const formData = new FormData();
     formData.append('cover', file);
+    if (focus) {
+      formData.append('cover_focus', JSON.stringify(focus));
+    }
     const response = await api.post(`/admin/course-maps/${mapId}/cover`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
@@ -851,6 +1011,16 @@ export const adminService = {
   },
 
   // Question Banks
+  getQuestionCatalogMaps: async (params = {}) => {
+    const response = await api.get('/admin/question-catalog/maps', { params });
+    return Array.isArray(response.data?.data) ? response.data.data : [];
+  },
+
+  getQuestionCatalogMapTests: async (mapId, params = {}) => {
+    const response = await api.get(`/admin/question-catalog/maps/${mapId}/tests`, { params });
+    return response.data;
+  },
+
   getQuestionBanks: async (params = {}) => {
     const response = await api.get('/admin/question-banks', { params });
     const data = response.data;
@@ -1018,6 +1188,37 @@ export const adminService = {
     return response.data;
   },
 
+  // Organization (departments + teams)
+  getOrganizationTree: async () => {
+    const response = await api.get('/admin/organization');
+    return response.data;
+  },
+
+  getDepartments: async () => {
+    const response = await api.get('/admin/departments');
+    return response.data;
+  },
+
+  createDepartment: async (data) => {
+    const response = await api.post('/admin/departments', data);
+    return response.data;
+  },
+
+  updateDepartment: async (id, data) => {
+    const response = await api.put(`/admin/departments/${id}`, data);
+    return response.data;
+  },
+
+  deleteDepartment: async (id) => {
+    const response = await api.delete(`/admin/departments/${id}`);
+    return response.data;
+  },
+
+  reorderDepartments: async (departmentIds) => {
+    const response = await api.post('/admin/departments/reorder', { department_ids: departmentIds });
+    return response.data;
+  },
+
   // Teams
   getTeams: async () => {
     const response = await api.get('/admin/teams');
@@ -1080,6 +1281,18 @@ export const adminService = {
     const response = await api.get(`/admin/users/${id}`);
     return response.data;
   },
+
+  grantTestExtraAttempt: async (userId, testId, courseId) => {
+    const response = await api.post(`/admin/users/${userId}/tests/${testId}/extra-attempt`, {
+      course_id: courseId || undefined,
+    });
+    return response.data;
+  },
+
+  markCourseCompleted: async (userId, courseId) => {
+    const response = await api.post(`/admin/users/${userId}/courses/${courseId}/complete`);
+    return response.data;
+  },
   
   createUser: async (userData) => {
     const response = await api.post('/admin/users', userData);
@@ -1101,6 +1314,11 @@ export const adminService = {
     return response.data;
   },
 
+  forceDeleteUser: async (id) => {
+    const response = await api.delete(`/admin/users/${id}/force`);
+    return response.data;
+  },
+
   approveUser: async (id) => {
     const response = await api.post(`/admin/users/${id}/approve`);
     return response.data;
@@ -1108,6 +1326,46 @@ export const adminService = {
 
   rejectUser: async (id) => {
     const response = await api.post(`/admin/users/${id}/reject`);
+    return response.data;
+  },
+
+  activateUser: async (id) => {
+    const response = await api.post(`/admin/users/${id}/activate`);
+    return response.data;
+  },
+
+  deactivateUser: async (id) => {
+    const response = await api.post(`/admin/users/${id}/deactivate`);
+    return response.data;
+  },
+
+  getUserInvitations: async (params = {}) => {
+    const response = await api.get('/admin/users/invitations', { params });
+    return response.data;
+  },
+
+  sendUserInvitations: async (payload) => {
+    const response = await api.post('/admin/users/invitations', payload);
+    return response.data;
+  },
+
+  sendUserInvitation: async (payload) => {
+    const response = await api.post('/admin/users/invitations', payload);
+    return response.data;
+  },
+
+  copyUserInvitationLink: async (id) => {
+    const response = await api.post(`/admin/users/invitations/${id}/copy-link`);
+    return response.data;
+  },
+
+  cancelUserInvitation: async (id) => {
+    const response = await api.delete(`/admin/users/invitations/${id}`);
+    return response.data;
+  },
+
+  resendUserInvitation: async (id) => {
+    const response = await api.post(`/admin/users/invitations/${id}/resend`);
     return response.data;
   },
 
@@ -1265,6 +1523,104 @@ export const adminService = {
     return response.data;
   },
 
+  generateStatisticsExportWithAi: async (payload = {}) => {
+    const response = await api.post('/admin/statistics/ai-export', payload);
+    return response.data;
+  },
+
+  previewTestWithAi: async (payload = {}) => {
+    assertAiEnabled();
+    const response = await api.post('/admin/tests/ai/preview-from-course', payload, {
+      timeout: parseInt(import.meta.env.VITE_AI_API_TIMEOUT || '120000', 10),
+    });
+    return response.data;
+  },
+
+  suggestTestBlueprintWithAi: async (payload = {}) => {
+    assertAiEnabled();
+    const response = await api.post('/admin/tests/ai/suggest-blueprint-from-course', payload, {
+      timeout: parseInt(import.meta.env.VITE_AI_API_TIMEOUT || '120000', 10),
+    });
+    return response.data;
+  },
+
+  regenerateTestQuestionWithAi: async (payload = {}) => {
+    assertAiEnabled();
+    const response = await api.post('/admin/tests/ai/regenerate-question-from-course', payload, {
+      timeout: parseInt(import.meta.env.VITE_AI_API_TIMEOUT || '120000', 10),
+    });
+    return response.data;
+  },
+
+  createTestWithAi: async (payload = {}) => {
+    assertAiEnabled();
+    const response = await api.post('/admin/tests/ai/create-from-course', payload, {
+      timeout: parseInt(import.meta.env.VITE_AI_API_TIMEOUT || '120000', 10),
+    });
+    return response.data;
+  },
+
+  suggestManualReviewFeedbackWithAi: async (resultId) => {
+    assertAiEnabled();
+    const response = await api.post(`/admin/test-results/${resultId}/feedback-with-ai`);
+    return response.data;
+  },
+
+  getStatisticsAiExportDatasets: async () => {
+    const response = await api.get('/admin/statistics/ai-export/datasets');
+    return response.data;
+  },
+
+  listPlatformCompanies: async (params = {}) => {
+    const response = await api.get('/admin/platform/companies', { params });
+    return response.data;
+  },
+
+  getPlatformOverview: async () => {
+    const response = await api.get('/admin/platform/overview');
+    return response.data;
+  },
+
+  getPlatformPlans: async () => {
+    const response = await api.get('/admin/platform/plans');
+    return response.data;
+  },
+
+  getPlatformCompany: async (id) => {
+    const response = await api.get(`/admin/platform/companies/${id}`);
+    return response.data;
+  },
+
+  createPlatformCompany: async (payload) => {
+    const response = await api.post('/admin/platform/companies', payload);
+    return response.data;
+  },
+
+  updatePlatformCompany: async (id, payload) => {
+    const response = await api.put(`/admin/platform/companies/${id}`, payload);
+    return response.data;
+  },
+
+  invitePlatformCompanyOwner: async (id, payload) => {
+    const response = await api.post(`/admin/platform/companies/${id}/invite-owner`, payload);
+    return response.data;
+  },
+
+  listPlatformLeads: async (params = {}) => {
+    const response = await api.get('/admin/platform/leads', { params });
+    return response.data;
+  },
+
+  updatePlatformLead: async (id, payload) => {
+    const response = await api.put(`/admin/platform/leads/${id}`, payload);
+    return response.data;
+  },
+
+  getCompanyEntitlements: async () => {
+    const response = await api.get('/admin/company/entitlements');
+    return response.data;
+  },
+
   // Course Insights
   getCourseInsights: async () => {
     const response = await api.get('/admin/courses/insights');
@@ -1355,13 +1711,21 @@ export const adminService = {
     return response.data;
   },
 
+  builderQualityAuditCourse: async (courseId) => {
+    const response = await api.post(`/admin/courses/${courseId}/builder/quality-audit`);
+    return response.data;
+  },
+
   builderSubmitForReview: async (courseId) => {
     const response = await api.post(`/admin/courses/${courseId}/builder/submit-for-review`);
     return response.data;
   },
 
-  builderPublishCourse: async (courseId, teamIds = []) => {
-    const response = await api.post(`/admin/courses/${courseId}/builder/publish`, { team_ids: teamIds });
+  builderPublishCourse: async (courseId, teamIds = [], options = {}) => {
+    const response = await api.post(`/admin/courses/${courseId}/builder/publish`, {
+      team_ids: teamIds,
+      catalog_outside_map: Boolean(options.catalogOutsideMap),
+    });
     return response.data;
   },
 
@@ -1422,6 +1786,27 @@ export const adminService = {
     return response.data;
   },
 
+  getCompanyBranding: async () => {
+    const response = await api.get('/admin/company/branding');
+    return response.data;
+  },
+  updateCompanyBranding: async (payload) => {
+    const response = await api.put('/admin/company/branding', payload);
+    return response.data;
+  },
+  uploadCompanyLogo: async (file) => {
+    const formData = new FormData();
+    formData.append('logo', file);
+    const response = await api.post('/admin/company/branding/logo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+  deleteCompanyLogo: async () => {
+    const response = await api.delete('/admin/company/branding/logo');
+    return response.data;
+  },
+
   // Export & Backup
   exportData: async () => {
     const response = await api.get('/admin/export', {
@@ -1441,150 +1826,6 @@ export const adminService = {
     const formData = new FormData();
     formData.append('backup_file', file);
     const response = await api.post('/admin/import', formData);
-    return response.data;
-  },
-};
-
-export const messagesService = {
-  getUnreadCount: async () => {
-    try {
-      const response = await api.get('/messages/unread-count');
-      return response.data?.data?.unreadCount ?? response.data?.unreadCount ?? 0;
-    } catch (error) {
-      if (error.response?.status === 404) {
-        return 0;
-      }
-      throw error;
-    }
-  },
-
-  // Get all conversations for the current user
-  getConversations: async (options = {}) => {
-    try {
-      const response = await api.get('/messages/conversations', {
-        params: options,
-      });
-      return response.data?.data || response.data || [];
-    } catch (error) {
-      // If endpoint doesn't exist yet, return empty array (will use mock data)
-      if (error.response?.status === 404) {
-        return [];
-      }
-      throw error;
-    }
-  },
-
-  // Get messages for a specific conversation
-  getMessages: async (conversationId) => {
-    try {
-      const response = await api.get(`/messages/conversations/${conversationId}/messages`);
-      return response.data?.data || response.data || [];
-    } catch (error) {
-      if (error.response?.status === 404) {
-        return [];
-      }
-      throw error;
-    }
-  },
-
-  // Send a message
-  sendMessage: async (conversationId, content) => {
-    const response = await api.post(`/messages/conversations/${conversationId}/messages`, {
-      content,
-    });
-    return response.data?.data || response.data;
-  },
-
-  // Create a new conversation
-  createConversation: async (payloadOrParticipantId) => {
-    const payload = typeof payloadOrParticipantId === 'object'
-      ? payloadOrParticipantId
-      : { participant_id: payloadOrParticipantId };
-    const response = await api.post('/messages/conversations', payload);
-    return response.data?.data || response.data;
-  },
-
-  // Get available users for new conversation
-  getAvailableUsers: async (query = '') => {
-    try {
-      const response = await api.get('/messages/available-users', {
-        params: { q: query },
-      });
-      return response.data?.data || response.data || [];
-    } catch (error) {
-      if (error.response?.status === 404) {
-        return [];
-      }
-      throw error;
-    }
-  },
-
-  // Search conversations
-  searchConversations: async (query) => {
-    try {
-      const response = await api.get('/messages/conversations/search', {
-        params: { q: query },
-      });
-      return response.data?.data || response.data || [];
-    } catch (error) {
-      if (error.response?.status === 404) {
-        return [];
-      }
-      throw error;
-    }
-  },
-
-  // Mark messages as read
-  markAsRead: async (conversationId) => {
-    try {
-      const response = await api.post(`/messages/conversations/${conversationId}/read`);
-      return response.data;
-    } catch (error) {
-      // Silently fail if endpoint doesn't exist
-      if (error.response?.status === 404) {
-        return { success: true };
-      }
-      throw error;
-    }
-  },
-
-  getParticipants: async (conversationId) => {
-    const response = await api.get(`/messages/conversations/${conversationId}/participants`);
-    return response.data;
-  },
-
-  addParticipants: async (conversationId, userIds) => {
-    const response = await api.post(`/messages/conversations/${conversationId}/participants`, {
-      user_ids: userIds,
-    });
-    return response.data;
-  },
-
-  removeParticipant: async (conversationId, userId) => {
-    const response = await api.delete(`/messages/conversations/${conversationId}/participants/${userId}`);
-    return response.data;
-  },
-
-  updateGroupConversation: async (conversationId, name) => {
-    const response = await api.patch(`/messages/conversations/${conversationId}`, { name });
-    return response.data;
-  },
-
-  leaveGroup: async (conversationId) => {
-    const response = await api.post(`/messages/conversations/${conversationId}/leave`);
-    return response.data;
-  },
-
-  deleteConversation: async (conversationId) => {
-    const response = await api.delete(`/messages/conversations/${conversationId}`);
-    return response.data;
-  },
-
-  setParticipantGroupRole: async (conversationId, userId, groupRole) => {
-    const response = await api.patch(
-      `/messages/conversations/${conversationId}/participants/${userId}`,
-      { group_role: groupRole },
-    );
     return response.data;
   },
 };

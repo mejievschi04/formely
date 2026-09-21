@@ -131,8 +131,6 @@ const NotificationsDrawer = ({ open, onClose, variant, apiItems, loading, onLoca
 	if (!portalTarget) return null;
 
 	const title = 'Notificări';
-	const subtitle = isStudent ? 'Primite și istoric' : 'Alerte și mesaje pentru echipă';
-
 	const content = (
 		<>
 			<button type="button" className="va-notif-drawer-backdrop" aria-label="Închide" onClick={onClose} />
@@ -147,7 +145,6 @@ const NotificationsDrawer = ({ open, onClose, variant, apiItems, loading, onLoca
 						<h2 id="va-notif-drawer-title" className="va-notif-drawer-title">
 							{title}
 						</h2>
-						<p className="va-notif-drawer-sub">{subtitle}</p>
 					</div>
 					<button type="button" className="va-notif-drawer-close" onClick={onClose} aria-label="Închide">
 						<CloseIcon />

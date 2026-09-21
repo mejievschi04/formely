@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { openaiService } from '../../../services/openaiService';
 import { useToast } from '../../../contexts/ToastContext';
 import { buildCourseQualityValidationPrompt } from '../../../utils/aiPrompts';
-import { runAiAction } from '../../../utils/aiAvailability';
+import { isAiEnabled, runAiAction } from '../../../utils/aiAvailability';
 
 /**
  * Course Quality Validation - Conform defacut.md secțiunea 8
@@ -92,7 +92,7 @@ const CourseQualityValidation = ({ courseData, onValidationComplete }) => {
 	const getStatusColor = (status) => {
 		switch (status) {
 			case 'ok': return '#10b981';
-			case 'warning': return '#f59e0b';
+			case 'warning': return '#0e7490';
 			case 'error': return '#ef4444';
 			default: return '#6b7280';
 		}
@@ -110,6 +110,7 @@ const CourseQualityValidation = ({ courseData, onValidationComplete }) => {
 
 	return (
 		<div className="course-quality-validation">
+			{isAiEnabled() ? (
 			<div className="validation-header">
 				<h3>🔍 Validare Calitate Curs</h3>
 				<button
@@ -121,6 +122,11 @@ const CourseQualityValidation = ({ courseData, onValidationComplete }) => {
 					{validating ? '⏳ Validează...' : '🤖 Rulează validare AI'}
 				</button>
 			</div>
+			) : (
+			<div className="validation-header">
+				<h3>🔍 Validare Calitate Curs</h3>
+			</div>
+			)}
 
 			{/* Readiness Score */}
 			{readinessScore !== null && (
@@ -136,7 +142,7 @@ const CourseQualityValidation = ({ courseData, onValidationComplete }) => {
 							className="readiness-score-fill"
 							style={{ 
 								width: `${readinessScore}%`,
-								background: readinessScore >= 80 ? '#10b981' : readinessScore >= 60 ? '#f59e0b' : '#ef4444'
+								background: readinessScore >= 80 ? '#10b981' : readinessScore >= 60 ? '#0e7490' : '#ef4444'
 							}}
 						/>
 					</div>

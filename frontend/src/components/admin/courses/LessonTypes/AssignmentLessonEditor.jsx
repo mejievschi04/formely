@@ -3,7 +3,7 @@ import RichTextEditor from '../../../RichTextEditor';
 import { openaiService } from '../../../../services/openaiService';
 import { useToast } from '../../../../contexts/ToastContext';
 import { buildAssignmentLessonPrompt } from '../../../../utils/aiPrompts';
-import { runAiAction } from '../../../../utils/aiAvailability';
+import { isAiEnabled, runAiAction } from '../../../../utils/aiAvailability';
 
 /**
  * Assignment / Practice Lesson Editor - Conform defacut.md secțiunea 5.3
@@ -99,6 +99,7 @@ const AssignmentLessonEditor = ({ lesson, onUpdate }) => {
 			</div>
 
 			{/* Generate Exercises Button */}
+			{isAiEnabled() ? (
 			<div className="admin-form-group">
 				<button
 					type="button"
@@ -112,6 +113,7 @@ const AssignmentLessonEditor = ({ lesson, onUpdate }) => {
 					AI va genera exerciții practice pe baza obiectivului și constrângerilor definite
 				</p>
 			</div>
+			) : null}
 
 			{/* Generated Exercises */}
 			{generatedExercises.length > 0 && (

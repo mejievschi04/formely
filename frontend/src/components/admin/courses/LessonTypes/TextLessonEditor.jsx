@@ -3,7 +3,7 @@ import RichTextEditor from '../../../RichTextEditor';
 import { openaiService } from '../../../../services/openaiService';
 import { useToast } from '../../../../contexts/ToastContext';
 import { buildTextLessonDifficultyPrompt, buildTextLessonTransformPrompt } from '../../../../utils/aiPrompts';
-import { runAiAction } from '../../../../utils/aiAvailability';
+import { isAiEnabled, runAiAction } from '../../../../utils/aiAvailability';
 
 /**
  * Text Lesson Editor - Conform defacut.md secțiunea 5.2
@@ -128,6 +128,7 @@ const TextLessonEditor = ({ lesson, onUpdate }) => {
 
 	return (
 		<div className="text-lesson-editor">
+			{isAiEnabled() ? (
 			<div className="admin-form-group">
 				<div className="ai-actions-toolbar">
 					<button
@@ -168,6 +169,7 @@ const TextLessonEditor = ({ lesson, onUpdate }) => {
 					</button>
 				</div>
 			</div>
+			) : null}
 
 			<div className="admin-form-group">
 				<label className="admin-form-label">

@@ -38,7 +38,7 @@ const AdminTopCoursesPage = () => {
 						← Înapoi la Dashboard
 					</button>
 					<h1 className="admin-page-title">Top Cursuri</h1>
-					<p className="admin-page-subtitle">Cursurile cu cele mai bune performanțe</p>
+					<p className="admin-page-subtitle">Cursurile cu cele mai bune rezultate în Formely.</p>
 				</div>
 			</div>
 			{error && (

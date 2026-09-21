@@ -348,73 +348,385 @@ PROMPT;
         string $difficulty,
         array $questionTypes,
         array $usedQuestions = [],
-        string $extraInstructions = ''
+        string $extraInstructions = '',
+        string $preferredType = '',
+        array $cognitiveLevels = []
     ): string {
-        $typeList = array_values(array_filter(array_map('strval', $questionTypes)));
-        if (empty($typeList)) {
-            $typeList = ['multiple_choice', 'true_false'];
+        $typeList = self::normalizeQuestionTypeList($questionTypes);
+        $cognitiveLevelList = self::normalizeCognitiveLevelList($cognitiveLevels);
+        if ($preferredType !== '' && in_array($preferredType, $typeList, true)) {
+            $typeList = [$preferredType];
         }
 
-        $prompt = "Esti AI Question Generator. Generezi exact o singura intrebare de curs, strict bazata pe continutul primit.\n\n";
-        $prompt .= "Obiectiv pedagogic:\n";
-        $prompt .= "- testeaza un singur concept esential, nu o lista de idei\n";
-        $prompt .= "- prefera intelegere, aplicare si diferentiere corecta, nu memorare mecanica\n";
-        $prompt .= "- evita intrebarile-truc, ambiguitatea si formularea vaga\n\n";
-        $prompt .= "Contract de raspuns:\n";
-        $prompt .= "- raspunde strict JSON valid\n";
-        $prompt .= "- include `response_type` cu valoarea `question`\n";
-        $prompt .= "- nu folosi markdown si nu adauga text extra\n";
-        $prompt .= "- genereaza exact 1 intrebare per raspuns\n";
-        $prompt .= "- daca ai prea putin context, construieste cea mai sigura intrebare posibila fara sa inventezi detalii\n\n";
-        $prompt .= "Reguli de calitate:\n";
-        $prompt .= "- foloseste doar informatii din curs\n";
-        $prompt .= "- nu inventa detalii si nu completa golurile cu presupuneri\n";
-        $prompt .= "- intrebare clara, cu un singur raspuns corect si o singura idee centrala\n";
-        $prompt .= "- evita enunturile negative duble, formularea capcana si ambiguitatea gramaticala\n";
-        $prompt .= "- distractorii trebuie sa fie plauzibili, dar clar gresiti, cu acelasi stil si nivel de specificitate\n";
-        $prompt .= "- nu folosi raspunsuri de tipul all of the above, none of the above sau variante care depind de ambiguitate\n";
-        $prompt .= "- nu repeta si nu parafraza intrebarile deja folosite\n\n";
-        $prompt .= "Calibrare dupa dificultate:\n";
-        $prompt .= "- easy: definitii, concepte de baza, recunoastere directa\n";
-        $prompt .= "- medium: aplicare, comparatie, relatii intre concepte, selectie corecta din context\n";
-        $prompt .= "- hard: distinctii fine, cazuri limita, interpretare, ordonare sau inferenta strict sustinuta de curs\n\n";
-        $prompt .= "Reguli pentru tipul intrebarii:\n";
-        $prompt .= "- daca este multiple_choice, foloseste exact 4 variante si exact 1 corecta\n";
-        $prompt .= "- daca este true_false, enuntul trebuie sa fie clar si verificabil din curs\n";
-        $prompt .= "- daca sunt permise mai multe tipuri, alege tipul care se potriveste cel mai bine continutului si dificultatii\n";
-        $prompt .= "- mentine aceeasi structura, lungime si registru pentru toate variantele de raspuns\n\n";
-        $prompt .= "Setari:\n";
-        $prompt .= "- difficulty: {$difficulty}\n";
-        $prompt .= "- allowed_types: " . implode(', ', $typeList) . "\n";
-        $prompt .= "- create exactly 1 question\n\n";
+        $prompt = "Esti Formely AI Question Generator. Generezi exact o singura intrebare de curs, strict bazata pe continutul primit.
+
+";
+        $prompt .= "Obiectiv pedagogic:
+";
+        $prompt .= "- testeaza un singur concept esential din MATERIALUL DE STUDIU, nu o lista de idei
+";
+        $prompt .= "- prefera intelegere, aplicare si diferentiere corecta, nu memorare mecanica
+";
+        $prompt .= "- evita intrebarile-truc, ambiguitatea si formularea vaga
+
+";
+        $prompt .= "INTERZIS (foarte important):
+";
+        $prompt .= "- nu intreba despre structura cursului: cate module sau lectii are, in ce ordine sunt, cum este organizat
+";
+        $prompt .= "- nu intreba despre titlurile sau descrierile modulelor/lectiilor sau ce contine un anumit modul
+";
+        $prompt .= "- nu intreba meta-informatii despre curs (autor, durata, scop general)
+";
+        $prompt .= "- intrebarea trebuie sa testeze cunostinte concrete din textul materialului: definitii, concepte, procese, fapte, formule, relatii cauza-efect, comparatii intre notiuni
+
+";
+        $prompt .= "Contract de raspuns:
+";
+        $prompt .= "- raspunde strict JSON valid
+";
+        $prompt .= "- include `response_type` cu valoarea `question`
+";
+        $prompt .= "- nu folosi markdown si nu adauga text extra
+";
+        $prompt .= "- genereaza exact 1 intrebare per raspuns
+";
+        $prompt .= "- daca ai prea putin context, construieste cea mai sigura intrebare posibila fara sa inventezi detalii
+
+";
+        $prompt .= "Reguli de calitate:
+";
+        $prompt .= "- foloseste doar informatii din curs
+";
+        $prompt .= "- nu inventa detalii si nu completa golurile cu presupuneri
+";
+        $prompt .= "- intrebare clara, cu un singur raspuns corect si o singura idee centrala
+";
+        $prompt .= "- evita enunturile negative duble, formularea capcana si ambiguitatea gramaticala
+";
+        $prompt .= "- distractorii trebuie sa fie plauzibili, dar clar gresiti, cu acelasi stil si nivel de specificitate
+";
+        $prompt .= "- nu folosi raspunsuri de tipul all of the above, none of the above sau variante care depind de ambiguitate
+";
+        $prompt .= "- nu repeta si nu parafraza intrebarile deja folosite
+
+";
+        $prompt .= "Calibrare dupa dificultate:
+";
+        $prompt .= "- easy: definitii, concepte de baza, recunoastere directa
+";
+        $prompt .= "- medium: aplicare, comparatie, relatii intre concepte, selectie corecta din context
+";
+        $prompt .= "- hard: distinctii fine, cazuri limita, interpretare, ordonare sau inferenta strict sustinuta de curs
+
+";
+        $prompt .= "Reguli pentru tipul intrebarii:
+";
+        $prompt .= self::buildQuestionTypeRulesPrompt($typeList);
+        $prompt .= self::buildCognitiveLevelRulesPrompt($cognitiveLevelList);
+        $prompt .= "
+Setari:
+";
+        $prompt .= "- difficulty: {$difficulty}
+";
+        $prompt .= "- allowed_types: " . implode(', ', $typeList) . "
+";
+        if (!empty($cognitiveLevelList)) {
+            $prompt .= "- cognitive_levels: " . implode(', ', $cognitiveLevelList) . "
+";
+        }
+        $prompt .= "- create exactly 1 question
+
+";
         if (!empty($usedQuestions)) {
-            $prompt .= "Intrebari deja folosite sau respinse:\n";
+            $prompt .= "Intrebari deja folosite sau respinse:
+";
             foreach ($usedQuestions as $index => $usedQuestion) {
-                $prompt .= ($index + 1) . '. ' . $usedQuestion . "\n";
+                $prompt .= ($index + 1) . '. ' . $usedQuestion . "
+";
             }
-            $prompt .= "\n";
+            $prompt .= "
+";
         }
         if (trim($extraInstructions) !== '') {
-            $prompt .= "Instructiuni suplimentare:\n";
-            $prompt .= trim($extraInstructions) . "\n\n";
+            $prompt .= "Instructiuni suplimentare:
+";
+            $prompt .= trim($extraInstructions) . "
+
+";
         }
-        $prompt .= "Continut curs:\n{$courseContent}\n\n";
-        $prompt .= "Schema JSON asteptata:\n";
-        $prompt .= "{\n";
-        $prompt .= '  "response_type": "question",\n';
-        $prompt .= '  "content": "Intrebarea",\n';
-        $prompt .= '  "type": "multiple_choice|true_false",\n';
-        $prompt .= '  "answers": [\n';
-        $prompt .= '    {"text": "Raspuns 1", "is_correct": true},\n';
-        $prompt .= '    {"text": "Raspuns 2", "is_correct": false},\n';
-        $prompt .= '    {"text": "Raspuns 3", "is_correct": false},\n';
-        $prompt .= '    {"text": "Raspuns 4", "is_correct": false}\n';
-        $prompt .= '  ],\n';
-        $prompt .= '  "points": 1,\n';
-        $prompt .= '  "explanation": "Explicatia raspunsului corect",\n';
-        $prompt .= '  "difficulty": "easy|medium|hard",\n';
-        $prompt .= '  "tags": ["tag1", "tag2"]\n';
-        $prompt .= "}\n";
+        $prompt .= "Continut curs:
+{$courseContent}
+
+";
+        $prompt .= self::buildSingleQuestionSchemaPrompt($typeList);
+
+        return $prompt;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function normalizeQuestionTypeList(array $questionTypes): array
+    {
+        $allowed = ['multiple_choice', 'single_choice', 'true_false', 'matching', 'ordering'];
+        $typeList = array_values(array_intersect(
+            array_values(array_filter(array_map('strval', $questionTypes))),
+            $allowed
+        ));
+
+        return !empty($typeList) ? $typeList : $allowed;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function normalizeCognitiveLevelList(array $cognitiveLevels): array
+    {
+        $allowed = ['recall', 'understanding', 'application', 'analysis'];
+        return array_values(array_intersect(
+            array_values(array_filter(array_map('strval', $cognitiveLevels))),
+            $allowed
+        ));
+    }
+
+    private static function buildCognitiveLevelRulesPrompt(array $cognitiveLevels): string
+    {
+        if (empty($cognitiveLevels)) {
+            return '';
+        }
+
+        $labels = [
+            'recall' => 'memorare/recunoastere: definitii, termeni, fapte explicite',
+            'understanding' => 'intelegere: explicarea unei relatii, identificarea sensului corect',
+            'application' => 'aplicare: folosirea conceptului intr-un caz/scenariu concret',
+            'analysis' => 'analiza: comparatii, cauze-efect, distinctii fine sustinute de material',
+        ];
+
+        $prompt = "
+Nivel cognitiv Bloom dorit:
+";
+        foreach ($cognitiveLevels as $level) {
+            $prompt .= '- ' . ($labels[$level] ?? $level) . "
+";
+        }
+        if (count($cognitiveLevels) > 1) {
+            $prompt .= "- daca generezi mai multe intrebari, distribuie nivelurile cognitive selectate cat mai echilibrat
+";
+        }
+
+        return $prompt . "
+";
+    }
+
+    private static function buildQuestionTypeRulesPrompt(array $typeList): string
+    {
+        $rules = [];
+        if (in_array('multiple_choice', $typeList, true)) {
+            $rules[] = '- multiple_choice: exact 4 variante, exact 1 corecta';
+        }
+        if (in_array('single_choice', $typeList, true)) {
+            $rules[] = '- single_choice: exact 4 variante, exact 1 corecta (afisare radio)';
+        }
+        if (in_array('true_false', $typeList, true)) {
+            $rules[] = '- true_false: enunt clar si verificabil din material, 2 variante (Adevarat/Fals)';
+        }
+        if (in_array('matching', $typeList, true)) {
+            $rules[] = '- matching: potriveste 3-4 perechi termen-definitie din material; fiecare pereche are left (termen) si right (definitie/raspuns corect); perechile trebuie sa fie distincte';
+        }
+        if (in_array('ordering', $typeList, true)) {
+            $rules[] = '- ordering: 3-5 pasi/etape in ordinea corecta din material; answers sunt elementele in ordinea corecta (primul = primul pas)';
+        }
+        if (count($typeList) > 1) {
+            $rules[] = '- alege tipul care se potriveste cel mai bine continutului si dificultatii';
+        }
+
+        return implode("
+", $rules) . "
+";
+    }
+
+    private static function buildSingleQuestionSchemaPrompt(array $typeList): string
+    {
+        $typeHint = implode('|', $typeList);
+        $prompt = "Schema JSON asteptata:
+{
+";
+        $prompt .= '  "response_type": "question",' . "
+";
+        $prompt .= '  "content": "Intrebarea",' . "
+";
+        $prompt .= '  "type": "' . $typeHint . '",' . "
+";
+        $prompt .= '  "answers": [...],' . "
+";
+        $prompt .= '  "points": 1,' . "
+";
+        $prompt .= '  "explanation": "Explicatia raspunsului corect",' . "
+";
+        $prompt .= '  "difficulty": "easy|medium|hard",' . "
+";
+        $prompt .= '  "cognitive_level": "recall|understanding|application|analysis"' . "
+";
+        $prompt .= "}
+
+";
+        $prompt .= "Exemple answers dupa tip:
+";
+        if (array_intersect($typeList, ['multiple_choice', 'single_choice', 'true_false'])) {
+            $prompt .= "- choice/true_false: [{\"text\":\"...\",\"is_correct\":true},{\"text\":\"...\",\"is_correct\":false}]
+";
+        }
+        if (in_array('matching', $typeList, true)) {
+            $prompt .= "- matching: [{\"left\":\"Termen\",\"right\":\"Definitie\"},{\"left\":\"Termen 2\",\"right\":\"Definitie 2\"}]
+";
+        }
+        if (in_array('ordering', $typeList, true)) {
+            $prompt .= "- ordering: [{\"text\":\"Pasul 1\"},{\"text\":\"Pasul 2\"},{\"text\":\"Pasul 3\"}]
+";
+        }
+
+        return $prompt;
+    }
+
+    /**
+     * Build a prompt that asks the model for MULTIPLE questions in a single call.
+     * Used by the auto-generate flow to avoid one HTTP/AI roundtrip per question.
+     */
+    public static function buildBatchQuestionGenerationPrompt(
+        string $courseContent,
+        string $difficulty,
+        array $questionTypes,
+        int $numberOfQuestions,
+        array $usedQuestions = [],
+        array $cognitiveLevels = []
+    ): string {
+        $typeList = self::normalizeQuestionTypeList($questionTypes);
+        $cognitiveLevelList = self::normalizeCognitiveLevelList($cognitiveLevels);
+        $count = max(1, $numberOfQuestions);
+
+        $prompt = "Esti Formely AI Question Generator. Generezi exact {$count} intrebari de curs, strict bazate pe MATERIALUL DE STUDIU primit.
+
+";
+        $prompt .= "Obiectiv pedagogic:
+";
+        $prompt .= "- fiecare intrebare testeaza un singur concept esential din material
+";
+        $prompt .= "- prefera intelegere, aplicare si diferentiere corecta, nu memorare mecanica
+";
+        $prompt .= "- intrebarile trebuie sa acopere subiecte DIFERITE din material, fara repetari sau parafrazari
+
+";
+        $prompt .= "INTERZIS (foarte important):
+";
+        $prompt .= "- nu intreba despre structura cursului: cate module sau lectii are, in ce ordine sunt, cum este organizat
+";
+        $prompt .= "- nu intreba despre titlurile sau descrierile modulelor/lectiilor
+";
+        $prompt .= "- nu intreba meta-informatii despre curs (autor, durata, scop general)
+";
+        $prompt .= "- fiecare intrebare testeaza cunostinte concrete din text: definitii, concepte, procese, fapte, formule, relatii cauza-efect, comparatii
+
+";
+        $prompt .= "Reguli de calitate:
+";
+        $prompt .= "- foloseste doar informatii din material, nu inventa detalii
+";
+        $prompt .= "- intrebare clara, autonoma, cu un singur raspuns corect si fara ambiguitate
+";
+        $prompt .= "- nu folosi formulari de tip 'conform textului' sau 'potrivit materialului' in enunt
+
+";
+        $prompt .= "Reguli STRICTE pentru intrebarile cu variante (multiple_choice / single_choice / true_false):
+";
+        $prompt .= "- exact 4 variante distincte (true_false: 2), fara duplicate si fara variante echivalente ca sens
+";
+        $prompt .= "- toate variantele au lungime, stil si nivel de detaliu SIMILARE (raspunsul corect sa NU fie evident mai lung sau mai detaliat)
+";
+        $prompt .= "- distractorii trebuie sa fie plauzibili si din acelasi domeniu, dar clar gresiti conform materialului
+";
+        $prompt .= "- nu folosi variante generice precum 'un raspuns la intamplare', 'alt subiect', 'optiunea 1'
+";
+        $prompt .= "- interzis: 'toate cele de mai sus', 'niciuna', 'all of the above', 'none of the above', 'ambele'
+
+";
+        $prompt .= "Calibrare dupa dificultate:
+";
+        $prompt .= "- easy: definitii, concepte de baza, recunoastere directa
+";
+        $prompt .= "- medium: aplicare, comparatie, relatii intre concepte
+";
+        $prompt .= "- hard: distinctii fine, cazuri limita, interpretare sustinuta de material
+
+";
+        $prompt .= "Reguli pentru tipul intrebarii:
+";
+        $prompt .= self::buildQuestionTypeRulesPrompt($typeList);
+        if (count($typeList) > 1) {
+            $prompt .= "- variaza tipurile intrebarilor in setul generat (nu folosi acelasi tip pentru toate)
+";
+        }
+        $prompt .= self::buildCognitiveLevelRulesPrompt($cognitiveLevelList);
+        $prompt .= "
+Setari:
+";
+        $prompt .= "- difficulty: {$difficulty}
+";
+        $prompt .= "- allowed_types: " . implode(', ', $typeList) . "
+";
+        if (!empty($cognitiveLevelList)) {
+            $prompt .= "- cognitive_levels: " . implode(', ', $cognitiveLevelList) . "
+";
+        }
+        $prompt .= "- numar exact de intrebari: {$count}
+
+";
+        $usedQuestions = array_values(array_filter(array_map('strval', $usedQuestions)));
+        if (!empty($usedQuestions)) {
+            $prompt .= "Intrebari deja generate (NU le repeta si NU le parafraza, alege subiecte diferite din material):
+";
+            foreach ($usedQuestions as $index => $usedQuestion) {
+                $prompt .= ($index + 1) . '. ' . $usedQuestion . "
+";
+            }
+            $prompt .= "
+";
+        }
+        $prompt .= "Continut curs:
+{$courseContent}
+
+";
+        $typeHint = implode('|', $typeList);
+        $prompt .= "Raspunde STRICT cu JSON valid, fara markdown, exact in forma:
+";
+        $prompt .= "{
+";
+        $prompt .= '  "questions": [' . "
+";
+        $prompt .= "    {
+";
+        $prompt .= '      "content": "Intrebarea",' . "
+";
+        $prompt .= '      "type": "' . $typeHint . '",' . "
+";
+        $prompt .= '      "answers": [...],' . "
+";
+        $prompt .= '      "points": 1,' . "
+";
+        $prompt .= '      "explanation": "Explicatia raspunsului corect",' . "
+";
+        $prompt .= '      "difficulty": "easy|medium|hard",' . "
+";
+        $prompt .= '      "cognitive_level": "' . (!empty($cognitiveLevelList) ? implode('|', $cognitiveLevelList) : 'recall|understanding|application|analysis') . '"' . "
+";
+        $prompt .= "    }
+";
+        $prompt .= "  ]
+";
+        $prompt .= "}
+
+";
+        $prompt .= self::buildSingleQuestionSchemaPrompt($typeList);
 
         return $prompt;
     }
@@ -455,6 +767,39 @@ PROMPT;
     {
         return 'Esti AI Question Generator. Raspunzi strict JSON valid, fara markdown si fara text extra. Generezi exact o singura intrebare bazata strict pe curs si respecti schema ceruta.';
     }
+
+    public static function buildTutorPrompt(string $mode = 'admin_tutor'): string
+    {
+        $isStudent = str_starts_with($mode, 'student_tutor');
+        $role = $isStudent
+            ? 'Ești Formely AI, tutor personal pentru cursanți în Formely.'
+            : 'Ești Formely AI, asistentul administratorului/instructorului în Formely.';
+
+        $scope = $isStudent
+            ? '- Răspunzi la întrebări despre lecția curentă, conceptele din curs și exerciții de înțelegere.
+- Nu oferi răspunsuri la evaluări sau teste în locul cursantului; ghidează spre înțelegere.'
+            : '- Răspunzi la întrebări despre platformă, elevi, cursuri, teste, progres, statistici și recomandări.
+- Folosești datele din context (`platform_data`, `catalog_summary`, `relevant_courses`, `context_chunks`) ca sursă principală.';
+
+        return <<<PROMPT
+{$role}
+
+Scop:
+{$scope}
+- Nu inventezi cifre. Dacă o valoare lipsește, spui clar că nu este disponibilă în date.
+
+Format răspuns (OBLIGATORIU):
+- Răspuns în text natural, în română, clar și concis (poți folosi paragrafe scurte și liste cu bullet).
+- INTERZIS: JSON de tip curs/test (`response_type`, `modules`, `lessons`, `title`, `assumptions` etc.).
+- INTERZIS: a transforma statisticile sau analizele într-un „curs” cu module și lecții.
+- Pentru întrebări analitice: oferă cifre concrete, observații și 2-4 recomandări acționabile.
+- Pentru întrebări despre conținut educațional: explică pe scurt, cu exemple din context.
+
+Creare conținut:
+- Dacă utilizatorul cere explicit crearea unui curs sau test, spune-i să folosească builder-ul dedicat, nu genera structură de curs aici.
+PROMPT;
+    }
+
     public static function buildTestPrompt(string $jsonMode): string
     {
         return <<<PROMPT

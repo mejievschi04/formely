@@ -1,18 +1,150 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { PencilSimple, Plus, Trash, UsersThree, X } from '@phosphor-icons/react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import {
+	ArrowCounterClockwise,
+	Check,
+	EnvelopeSimple,
+	PencilSimple,
+	Plus,
+	Trash,
+	UsersThree,
+	X,
+} from '@phosphor-icons/react';
 import { adminService } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
 import { logger } from '../../utils/logger';
 import { toImageUrl } from '../../utils/imageUrl';
 import Modal from '../../components/common/Modal';
 import ConfirmModal from '../../components/common/ConfirmModal';
+import AdminUserInvitationsPanel from '../../components/admin/users/AdminUserInvitationsPanel';
 import { useAuth } from '../../contexts/AuthContext';
 import { teamAccentNeutral as teamAccent } from '../../utils/teamAccent';
+import { canAssignAnalyst, seatSummary, formatSeatCap } from '../../utils/entitlements';
+import {
+	ASSIGNABLE_ROLES,
+	STAFF_ADMIN_ROLES,
+	getRoleLabel,
+	isStaffAdminRole,
+} from '../../constants/staffRoles';
+
+const STAFF_ROLE_OPTIONS = STAFF_ADMIN_ROLES.map((value) => ({
+	value,
+	label: getRoleLabel(value),
+}));
+
+const ICON = 18;
+
+function UserActionIconButton({ label, onClick, variant = 'default', children }) {
+	return (
+		<button
+			type="button"
+			className={`admin-users-icon-btn${variant === 'danger' ? ' admin-users-icon-btn--danger' : ''}${variant === 'success' ? ' admin-users-icon-btn--success' : ''}`}
+			onClick={onClick}
+			title={label}
+			aria-label={label}
+		>
+			{children}
+		</button>
+	);
+}
+
+function UserTableActions({
+	user,
+	usersView,
+	onApprove,
+	onReject,
+	onEdit,
+	onTrash,
+	onRestore,
+	onForceDelete,
+}) {
+	const status = user.status || 'active';
+
+	if (usersView === 'trash') {
+		return (
+			<div className="admin-users-action-bar" role="group" aria-label="Acțiuni coș">
+				<UserActionIconButton
+					label="Restabilește utilizatorul"
+					variant="success"
+					onClick={(e) => {
+						e.stopPropagation();
+						onRestore(user.id);
+					}}
+				>
+					<ArrowCounterClockwise size={ICON} weight="bold" aria-hidden />
+				</UserActionIconButton>
+				<UserActionIconButton
+					label="Șterge definitiv"
+					variant="danger"
+					onClick={(e) => {
+						e.stopPropagation();
+						onForceDelete(user);
+					}}
+				>
+					<Trash size={ICON} weight="bold" aria-hidden />
+				</UserActionIconButton>
+			</div>
+		);
+	}
+
+	if (status === 'pending') {
+		return (
+			<div className="admin-users-action-bar" role="group" aria-label="Acțiuni cerere">
+				<UserActionIconButton
+					label="Aprobă cererea"
+					variant="success"
+					onClick={(e) => {
+						e.stopPropagation();
+						onApprove(user.id);
+					}}
+				>
+					<Check size={ICON} weight="bold" aria-hidden />
+				</UserActionIconButton>
+				<UserActionIconButton
+					label="Respinge cererea"
+					variant="danger"
+					onClick={(e) => {
+						e.stopPropagation();
+						onReject(user.id);
+					}}
+				>
+					<X size={ICON} weight="bold" aria-hidden />
+				</UserActionIconButton>
+			</div>
+		);
+	}
+
+	return (
+		<div className="admin-users-action-bar" role="group" aria-label="Acțiuni utilizator">
+			<UserActionIconButton
+				label="Editează"
+				onClick={(e) => {
+					e.stopPropagation();
+					onEdit(user);
+				}}
+			>
+				<PencilSimple size={ICON} weight="bold" aria-hidden />
+			</UserActionIconButton>
+			<UserActionIconButton
+				label="Mută în coș"
+				variant="danger"
+				onClick={(e) => {
+					e.stopPropagation();
+					onTrash(user.id);
+				}}
+			>
+				<Trash size={ICON} weight="bold" aria-hidden />
+			</UserActionIconButton>
+		</div>
+	);
+}
 
 const AdminUsersPage = () => {
 	const navigate = useNavigate();
-	const { canMutateInAdminArea } = useAuth();
+	const [searchParams, setSearchParams] = useSearchParams();
+	const audienceTab = searchParams.get('tab') === 'staff' ? 'staff' : 'users';
+	const { canMutateInAdminArea, user } = useAuth();
+	const seats = seatSummary(user);
 	const { success: showSuccess, error: showError } = useToast();
 	const [users, setUsers] = useState([]);
 	const [teams, setTeams] = useState([]);
@@ -26,11 +158,13 @@ const AdminUsersPage = () => {
 	const [roleFilter, setRoleFilter] = useState('all');
 	const [statusFilter, setStatusFilter] = useState('all');
 	const [searchQuery, setSearchQuery] = useState('');
-	const [usersView, setUsersView] = useState('active'); // 'active' | 'trash' (coș)
-	const [confirmAction, setConfirmAction] = useState(null); // { type: 'trash'|'reject', userId }
+	const [usersView, setUsersView] = useState('active'); // 'active' | 'trash' | 'invitations'
+	const [inviteModalOpen, setInviteModalOpen] = useState(false);
+	const [confirmAction, setConfirmAction] = useState(null); // { type: 'trash'|'reject'|'forceDelete', userId, userName? }
 	const [confirmLoading, setConfirmLoading] = useState(false);
 	const [formData, setFormData] = useState({
 		name: '',
+		job_title: '',
 		email: '',
 		password: '',
 		role: 'student',
@@ -43,12 +177,50 @@ const AdminUsersPage = () => {
 	}, []);
 
 	useEffect(() => {
+		if (usersView === 'invitations') return;
 		fetchUsers();
-	}, [statusFilter, usersView, searchQuery]);
+	}, [statusFilter, usersView, searchQuery, audienceTab]);
+
+	useEffect(() => {
+		if (audienceTab === 'staff' && !['all', ...STAFF_ADMIN_ROLES].includes(roleFilter)) {
+			setRoleFilter('all');
+		}
+		if (audienceTab === 'users' && isStaffAdminRole(roleFilter)) {
+			setRoleFilter('all');
+		}
+	}, [audienceTab, roleFilter]);
 
 	useEffect(() => {
 		applyFiltersAndSort();
-	}, [users, sortBy, sortOrder, roleFilter]);
+	}, [users, sortBy, sortOrder, roleFilter, audienceTab]);
+
+	const setAudienceTab = (tab) => {
+		const next = new URLSearchParams(searchParams);
+		if (tab === 'staff') {
+			next.set('tab', 'staff');
+		} else {
+			next.delete('tab');
+		}
+		setSearchParams(next, { replace: true });
+	};
+
+	const roleFilterOptions = useMemo(() => {
+		if (audienceTab === 'staff') {
+			return [{ value: 'all', label: 'Toate rolurile de personal' }, ...STAFF_ROLE_OPTIONS];
+		}
+		return [
+			{ value: 'all', label: 'Toți cursanții' },
+			{ value: 'employee', label: getRoleLabel('employee') },
+			{ value: 'student', label: `${getRoleLabel('student')} (cont vechi)` },
+		];
+	}, [audienceTab]);
+
+	const modalRoleOptions = useMemo(() => {
+		const base = audienceTab === 'staff'
+			? ASSIGNABLE_ROLES.filter((r) => isStaffAdminRole(r.value))
+			: ASSIGNABLE_ROLES.filter((r) => !isStaffAdminRole(r.value));
+		return base.filter((r) => r.value !== 'analyst' || canAssignAnalyst(user));
+	}, [audienceTab, user]);
 
 	const fetchUsers = async () => {
 		try {
@@ -57,6 +229,12 @@ const AdminUsersPage = () => {
 			if (statusFilter !== 'all') params.status = statusFilter;
 			if (searchQuery.trim()) params.search = searchQuery.trim();
 			if (usersView === 'trash') params.trashed = 1;
+			params.per_page = 100;
+			if (audienceTab === 'staff') {
+				params.team_members_only = 1;
+			} else {
+				params.learners_only = 1;
+			}
 			const data = await adminService.getUsers(params);
 			setUsers(Array.isArray(data) ? data : []);
 		} catch (err) {
@@ -78,6 +256,12 @@ const AdminUsersPage = () => {
 
 	const applyFiltersAndSort = () => {
 		let filtered = [...users];
+
+		if (audienceTab === 'staff') {
+			filtered = filtered.filter((user) => isStaffAdminRole(user.role));
+		} else {
+			filtered = filtered.filter((user) => !isStaffAdminRole(user.role));
+		}
 
 		// Filter by role
 		if (roleFilter !== 'all') {
@@ -157,7 +341,7 @@ const AdminUsersPage = () => {
 
 			setShowModal(false);
 			setEditingUser(null);
-			setFormData({ name: '', email: '', password: '', role: 'student', bio: '', team_id: '' });
+			setFormData({ name: '', job_title: '', email: '', password: '', role: 'student', bio: '', team_id: '' });
 			fetchUsers();
 		} catch (err) {
 			logger.error('Error saving user:', err);
@@ -181,6 +365,7 @@ const AdminUsersPage = () => {
 		setEditingUser(user);
 		setFormData({
 			name: user.name,
+			job_title: user.job_title || '',
 			email: user.email,
 			password: '',
 			role: normalizeFormRole(user.role),
@@ -194,12 +379,32 @@ const AdminUsersPage = () => {
 		setConfirmAction({ type: 'trash', userId: id });
 	};
 
+	const handleForceDeleteClick = (user) => {
+		setConfirmAction({ type: 'forceDelete', userId: user.id, userName: user.name });
+	};
+
+	const handleConfirmForceDelete = async () => {
+		if (!confirmAction?.userId || confirmAction?.type !== 'forceDelete') return;
+		setConfirmLoading(true);
+		try {
+			await adminService.forceDeleteUser(confirmAction.userId);
+			showSuccess('Utilizator șters definitiv');
+			setConfirmAction(null);
+			fetchUsers();
+		} catch (err) {
+			logger.error('Error force deleting user:', err);
+			showError(err.response?.data?.message || 'Eroare la ștergerea definitivă');
+		} finally {
+			setConfirmLoading(false);
+		}
+	};
+
 	const handleConfirmDelete = async () => {
 		if (!confirmAction?.userId) return;
 		setConfirmLoading(true);
 		try {
 			await adminService.deleteUser(confirmAction.userId);
-			showSuccess('Utilizator mutat în coș');
+			showSuccess('Utilizator mutat în coș și dezactivat');
 			setConfirmAction(null);
 			fetchUsers();
 		} catch (err) {
@@ -213,7 +418,7 @@ const AdminUsersPage = () => {
 	const handleRestore = async (id) => {
 		try {
 			await adminService.restoreUser(id);
-			showSuccess('Utilizator restabilit cu succes');
+			showSuccess('Utilizator restabilit și reactivat');
 			fetchUsers();
 		} catch (err) {
 			logger.error('Error restoring user:', err);
@@ -252,17 +457,27 @@ const AdminUsersPage = () => {
 		}
 	};
 
-	const getRoleLabel = (role) => {
-		const roles = {
-			admin: 'Administrator',
-			instructor: 'Instructor',
-			analyst: 'Analist',
-			student: 'Utilizator',
-		};
-		return roles[role] || role || 'Utilizator';
+	const getStatusBadge = (status, inTrash = false) => {
+		if (inTrash) {
+			return (
+				<span className="admin-users-status-badge admin-users-status-inactive" title="Cont în coș — fără acces">
+					În coș
+				</span>
+			);
+		}
+		const s = status || 'active';
+		if (s === 'pending') {
+			return (
+				<span className="admin-users-status-badge admin-users-status-pending" title="Cerere în așteptare">
+					În așteptare
+				</span>
+			);
+		}
+		return null;
 	};
 
-	if (loading) {
+
+	if (loading && usersView !== 'invitations') {
 		return (
 			<div className="admin-container">
 				<div className="lms-dashboard-loading">
@@ -277,19 +492,65 @@ const AdminUsersPage = () => {
 			<div className="admin-page-header">
 				<div className="admin-page-header-content">
 					<h1 className="admin-page-title">Gestionare Utilizatori</h1>
-					<p className="admin-page-subtitle">Gestionează toți utilizatorii din platformă</p>
+					<p className="admin-page-subtitle">
+						{usersView === 'invitations'
+							? 'Invită colegi în Formely pe email și urmărește statusul trimiterii.'
+							: 'Conturi, roluri și acces în organizația ta Formely.'}
+					</p>
+					{seats && (
+						<p className="admin-users-seats" aria-label="Locuri plan">
+							{seats.planLabel ? `${seats.planLabel} · ` : ''}
+							Cursanți {seats.learnersUsed}/{formatSeatCap(seats.learnersMax)}
+							{' · '}
+							Staff {seats.staffUsed}/{formatSeatCap(seats.staffMax)}
+						</p>
+					)}
 				</div>
+				{usersView === 'invitations' && canMutateInAdminArea && (
+					<div className="admin-page-header-actions">
+						<button
+							type="button"
+							className="lms-btn-primary"
+							onClick={() => setInviteModalOpen(true)}
+						>
+							<EnvelopeSimple size={16} weight="duotone" aria-hidden />
+							Invitație nouă
+						</button>
+					</div>
+				)}
 				{usersView === 'active' && canMutateInAdminArea && (
-					<button
-						className="lms-btn-primary"
-						onClick={() => {
-							setEditingUser(null);
-							setFormData({ name: '', email: '', password: '', role: 'student', bio: '' });
-							setShowModal(true);
-						}}
-					>
-						<Plus size={16} weight="bold" aria-hidden /> Adaugă Utilizator
-					</button>
+					<div className="admin-page-header-actions">
+						<button
+							type="button"
+							className="lms-btn-secondary"
+							onClick={() => {
+								setUsersView('invitations');
+								setInviteModalOpen(true);
+							}}
+						>
+							<EnvelopeSimple size={16} weight="bold" aria-hidden /> Invită
+						</button>
+						<button
+							type="button"
+							className="lms-btn-primary"
+							onClick={() => {
+								setEditingUser(null);
+								setFormData({
+									name: '',
+									job_title: '',
+									email: '',
+									password: '',
+									role: audienceTab === 'staff' ? 'hr_admin' : 'employee',
+									bio: '',
+									team_id: '',
+								});
+								setShowModal(true);
+							}}
+						>
+							<Plus size={16} weight="bold" aria-hidden />
+							{audienceTab === 'staff' ? 'Adaugă personal' : 'Adaugă utilizator'}
+						</button>
+					</div>
 				)}
 			</div>
 
@@ -299,25 +560,77 @@ const AdminUsersPage = () => {
 				</div>
 			)}
 
-			{/* View toggle: Utilizatori | Coș */}
-			<nav className="admin-users-view-tabs" aria-label="Listă utilizatori sau coș">
+			{/* View toggle: Utilizatori | Personal | Coș */}
+			<nav className="admin-users-view-tabs" aria-label="Segment listă utilizatori">
 				<button
 					type="button"
-					className={`admin-users-view-tab ${usersView === 'active' ? 'active' : ''}`}
-					onClick={() => setUsersView('active')}
+					className={`admin-users-view-tab ${usersView === 'active' && audienceTab === 'users' ? 'active' : ''}`}
+					onClick={() => {
+						setUsersView('active');
+						setAudienceTab('users');
+					}}
 				>
 					Utilizatori
+				</button>
+				<button
+					type="button"
+					className={`admin-users-view-tab ${usersView === 'active' && audienceTab === 'staff' ? 'active' : ''}`}
+					onClick={() => {
+						setUsersView('active');
+						setAudienceTab('staff');
+					}}
+				>
+					Personal
 				</button>
 				{canMutateInAdminArea && (
 					<button
 						type="button"
+						className={`admin-users-view-tab ${usersView === 'invitations' ? 'active' : ''}`}
+						onClick={() => setUsersView('invitations')}
+					>
+						<EnvelopeSimple size={16} weight="duotone" aria-hidden />
+						Invitații
+					</button>
+				)}
+				{canMutateInAdminArea && (
+					<button
+						type="button"
 						className={`admin-users-view-tab ${usersView === 'trash' ? 'active' : ''}`}
-						onClick={() => setUsersView('trash')}
+						onClick={() => {
+							setUsersView('trash');
+							if (statusFilter !== 'all' && statusFilter !== 'pending' && statusFilter !== 'active') {
+								setStatusFilter('all');
+							}
+						}}
 					>
 						Coș
 					</button>
 				)}
 			</nav>
+
+			{usersView === 'invitations' && canMutateInAdminArea ? (
+				<AdminUserInvitationsPanel
+					teams={teams}
+					modalOpen={inviteModalOpen}
+					onModalOpenChange={setInviteModalOpen}
+				/>
+			) : (
+			<>
+			{audienceTab === 'staff' && usersView === 'active' && (
+				<p className="admin-users-audience-hint">
+					Structura departamente și echipe se gestionează din{' '}
+					<button type="button" className="admin-staff-inline-link" onClick={() => navigate('/admin/teams')}>
+						Organizație
+					</button>
+					.
+				</p>
+			)}
+
+			{usersView === 'trash' && (
+				<p className="admin-users-audience-hint admin-users-trash-hint">
+					În coș conturile sunt dezactivate (fără autentificare). Poți restabili sau șterge definitiv — aceasta din urmă este ireversibilă.
+				</p>
+			)}
 
 			{/* Căutare și filtre */}
 			<div className="admin-users-filters">
@@ -325,7 +638,7 @@ const AdminUsersPage = () => {
 					<input
 						type="text"
 						className="admin-users-search-input"
-						placeholder="Caută după nume sau email..."
+						placeholder="Caută după nume, email sau funcție..."
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
 						aria-label="Caută utilizatori"
@@ -337,10 +650,11 @@ const AdminUsersPage = () => {
 						className="admin-users-filter-select"
 						value={statusFilter}
 						onChange={(e) => setStatusFilter(e.target.value)}
+						disabled={usersView === 'trash'}
 					>
 						<option value="all">Toți utilizatorii</option>
 						<option value="pending">Cereri în așteptare</option>
-						<option value="active">Aprobați</option>
+						<option value="active">Activi</option>
 					</select>
 				</div>
 				<div className="admin-users-filter-group">
@@ -350,11 +664,11 @@ const AdminUsersPage = () => {
 						value={roleFilter}
 						onChange={(e) => setRoleFilter(e.target.value)}
 					>
-						<option value="all">Toate</option>
-						<option value="student">Utilizatori</option>
-						<option value="admin">Administratori</option>
-						<option value="instructor">Instructori</option>
-						<option value="analyst">Analiști</option>
+						{roleFilterOptions.map((opt) => (
+							<option key={opt.value} value={opt.value}>
+								{opt.label}
+							</option>
+						))}
 					</select>
 				</div>
 			</div>
@@ -379,13 +693,13 @@ const AdminUsersPage = () => {
 							<th>Cursuri Finalizate</th>
 							<th>Module Finalizate</th>
 							<th>Procentaj</th>
-							<th className="admin-users-table-cell-center">Acțiuni</th>
+							<th className="admin-users-col-actions">Acțiuni</th>
 						</tr>
 					</thead>
 					<tbody>
 						{filteredUsers.length > 0 ? (
 							filteredUsers.map((user) => {
-								const isAdmin = user.role === 'admin';
+								const isAdmin = ['admin', 'company_owner'].includes(user.role);
 								const totalCourses = user.total_courses || 0;
 								const completedCourses = user.completed_courses || 0;
 								const totalModules = user.total_modules || 0;
@@ -411,6 +725,9 @@ const AdminUsersPage = () => {
 												</div>
 												<div>
 													<div className="admin-users-table-cell-name">{user.name}</div>
+													{user.job_title && (
+														<div className="admin-users-table-cell-job-title">{user.job_title}</div>
+													)}
 													{user.bio && (
 														<div className="admin-users-table-cell-bio">
 															{user.bio.substring(0, 50)}{user.bio.length > 50 ? '...' : ''}
@@ -424,11 +741,7 @@ const AdminUsersPage = () => {
 											<span className={`admin-users-role-badge ${user.role}`}>
 												{getRoleLabel(user.role)}
 											</span>
-											{(user.status || 'active') === 'pending' && (
-												<span className="admin-users-status-badge admin-users-status-pending" title="Cerere în așteptare">
-													În așteptare
-												</span>
-											)}
+											{getStatusBadge(user.status, usersView === 'trash')}
 										</td>
 										<td>
 											{Array.isArray(user.teams) && user.teams.length > 0 ? (
@@ -483,66 +796,23 @@ const AdminUsersPage = () => {
 												</div>
 											)}
 										</td>
-										<td className="admin-users-table-cell-center">
-											<div className="admin-users-actions" onClick={(e) => e.stopPropagation()}>
-												{!canMutateInAdminArea ? (
-													<span className="admin-users-table-cell-muted">—</span>
-												) : usersView === 'trash' ? (
-													<button
-														className="lms-btn-primary lms-btn-sm"
-														onClick={(e) => {
-															e.stopPropagation();
-															handleRestore(user.id);
-														}}
-													>
-														Restabilește
-													</button>
-												) : (user.status || 'active') === 'pending' ? (
-													<>
-														<button
-															className="lms-btn-primary lms-btn-sm"
-															onClick={(e) => {
-																e.stopPropagation();
-																handleApprove(user.id);
-															}}
-														>
-															Aprobă
-														</button>
-														<button
-															className="lms-btn-secondary lms-btn-sm va-btn-danger"
-															onClick={(e) => {
-																e.stopPropagation();
-																handleRejectClick(user.id);
-															}}
-														>
-															Respinge
-														</button>
-													</>
-												) : (
-													<>
-														<button
-															className="lms-btn-secondary lms-btn-sm admin-users-action-compact"
-															onClick={(e) => {
-																e.stopPropagation();
-																handleEdit(user);
-															}}
-														>
-															<PencilSimple size={14} weight="bold" aria-hidden="true" />
-															<span>Editare</span>
-														</button>
-														<button
-															className="lms-btn-secondary lms-btn-sm va-btn-danger admin-users-action-compact"
-															onClick={(e) => {
-																e.stopPropagation();
-																handleDeleteClick(user.id);
-															}}
-														>
-															<Trash size={14} weight="bold" aria-hidden="true" />
-															<span>În coș</span>
-														</button>
-													</>
-												)}
-											</div>
+										<td className="admin-users-col-actions">
+											{!canMutateInAdminArea ? (
+												<span className="admin-users-table-cell-muted">—</span>
+											) : (
+												<div onClick={(e) => e.stopPropagation()}>
+													<UserTableActions
+														user={user}
+														usersView={usersView}
+														onApprove={handleApprove}
+														onReject={handleRejectClick}
+														onEdit={handleEdit}
+														onTrash={handleDeleteClick}
+														onRestore={handleRestore}
+														onForceDelete={handleForceDeleteClick}
+													/>
+												</div>
+											)}
 										</td>
 									</tr>
 								);
@@ -554,9 +824,13 @@ const AdminUsersPage = () => {
 										<div className="lms-empty-icon">
 											<UsersThree size={26} weight="duotone" aria-hidden />
 										</div>
-										<h3 className="lms-empty-title">Nu există utilizatori</h3>
+										<h3 className="lms-empty-title">
+											{audienceTab === 'staff' ? 'Niciun membru al personalului' : 'Niciun utilizator'}
+										</h3>
 										<p className="lms-empty-description">
-											Nu există utilizatori care să corespundă filtrelor selectate.
+											{audienceTab === 'staff'
+												? 'Nu există membri ai personalului care să corespundă filtrelor selectate.'
+												: 'Nu există cursanți care să corespundă filtrelor selectate.'}
 										</p>
 									</div>
 								</td>
@@ -565,6 +839,9 @@ const AdminUsersPage = () => {
 					</tbody>
 				</table>
 			</div>
+			</>
+
+			)}
 
 			{/* Modal – componentă accesibilă (focus trap, Escape, ARIA) */}
 			<Modal
@@ -576,7 +853,15 @@ const AdminUsersPage = () => {
 			>
 				<div className="admin-users-modal">
 					<div className="admin-users-modal-header">
-						<h2 id="admin-users-modal-title" className="admin-users-modal-title">{editingUser ? 'Editează Utilizator' : 'Adaugă Utilizator Nou'}</h2>
+						<h2 id="admin-users-modal-title" className="admin-users-modal-title">
+							{editingUser
+								? audienceTab === 'staff'
+									? 'Editează membru personal'
+									: 'Editează utilizator'
+								: audienceTab === 'staff'
+									? 'Adaugă membru personal'
+									: 'Adaugă utilizator nou'}
+						</h2>
 						<button
 							type="button"
 							className="admin-users-modal-close"
@@ -597,6 +882,16 @@ const AdminUsersPage = () => {
 										value={formData.name}
 										onChange={(e) => setFormData({ ...formData, name: e.target.value })}
 										required
+									/>
+								</div>
+								<div className="admin-form-group">
+									<label className="admin-form-label">Funcție</label>
+									<input
+										type="text"
+										className="admin-form-input"
+										value={formData.job_title}
+										onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
+										placeholder="ex. Manager vânzări"
 									/>
 								</div>
 								<div className="admin-form-group">
@@ -693,10 +988,11 @@ const AdminUsersPage = () => {
 										onChange={(e) => setFormData({ ...formData, role: e.target.value })}
 										required
 									>
-										<option value="student">Utilizator</option>
-										<option value="admin">Administrator</option>
-										<option value="instructor">Instructor</option>
-										<option value="analyst">Analist</option>
+										{modalRoleOptions.map((r) => (
+											<option key={r.value} value={r.value}>
+												{r.label}
+											</option>
+										))}
 									</select>
 								</div>
 								{!editingUser && (
@@ -726,12 +1022,34 @@ const AdminUsersPage = () => {
 			<ConfirmModal
 				open={!!confirmAction}
 				onClose={() => setConfirmAction(null)}
-				onConfirm={confirmAction?.type === 'reject' ? handleConfirmReject : handleConfirmDelete}
-				title={confirmAction?.type === 'reject' ? 'Respinge cerere' : 'Mutare în coș'}
-				message={confirmAction?.type === 'reject'
-					? 'Sigur dorești să respingi această cerere? Utilizatorul va fi șters.'
-					: 'Utilizatorul va fi mutat în coș și poate fi restabilit ulterior cu tot progresul. Continuă?'}
-				confirmLabel={confirmAction?.type === 'reject' ? 'Respinge' : 'Mută în coș'}
+				onConfirm={
+					confirmAction?.type === 'reject'
+						? handleConfirmReject
+						: confirmAction?.type === 'forceDelete'
+							? handleConfirmForceDelete
+							: handleConfirmDelete
+				}
+				title={
+					confirmAction?.type === 'reject'
+						? 'Respinge cerere'
+						: confirmAction?.type === 'forceDelete'
+							? 'Ștergere definitivă'
+							: 'Mutare în coș'
+				}
+				message={
+					confirmAction?.type === 'reject'
+						? 'Sigur dorești să respingi această cerere? Utilizatorul va fi șters.'
+						: confirmAction?.type === 'forceDelete'
+							? `Sigur dorești ștergerea definitivă${confirmAction?.userName ? ` a utilizatorului „${confirmAction.userName}"` : ' a acestui utilizator'}? Acțiunea nu poate fi anulată.`
+							: 'Utilizatorul va fi mutat în coș, contul va fi dezactivat și poate fi restabilit ulterior. Continuă?'
+				}
+				confirmLabel={
+					confirmAction?.type === 'reject'
+						? 'Respinge'
+						: confirmAction?.type === 'forceDelete'
+							? 'Șterge definitiv'
+							: 'Mută în coș'
+				}
 				cancelLabel="Anulare"
 				variant="danger"
 				loading={confirmLoading}

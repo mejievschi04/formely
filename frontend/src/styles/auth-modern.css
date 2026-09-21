@@ -163,6 +163,24 @@
 	color: var(--auth-text);
 }
 
+.modern-form-label-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-2);
+}
+
+.modern-auth-link--small {
+	font-size: var(--font-size-xs);
+	flex-shrink: 0;
+}
+
+.modern-auth-link--with-icon {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+}
+
 .modern-form-input-wrapper {
 	position: relative;
 	display: block;

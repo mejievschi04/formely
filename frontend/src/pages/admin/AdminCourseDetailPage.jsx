@@ -4,7 +4,6 @@ import { adminService, coursesService } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import CourseOverview from '../../components/admin/courses/CourseOverview';
-import CourseDistributionPanel from '../../components/admin/courses/CourseDistributionPanel';
 import CourseSettingsEditModal from '../../components/admin/courses/CourseSettingsEditModal';
 import PublishCourseModal from '../../components/admin/courses/PublishCourseModal';
 import { useAuth } from '../../contexts/AuthContext';
@@ -216,25 +215,28 @@ const AdminCourseDetailPage = () => {
 				showStaffCourseEdit={canEditCoursesAsStaff}
 			/>
 
-			<CourseDistributionPanel
-				course={course}
-				readOnly={readOnly}
-				onUpdated={fetchCourseData}
-			/>
-
 			<PublishCourseModal
 				open={publishModalOpen}
 				onClose={() => {
 					setPublishModalOpen(false);
 					setPublishValidationReport(null);
 				}}
-				courseId={course.id}
+				course={course}
 				validationReport={publishValidationReport}
 				onValidate={handleValidateForPublish}
-				onPublished={() => {
+				onPublished={(_res, { catalogOutsideMap } = {}) => {
 					showToast('Cursul a fost publicat cu succes', 'success');
 					setPublishModalOpen(false);
 					setPublishValidationReport(null);
+					setCourse((prev) => prev ? {
+						...prev,
+						status: 'published',
+						workflow_status: 'published',
+						settings: {
+							...(prev.settings || {}),
+							catalog_outside_map: Boolean(catalogOutsideMap),
+						},
+					} : prev);
 					fetchCourseData();
 				}}
 			/>

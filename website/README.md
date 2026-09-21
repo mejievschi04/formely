@@ -5,7 +5,7 @@ Site public multi-pagină pentru promovarea platformei LMS. Separat de `frontend
 ## Stack
 
 - **React 18** + **Vite 7**
-- **React Router 6** — rute: `/platforma`, `/solutii`, `/preturi`, `/blog`, etc.
+- **React Router 6** — rute: `/platforma`, `/solutii`, `/preturi`, `/contact`, etc.
 - **react-helmet-async** — meta SEO per pagină (title, description, Open Graph, canonical)
 
 ## Pagini
@@ -18,8 +18,6 @@ Site public multi-pagină pentru promovarea platformei LMS. Separat de `frontend
 | `/preturi` | PricingPage |
 | `/despre` | AboutPage |
 | `/contact` | ContactPage |
-| `/blog` | BlogIndexPage |
-| `/blog/:slug` | BlogPostPage |
 | `/legal/*` | Privacy / Terms |
 
 ## Dezvoltare
@@ -37,7 +35,7 @@ npm run dev
 
 | Variabilă | Descriere |
 |-----------|-----------|
-| `VITE_SITE_URL` | URL canonical (ex. https://formely.ro) |
+| `VITE_SITE_URL` | URL canonical (ex. https://formely.com) |
 | `VITE_APP_URL` | Link „Intră în platformă” → LMS (ex. http://localhost:5173) |
 
 ## Build
@@ -52,7 +50,7 @@ Output: `website/dist/`
 ## Deploy
 
 - **Nginx / static host**: servește `dist/`; pentru SPA configurează `try_files $uri /index.html`
-- **Producție recomandată**: `formely.ro` → acest site · `app.formely.ro` → `frontend/`
+- **Producție recomandată**: `formely.com` → acest site · `app.formely.com` → `frontend/`
 
 ## SEO (React SPA)
 

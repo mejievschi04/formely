@@ -22,7 +22,10 @@ const PendingExamsWidget = ({ exams, tests }) => {
 		return (
 			<div className="student-widget student-pending-exams-widget">
 				<div className="student-widget-header">
-					<h3>Teste restante</h3>
+					<div>
+						<h3>Teste restante</h3>
+						<p className="student-widget-subtitle">Evaluări care așteaptă răspunsul tău</p>
+					</div>
 				</div>
 				<div className="student-widget-content">
 					<p className="student-widget-empty">Nu ai teste restante! ✅</p>
@@ -52,7 +55,10 @@ const PendingExamsWidget = ({ exams, tests }) => {
 	return (
 		<div className="student-widget student-pending-exams-widget">
 			<div className="student-widget-header">
-				<h3>Teste restante</h3>
+				<div>
+					<h3>Teste restante</h3>
+					<p className="student-widget-subtitle">Evaluări care așteaptă răspunsul tău</p>
+				</div>
 				<span className="student-widget-count student-widget-count-warning">{items.length}</span>
 			</div>
 			<div className="student-widget-content">

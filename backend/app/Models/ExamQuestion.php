@@ -22,10 +22,11 @@ class ExamQuestion extends Model
         'payload' => 'array',
     ];
 
-    /** Questions are auto-graded in the current flow. */
     public function requiresManualGrading(): bool
     {
-        return false;
+        $auto = ['multiple_choice', 'single_choice', 'true_false', 'matching', 'ordering'];
+
+        return ! in_array((string) ($this->question_type ?? 'multiple_choice'), $auto, true);
     }
 
     public function exam()

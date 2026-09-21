@@ -450,9 +450,6 @@ const Step3Content = ({ data, onUpdate }) => {
 		<div className="step3-content">
 			<div className="step3-header">
 				<h3>Conținut lecții</h3>
-				<p className="step3-description">
-					Selectează o lecție pentru a adăuga și ordona blocuri de conținut. Editează în centru, setări în dreapta.
-				</p>
 			</div>
 
 			{modules.length === 0 ? (

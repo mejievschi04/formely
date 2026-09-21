@@ -27,9 +27,6 @@ const AIGenerateQuestionsModal = ({
         <div className="admin-team-modal-header">
           <div>
             <h2 className="admin-team-modal-title">🤖 Generează întrebări cu AI</h2>
-            <p className="admin-page-subtitle" style={{ marginTop: '0.5rem', marginBottom: 0 }}>
-              Alege cursul și numărul de întrebări, iar AI le generează și le salvează direct.
-            </p>
           </div>
           {!aiGenerating && (
             <button type="button" className="admin-team-modal-close" onClick={onClose}>

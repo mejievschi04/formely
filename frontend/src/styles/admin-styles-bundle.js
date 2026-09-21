@@ -3,9 +3,10 @@
  * Reduces initial bundle for students.
  */
 import './admin-pages.css';
-import './admin-users-modern.css';
-import './admin-team-members-modern.css';
 import './admin-common-modern.css';
+import './admin-users-modern.css';
+import './admin-organization.css';
+import './admin-team-members-modern.css';
 import './admin-components-modern.css';
 import './admin-navigation-modern.css';
 import './admin-view-switcher.css';

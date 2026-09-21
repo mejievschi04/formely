@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Course;
 use App\Models\TestResult;
+use App\Support\TenantQuery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -39,6 +40,14 @@ class StatisticsAdminController extends Controller
      */
     public function courseTestDetail(Request $request)
     {
+        return response()->json($this->buildCourseTestDetailData($request));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function buildCourseTestDetailData(Request $request): array
+    {
         $courseId = $request->get('course_id');
         $userId = $request->get('user_id');
         $dateFrom = $request->get('date_from');
@@ -61,9 +70,10 @@ class StatisticsAdminController extends Controller
             }
         }
 
+        $allowedCourseIds = Course::query()->pluck('id');
         $testCourseMap = [];
         if (Schema::hasTable('course_test')) {
-            foreach (DB::table('course_test')->select('test_id', 'course_id')->get() as $ct) {
+            foreach (DB::table('course_test')->select('test_id', 'course_id')->whereIn('course_id', $allowedCourseIds)->get() as $ct) {
                 if (!isset($testCourseMap[(int) $ct->test_id])) {
                     $testCourseMap[(int) $ct->test_id] = (int) $ct->course_id;
                 }
@@ -81,9 +91,11 @@ class StatisticsAdminController extends Controller
             $courseUserHasEnrolledAt = $this->hasColumn('course_user', 'enrolled_at');
             $courseUserHasCompletedAt = $this->hasColumn('course_user', 'completed_at');
             $courseUserHasUpdatedAt = $this->hasColumn('course_user', 'updated_at');
-            $query = DB::table('course_user')
-                ->join('users', 'users.id', '=', 'course_user.user_id')
-                ->where('users.role', 'student')
+            $query = TenantQuery::constrainUsers(
+                DB::table('course_user')
+                    ->join('users', 'users.id', '=', 'course_user.user_id')
+                    ->where('users.role', 'student')
+            )
                 ->select(
                     'course_user.user_id',
                     'course_user.course_id',
@@ -152,9 +164,11 @@ class StatisticsAdminController extends Controller
                 ? 'completed_at'
                 : ($this->hasColumn('test_results', 'created_at') ? 'created_at' : null);
 
-            $query = DB::table('test_results')
-                ->join('users', 'users.id', '=', 'test_results.user_id')
-                ->where('users.role', 'student');
+            $query = TenantQuery::constrainUsers(
+                DB::table('test_results')
+                    ->join('users', 'users.id', '=', 'test_results.user_id')
+                    ->where('users.role', 'student')
+            );
 
             if ($hasTestsTable && $hasTestIdColumn) {
                 $query->leftJoin('tests', 'tests.id', '=', 'test_results.test_id');
@@ -224,9 +238,11 @@ class StatisticsAdminController extends Controller
                 ? 'exam_results.total_points as max_score'
                 : $this->selectOrNull('exam_results', 'max_score');
 
-            $query = DB::table('exam_results')
-                ->join('users', 'users.id', '=', 'exam_results.user_id')
-                ->where('users.role', 'student');
+            $query = TenantQuery::constrainUsers(
+                DB::table('exam_results')
+                    ->join('users', 'users.id', '=', 'exam_results.user_id')
+                    ->where('users.role', 'student')
+            );
 
             if ($hasExamsTable && $hasExamIdColumn) {
                 $query->leftJoin('exams', 'exams.id', '=', 'exam_results.exam_id');
@@ -323,7 +339,8 @@ class StatisticsAdminController extends Controller
 
         $courseTests = [];
         if (Schema::hasTable('course_test')) {
-            $query = DB::table('course_test')->select('course_id', 'test_id');
+            $query = DB::table('course_test')->select('course_id', 'test_id')
+                ->whereIn('course_id', $allowedCourseIds);
             if ($courseId) {
                 $query->where('course_id', (int) $courseId);
             }
@@ -334,7 +351,7 @@ class StatisticsAdminController extends Controller
             'total_learning_seconds' => (int) collect($learningKeyed)->sum(fn ($row) => (int) ($row->time_spent_seconds ?? 0)),
         ];
 
-        return response()->json([
+        return [
             'courses' => $courses,
             'students' => $students,
             'enrollments' => $enrollments,
@@ -345,7 +362,7 @@ class StatisticsAdminController extends Controller
                 'date_to' => $to?->toDateString(),
                 'total_learning_seconds' => $totals['total_learning_seconds'],
             ],
-        ]);
+        ];
     }
 
     /**
@@ -375,10 +392,11 @@ class StatisticsAdminController extends Controller
             ? 'SUM(CASE WHEN lp.completed THEN 1 ELSE 0 END)'
             : '0';
 
-        $query = DB::table('lesson_progress as lp')
-            ->join('users', 'users.id', '=', 'lp.user_id')
-            ->where('users.role', 'student')
-            ->join('lessons as l', 'l.id', '=', 'lp.lesson_id');
+        $query = TenantQuery::constrainUsers(
+            DB::table('lesson_progress as lp')
+                ->join('users', 'users.id', '=', 'lp.user_id')
+                ->where('users.role', 'student')
+        )->join('lessons as l', 'l.id', '=', 'lp.lesson_id');
 
         if ($lessonHasModuleId && $moduleHasCourseId) {
             $query->leftJoin('modules as m', 'm.id', '=', 'l.module_id');

@@ -2,10 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { openaiService } from '../../../services/openaiService';
 import { adminService } from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContext';
+import { isAiEnabled, notifyAiComingSoon, canUseAiFeature, notifyAiPlanLocked } from '../../../utils/aiAvailability';
+import { useAuth } from '../../../contexts/AuthContext';
 import './AIChat.css';
 
 const AITestChat = ({ courseId = null, onTestGenerated, onClose }) => {
 	const { showToast } = useToast();
+	const { user } = useAuth();
+	const aiAllowed = canUseAiFeature(user, 'ai_test_generation');
 	const [messages, setMessages] = useState([
 		{
 			role: 'assistant',
@@ -29,6 +33,14 @@ const AITestChat = ({ courseId = null, onTestGenerated, onClose }) => {
 	const handleSend = async (e) => {
 		e.preventDefault();
 		if (!input.trim() || isGenerating) return;
+		if (!isAiEnabled()) {
+			notifyAiComingSoon(showToast);
+			return;
+		}
+		if (!aiAllowed) {
+			notifyAiPlanLocked(showToast);
+			return;
+		}
 
 		const userMessage = { role: 'user', content: input.trim() };
 		setMessages(prev => [...prev, userMessage]);
@@ -143,7 +155,7 @@ const AITestChat = ({ courseId = null, onTestGenerated, onClose }) => {
 	return (
 		<div className="ai-chat-container">
 			<div className="ai-chat-header">
-				<h2>🤖 Creator test AI</h2>
+				<h2>Formely AI — Creator test</h2>
 				{onClose && (
 					<button className="ai-chat-close" onClick={onClose}>
 						×

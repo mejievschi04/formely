@@ -7,7 +7,7 @@ const CourseHeader = ({ course, progress, estimatedTimeRemaining }) => {
 	const status = progress?.course_progress >= 100 
 		? { label: 'Completat', color: '#10b981', icon: '✓' }
 		: progress?.course_progress > 0
-		? { label: 'În desfășurare', color: '#ffd700', icon: '▶' }
+		? { label: 'În desfășurare', color: '#0891b2', icon: '▶' }
 		: { label: 'Neînceput', color: '#6b7280', icon: '○' };
 
 	return (

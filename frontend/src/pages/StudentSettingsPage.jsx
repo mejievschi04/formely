@@ -10,6 +10,8 @@ import ThemePreferenceControl from '../components/ThemePreferenceControl';
 import { profileService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import { toImageUrl } from '../utils/imageUrl';
+import '../styles/student-settings.css';
 
 const emptyFieldErrors = { name: '', email: '', bio: '' };
 
@@ -58,7 +60,7 @@ const StudentSettingsPage = () => {
 					if (res.data.errors[key]?.[0]) next[key] = res.data.errors[key][0];
 				}
 				setFieldErrors(next);
-				showToast(res.data.message || 'Verifica campurile marcate', 'error');
+				showToast(res.data.message || 'Verifică câmpurile marcate', 'error');
 			} else {
 				showToast(res?.data?.message || 'Nu s-au putut salva datele', 'error');
 			}
@@ -69,34 +71,43 @@ const StudentSettingsPage = () => {
 
 	if (authLoading || !user) {
 		return (
-			<div className="va-profile-container student-settings-page">
-				<p className="va-muted">Se incarca...</p>
+			<div className="student-settings-page">
+				<p className="va-muted">Se încarcă...</p>
 			</div>
 		);
 	}
 
 	return (
-		<div className="va-profile-container student-settings-page">
+		<div className="student-settings-page">
 			<header className="student-settings-header">
-				<h1 className="va-page-title student-settings-title">Setari</h1>
+				<h1 className="va-page-title student-settings-title">Setări</h1>
+				<p className="student-settings-subtitle">
+					Preferințe cont și aspect — personalizate pentru experiența ta Formely.
+				</p>
 			</header>
 
 			<div className="student-settings-grid">
 				<div className="student-settings-rail">
 					<aside className="student-settings-account-card" aria-label="Rezumat cont">
 						<div className="student-settings-account-top">
-							<div className="student-settings-avatar">{initials}</div>
+							<div className="student-settings-avatar" aria-hidden>
+								{user.avatar ? (
+									<img src={toImageUrl(user.avatar) || user.avatar} alt="" />
+								) : (
+									initials
+								)}
+							</div>
 							<div className="student-settings-account-copy">
 								<h2>{user.name || 'Student'}</h2>
 								<p>{user.email}</p>
 							</div>
 						</div>
 						<div className="student-settings-account-meta">
-							<span>
+							<span className="student-settings-chip">
 								<ShieldCheck size={16} weight="duotone" aria-hidden />
-								{isStudent ? 'Student' : 'Utilizator'}
+								{isStudent ? 'Cursant' : (user?.role === 'admin' ? 'Administrator' : user?.role === 'instructor' ? 'Instructor' : 'Utilizator')}
 							</span>
-							<span>
+							<span className="student-settings-chip">
 								<EnvelopeSimple size={16} weight="duotone" aria-hidden />
 								Email activ
 							</span>
@@ -115,9 +126,10 @@ const StudentSettingsPage = () => {
 								<h2 id="student-settings-appearance" className="student-settings-section-title">
 									Aspect
 								</h2>
+								<p className="student-settings-section-hint">Alege modul luminos sau întunecat.</p>
 							</div>
 						</div>
-						<div className="va-profile-theme-section student-settings-theme">
+						<div className="student-settings-theme">
 							<ThemePreferenceControl className="student-settings-theme-control" />
 						</div>
 					</section>
@@ -176,7 +188,7 @@ const StudentSettingsPage = () => {
 					</div>
 					<div className="student-settings-field">
 						<label className="va-input-label" htmlFor="settings-bio">
-							Despre mine <span className="student-settings-label-note">(optional)</span>
+							Despre mine <span className="student-settings-label-note">(opțional)</span>
 						</label>
 						<textarea
 							id="settings-bio"
@@ -190,9 +202,9 @@ const StudentSettingsPage = () => {
 						{fieldErrors.bio ? <p className="va-input-error">{fieldErrors.bio}</p> : null}
 					</div>
 					<div className="student-settings-actions">
-						<button type="submit" className="lms-btn-primary" disabled={saving}>
+						<button type="submit" className="lms-btn-primary student-settings-save-btn" disabled={saving}>
 							<FloppyDisk size={17} weight="duotone" aria-hidden />
-							{saving ? 'Se salveaza...' : 'Salveaza'}
+							{saving ? 'Se salvează...' : 'Salvează'}
 						</button>
 					</div>
 				</form>

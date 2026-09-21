@@ -25,7 +25,7 @@ class EmailNotificationService
             return $path;
         }
 
-        $base = config('formely.frontend_url', 'http://localhost:5173');
+        $base = config('formely.lms_url', config('formely.frontend_url', 'http://localhost:5173'));
 
         return $base . (str_starts_with($path, '/') ? $path : '/' . $path);
     }

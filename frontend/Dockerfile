@@ -4,9 +4,15 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Build arg pentru URL API (se bazează în build de Vite)
-ARG VITE_API_URL=http://localhost:8000/api
-ENV VITE_API_URL=$VITE_API_URL
+# Build args (baked into Vite bundle)
+ARG VITE_API_URL=/api
+ARG VITE_BACKOFFICE_URL=https://admin.formely.org
+ARG VITE_STORAGE_URL=
+ARG VITE_APP_ENV=production
+ENV VITE_API_URL=$VITE_API_URL \
+    VITE_BACKOFFICE_URL=$VITE_BACKOFFICE_URL \
+    VITE_STORAGE_URL=$VITE_STORAGE_URL \
+    VITE_APP_ENV=$VITE_APP_ENV
 
 # Copiază fișierele de dependențe
 COPY package*.json ./

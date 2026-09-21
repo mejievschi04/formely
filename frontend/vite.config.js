@@ -40,23 +40,21 @@ export default defineConfig({
     dedupe: ['react', 'react-dom', 'react-is'],
   },
   server: {
-    host: '0.0.0.0', // Acceptă conexiuni de pe toate interfețele
+    host: '0.0.0.0', // Acceptă conexiuni de pe telefon în LAN
     port: 5173,
-    allowedHosts: [
-      '.ngrok-free.app',
-      '.ngrok.io',
-      '.ngrok.app',
-    ],
+    allowedHosts: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         secure: false,
+        cookieDomainRewrite: '',
       },
       '/storage': {
-        target: 'http://localhost:8000',
+        target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         secure: false,
+        cookieDomainRewrite: '',
       },
     },
     // Warm up frequently used files - eliminates transform waterfalls on first load

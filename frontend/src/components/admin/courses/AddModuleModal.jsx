@@ -45,7 +45,6 @@ const AddModuleModal = ({ onClose, onSubmit, loading }) => {
 			<div className="add-module-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-labelledby="add-module-title" aria-modal="true">
 				<header className="add-module-modal-header">
 					<h2 id="add-module-title">Adaugă modul</h2>
-					<p className="add-module-modal-subtitle">Modulele grupează lecțiile în secțiuni logice.</p>
 					<button type="button" className="add-module-modal-close" onClick={onClose} aria-label="Închide">×</button>
 				</header>
 

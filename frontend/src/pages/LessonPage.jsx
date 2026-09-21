@@ -15,14 +15,31 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import LessonBlocksPreview from '../components/admin/content-blocks/LessonBlocksPreview';
 import CourseCongratulationsModal from '../components/student/CourseCongratulationsModal';
-import { getNextLessonIdAfter } from '../utils/lessonOrder';
+import LessonTutorChat from '../components/student/LessonTutorChat';
+import { companyHasFeature } from '../utils/entitlements';
+import { canUseAiFeature } from '../utils/aiAvailability';
+import LessonReadTrackers from '../components/student/LessonReadTrackers';
+import { getNextLessonIdAfter, getRootLessons } from '../utils/lessonOrder';
+import {
+	advanceAfterLessonComplete,
+	getPendingEndOfCourseTestId,
+	normalizeCourseProgressPayload,
+} from '../utils/courseFlowNavigation';
 import { useLessonTimeTracking } from '../hooks/useLessonTimeTracking';
+import { useLessonReadCompletion } from '../hooks/useLessonReadCompletion';
+import { LESSON_READ_MILESTONES } from '../utils/lessonReadCompletion';
 import { isLessonMarkedComplete } from '../utils/lessonProgress';
 import { scrollAppToTop } from '../utils/scrollToTop';
 import { normalizeLessonFromApi, lessonLegacyHtml } from '../utils/lessonContent';
 import './LessonPage.css';
 
-const LESSON_MILESTONES = [25, 50, 75, 100];
+const STUDY_TOOL_OPTIONS = [
+	{ id: 'summary', label: 'Rezumat' },
+	{ id: 'explain', label: 'Explică simplu' },
+	{ id: 'flashcards', label: 'Flashcards' },
+	{ id: 'quiz', label: 'Quiz rapid' },
+	{ id: 'study_plan', label: 'Plan recapitulare' },
+];
 
 const getLessonTypeContent = (contentType) => {
 	if (contentType === 'video') return <><FilmSlate size={14} weight="duotone" aria-hidden /> Video</>;
@@ -47,7 +64,16 @@ const LessonPage = () => {
 	const [isCompleting, setIsCompleting] = useState(false);
 	const [showCourseCongrats, setShowCourseCongrats] = useState(false);
 	const [finalizingCourse, setFinalizingCourse] = useState(false);
-	const [reachedMilestones, setReachedMilestones] = useState(() => new Set());
+	const [progress, setProgress] = useState(null);
+	const [studyToolLoading, setStudyToolLoading] = useState('');
+	const [studyToolResult, setStudyToolResult] = useState(null);
+	const [studyToolError, setStudyToolError] = useState('');
+
+	useEffect(() => {
+		setStudyToolResult(null);
+		setStudyToolError('');
+		setStudyToolLoading('');
+	}, [lessonId]);
 
 	useLessonTimeTracking(lessonId, {
 		userId: user?.id,
@@ -55,17 +81,26 @@ const LessonPage = () => {
 		enabled: Boolean(user?.id && lessonId && !['admin', 'analyst'].includes(user?.actualRole || user?.role || '')),
 	});
 
+	const { reachedMilestones } = useLessonReadCompletion({
+		contentRef,
+		lessonId,
+		enabled: Boolean(lesson && user?.id && !isCompleted && !isCompleting && !loading),
+	});
+
 	const completeCurrentLesson = useCallback(async () => {
-		if (!lessonId || isCompleted || !user?.id) return true;
+		if (!lessonId || isCompleted || !user?.id) return { ok: true, payload: null };
 		try {
 			setIsCompleting(true);
-			await courseProgressService.completeLesson(lessonId);
+			const result = await courseProgressService.completeLesson(lessonId);
 			setIsCompleted(true);
-			return true;
+			if (result?.progress) {
+				setProgress(result.progress);
+			}
+			return { ok: true, payload: result };
 		} catch (err) {
 			const msg = err?.response?.data?.message || err?.message || 'Nu s-a putut marca lecția ca finalizată.';
 			showToast(msg, 'error');
-			return false;
+			return { ok: false, payload: null };
 		} finally {
 			setIsCompleting(false);
 		}
@@ -76,6 +111,11 @@ const LessonPage = () => {
 			fetchLessonData();
 		}
 	}, [lessonId, courseId]);
+
+	useEffect(() => {
+		document.body.classList.add('student-lesson-player');
+		return () => document.body.classList.remove('student-lesson-player');
+	}, []);
 
 	useLayoutEffect(() => {
 		if (!lessonId || loading) return;
@@ -88,7 +128,7 @@ const LessonPage = () => {
 	}, [lessonId]);
 
 	useEffect(() => {
-		const pendingMilestones = LESSON_MILESTONES.filter(
+		const pendingMilestones = LESSON_READ_MILESTONES.filter(
 			(milestone) => reachedMilestones.has(milestone) && !sentMilestonesRef.current.has(milestone)
 		);
 
@@ -127,80 +167,6 @@ const LessonPage = () => {
 		};
 	}, [lessonId, reachedMilestones]);
 
-	// Auto-complete on scroll
-	useEffect(() => {
-		if (!lesson || isCompleted || isCompleting) return;
-
-	
-		const checkCompletion = () => {
-			if (isCompleted || isCompleting) return;
-
-			const markers = Array.from(contentRef.current?.querySelectorAll('[data-lesson-milestone]') || []);
-			if (!markers.length) return;
-
-			const footerOffset = window.innerWidth <= 768 ? 72 : 0;
-			const viewportBottom = window.innerHeight - footerOffset;
-			const seen = [];
-
-			markers.forEach((marker) => {
-				const milestone = Number(marker.dataset.lessonMilestone);
-				if (!Number.isFinite(milestone)) return;
-				const rect = marker.getBoundingClientRect();
-				if (rect.top <= viewportBottom) {
-					seen.push(milestone);
-				}
-			});
-
-			if (seen.length) {
-				setReachedMilestones((prev) => {
-					const next = new Set(prev);
-					seen.forEach((value) => next.add(value));
-					return next.size === prev.size ? prev : next;
-				});
-			}
-		};
-
-		// Throttle scroll events
-		let ticking = false;
-		const throttledScroll = () => {
-			if (!ticking) {
-				window.requestAnimationFrame(() => {
-					checkCompletion();
-					ticking = false;
-				});
-				ticking = true;
-			}
-		};
-
-		const scrollRoot =
-			contentRef.current?.closest('.va-shell-main') ||
-			contentRef.current?.closest('.va-main');
-
-		const onScroll = () => throttledScroll();
-		if (scrollRoot) {
-			scrollRoot.addEventListener('scroll', onScroll, { passive: true });
-		}
-		window.addEventListener('scroll', onScroll, { passive: true });
-		window.addEventListener('resize', onScroll, { passive: true });
-
-		const checkInitial = setTimeout(() => {
-			checkCompletion();
-		}, 500);
-
-		if (contentRef.current) {
-			checkCompletion();
-		}
-
-		return () => {
-			if (scrollRoot) {
-				scrollRoot.removeEventListener('scroll', onScroll);
-			}
-			window.removeEventListener('scroll', onScroll);
-			window.removeEventListener('resize', onScroll);
-			clearTimeout(checkInitial);
-		};
-	}, [lesson, isCompleted, isCompleting, reachedMilestones]);
-
 	const fetchLessonData = async () => {
 		try {
 			setLoading(true);
@@ -221,8 +187,9 @@ const LessonPage = () => {
 			// Check if lesson is already completed
 			if (user?.id) {
 				try {
-					const progress = await courseProgressService.getCourseProgress(courseId);
-					if (isLessonMarkedComplete(progress, lessonId)) {
+					const progressData = await courseProgressService.getCourseProgress(courseId);
+					setProgress(progressData);
+					if (isLessonMarkedComplete(progressData, lessonId)) {
 						setIsCompleted(true);
 					}
 				} catch (err) {
@@ -238,19 +205,59 @@ const LessonPage = () => {
 		}
 	};
 
-	const nextLessonTarget = getNextLessonIdAfter(course?.modules, lessonId);
-	const isLastLessonInCourse = nextLessonTarget === null;
+	const courseModules = [...(course?.modules || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
+	const rootLessons = getRootLessons(course);
+	const nextLessonTarget = getNextLessonIdAfter(courseModules, lessonId, rootLessons);
+	const progressSnapshot = normalizeCourseProgressPayload(progress);
+	const pendingExamId =
+		progressSnapshot?.next_exam?.id ||
+		(nextLessonTarget === null
+			? getPendingEndOfCourseTestId({
+					course,
+					modules: courseModules,
+					rootLessons,
+					progress: progressSnapshot,
+				})
+			: null);
+	const isLastLessonInCourse = nextLessonTarget === null && !pendingExamId;
+	const nextButtonLabel = pendingExamId
+		? 'Continuă la test'
+		: typeof nextLessonTarget === 'number'
+			? 'Lecția următoare'
+			: 'Continuă';
 
 	const handleNext = async () => {
+		let progressPayload = null;
 		if (!isCompleted) {
-			const ok = await completeCurrentLesson();
+			const { ok, payload } = await completeCurrentLesson();
 			if (!ok) return;
+			progressPayload = payload;
 		}
-		if (typeof nextLessonTarget === 'number') {
-			navigate(`/courses/${courseId}/lessons/${nextLessonTarget}`);
-			return;
-		}
-		navigate(`/courses/${courseId}`);
+		const payload = progressPayload;
+		const nextId = getNextLessonIdAfter(courseModules, lessonId, rootLessons);
+		const examId =
+			payload?.next_exam?.id ||
+			(nextId === null
+				? getPendingEndOfCourseTestId({
+						course,
+						modules: courseModules,
+						rootLessons,
+						progress: payload,
+					})
+				: null);
+		await advanceAfterLessonComplete({
+			courseId,
+			lessonId,
+			modules: courseModules,
+			rootLessons,
+			navigate,
+			progressPayload: examId
+				? { ...normalizeCourseProgressPayload(payload), next_exam: { id: examId } }
+				: payload,
+			lessonPageMode: true,
+			onCongrats: () => setShowCourseCongrats(true),
+			onFinalize: handleFinalizeCourse,
+		});
 	};
 
 	const handleFinalizeCourse = async () => {
@@ -262,12 +269,21 @@ const LessonPage = () => {
 				return;
 			}
 			if (!isCompleted) {
-				const ok = await completeCurrentLesson();
+				const { ok } = await completeCurrentLesson();
 				if (!ok) return;
 			}
 			const p = await courseProgressService.getCourseProgress(courseId);
-			if (p?.next_exam?.id) {
-				navigate(`/courses/${courseId}/exams/${p.next_exam.id}`);
+			setProgress(p);
+			const pendingId =
+				p?.next_exam?.id ||
+				getPendingEndOfCourseTestId({
+					course,
+					modules: courseModules,
+					rootLessons,
+					progress: p,
+				});
+			if (pendingId) {
+				navigate(`/courses/${courseId}/exams/${pendingId}`);
 				return;
 			}
 			if (p?.course_complete) {
@@ -297,6 +313,112 @@ const LessonPage = () => {
 	const handleCongratsClose = () => {
 		setShowCourseCongrats(false);
 		navigate('/courses');
+	};
+
+	const handleStudyTool = async (tool) => {
+		if (!lessonId || studyToolLoading) return;
+		try {
+			setStudyToolLoading(tool);
+			setStudyToolError('');
+			const response = await lessonsService.generateStudyTool(lessonId, tool);
+			setStudyToolResult(response);
+		} catch (err) {
+			const message = err?.response?.data?.error || err?.message || 'Nu s-a putut genera instrumentul de studiu.';
+			setStudyToolError(message);
+			showToast(message, 'error');
+		} finally {
+			setStudyToolLoading('');
+		}
+	};
+
+	const renderStudyToolResult = () => {
+		const result = studyToolResult?.result;
+		if (!result) return null;
+
+		if (studyToolResult.tool === 'flashcards') {
+			return (
+				<div className="lesson-study-result-grid">
+					{(result.flashcards || result.cards || []).map((card, index) => (
+						<div className="lesson-study-flashcard" key={`${card.front}-${index}`}>
+							<strong>{card.front}</strong>
+							<p>{card.back}</p>
+						</div>
+					))}
+				</div>
+			);
+		}
+
+		if (studyToolResult.tool === 'quiz') {
+			return (
+				<div className="lesson-study-quiz-list">
+					{(result.questions || []).map((question, index) => (
+						<div className="lesson-study-question" key={`${question.question || question.prompt}-${index}`}>
+							<strong>{index + 1}. {question.question || question.prompt}</strong>
+							<ul>
+								{(question.options || []).map((option, optionIndex) => (
+									<li key={`${option}-${optionIndex}`} className={optionIndex === question.correct_index ? 'is-correct' : ''}>
+										{option}
+									</li>
+								))}
+							</ul>
+							{question.correct_answer ? <p className="lesson-study-answer">Răspuns: {question.correct_answer}</p> : null}
+							{question.explanation && <p>{question.explanation}</p>}
+						</div>
+					))}
+				</div>
+			);
+		}
+
+		if (studyToolResult.tool === 'study_plan') {
+			return (
+				<div className="lesson-study-plan">
+					{result.overview ? <p>{result.overview}</p> : null}
+					{(result.steps || []).map((step, index) => (
+						<div className="lesson-study-plan-step" key={`${step.label || step.title}-${index}`}>
+							<span>{step.minutes ? `${step.minutes} min` : `${index + 1}`}</span>
+							<div>
+								<strong>{step.label || step.title}</strong>
+								<p>{step.instruction || step.action}</p>
+							</div>
+						</div>
+					))}
+					{result.review_focus?.length ? (
+						<div className="lesson-study-list-section">
+							<strong>Focus recapitulare</strong>
+							<ul>{result.review_focus.map((item) => <li key={item}>{item}</li>)}</ul>
+						</div>
+					) : null}
+				</div>
+			);
+		}
+
+		return (
+			<div className="lesson-study-text-result">
+				{result.summary && <p>{result.summary}</p>}
+				{result.overview && !result.summary && <p>{result.overview}</p>}
+				{result.simple_explanation && <p>{result.simple_explanation}</p>}
+				{result.analogy && <p><strong>Analogic:</strong> {result.analogy}</p>}
+				{result.key_points?.length ? (
+					<div className="lesson-study-list-section">
+						<strong>Idei cheie</strong>
+						<ul>{result.key_points.map((item) => <li key={item}>{item}</li>)}</ul>
+					</div>
+				) : null}
+				{result.steps?.length && typeof result.steps[0] === 'string' ? (
+					<div className="lesson-study-list-section">
+						<strong>Pași</strong>
+						<ul>{result.steps.map((item) => <li key={item}>{item}</li>)}</ul>
+					</div>
+				) : null}
+				{result.common_confusions?.length ? (
+					<div className="lesson-study-list-section">
+						<strong>Confuzii comune</strong>
+						<ul>{result.common_confusions.map((item) => <li key={item}>{item}</li>)}</ul>
+					</div>
+				) : null}
+				{result.takeaway && <p className="lesson-study-takeaway">{result.takeaway}</p>}
+			</div>
+		);
 	};
 
 	if (loading) {
@@ -329,6 +451,11 @@ const LessonPage = () => {
 			</div>
 		);
 	}
+
+	const isStudentLearner = user?.id && !['admin', 'analyst'].includes(user?.actualRole || user?.role || '');
+	const tutorEnabled = course?.settings?.ai_tutor?.enabled !== false
+		&& companyHasFeature(user, 'ai_tutor')
+		&& canUseAiFeature(user, 'ai_tutor');
 
 	return (
 		<div className="lesson-page-modern">
@@ -378,16 +505,7 @@ const LessonPage = () => {
 
 					{/* Lesson Content */}
 					<div className="lesson-page-body" ref={contentRef}>
-						{LESSON_MILESTONES.map((milestone) => (
-							<div
-								key={`lesson-milestone-${milestone}`}
-								className="lesson-progress-marker"
-								data-lesson-milestone={milestone}
-								style={{ top: `${milestone}%` }}
-								aria-hidden="true"
-							/>
-						))}
-
+						<LessonReadTrackers>
 						{(() => {
 							const blocks = lesson.content_blocks ?? lesson.contentBlocks ?? [];
 							const hasBlocks = Array.isArray(blocks) && blocks.length > 0;
@@ -419,7 +537,48 @@ const LessonPage = () => {
 								</div>
 							);
 						})()}
+						</LessonReadTrackers>
 					</div>
+
+					{tutorEnabled ? (
+					<section className="lesson-study-tools">
+						<div className="lesson-study-header">
+							<div>
+								<span className="lesson-study-eyebrow">Formely Study Tools</span>
+								<h2>Învață mai ușor lecția</h2>
+								<p>Generează rezumat, explicații, flashcards, quiz sau plan de recapitulare din conținutul lecției.</p>
+							</div>
+						</div>
+
+						<div className="lesson-study-actions">
+							{STUDY_TOOL_OPTIONS.map((option) => (
+								<button
+									key={option.id}
+									type="button"
+									className="lesson-study-tool-btn"
+									onClick={() => handleStudyTool(option.id)}
+									disabled={Boolean(studyToolLoading)}
+								>
+									{studyToolLoading === option.id ? 'Se generează...' : option.label}
+								</button>
+							))}
+						</div>
+
+						{studyToolError ? (
+							<div className="lesson-study-error" role="alert">{studyToolError}</div>
+						) : null}
+
+						{studyToolResult?.result ? (
+							<div className="lesson-study-result">
+								<div className="lesson-study-result-header">
+									<h3>{studyToolResult.result.title || 'Rezultat Formely AI'}</h3>
+									<span>{STUDY_TOOL_OPTIONS.find((option) => option.id === studyToolResult.tool)?.label || 'AI'}</span>
+								</div>
+								{renderStudyToolResult()}
+							</div>
+						) : null}
+					</section>
+					) : null}
 
 					<div className="lesson-page-actions">
 						{isCompleted && (
@@ -446,7 +605,7 @@ const LessonPage = () => {
 								)
 							) : (
 								<>
-									<span>Următoarea lecție</span>
+									<span>{nextButtonLabel}</span>
 									<ArrowRight size={18} weight="bold" aria-hidden />
 								</>
 							)}
@@ -454,6 +613,15 @@ const LessonPage = () => {
 					</div>
 				</div>
 			</div>
+			{isStudentLearner ? (
+				<LessonTutorChat
+					lessonId={Number(lessonId)}
+					courseId={Number(courseId)}
+					courseTitle={course?.title}
+					lessonTitle={lesson?.title}
+					enabled={tutorEnabled}
+				/>
+			) : null}
 		</div>
 	);
 };

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { coverFocusImgStyle } from '../../utils/coverFocus';
 import './Folder.css';
 
 const darkenColor = (hex, percent) => {
@@ -22,7 +23,7 @@ const darkenColor = (hex, percent) => {
 	return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
 };
 
-const Folder = ({ color = '#5227FF', size = 1, items = [], frontImage = null, className = '' }) => {
+const Folder = ({ color = '#5227FF', size = 1, items = [], frontImage = null, coverFocus = null, className = '', interactive = true }) => {
 	const maxItems = 3;
 	const papers = items.slice(0, maxItems);
 	while (papers.length < maxItems) {
@@ -39,7 +40,12 @@ const Folder = ({ color = '#5227FF', size = 1, items = [], frontImage = null, cl
 	const paper2 = darkenColor('#ffffff', 0.05);
 	const paper3 = '#ffffff';
 
-	const handleClick = () => {
+	const handleClick = (event) => {
+		if (!interactive) return;
+		if (typeof window !== 'undefined' && window.matchMedia('(hover: none), (max-width: 768px)').matches) {
+			return;
+		}
+		event.stopPropagation();
 		setOpen((prev) => !prev);
 		if (open) {
 			setPaperOffsets(Array.from({ length: maxItems }, () => ({ x: 0, y: 0 })));
@@ -75,7 +81,6 @@ const Folder = ({ color = '#5227FF', size = 1, items = [], frontImage = null, cl
 		'--rb-paper-1': paper1,
 		'--rb-paper-2': paper2,
 		'--rb-paper-3': paper3,
-		...(frontImage ? { '--rb-folder-front-image': `url("${frontImage}")` } : {}),
 	};
 
 	const folderClassName = `rb-folder ${open ? 'open' : ''} ${frontImage ? 'rb-folder--has-cover' : ''}`.trim();
@@ -105,7 +110,14 @@ const Folder = ({ color = '#5227FF', size = 1, items = [], frontImage = null, cl
 						</div>
 					))}
 					{frontImage ? (
-						<div className="rb-folder__front rb-folder__front--image rb-folder__front--lid" aria-hidden />
+						<div className="rb-folder__front rb-folder__front--image rb-folder__front--lid" aria-hidden>
+							<img
+								src={frontImage}
+								alt=""
+								className="rb-folder__cover-img"
+								style={coverFocusImgStyle(coverFocus)}
+							/>
+						</div>
 					) : (
 						<>
 							<div className="rb-folder__front" />

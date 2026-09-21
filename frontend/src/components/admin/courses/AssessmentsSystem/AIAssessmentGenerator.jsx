@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { openaiService } from '../../../../services/openaiService';
 import { useToast } from '../../../../contexts/ToastContext';
 import { buildAssessmentAnalysisPrompt, buildAssessmentGenerationPrompt } from '../../../../utils/aiPrompts';
-import { runAiAction } from '../../../../utils/aiAvailability';
+import { isAiEnabled, runAiAction } from '../../../../utils/aiAvailability';
 
 /**
  * AI assessment generator - Conform defacut.md secțiunea 6
@@ -122,6 +122,10 @@ const AIAssessmentGenerator = ({ courseData, lessonData, moduleData, assessmentT
 		}
 	};
 
+	if (!isAiEnabled()) {
+		return null;
+	}
+
 	return (
 		<div className="ai-assessment-generator">
 			<div className="admin-form-group">
@@ -165,7 +169,7 @@ const AIAssessmentGenerator = ({ courseData, lessonData, moduleData, assessmentT
 								</div>
 								<div className="difficulty-bar">
 									<span className="difficulty-label">Mediu:</span>
-									<div className="difficulty-bar-fill" style={{ width: `${(difficultyAnalysis.medium / generatedQuestions.length) * 100}%`, background: '#f59e0b' }} />
+									<div className="difficulty-bar-fill" style={{ width: `${(difficultyAnalysis.medium / generatedQuestions.length) * 100}%`, background: '#0e7490' }} />
 									<span className="difficulty-value">{difficultyAnalysis.medium}</span>
 								</div>
 								<div className="difficulty-bar">

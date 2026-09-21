@@ -225,7 +225,7 @@
 	font-weight: 800;
 	letter-spacing: 0.14em;
 	text-transform: uppercase;
-	color: var(--lib-cover-accent, #fde68a);
+	color: var(--lib-cover-accent, #67e8f9);
 	text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
 	padding: 0.28rem 0.55rem;
 	border-radius: 6px;
@@ -745,14 +745,25 @@
 @media (max-width: 768px) {
 	.library-page {
 		overflow-x: clip;
-		padding-bottom: env(safe-area-inset-bottom, 0);
+		padding: 0.75rem 1rem calc(1.5rem + 56px + env(safe-area-inset-bottom, 0px));
+		text-align: center;
 	}
 
 	.library-page-header {
 		flex-direction: column;
-		align-items: stretch;
+		align-items: center;
+		text-align: center;
 		gap: var(--space-4);
-		padding: var(--space-4);
+		padding: var(--space-5) var(--space-4);
+	}
+
+	.library-page-header-copy {
+		width: 100%;
+	}
+
+	.library-page-lead {
+		max-width: 40ch;
+		margin-inline: auto;
 	}
 
 	.library-page-title {
@@ -761,6 +772,16 @@
 
 	.library-page-header-actions {
 		width: 100%;
+		max-width: 22rem;
+		flex-direction: column;
+		align-items: stretch;
+		justify-content: center;
+		gap: 0.5rem;
+	}
+
+	.library-section-title {
+		text-align: center;
+		margin-bottom: 1rem;
 	}
 
 	.library-upload-trigger,
@@ -775,32 +796,63 @@
 
 	.library-book-grid {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: var(--space-4);
-		padding: 0 var(--space-4) var(--space-6);
-		justify-content: stretch;
+		gap: 0.85rem;
+		padding: 0;
+		justify-content: center;
+		max-width: 28rem;
+		margin-inline: auto;
 	}
 
 	.library-book-card {
 		touch-action: manipulation;
+		max-width: 100%;
 	}
 
 	.library-book-card:active {
 		transform: scale(0.98);
 	}
 
+	.library-book-info {
+		align-items: center;
+		text-align: center;
+	}
+
+	.library-book-filename {
+		width: 100%;
+		text-align: center;
+	}
+
+	.library-book-actions {
+		width: 100%;
+		justify-content: center;
+	}
+
 	.library-book-cover {
-		min-height: 140px;
+		min-height: 148px;
 		max-height: none;
 	}
 
 	.library-book-cover-body {
-		min-height: 140px;
+		min-height: 148px;
+		align-items: center;
+		text-align: center;
+	}
+
+	.library-book-cover-type {
+		align-self: center;
+	}
+
+	.library-pagination {
+		flex-wrap: wrap;
+		max-width: 28rem;
+		margin-inline: auto;
 	}
 
 	.library-upload-modal {
 		width: min(100%, 28rem);
 		padding: var(--space-4);
 		margin: var(--space-4);
+		text-align: left;
 	}
 
 	.library-upload-modal-header {
@@ -819,8 +871,8 @@
 	}
 }
 
-@media (max-width: 480px) {
+@media (max-width: 360px) {
 	.library-book-grid {
-		grid-template-columns: 1fr;
+		grid-template-columns: minmax(0, 220px);
 	}
 }

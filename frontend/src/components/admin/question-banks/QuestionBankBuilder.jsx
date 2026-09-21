@@ -337,7 +337,6 @@ const QuestionBankBuilder = () => {
 		<div className="admin-container admin-course-builder-page admin-question-bank-builder-page">
 			<BuilderWizardShell
 				title={isEditMode ? (bankData.title || 'Editează bancă') : (bankData.title || 'Bancă de întrebări nouă')}
-				subtitle="Setup → Content → Rules → Review & Publish"
 				steps={STEPS}
 				currentStep={currentStep}
 				onStepChange={setCurrentStep}

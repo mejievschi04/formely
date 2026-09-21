@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight } from '@phosphor-icons/react';
 import { examService, courseProgressService, coursesService } from '../services/api';
+import { advanceAfterExamPassed } from '../utils/courseFlowNavigation';
 import CourseCongratulationsModal from '../components/student/CourseCongratulationsModal';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -9,13 +9,17 @@ import { logger } from '../utils/logger';
 import { handleApiError } from '../utils/errorHandler';
 import StructuredQuestionRenderer from '../components/student/StructuredQuestionRenderer';
 import ChoiceQuestionOptions from '../components/student/ChoiceQuestionOptions';
+import RichTextHtml from '../components/RichTextHtml';
+import { stripRichTextToPlain } from '../utils/richTextContent';
 import { useTestAttemptTelemetry } from '../hooks/useTestAttemptTelemetry';
+import TestAttemptFooter from '../components/student/TestAttemptFooter';
 import {
 	coerceChoiceAnswerForQuestion,
 	getCorrectChoiceIndices,
 	getUserChoiceDisplayIndices,
 	getUserChoiceDisplayLabels,
 	isChoiceAnswered,
+	isTextAnswerQuestion,
 	isMultiSelectChoiceQuestion,
 	areChoiceAnswersEqual,
 	normalizeMultiChoiceIndices,
@@ -81,6 +85,7 @@ const ExamPage = () => {
 	const [exam, setExam] = useState(null);
 	const [answers, setAnswers] = useState({});
 	const [submitted, setSubmitted] = useState(false);
+	const [submitting, setSubmitting] = useState(false);
 	const [result, setResult] = useState(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
@@ -91,6 +96,7 @@ const ExamPage = () => {
 		typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
 	);
 	const [flaggedQuestions, setFlaggedQuestions] = useState(new Set());
+	const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
 	const [showCourseCongrats, setShowCourseCongrats] = useState(false);
 	const [congratsCourseTitle, setCongratsCourseTitle] = useState('');
 	const timerIntervalRef = useRef(null);
@@ -104,9 +110,13 @@ const ExamPage = () => {
 		mq.addEventListener('change', onChange);
 		return () => mq.removeEventListener('change', onChange);
 	}, []);
+
+	useEffect(() => {
+		document.body.classList.add('student-exam-player');
+		return () => document.body.classList.remove('student-exam-player');
+	}, []);
 	userIdRef.current = user?.id;
-	const examFetchInFlightRef = useRef(false);
-	const examFetchKeyRef = useRef(null);
+	const examFetchAbortRef = useRef(null);
 	const testTelemetry = useTestAttemptTelemetry({
 		enabled: Boolean(user?.id),
 		userId: user?.id,
@@ -149,12 +159,9 @@ const ExamPage = () => {
 
 	const fetchExamData = useCallback(async ({ forceFreshAttempt = false } = {}) => {
 		const draftKey = buildExamDraftKey(userIdRef.current, courseId, examId);
-		const fetchKey = `${examId}:${courseId ?? ''}:${forceFreshAttempt ? '1' : '0'}`;
-		if (examFetchInFlightRef.current && examFetchKeyRef.current === fetchKey) {
-			return;
-		}
-		examFetchInFlightRef.current = true;
-		examFetchKeyRef.current = fetchKey;
+		examFetchAbortRef.current?.abort();
+		const abortController = new AbortController();
+		examFetchAbortRef.current = abortController;
 		try {
 			setLoading(true);
 			if (forceFreshAttempt) {
@@ -165,7 +172,11 @@ const ExamPage = () => {
 				}
 			}
 			const data = await examService.getExam(examId, courseId, { newAttempt: forceFreshAttempt });
-			setExam(data);
+			if (abortController.signal.aborted) return;
+			setExam({
+				...data,
+				questions: Array.isArray(data?.questions) ? data.questions : [],
+			});
 
 			if (data.latest_result && !forceFreshAttempt) {
 				setResult(data.latest_result);
@@ -209,16 +220,23 @@ const ExamPage = () => {
 			setFlaggedQuestions(new Set());
 			setError(null);
 		} catch (err) {
+			if (abortController.signal.aborted) return;
 			const errorMessage = handleApiError(err, 'fetchExam');
 			setError(errorMessage || 'Testul nu a fost găsit');
 		} finally {
-			setLoading(false);
-			examFetchInFlightRef.current = false;
+			if (!abortController.signal.aborted) {
+				setLoading(false);
+			}
 		}
 	}, [examId, courseId]);
 
 	useEffect(() => {
+		setError(null);
+		setExam(null);
 		fetchExamData();
+		return () => {
+			examFetchAbortRef.current?.abort();
+		};
 	}, [examId, courseId, fetchExamData]);
 
 	// Persistă răspunsurile în timp real ca să nu se piardă la ieșire din pagină / refresh (până la trimitere).
@@ -263,12 +281,18 @@ const ExamPage = () => {
 
 	// Handle submit
 	const handleSubmit = useCallback(async () => {
+		if (submitting || submitted) return;
+		setSubmitting(true);
 		try {
 			if (timerIntervalRef.current) {
 				clearInterval(timerIntervalRef.current);
 			}
 
-			const resultData = await examService.submitExam(examId, answers, courseId || null);
+			const attemptMeta =
+				exam?.time_limit_minutes && startTime
+					? { started_at: new Date(startTime).toISOString() }
+					: null;
+			const resultData = await examService.submitExam(examId, answers, courseId || null, attemptMeta);
 			const submittedResult = resultData.result;
 			const reviewQs = Array.isArray(submittedResult?.review_questions) ? submittedResult.review_questions : null;
 			setResult(submittedResult);
@@ -294,6 +318,7 @@ const ExamPage = () => {
 				setAnswers(normalizeAnswersFromApi(submittedResult.answers, questionList));
 			}
 			setSubmitted(true);
+			setConfirmSubmitOpen(false);
 			void testTelemetryRef.current.trackSubmitted(submittedResult);
 			try {
 				sessionStorage.removeItem(buildExamDraftKey(user?.id, courseId, examId));
@@ -301,27 +326,29 @@ const ExamPage = () => {
 				/* ignore */
 			}
 
-			// Felicitare + navigare la meniul cursului (ca la finalizarea din lecții), când testul încheie cursul
 			if (courseId && submittedResult?.passed) {
-				let showCongrats = exam?.type === 'final';
-				if (!showCongrats) {
-					try {
-						const p = await courseProgressService.getCourseProgress(courseId);
-						if (p?.course_complete) showCongrats = true;
-					} catch {
-						/* progres opțional */
+				const isFinal = String(exam?.type || '').toLowerCase() === 'final';
+				try {
+					const p = await courseProgressService.getCourseProgress(courseId);
+					if (isFinal && p?.course_complete) {
+						try {
+							await coursesService.finishCourse(courseId);
+						} catch (err) {
+							if (err?.response?.status !== 409) {
+								throw err;
+							}
+						}
+						setShowCourseCongrats(true);
+						try {
+							const c = await coursesService.getById(courseId);
+							const title = c?.title ?? c?.name;
+							if (title) setCongratsCourseTitle(title);
+						} catch {
+							/* titlu opțional */
+						}
 					}
-				}
-				if (showCongrats) {
-					setShowCourseCongrats(true);
-					setCongratsCourseTitle('');
-					try {
-						const c = await coursesService.getById(courseId);
-						const title = c?.title ?? c?.name;
-						if (title) setCongratsCourseTitle(title);
-					} catch {
-						/* titlu opțional */
-					}
+				} catch {
+					/* progres opțional */
 				}
 			}
 
@@ -332,17 +359,37 @@ const ExamPage = () => {
 		} catch (err) {
 			const errorMessage = handleApiError(err, 'submitExam');
 			setError(errorMessage || 'Eroare la trimiterea testului');
+		} finally {
+			setSubmitting(false);
 		}
-	}, [examId, answers, exam, courseId, user?.id]);
+	}, [examId, answers, exam, courseId, user?.id, submitted, submitting, startTime]);
+
+	const requestSubmit = useCallback(() => {
+		if (timeRemaining === 0) {
+			handleSubmit();
+			return;
+		}
+		setConfirmSubmitOpen(true);
+	}, [timeRemaining, handleSubmit]);
+
+	const handleContinueAfterExam = useCallback(async () => {
+		if (!courseId || !result?.passed) return;
+		try {
+			await advanceAfterExamPassed({
+				courseId,
+				exam,
+				navigate,
+				onCongrats: () => setShowCourseCongrats(true),
+			});
+		} catch (err) {
+			handleApiError(err, 'continueAfterExam');
+		}
+	}, [courseId, exam, navigate, result?.passed]);
 
 	const handleCongratsClose = useCallback(() => {
 		setShowCourseCongrats(false);
-		if (courseId) {
-			navigate(`/courses/${courseId}`, { replace: true });
-		} else {
-			navigate('/courses', { replace: true });
-		}
-	}, [courseId, navigate]);
+		navigate('/courses', { replace: true });
+	}, [navigate]);
 
 	// Handle retry
 	const handleRetry = useCallback(async () => {
@@ -501,7 +548,11 @@ const ExamPage = () => {
 	const showsPartialManualReview = Boolean(needsManualReview && exam?.manual_review_mode === 'partial');
 	const isSequentialNavigation = (exam?.navigation_mode || 'sequential') !== 'free';
 	const canShowInstantResults = Boolean(submitted && result && (( !needsManualReview && exam?.show_feedback_instant) || showsPartialManualReview));
-	const canShowCorrectAnswers = Boolean(canShowInstantResults && exam?.show_correct_answers);
+	const showOnlySubmittedAnswers = Boolean(exam?.show_only_submitted_answers);
+	const canShowCorrectAnswers = Boolean(canShowInstantResults && exam?.show_correct_answers && !showOnlySubmittedAnswers);
+	const canShowExplanations = Boolean(
+		canShowInstantResults && !showOnlySubmittedAnswers && (exam?.show_feedback_instant || exam?.show_correct_answers)
+	);
 	const mobileSingleQuestion = isMobile && !submitted;
 	const visibleQuestions = useMemo(() => {
 		if (!exam?.questions) return [];
@@ -517,6 +568,12 @@ const ExamPage = () => {
 		if (!exam?.questions) return 0;
 		return exam.questions.filter((q) => isChoiceAnswered(q, answers[q.id])).length;
 	}, [exam, answers]);
+	const unansweredQuestionIndexes = useMemo(() => {
+		if (!exam?.questions) return [];
+		return exam.questions
+			.map((q, idx) => (isChoiceAnswered(q, answers[q.id]) ? null : idx))
+			.filter((idx) => idx !== null);
+	}, [exam, answers]);
 
 	const questionProgressPercent = exam?.questions?.length
 		? Math.round((answeredQuestionsCount / exam.questions.length) * 100)
@@ -525,7 +582,17 @@ const ExamPage = () => {
 	// Get question status
 	const getQuestionStatus = useCallback((questionId, index) => {
 		if (submitted && result) {
+			if (showOnlySubmittedAnswers) {
+				const question = exam.questions.find(q => q.id === questionId);
+				const isAnswered = question ? isChoiceAnswered(question, visibleAnswers[questionId] ?? answers[questionId]) : false;
+				return isAnswered ? 'answered' : 'not-started';
+			}
 			const question = exam.questions.find(q => q.id === questionId);
+			if (isTextAnswerQuestion(question)) {
+				return question?.is_correct === true
+					? 'completed'
+					: (question?.is_correct === false ? 'incorrect' : 'pending');
+			}
 			if (!Array.isArray(question?.options) || question.options.length === 0) {
 				return (question?.type === 'matching' || question?.type === 'ordering') ? (isQuestionCorrect(question) ? 'completed' : 'incorrect') : 'pending';
 			}
@@ -537,7 +604,7 @@ const ExamPage = () => {
 		if (isCurrent) return 'current';
 		if (isAnswered) return 'answered';
 		return 'not-started';
-	}, [answers, currentQuestionIndex, submitted, result, exam, isQuestionCorrect, visibleAnswers]);
+	}, [answers, currentQuestionIndex, submitted, result, exam, isQuestionCorrect, visibleAnswers, showOnlySubmittedAnswers]);
 
 	if (loading) {
 		return (
@@ -577,19 +644,30 @@ const ExamPage = () => {
 		const hasOptions = Array.isArray(q.options) && q.options.length > 0;
 		const hasMatching = q.type === 'matching' && q.matching;
 		const hasOrdering = q.type === 'ordering' && q.ordering;
+		const hasTextAnswer = isTextAnswerQuestion(q);
 		const isStructured = Boolean(hasMatching || hasOrdering);
-		const isCorrect = isQuestionCorrect(q);
+		const isCorrect = showOnlySubmittedAnswers ? null : isQuestionCorrect(q);
 		const matchingUserValues = Array.isArray(userAnswer) ? userAnswer : [];
 		const orderingUserValues = Array.isArray(userAnswer) ? userAnswer : [];
-		const statusLabel = isStructured
+		const statusLabel = showOnlySubmittedAnswers
+			? 'Răspuns trimis'
+			: (hasTextAnswer
+			? (q.is_correct === true ? '✓ Corect' : (q.is_correct === false ? '✗ Incorect' : '⏳ În verificare'))
+			: (isStructured
 			? (isCorrect ? '✓ Corect' : '✗ Incorect')
-			: (hasOptions ? (isCorrect ? '✓ Corect' : '✗ Incorect') : 'Tip fără opțiuni');
+			: (hasOptions ? (isCorrect ? '✓ Corect' : '✗ Incorect') : 'Tip fără opțiuni')));
+		const feedbackToneClass = showOnlySubmittedAnswers ? 'submitted' : (isCorrect ? 'correct' : 'incorrect');
+		const questionPreviewRaw = stripRichTextToPlain(q.text) || '';
 		const questionPreview =
-			typeof q.text === 'string' && q.text.length > 80 ? `${q.text.slice(0, 80)}…` : q.text;
+			questionPreviewRaw.length > 80 ? `${questionPreviewRaw.slice(0, 80)}…` : questionPreviewRaw;
 
 		const feedbackBody = (
 			<>
-				<div className="student-exam-feedback-item-question">{q.text}</div>
+				<RichTextHtml
+					html={q.text}
+					className="student-exam-feedback-item-question"
+					fallback={<div className="student-exam-feedback-item-question">Întrebare fără conținut</div>}
+				/>
 				{hasMatching && q.matching && (
 					<div className="student-exam-feedback-item-answers">
 						{q.matching.leftItems?.map((left, pairIndex) => {
@@ -634,9 +712,23 @@ const ExamPage = () => {
 						)}
 					</div>
 				)}
-				{canShowCorrectAnswers && q.explanation && (
+				{hasTextAnswer && (
+					<div className="student-exam-feedback-item-answers">
+						<div className="student-exam-feedback-item-user">
+							<strong>Răspunsul tău:</strong>{' '}
+							{typeof userAnswer === 'string' && userAnswer.trim() ? userAnswer : '—'}
+						</div>
+						{canShowCorrectAnswers && Array.isArray(q.reference_answers) && q.reference_answers.length > 0 && (
+							<div className="student-exam-feedback-item-correct">
+								<strong>Răspunsuri de referință:</strong> {q.reference_answers.join('; ')}
+							</div>
+						)}
+					</div>
+				)}
+				{canShowExplanations && q.explanation && (
 					<div className="student-exam-feedback-item-explanation">
-						<strong>Explicație:</strong> {q.explanation}
+						<strong>Explicație:</strong>{' '}
+						<RichTextHtml html={q.explanation} className="student-exam-feedback-item-explanation-body" />
 					</div>
 				)}
 			</>
@@ -646,8 +738,8 @@ const ExamPage = () => {
 			return (
 				<details
 					key={q.id}
-					className={`student-exam-feedback-item student-exam-feedback-item--collapsible ${isCorrect ? 'correct' : 'incorrect'}`}
-					open={!isCorrect}
+					className={`student-exam-feedback-item student-exam-feedback-item--collapsible ${feedbackToneClass}`}
+					open={showOnlySubmittedAnswers ? false : !isCorrect}
 				>
 					<summary className="student-exam-feedback-item-summary">
 						<span className="student-exam-feedback-item-number">{idx + 1}</span>
@@ -660,7 +752,7 @@ const ExamPage = () => {
 		}
 
 		return (
-			<div key={q.id} className={`student-exam-feedback-item ${isCorrect ? 'correct' : 'incorrect'}`}>
+			<div key={q.id} className={`student-exam-feedback-item ${feedbackToneClass}`}>
 				<div className="student-exam-feedback-item-header">
 					<span className="student-exam-feedback-item-number">{idx + 1}</span>
 					<span className="student-exam-feedback-item-status">{statusLabel}</span>
@@ -690,7 +782,7 @@ const ExamPage = () => {
 				</Link>
 			) : (
 				<Link to="/courses" className="student-exam-back-link">
-					← Înapoi la mape
+					← Înapoi la catalog
 				</Link>
 			)}
 
@@ -752,8 +844,14 @@ const ExamPage = () => {
 			</div>
 			)}
 
+			{!submitted && exam.questions.length === 0 && (
+				<div className="student-exam-error" role="alert">
+					<p>Acest test nu are întrebări disponibile. Contactează instructorul sau administratorul.</p>
+				</div>
+			)}
+
 			{/* Navigator + Questions */}
-			{!submitted && (
+			{!submitted && exam.questions.length > 0 && (
 				<div className="student-exam-layout">
 					{!isMobile && (
 					<aside className="student-exam-nav" aria-label="Navigare întrebări">
@@ -790,6 +888,7 @@ const ExamPage = () => {
 							const hasOptions = Array.isArray(q.options) && q.options.length > 0;
 							const hasMatching = q.type === 'matching' && q.matching;
 							const hasOrdering = q.type === 'ordering' && q.ordering;
+							const hasTextAnswer = isTextAnswerQuestion(q);
 							const isFlagged = flaggedQuestions.has(q.id);
 
 						return (
@@ -803,7 +902,11 @@ const ExamPage = () => {
 										{actualIndex + 1}
 									</div>
 									<div className="student-exam-question-content">
-										<div className="student-exam-question-text">{q.text}</div>
+										<RichTextHtml
+											html={q.text}
+											className="student-exam-question-text"
+											fallback={<div className="student-exam-question-text">Întrebare fără conținut</div>}
+										/>
 										<div className="student-exam-question-meta">
 											<span className="student-exam-question-points">{q.points || 1} {q.points === 1 ? 'punct' : 'puncte'}</span>
 											{!submitted && (
@@ -826,6 +929,21 @@ const ExamPage = () => {
 										onChange={(next) => handleAnswerChange(q.id, next)}
 										disabled={submitted}
 									/>
+								) : hasTextAnswer ? (
+									<div className="student-exam-text-answer-block">
+										<p className="student-exam-choice-hint">
+											<span className="student-exam-choice-type">Răspuns scurt</span>
+											{' — scrie răspunsul tău; va fi evaluat de instructor'}
+										</p>
+										<textarea
+											className="student-exam-answer-textarea"
+											value={typeof answers[q.id] === 'string' ? answers[q.id] : ''}
+											onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+											placeholder={q.placeholder || 'Introdu răspunsul tău...'}
+											disabled={submitted}
+											rows={4}
+										/>
+									</div>
 								) : hasOptions ? (
 									<ChoiceQuestionOptions
 										question={q}
@@ -862,14 +980,6 @@ const ExamPage = () => {
 						<div className="student-exam-result-title">
 							{needsManualReview ? 'În așteptare evaluare manuală' : (result.passed ? 'Test promovat!' : 'Test nepromovat')}
 						</div>
-						<div className="student-exam-result-subtitle">
-							{needsManualReview
-								? 'Întrebările cu răspuns deschis vor fi evaluate de instructor/admin. Vei primi rezultatul final după aprobare.'
-								: (result.passed
-									? 'Felicitări! Ai promovat testul cu succes.'
-									: `Ai obținut ${result.percentage}%, dar ai nevoie de minim ${exam.passing_score}% pentru a promova.`)
-							}
-						</div>
 					</div>
 
 					{showsPartialManualReview && (
@@ -895,7 +1005,7 @@ const ExamPage = () => {
 							<div className="student-exam-result-stat-label">Procentaj</div>
 							<div className="student-exam-result-stat-value">{result.percentage}%</div>
 						</div>
-						{performanceMetrics && (
+						{performanceMetrics && !showOnlySubmittedAnswers && (
 							<>
 								<div className="student-exam-result-stat">
 									<div className="student-exam-result-stat-label">Corecte</div>
@@ -946,99 +1056,36 @@ const ExamPage = () => {
 			)}
 			</div>
 
-			{/* Actions */}
-			<div
-				className={[
-					'student-exam-footer',
-					'student-exam-actions',
-					'student-exam-actions-sticky',
-					submitted && result ? 'student-exam-footer--results' : '',
-				]
-					.filter(Boolean)
-					.join(' ')}
+			<TestAttemptFooter
+				currentIndex={currentQuestionIndex}
+				total={exam.questions.length}
+				onNavigate={scrollToQuestion}
+				onSubmit={handleSubmit}
+				submitting={submitting}
+				submitted={submitted}
+				backTo={courseId ? `/courses/${courseId}` : null}
+				canSubmit={timeRemaining === 0 || exam.questions.some((q) => isChoiceAnswered(q, answers[q.id]))}
+				confirmOpen={confirmSubmitOpen}
+				answeredCount={answeredQuestionsCount}
+				unansweredCount={unansweredQuestionIndexes.length}
+				flaggedCount={flaggedQuestions.size}
+				onRequestSubmit={requestSubmit}
+				onConfirmSubmit={handleSubmit}
+				onCancelConfirm={() => setConfirmSubmitOpen(false)}
+				onJumpUnanswered={() => {
+					const first = unansweredQuestionIndexes[0];
+					setConfirmSubmitOpen(false);
+					if (first != null) scrollToQuestion(first);
+				}}
 			>
-				{!submitted && !isMobile && isSequentialNavigation && exam.questions.length > 1 && (
-					<div className="student-exam-desktop-pager" role="navigation" aria-label="Navigare întrebări">
-						<button
-							type="button"
-							className="student-exam-desktop-pager-btn"
-							onClick={() => scrollToQuestion(currentQuestionIndex - 1)}
-							disabled={currentQuestionIndex === 0}
-							aria-label="Întrebarea anterioară"
-						>
-							<ArrowLeft size={20} weight="bold" aria-hidden />
-							<span>Anterioară</span>
-						</button>
-						<span className="student-exam-desktop-pager-label">
-							{currentQuestionIndex + 1} / {exam.questions.length}
-						</span>
-						<button
-							type="button"
-							className="student-exam-desktop-pager-btn"
-							onClick={() => scrollToQuestion(currentQuestionIndex + 1)}
-							disabled={currentQuestionIndex >= exam.questions.length - 1}
-							aria-label="Întrebarea următoare"
-						>
-							<span>Următoare</span>
-							<ArrowRight size={20} weight="bold" aria-hidden />
-						</button>
-					</div>
+				{submitted && result && exam.can_retake && !result.passed && !needsManualReview && (
+					<button type="button" onClick={handleRetry} className="lms-btn-primary">
+						{exam.remaining_attempts == null
+							? 'Reîncearcă · fără limită de încercări'
+							: `Reîncearcă · mai ai ${exam.remaining_attempts} ${exam.remaining_attempts === 1 ? 'încercare' : 'încercări'}`}
+					</button>
 				)}
-				{!submitted && isMobile && exam.questions.length > 1 && (
-					<div className="student-exam-mobile-pager" role="navigation" aria-label="Navigare întrebări">
-						<button
-							type="button"
-							className="student-exam-mobile-pager-btn"
-							onClick={() => scrollToQuestion(currentQuestionIndex - 1)}
-							disabled={currentQuestionIndex === 0}
-							aria-label="Întrebarea anterioară"
-						>
-							<ArrowLeft size={22} weight="bold" aria-hidden />
-						</button>
-						<span className="student-exam-mobile-pager-label">
-							{currentQuestionIndex + 1} / {exam.questions.length}
-						</span>
-						<button
-							type="button"
-							className="student-exam-mobile-pager-btn"
-							onClick={() => scrollToQuestion(currentQuestionIndex + 1)}
-							disabled={currentQuestionIndex >= exam.questions.length - 1}
-							aria-label="Întrebarea următoare"
-						>
-							<ArrowRight size={22} weight="bold" aria-hidden />
-						</button>
-					</div>
-				)}
-				<div className="student-exam-footer-actions">
-					{!submitted && (
-						<button
-							type="button"
-							onClick={handleSubmit}
-							className="student-exam-btn student-exam-btn-primary"
-							disabled={!exam.questions.some((q) => isChoiceAnswered(q, answers[q.id]))}
-						>
-							Trimite testul
-						</button>
-					)}
-					{submitted && result && exam.can_retake && !result.passed && !needsManualReview && (
-						<button
-							type="button"
-							onClick={handleRetry}
-							className="student-exam-btn student-exam-btn-primary"
-						>
-							Reîncearcă
-						</button>
-					)}
-					{courseId && (
-						<Link
-							to={`/courses/${courseId}`}
-							className="student-exam-btn student-exam-btn-secondary"
-						>
-							Înapoi la curs
-						</Link>
-					)}
-				</div>
-			</div>
+			</TestAttemptFooter>
 
 			<CourseCongratulationsModal
 				open={showCourseCongrats}

@@ -25,9 +25,6 @@ const CoursesHeader = ({
 				<div className="admin-courses-header-content">
 					<div className="admin-courses-header-text">
 						<h1 className="admin-courses-title">Gestionare Cursuri</h1>
-						<p className="admin-courses-subtitle">
-							<span className="admin-courses-subtitle-underline">GestioneazДѓ</span> И™i monitorizeazДѓ cursurile
-						</p>
 					</div>
 					<div className="admin-courses-header-actions">
 						<button

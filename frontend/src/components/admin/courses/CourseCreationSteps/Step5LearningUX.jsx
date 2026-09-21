@@ -35,9 +35,6 @@ const Step5LearningUX = ({ data, onUpdate }) => {
 		<div className="step5-learning-ux">
 			<div className="step5-header">
 				<h3>Experiență Cursant</h3>
-				<p className="step5-description">
-					Configurează experiența de învățare pentru cursanți: ordine și deblocare.
-				</p>
 			</div>
 			
 			<div className="step5-content">

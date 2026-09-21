@@ -1,45 +1,16 @@
 import React, { useMemo, useState } from 'react';
+import RichTextEditor from '../../RichTextEditor';
 import '../../../styles/admin-course-builder.css';
+import {
+  INLINE_QUESTION_TYPES,
+  normalizeInlineQuestionType,
+  getDefaultAnswersByType,
+  selectAllTextInputHandlers,
+  keepOnlyOneCorrectAnswer,
+} from '../../../utils/testQuestionBuilder';
+import { getQuestionTypeLabel } from '../../../utils/questionTypeLabels';
 
-const INLINE_QUESTION_TYPES = [
-  { id: 'multiple_choice', label: 'Răspuns multiplu', short: 'A/B' },
-  { id: 'true_false', label: 'Adevărat / Fals', short: 'T/F' },
-  { id: 'matching', label: 'Potrivire', short: '↔' },
-  { id: 'ordering', label: 'Ordonare', short: '1-4' },
-];
-
-const normalizeType = (type) => {
-  if (type === 'single_choice') return 'multiple_choice';
-  return INLINE_QUESTION_TYPES.some((entry) => entry.id === type) ? type : 'multiple_choice';
-};
-
-const getDefaultAnswersByType = (type) => {
-  if (type === 'true_false') {
-    return [
-      { text: 'Adevărat', is_correct: true },
-      { text: 'Fals', is_correct: false },
-    ];
-  }
-
-  if (type === 'matching') {
-    return [
-      { left: 'Element A', right: 'Răspuns A', text: 'Element A', answer_text: 'Răspuns A', is_correct: true },
-      { left: 'Element B', right: 'Răspuns B', text: 'Element B', answer_text: 'Răspuns B', is_correct: true },
-    ];
-  }
-
-  if (type === 'ordering') {
-    return [
-      { text: 'Pasul 1', is_correct: true, order: 0 },
-      { text: 'Pasul 2', is_correct: true, order: 1 },
-    ];
-  }
-
-  return [
-    { text: 'Răspuns A', is_correct: true },
-    { text: 'Răspuns B', is_correct: false },
-  ];
-};
+const normalizeType = normalizeInlineQuestionType;
 
 const normalizeAnswers = (type, answers) => {
   const list = Array.isArray(answers) ? answers : [];
@@ -70,6 +41,14 @@ const normalizeAnswers = (type, answers) => {
     }));
   }
 
+  if (type === 'short_answer') {
+    return list.map((answer, index) => ({
+      text: answer?.text ?? '',
+      is_correct: true,
+      order: typeof answer?.order === 'number' ? answer.order : index,
+    }));
+  }
+
   return list.map((answer, index) => ({
     text: answer?.text ?? '',
     is_correct: !!answer?.is_correct,
@@ -84,7 +63,7 @@ const QuestionBuilderEditor = ({ question, onChange, questionNumber = 1 }) => {
     () => normalizeAnswers(currentType, question?.answers?.length ? question.answers : getDefaultAnswersByType(currentType)),
     [question?.answers, currentType]
   );
-  const currentTypeLabel = INLINE_QUESTION_TYPES.find((entry) => entry.id === currentType)?.label || 'Întrebare';
+  const currentTypeLabel = getQuestionTypeLabel(currentType, 'Întrebare');
 
   const update = (patch) => onChange({ ...question, ...patch });
 
@@ -103,7 +82,7 @@ const QuestionBuilderEditor = ({ question, onChange, questionNumber = 1 }) => {
   };
 
   const toggleCorrect = (idx) => {
-    if (currentType === 'true_false') {
+    if (currentType === 'true_false' || currentType === 'single_choice') {
       update({
         answers: answers.map((answer, i) => ({
           ...answer,
@@ -131,7 +110,19 @@ const QuestionBuilderEditor = ({ question, onChange, questionNumber = 1 }) => {
     update({ answers: next });
   };
 
-  const removeAnswer = (idx) => update({ answers: answers.filter((_, i) => i !== idx) });
+  const isChoiceType = ['multiple_choice', 'single_choice', 'true_false'].includes(currentType);
+  const isShortAnswerType = currentType === 'short_answer';
+  const isMatchingType = currentType === 'matching';
+  const isOrderingType = currentType === 'ordering';
+  const isSingleSelectChoice = currentType === 'single_choice' || currentType === 'true_false';
+  const radioGroupName = `answer-correct-${question?.id ?? questionNumber}`;
+
+  const removeAnswer = (idx) => {
+    const next = answers.filter((_, i) => i !== idx);
+    update({
+      answers: isSingleSelectChoice ? keepOnlyOneCorrectAnswer(next) : next,
+    });
+  };
 
   const moveAnswer = (idx, direction) => {
     const nextIndex = direction === 'up' ? idx - 1 : idx + 1;
@@ -144,10 +135,6 @@ const QuestionBuilderEditor = ({ question, onChange, questionNumber = 1 }) => {
       answers: next.map((answer, index) => (currentType === 'ordering' ? { ...answer, order: index } : answer)),
     });
   };
-
-  const isChoiceType = currentType === 'multiple_choice' || currentType === 'true_false';
-  const isMatchingType = currentType === 'matching';
-  const isOrderingType = currentType === 'ordering';
 
   return (
     <div className="admin-course-builder-test-layout">
@@ -167,21 +154,37 @@ const QuestionBuilderEditor = ({ question, onChange, questionNumber = 1 }) => {
                 </div>
               </div>
 
-              <textarea
-                className="admin-course-builder-test-question-input"
-                value={question?.content || ''}
-                onChange={(e) => update({ content: e.target.value })}
-                placeholder="Adaugă întrebare"
-                rows={2}
-              />
-
-              <textarea
-                className="admin-course-builder-test-question-desc"
-                value={question?.explanation || ''}
-                onChange={(e) => update({ explanation: e.target.value })}
-                placeholder="Adaugă descriere..."
-                rows={2}
-              />
+              <div className="admin-course-builder-test-question-fields">
+                <div className="admin-course-builder-test-question-field">
+                  <span className="admin-course-builder-test-question-field-label">Text întrebare</span>
+                  <div className="admin-course-builder-test-question-rte">
+                    <RichTextEditor
+                      value={question?.content || ''}
+                      onChange={(html) => update({ content: html })}
+                      placeholder="Scrie și formatează întrebarea..."
+                      toolbarVariant="basic"
+                      showSideTools={false}
+                      style={{ minHeight: '120px' }}
+                    />
+                  </div>
+                </div>
+                <div className="admin-course-builder-test-question-field">
+                  <span className="admin-course-builder-test-question-field-label">
+                    Descriere sau indiciu
+                    <span className="admin-course-builder-test-question-field-hint">opțional</span>
+                  </span>
+                  <div className="admin-course-builder-test-question-rte admin-course-builder-test-question-rte-desc">
+                    <RichTextEditor
+                      value={question?.explanation || ''}
+                      onChange={(html) => update({ explanation: html })}
+                      placeholder="Context, indiciu sau explicație..."
+                      toolbarVariant="basic"
+                      showSideTools={false}
+                      style={{ minHeight: '88px' }}
+                    />
+                  </div>
+                </div>
+              </div>
 
               <div className="admin-course-builder-test-field">
                 <label>Puncte</label>
@@ -199,8 +202,8 @@ const QuestionBuilderEditor = ({ question, onChange, questionNumber = 1 }) => {
                   {answers.map((answer, idx) => (
                     <div key={`ans-${idx}`} className="admin-course-builder-test-answer-row">
                       <input
-                        type={currentType === 'true_false' ? 'radio' : 'checkbox'}
-                        name={currentType === 'true_false' ? 'answer-correct' : undefined}
+                        type={isSingleSelectChoice ? 'radio' : 'checkbox'}
+                        name={isSingleSelectChoice ? radioGroupName : undefined}
                         checked={!!answer.is_correct}
                         onChange={() => toggleCorrect(idx)}
                       />
@@ -210,19 +213,45 @@ const QuestionBuilderEditor = ({ question, onChange, questionNumber = 1 }) => {
                         onChange={(e) => updateAnswer(idx, 'text', e.target.value)}
                         placeholder="Introduce răspuns"
                         disabled={currentType === 'true_false'}
+                        {...selectAllTextInputHandlers}
                       />
-                      {currentType !== 'true_false' && (
+                      {!isSingleSelectChoice && (
                         <button type="button" className="admin-btn admin-btn-secondary" onClick={() => removeAnswer(idx)}>
                           ×
                         </button>
                       )}
                     </div>
                   ))}
-                  {currentType !== 'true_false' && (
+                  {!isSingleSelectChoice && (
                     <button type="button" className="admin-btn admin-btn-secondary" onClick={addAnswer}>
                       + Adaugă răspuns
                     </button>
                   )}
+                </div>
+              )}
+
+              {isShortAnswerType && (
+                <div className="admin-course-builder-test-question-answers">
+                  <p className="admin-course-builder-test-short-hint">
+                    Răspuns scurt — evaluare manuală. Opțional: răspunsuri acceptate pentru instructor.
+                  </p>
+                  {answers.map((answer, idx) => (
+                    <div key={`ref-${idx}`} className="admin-course-builder-test-answer-row">
+                      <input
+                        type="text"
+                        value={answer.text || ''}
+                        onChange={(e) => updateAnswer(idx, 'text', e.target.value)}
+                        placeholder="Răspuns acceptat (opțional)"
+                        {...selectAllTextInputHandlers}
+                      />
+                      <button type="button" className="admin-btn admin-btn-secondary" onClick={() => removeAnswer(idx)}>
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  <button type="button" className="admin-btn admin-btn-secondary" onClick={addAnswer}>
+                    + Răspuns acceptat
+                  </button>
                 </div>
               )}
 
@@ -236,12 +265,14 @@ const QuestionBuilderEditor = ({ question, onChange, questionNumber = 1 }) => {
                         value={answer.left || ''}
                         onChange={(e) => updateAnswer(idx, 'left', e.target.value)}
                         placeholder="Element stânga"
+                        {...selectAllTextInputHandlers}
                       />
                       <input
                         type="text"
                         value={answer.right || ''}
                         onChange={(e) => updateAnswer(idx, 'right', e.target.value)}
                         placeholder="Element dreapta"
+                        {...selectAllTextInputHandlers}
                       />
                       <button type="button" className="admin-btn admin-btn-secondary" onClick={() => removeAnswer(idx)}>
                         ×
@@ -265,6 +296,7 @@ const QuestionBuilderEditor = ({ question, onChange, questionNumber = 1 }) => {
                         value={answer.text || ''}
                         onChange={(e) => updateAnswer(idx, 'text', e.target.value)}
                         placeholder="Element"
+                        {...selectAllTextInputHandlers}
                       />
                       <button type="button" className="admin-btn admin-btn-secondary" onClick={() => moveAnswer(idx, 'up')} disabled={idx === 0}>
                         ↑

@@ -282,10 +282,6 @@ const CourseCreationWizard = ({ onClose, onSuccess }) => {
 				<div className="course-creation-wizard-header">
 					<div>
 						<h2>Creează curs nou</h2>
-						<p className="course-creation-wizard-subtitle">
-							{STEPS[currentStep].title}
-							{STEPS[currentStep].desc && <span className="course-creation-wizard-step-desc-inline"> — {STEPS[currentStep].desc}</span>}
-						</p>
 					</div>
 					{onClose && (
 						<button type="button" className="course-creation-wizard-close" onClick={handleCloseAttempt} aria-label="Închide wizard">×</button>

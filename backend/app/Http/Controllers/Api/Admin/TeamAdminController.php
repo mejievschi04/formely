@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
-use App\Models\CourseTest;
 use App\Models\Team;
 use App\Models\User;
+use App\Services\EnrollmentAssignmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -15,24 +15,31 @@ class TeamAdminController extends Controller
 {
     public function __construct()
     {
-        if (auth()->check() && auth()->user()->isInstructor()) {
-            abort(403, 'Doar administratorii pot gestiona echipele.');
+        if (auth()->check() && ! auth()->user()->canManageOrganization()) {
+            abort(403, 'Nu ai drepturi pentru gestionarea echipelor.');
         }
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $teams = Team::with(['owner', 'users', 'courses'])
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+        $query = Team::with(['owner', 'users', 'courses', 'department:id,name,accent_color']);
+
+        if ($request->filled('department_id')) {
+            if ($request->department_id === 'none') {
+                $query->whereNull('department_id');
+            } else {
+                $query->where('department_id', $request->integer('department_id'));
+            }
+        }
+
+        $teams = $query->orderBy('sort_order')->orderBy('name')->get();
 
         return response()->json($teams);
     }
 
     public function show($id)
     {
-        $team = Team::with(['owner', 'users', 'courses'])->findOrFail($id);
+        $team = Team::with(['owner', 'users', 'courses', 'department:id,name,accent_color'])->findOrFail($id);
         
         return response()->json($team);
     }
@@ -43,10 +50,17 @@ class TeamAdminController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'accent_color' => ['nullable', 'string', 'max:32', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'department_id' => 'nullable|exists:departments,id',
         ]);
 
         $validated['owner_id'] = Auth::id();
-        $validated['sort_order'] = (int) (Team::query()->max('sort_order') ?? 0) + 1;
+        $sortQuery = Team::query();
+        if (! empty($validated['department_id'])) {
+            $sortQuery->where('department_id', $validated['department_id']);
+        } else {
+            $sortQuery->whereNull('department_id');
+        }
+        $validated['sort_order'] = (int) ($sortQuery->max('sort_order') ?? 0) + 1;
 
         $team = Team::create($validated);
 
@@ -64,6 +78,7 @@ class TeamAdminController extends Controller
             'name' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
             'accent_color' => ['nullable', 'string', 'max:32', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'department_id' => 'nullable|exists:departments,id',
         ]);
 
         $team->update($validated);
@@ -77,6 +92,7 @@ class TeamAdminController extends Controller
     public function destroy($id)
     {
         $team = Team::findOrFail($id);
+        app(EnrollmentAssignmentService::class)->dissolveTeam($team);
         $team->delete();
 
         return response()->json([
@@ -89,11 +105,28 @@ class TeamAdminController extends Controller
         $team = Team::findOrFail($id);
 
         $validated = $request->validate([
-            'user_ids' => 'required|array',
+            'user_ids' => 'present|array',
             'user_ids.*' => 'exists:users,id',
         ]);
 
-        $team->users()->sync($validated['user_ids']);
+        $existingUserIds = $team->users()->pluck('users.id')->map(fn ($id) => (int) $id)->all();
+        $requestedUserIds = array_map('intval', $validated['user_ids']);
+        $newUserIds = array_values(array_diff($requestedUserIds, $existingUserIds));
+        $removedUserIds = array_values(array_diff($existingUserIds, $requestedUserIds));
+
+        $team->users()->sync($requestedUserIds);
+
+        $assignment = app(EnrollmentAssignmentService::class);
+        if ($newUserIds !== []) {
+            $assignment->autoEnrollUsersForTeam(
+                $team->fresh(['courses']),
+                $newUserIds,
+                ['assigned_by' => auth()->user()]
+            );
+        }
+        if ($removedUserIds !== []) {
+            $assignment->revokeTeamCoursesForRemovedUsers($team->fresh(['courses']), $removedUserIds);
+        }
 
         return response()->json([
             'message' => 'Utilizatori atașați cu succes',
@@ -106,11 +139,28 @@ class TeamAdminController extends Controller
         $team = Team::findOrFail($id);
 
         $validated = $request->validate([
-            'course_ids' => 'required|array',
+            'course_ids' => 'present|array',
             'course_ids.*' => 'exists:courses,id',
         ]);
 
-        $team->courses()->sync($validated['course_ids']);
+        $existingCourseIds = $team->courses()->pluck('courses.id')->map(fn ($id) => (int) $id)->all();
+        $requestedCourseIds = array_map('intval', $validated['course_ids']);
+        $newCourseIds = array_values(array_diff($requestedCourseIds, $existingCourseIds));
+        $removedCourseIds = array_values(array_diff($existingCourseIds, $requestedCourseIds));
+
+        $team->courses()->sync($requestedCourseIds);
+
+        $assignment = app(EnrollmentAssignmentService::class);
+        if ($newCourseIds !== []) {
+            $assignment->autoEnrollTeamForCourses(
+                $team->fresh(['users']),
+                $newCourseIds,
+                ['assigned_by' => auth()->user()]
+            );
+        }
+        if ($removedCourseIds !== []) {
+            $assignment->revokeRemovedCoursesFromTeam($team, $removedCourseIds);
+        }
 
         return response()->json([
             'message' => 'Cursuri atașate cu succes',
@@ -164,49 +214,33 @@ class TeamAdminController extends Controller
         $courseIds = $validated['course_ids'];
         $isMandatory = $validated['is_mandatory'] ?? true;
 
-        if ($isMandatory) {
-            $coursesWithoutRequiredTests = [];
-            foreach ($courseIds as $courseId) {
-                $course = Course::find($courseId);
-                if ($course) {
-                    $hasRequiredTest = CourseTest::where('course_id', $courseId)
-                        ->where('required', true)
-                        ->exists();
-                    if (! $hasRequiredTest) {
-                        $coursesWithoutRequiredTests[] = [
-                            'id' => $courseId,
-                            'title' => $course->title,
-                        ];
-                    }
-                }
-            }
-            if (! empty($coursesWithoutRequiredTests)) {
-                $courseTitles = implode(', ', array_column($coursesWithoutRequiredTests, 'title'));
-                $courseCount = count($coursesWithoutRequiredTests);
+        $assignmentService = app(EnrollmentAssignmentService::class);
 
+        foreach ($courseIds as $courseId) {
+            $course = Course::findOrFail($courseId);
+            try {
+                $assignmentService->assertMandatoryCourseHasRequiredTests($course, $isMandatory);
+            } catch (\InvalidArgumentException $e) {
                 return response()->json([
                     'error' => 'Cursurile obligatorii trebuie să aibă cel puțin un test obligatoriu',
-                    'message' => $courseCount === 1
-                        ? "Cursul \"{$courseTitles}\" nu are teste obligatorii."
-                        : "Următoarele cursuri nu au teste obligatorii: {$courseTitles}.",
-                    'courses' => $coursesWithoutRequiredTests,
+                    'message' => "Cursul \"{$course->title}\" nu are teste obligatorii.",
+                    'courses' => [['id' => $course->id, 'title' => $course->title]],
                 ], 422);
             }
-        }
 
-        $attach = [];
-        foreach ($courseIds as $courseId) {
-            $attach[$courseId] = [
+            $result = $assignmentService->assignCourseToUsers($course, [$user->id], [
                 'is_mandatory' => $isMandatory,
-                'assigned_at' => now(),
-                'enrolled' => true,
-                'enrolled_at' => now(),
-            ];
-        }
-        $user->assignedCourses()->syncWithoutDetaching($attach);
+                'assigned_by' => auth()->user(),
+                'source_type' => \App\Models\EnrollmentAssignment::SOURCE_TEAM,
+                'source_team_id' => $team->id,
+            ]);
 
-        Cache::forget("dashboard_user_{$user->id}_stats");
-        Cache::forget("profile_user_{$user->id}");
+            if ($result['errors'] !== []) {
+                $message = reset($result['errors']);
+
+                return response()->json(['message' => $message], 422);
+            }
+        }
 
         return response()->json([
             'message' => 'Cursuri atribuite membrului cu succes',

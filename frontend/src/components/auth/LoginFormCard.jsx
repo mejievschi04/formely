@@ -11,8 +11,9 @@ import {
 	WarningCircle,
 } from '@phosphor-icons/react';
 import { useAuth } from '../../contexts/AuthContext';
-import { isStaffAdminRole } from '../../constants/staffRoles';
+import { getPostLoginPath } from '../../utils/authRedirect';
 import { prefetchRoute } from '../../utils/prefetch';
+import { fetchPublicConfig } from '../../utils/publicConfig';
 import AuthFormCard from './AuthFormCard';
 
 export default function LoginFormCard() {
@@ -25,6 +26,21 @@ export default function LoginFormCard() {
 	const navigate = useNavigate();
 	const location = useLocation();
 	const successMessage = location.state?.message;
+	const [bootError, setBootError] = useState('');
+	const [registerEnabled, setRegisterEnabled] = useState(false);
+
+	useEffect(() => {
+		fetchPublicConfig().then((cfg) => setRegisterEnabled(cfg.publicRegisterEnabled));
+	}, []);
+
+	useEffect(() => {
+		if (typeof sessionStorage === 'undefined') return;
+		const stored = sessionStorage.getItem('formelyAuthError');
+		if (stored) {
+			setBootError(stored);
+			sessionStorage.removeItem('formelyAuthError');
+		}
+	}, []);
 
 	useEffect(() => {
 		prefetchRoute('/courses');
@@ -37,18 +53,8 @@ export default function LoginFormCard() {
 		setLoading(true);
 
 		try {
-			const user = await login(email, password);
-			if (user.actualRole === 'admin') {
-				const mode =
-					typeof sessionStorage !== 'undefined'
-						? sessionStorage.getItem('formelyAdminViewMode')
-						: null;
-				navigate(mode === 'student' ? '/courses' : '/admin', { replace: true });
-			} else if (isStaffAdminRole(user.actualRole)) {
-				navigate('/admin', { replace: true });
-			} else {
-				navigate('/courses', { replace: true });
-			}
+			const data = await login(email, password);
+			navigate(getPostLoginPath(data?.user ?? data), { replace: true });
 		} catch (err) {
 			const data = err.response?.data;
 			const msg =
@@ -65,14 +71,15 @@ export default function LoginFormCard() {
 	return (
 		<AuthFormCard
 			title="Bine ai revenit"
-			subtitle="Autentifică-te pentru a continua"
 			footer={
-				<p className="modern-auth-footer-text">
-					Nu ai cont?{' '}
-					<Link to="/register" className="modern-auth-link">
-						Înregistrează-te
-					</Link>
-				</p>
+				registerEnabled ? (
+					<p className="modern-auth-footer-text">
+						Nu ai cont?{' '}
+						<Link to="/register" className="modern-auth-link">
+							Înregistrează-te
+						</Link>
+					</p>
+				) : null
 			}
 		>
 			<form onSubmit={handleSubmit} className="modern-auth-form">
@@ -82,14 +89,14 @@ export default function LoginFormCard() {
 						<span>{successMessage}</span>
 					</div>
 				)}
-				{error && (
+				{(error || bootError) && (
 					<div className="modern-auth-error">
 						<WarningCircle size={20} weight="duotone" aria-hidden />
-						<span>{error}</span>
+						<span>{error || bootError}</span>
 					</div>
 				)}
 
-				<div className="modern-form-group">
+				<div className="modern-form-group auth-rise" style={{ '--auth-rise-delay': '0.18s' }}>
 					<label htmlFor="email" className="modern-form-label">
 						Email
 					</label>
@@ -108,10 +115,15 @@ export default function LoginFormCard() {
 					</div>
 				</div>
 
-				<div className="modern-form-group">
-					<label htmlFor="password" className="modern-form-label">
-						Parolă
-					</label>
+				<div className="modern-form-group auth-rise" style={{ '--auth-rise-delay': '0.36s' }}>
+					<div className="modern-form-label-row">
+						<label htmlFor="password" className="modern-form-label">
+							Parolă
+						</label>
+						<Link to="/forgot-password" className="modern-auth-link modern-auth-link--small">
+							Ai uitat parola?
+						</Link>
+					</div>
 					<div className="modern-form-input-wrapper">
 						<Lock className="modern-form-icon" size={20} weight="duotone" aria-hidden />
 						<input
@@ -139,7 +151,7 @@ export default function LoginFormCard() {
 					</div>
 				</div>
 
-				<button type="submit" className="modern-auth-submit" disabled={loading}>
+				<button type="submit" className="modern-auth-submit auth-rise" style={{ '--auth-rise-delay': '0.52s' }} disabled={loading}>
 					{loading ? (
 						<>
 							<CircleNotch className="modern-auth-spinner" size={20} weight="bold" aria-hidden />

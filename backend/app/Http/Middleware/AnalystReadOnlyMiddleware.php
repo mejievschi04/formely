@@ -12,7 +12,7 @@ class AnalystReadOnlyMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         $user = auth()->user();
-        if (! $user || ! $user->isAnalyst()) {
+        if (! $user || (! $user->isAnalyst() && ! $user->isManager())) {
             return $next($request);
         }
 
@@ -21,7 +21,9 @@ class AnalystReadOnlyMiddleware
         }
 
         return response()->json([
-            'error' => 'Contul de analist este doar în citire. Nu poți modifica sau adăuga date.',
+            'error' => $user->isManager()
+                ? 'Contul de manager este doar în citire în zona admin.'
+                : 'Contul de analist este doar în citire. Nu poți modifica sau adăuga date.',
         ], 403);
     }
 }

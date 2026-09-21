@@ -16,12 +16,16 @@ import {
 	rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { PencilSimple } from '@phosphor-icons/react';
 import { DragGripIcon } from '../../components/common/DragGripIcon';
+import {
+	CourseShowcaseEditButton,
+	CourseShowcasePublishToggle,
+} from '../../components/admin/courses/CourseShowcaseQuickActions';
+import { useCoursePublishFromCard } from '../../hooks/useCoursePublishFromCard';
 import { adminService } from '../../services/api';
 import BuildCourseModal from '../../components/admin/courses/BuildCourseModal';
 import AICourseChat from '../../components/admin/ai/AICourseChat';
-import { notifyAiComingSoon } from '../../utils/aiAvailability';
+import { canUseAiFeature, isAiEnabled } from '../../utils/aiAvailability';
 import { courseCoverSrc } from '../../utils/imageUrl';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -42,6 +46,8 @@ function SortableAdminCourseCard({
 	canEditCourse,
 	onOpen,
 	onEdit,
+	onStatusClick,
+	statusBusy,
 }) {
 	const sid = sortableAdminCourseId(course.id);
 	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -87,23 +93,14 @@ function SortableAdminCourseCard({
 				ctaLabel="Deschide"
 				badge={statusLabel}
 				topLeftSlot={dragHandle}
-				topRightSlot={
-					canEditCourse ? (
-						<button
-							type="button"
-							className="admin-courses-showcase-edit-btn va-card-icon-btn"
-							onClick={(e) => {
-								e.stopPropagation();
-								onEdit();
-							}}
-							aria-label="Editează cursul: titlu, copertă, module și setări"
-							title="Editează detaliile cursului"
-						>
-							<span className="admin-courses-showcase-edit-btn__icon" aria-hidden>
-								<PencilSimple size={15} weight="bold" />
-							</span>
-							<span className="admin-courses-showcase-edit-btn__text">Editează</span>
-						</button>
+				topRightSlot={canEditCourse ? <CourseShowcaseEditButton onEdit={onEdit} /> : null}
+				footerExtraSlot={
+					canMutate ? (
+						<CourseShowcasePublishToggle
+							course={course}
+							onStatusClick={onStatusClick}
+							statusBusy={statusBusy}
+						/>
 					) : null
 				}
 			/>
@@ -111,7 +108,7 @@ function SortableAdminCourseCard({
 	);
 }
 
-function StaticAdminCourseCard({ course, coverSrc, accentHsl, statusLabel, canEditCourse, onOpen, onEdit }) {
+function StaticAdminCourseCard({ course, coverSrc, accentHsl, statusLabel, canMutate, canEditCourse, onOpen, onEdit, onStatusClick, statusBusy }) {
 	const imageUrl = coverSrc || COURSE_SHOWCASE_FALLBACK_IMAGE;
 	return (
 		<article className="admin-courses-clean-card--showcase-wrap">
@@ -123,23 +120,14 @@ function StaticAdminCourseCard({ course, coverSrc, accentHsl, statusLabel, canEd
 				onOpen={onOpen}
 				ctaLabel="Deschide"
 				badge={statusLabel}
-				topRightSlot={
-					canEditCourse ? (
-						<button
-							type="button"
-							className="admin-courses-showcase-edit-btn va-card-icon-btn"
-							onClick={(e) => {
-								e.stopPropagation();
-								onEdit();
-							}}
-							aria-label="Editează cursul: titlu, copertă, module și setări"
-							title="Editează detaliile cursului"
-						>
-							<span className="admin-courses-showcase-edit-btn__icon" aria-hidden>
-								<PencilSimple size={15} weight="bold" />
-							</span>
-							<span className="admin-courses-showcase-edit-btn__text">Editează</span>
-						</button>
+				topRightSlot={canEditCourse ? <CourseShowcaseEditButton onEdit={onEdit} /> : null}
+				footerExtraSlot={
+					canMutate ? (
+						<CourseShowcasePublishToggle
+							course={course}
+							onStatusClick={onStatusClick}
+							statusBusy={statusBusy}
+						/>
 					) : null
 				}
 			/>
@@ -148,7 +136,7 @@ function StaticAdminCourseCard({ course, coverSrc, accentHsl, statusLabel, canEd
 }
 
 const AdminCoursesPage = () => {
-	const { canMutateInAdminArea, canEditCoursesAsStaff } = useAuth();
+	const { canMutateInAdminArea, canEditCoursesAsStaff, user } = useAuth();
 	const { showToast } = useToast();
 	const navigate = useNavigate();
 	const [courses, setCourses] = useState([]);
@@ -266,6 +254,17 @@ const AdminCoursesPage = () => {
 	/** Butonul „Editează” pe card nu depinde de modul admin/student (preview); doar de rolul real. */
 	const canEditCourseFromShowcase = canEditCoursesAsStaff;
 
+	const patchCourseInLists = useCallback((courseId, patch) => {
+		const merge = (c) => (Number(c.id) === Number(courseId) ? { ...c, ...patch } : c);
+		setCourses((rows) => rows.map(merge));
+		setOrderedCourses((rows) => rows.map(merge));
+	}, []);
+
+	const { handleCourseStatusQuick, statusBusyId, publishModal } = useCoursePublishFromCard({
+		onCoursePatched: patchCourseInLists,
+		showToast,
+	});
+
 	const dndEnabled = canMutateInAdminArea && !search.trim();
 
 	const handleCoursesDragEnd = async (event) => {
@@ -309,7 +308,7 @@ const AdminCoursesPage = () => {
 					loading={creating}
 				/>
 			)}
-			{showAiCourseChat && canMutateInAdminArea && (
+			{showAiCourseChat && canMutateInAdminArea && canUseAiFeature(user, 'ai_creator') && (
 				<div className="ai-chat-modal-overlay" onClick={() => setShowAiCourseChat(false)}>
 					<div className="ai-chat-modal" onClick={(e) => e.stopPropagation()}>
 						<AICourseChat
@@ -322,7 +321,7 @@ const AdminCoursesPage = () => {
 			<header className="admin-courses-clean-header">
 				<div>
 					<h1>Cursuri</h1>
-					<p>Creează și administrează conținutul academiei într-un mod simplu.</p>
+					<p>Catalogul Formely — creează, publică și urmărește progresul elevilor.</p>
 				</div>
 				<div className="admin-courses-clean-right">
 					{canMutateInAdminArea && (
@@ -335,9 +334,14 @@ const AdminCoursesPage = () => {
 								<button type="button" onClick={() => { setShowCreateMenu(false); navigate('/admin/courses/new'); }}>
 									Curs nou
 								</button>
-								<button type="button" onClick={() => { setShowCreateMenu(false); notifyAiComingSoon(showToast); }}>
-									Curs cu AI
+								{canUseAiFeature(user, 'ai_creator') ? (
+								<button type="button" onClick={() => {
+									setShowCreateMenu(false);
+									setShowAiCourseChat(true);
+								}}>
+									Curs cu Formely AI
 								</button>
+								) : null}
 							</div>
 						)}
 					</div>
@@ -381,7 +385,7 @@ const AdminCoursesPage = () => {
 							{orderedCourses.map((course) => {
 								const coverSrc = courseCoverSrc(course);
 								const statusLabel = String(course.status || 'draft').toLowerCase() === 'published' ? 'Publicat' : 'Draft';
-								const accentColor = course.card_color || '#6366f1';
+								const accentColor = course.card_color || '#0891b2';
 								return (
 									<SortableAdminCourseCard
 										key={course.id}
@@ -393,6 +397,8 @@ const AdminCoursesPage = () => {
 										canEditCourse={canEditCourseFromShowcase}
 										onOpen={() => navigate(`/admin/courses/${course.id}`)}
 										onEdit={() => navigate(`/admin/courses/${course.id}/builder`)}
+										onStatusClick={handleCourseStatusQuick}
+										statusBusy={statusBusyId === course.id}
 									/>
 								);
 							})}
@@ -404,7 +410,7 @@ const AdminCoursesPage = () => {
 					{filteredCourses.map((course) => {
 						const coverSrc = courseCoverSrc(course);
 						const statusLabel = String(course.status || 'draft').toLowerCase() === 'published' ? 'Publicat' : 'Draft';
-						const accentColor = course.card_color || '#6366f1';
+						const accentColor = course.card_color || '#0891b2';
 						return (
 							<StaticAdminCourseCard
 								key={course.id}
@@ -412,14 +418,18 @@ const AdminCoursesPage = () => {
 								coverSrc={coverSrc}
 								accentHsl={hexToHslSpace(accentColor)}
 								statusLabel={statusLabel}
+								canMutate={canMutateInAdminArea}
 								canEditCourse={canEditCourseFromShowcase}
 								onOpen={() => navigate(`/admin/courses/${course.id}`)}
 								onEdit={() => navigate(`/admin/courses/${course.id}/builder`)}
+								onStatusClick={handleCourseStatusQuick}
+								statusBusy={statusBusyId === course.id}
 							/>
 						);
 					})}
 				</div>
 			)}
+			{publishModal}
 		</div>
 	);
 };

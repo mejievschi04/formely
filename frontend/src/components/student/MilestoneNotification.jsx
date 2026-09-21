@@ -18,13 +18,13 @@ const MilestoneNotification = ({ milestone, onClose }) => {
 			icon: '🎯',
 			title: 'Primul milestone atins!',
 			message: 'Ai finalizat 25% din curs. Continuă așa!',
-			color: '#f59e0b',
+			color: '#0e7490',
 		},
 		50: {
 			icon: '🌟',
 			title: 'Jumătate de curs finalizat!',
 			message: 'Excelent progres! Ai parcurs deja jumătate din curs.',
-			color: '#ffd700',
+			color: '#0891b2',
 		},
 		75: {
 			icon: '🚀',

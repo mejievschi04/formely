@@ -359,12 +359,12 @@
 
 [data-theme='light'] .admin-courses-showcase-edit-btn,
 [data-theme='light'] .admin-courses-showcase-edit-btn * {
-  color: var(--formely-bg) !important;
+  color: rgb(17, 24, 39) !important;
 }
 
 [data-theme='light'] .admin-courses-showcase-edit-btn:hover,
 [data-theme='light'] .admin-courses-showcase-edit-btn:hover * {
-  color: var(--formely-bg) !important;
+  color: rgb(15, 23, 42) !important;
 }
 
 [data-theme='light'] .admin-courses-showcase-edit-btn:hover {

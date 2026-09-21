@@ -25,7 +25,7 @@ const CalendarPage = () => {
 	const getEventTypeColor = (type) => {
 		const colors = {
 			curs: 'rgba(var(--formely-white-rgb), 0.2)',
-			workshop: 'rgba(255, 204, 0, 0.2)',
+			workshop: 'rgba(8, 145, 178, 0.2)',
 			examen: 'rgba(255, 107, 107, 0.2)',
 			webinar: 'rgba(255, 206, 84, 0.2)',
 		};
@@ -35,7 +35,7 @@ const CalendarPage = () => {
 	const getEventTypeBorder = (type) => {
 		const borders = {
 			curs: 'rgba(var(--formely-white-rgb), 0.4)',
-			workshop: 'rgba(255, 204, 0, 0.4)',
+			workshop: 'rgba(8, 145, 178, 0.4)',
 			examen: 'rgba(255, 107, 107, 0.4)',
 			webinar: 'rgba(255, 206, 84, 0.4)',
 		};

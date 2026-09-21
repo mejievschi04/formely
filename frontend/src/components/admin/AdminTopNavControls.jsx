@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useLocation } from 'react-router-dom';
 import { adminService, notificationsService } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { companyHasFeature } from '../../utils/entitlements';
 import AdminCalendarDrawer from './AdminCalendarDrawer';
 import NotificationsDrawer from '../common/NotificationsDrawer';
 import { countPrimite } from '../../utils/notificationInboxStorage';
@@ -9,7 +10,10 @@ import { Bell, CalendarDots } from '@phosphor-icons/react';
 
 const AdminTopNavControls = () => {
 	const { user } = useAuth();
-	const showEventsCalendar = user?.actualRole !== 'instructor';
+	const showEventsCalendar = companyHasFeature(user, 'events');
+	const searchHint = showEventsCalendar
+		? 'Caută utilizatori, cursuri, evenimente...'
+		: 'Caută utilizatori, cursuri...';
 	const [calendarOpen, setCalendarOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState('');
 	const [apiItems, setApiItems] = useState([]);
@@ -89,11 +93,11 @@ const AdminTopNavControls = () => {
 			<div className="admin-topnav-search">
 				<input
 					type="text"
-					placeholder="Căută utilizatori, cursuri, evenimente..."
+					placeholder={searchHint}
 					value={searchQuery}
 					onChange={(e) => setSearchQuery(e.target.value)}
 					className="admin-topnav-search-input"
-					aria-label="Caută utilizatori, cursuri, evenimente"
+					aria-label={searchHint}
 				/>
 			</div>
 

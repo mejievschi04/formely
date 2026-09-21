@@ -31,6 +31,21 @@ class QuestionBankAdminController extends Controller
         $this->testBuilderService = $testBuilderService;
     }
 
+    private function ensureCanUseAi(string $feature = 'ai_test_generation'): void
+    {
+        $user = auth()->user();
+        if (!$user || (!$user->isAdmin() && !$user->isInstructor())) {
+            abort(403, 'Doar staff-ul cu drept de editare poate folosi Formely AI.');
+        }
+
+        $company = $user->company_id
+            ? \App\Models\Company::withoutGlobalScopes()->find($user->company_id)
+            : null;
+        if (! $company || ! app(\App\Services\PlanEntitlementService::class)->companyCan($company, $feature)) {
+            abort(403, 'Formely AI nu este inclus în planul organizației.');
+        }
+    }
+
     /**
      * List all question banks
      */
@@ -373,6 +388,7 @@ class QuestionBankAdminController extends Controller
      */
     public function generateFromCourse(Request $request, $id)
     {
+        $this->ensureCanUseAi();
         $bank = QuestionBank::findOrFail($id);
         
         $validated = $request->validate([
@@ -428,6 +444,7 @@ class QuestionBankAdminController extends Controller
      */
     public function generateFromText(Request $request, $id)
     {
+        $this->ensureCanUseAi();
         $bank = QuestionBank::findOrFail($id);
         
         $validated = $request->validate([
@@ -477,6 +494,7 @@ class QuestionBankAdminController extends Controller
      */
     public function previewAiQuestions(Request $request, $id)
     {
+        $this->ensureCanUseAi();
         $bank = QuestionBank::findOrFail($id);
         if (auth()->user()->isInstructor() && (int) $bank->created_by !== (int) auth()->id()) {
             abort(403, 'Acces interzis.');

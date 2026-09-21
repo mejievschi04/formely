@@ -28,19 +28,6 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
-        // Citiri mesagerie (polling): buget mare, separat de mutații ca să nu se „fure” între ele.
-        RateLimiter::for('api-messages-read', function (Request $request) {
-            $key = (string) ($request->user()?->id ?? $request->ip());
-
-            return Limit::perMinute((int) config('messages.read_per_minute', 2000))->by($key);
-        });
-
-        RateLimiter::for('api-messages-write', function (Request $request) {
-            $key = (string) ($request->user()?->id ?? $request->ip());
-
-            return Limit::perMinute((int) config('messages.write_per_minute', 180))->by($key);
-        });
-
         // SPA autentificat: polling notificări, progres lecții, telemetrie — buget mai mare decât 60/min.
         RateLimiter::for('api-app', function (Request $request) {
             $key = (string) ($request->user()?->id ?? $request->ip());

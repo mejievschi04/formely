@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * TestResult Model
@@ -13,6 +15,29 @@ use Illuminate\Database\Eloquent\Model;
 class TestResult extends Model
 {
     use HasFactory;
+
+    protected static ?bool $hasAttemptNumberColumn = null;
+
+    public static function tracksAttemptNumber(): bool
+    {
+        if (static::$hasAttemptNumberColumn === null) {
+            static::$hasAttemptNumberColumn = Schema::hasColumn(
+                (new static)->getTable(),
+                'attempt_number'
+            );
+        }
+
+        return static::$hasAttemptNumberColumn;
+    }
+
+    public function scopeOrderedByAttempt(Builder $query): Builder
+    {
+        if (static::tracksAttemptNumber()) {
+            return $query->orderByDesc('attempt_number');
+        }
+
+        return $query->orderByDesc('id');
+    }
 
     protected $table = 'test_results';
 
@@ -30,12 +55,17 @@ class TestResult extends Model
         'attempt_number',
         'answers',
         'started_at',
+        'expires_at',
         'completed_at',
         'reviewed_at',
         'status',
         'needs_manual_review',
         'manual_review_scores',
         'reviewed_by',
+        'question_snapshot',
+        'passing_score_applied',
+        'attempt_token',
+        'attempt_scope',
     ];
 
     protected $casts = [
@@ -43,7 +73,9 @@ class TestResult extends Model
         'percentage' => 'decimal:2',
         'answers' => 'array',
         'manual_review_scores' => 'array',
+        'question_snapshot' => 'array',
         'started_at' => 'datetime',
+        'expires_at' => 'datetime',
         'completed_at' => 'datetime',
         'reviewed_at' => 'datetime',
         'needs_manual_review' => 'boolean',

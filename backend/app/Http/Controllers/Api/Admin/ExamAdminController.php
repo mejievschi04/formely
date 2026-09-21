@@ -138,6 +138,7 @@ class ExamAdminController extends Controller
             'instructions' => $settings['instructions'] ?? null,
             'show_feedback_instant' => (bool) ($settings['show_feedback_instant'] ?? false),
             'show_correct_answers' => (bool) ($settings['show_correct_answers'] ?? false),
+            'show_only_submitted_answers' => (bool) ($settings['show_only_submitted_answers'] ?? false),
             'passing_score' => $exam->passing_score ?? 70,
             'time_limit_minutes' => $exam->time_limit_minutes,
             'max_attempts' => $exam->max_attempts,
@@ -240,7 +241,7 @@ class ExamAdminController extends Controller
             $examData['is_required'] = (bool)$validated['is_required'];
         }
         if (array_key_exists('settings', $validated)) {
-            $examData['settings'] = $validated['settings'];
+            $examData['settings'] = $this->sanitizeExamSettings($validated['settings']);
         }
         if (Schema::hasColumn('exams', 'created_by')) {
             $examData['created_by'] = (int) auth()->id();
@@ -431,7 +432,7 @@ class ExamAdminController extends Controller
             $updateData['is_required'] = (bool)$validated['is_required'];
         }
         if (array_key_exists('settings', $validated)) {
-            $updateData['settings'] = $validated['settings'];
+            $updateData['settings'] = $this->sanitizeExamSettings($validated['settings']);
         }
         
         try {
@@ -565,9 +566,9 @@ class ExamAdminController extends Controller
             $this->assertExamAccessibleByInstructor($source);
         }
 
-        $copySettings = is_array($source->settings)
-            ? json_decode(json_encode($source->settings), true)
-            : [];
+        $copySettings = $this->sanitizeExamSettings(
+            is_array($source->settings) ? json_decode(json_encode($source->settings), true) : []
+        );
 
         $baseTitle = isset($validated['title']) && trim((string) $validated['title']) !== ''
             ? trim($validated['title'])
@@ -938,8 +939,6 @@ class ExamAdminController extends Controller
 
         $olderThanDays = (int) ($validated['older_than_days'] ?? 30);
         $cutoff = now()->subDays($olderThanDays);
-        $manualTypes = [];
-
         $query = ExamResult::with([
             'exam.questions',
         ])
@@ -966,10 +965,8 @@ class ExamAdminController extends Controller
         foreach ($rows as $row) {
             $isExpired = $row->completed_at && $row->completed_at->lt($cutoff);
             $questions = $row->exam?->questions ?? collect();
-            $hasManualQuestions = $questions->contains(function ($q) use ($manualTypes) {
-                return in_array((string) ($q->question_type ?? ''), $manualTypes, true);
-            });
-            $hasErrorLikeState = !$row->exam || !$hasManualQuestions;
+            $hasManualQuestions = $questions->contains(fn ($q) => $q->requiresManualGrading());
+            $hasErrorLikeState = ! $row->exam || ! $hasManualQuestions;
 
             if ($isExpired || $hasErrorLikeState) {
                 $toClearIds[] = $row->id;
@@ -1071,5 +1068,37 @@ class ExamAdminController extends Controller
             'message' => 'Verificare manuală salvată cu succes',
             'result' => $result->load(['exam.course', 'user:id,name,email']),
         ]);
+    }
+
+    private function sanitizeExamSettings($settings): array
+    {
+        $settings = is_array($settings) ? $settings : [];
+        $rawMode = (string) ($settings['selection_mode'] ?? 'folders');
+        $mode = $rawMode === 'questions' ? 'questions' : ($rawMode === 'tags' ? 'tags' : 'folders');
+        $settings['selection_mode'] = $mode;
+        $settings['folder_ids'] = $this->normalizeSettingIds($settings['folder_ids'] ?? []);
+        $settings['question_ids'] = $this->normalizeSettingIds($settings['question_ids'] ?? []);
+
+        if ($mode === 'questions') {
+            $poolSize = count($settings['question_ids']);
+            $requested = max(0, (int) ($settings['question_count'] ?? $poolSize));
+            $settings['question_count'] = $poolSize > 0
+                ? max(1, min($requested > 0 ? $requested : $poolSize, $poolSize))
+                : 0;
+        } else {
+            $settings['question_count'] = max(0, (int) ($settings['question_count'] ?? 0));
+        }
+        $settings['include_starred'] = ! array_key_exists('include_starred', $settings) || (bool) $settings['include_starred'];
+
+        return $settings;
+    }
+
+    private function normalizeSettingIds($raw): array
+    {
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(array_map('intval', $raw))));
     }
 }

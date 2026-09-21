@@ -67,12 +67,23 @@
 .splash-ultra-wordmark {
 	position: relative;
 	display: flex;
-	gap: 0.06em;
-	font-size: clamp(3rem, 14vw, 7rem);
-	font-weight: 800;
-	line-height: 0.9;
-	letter-spacing: -0.04em;
-	text-transform: uppercase;
+	align-items: center;
+	justify-content: center;
+}
+
+.splash-ultra-logo {
+	width: min(72vw, 280px);
+	height: auto;
+	object-fit: contain;
+	filter: drop-shadow(0 12px 40px rgba(8, 145, 178, 0.35));
+	opacity: 0;
+	transform: translateY(12px) scale(0.96);
+	transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+}
+
+.splash-ultra.is-booted .splash-ultra-logo {
+	opacity: 1;
+	transform: none;
 }
 
 .splash-ultra-letter {

@@ -408,7 +408,7 @@
 }
 
 .admin-exams-list-card--draft {
-	--card-accent: var(--color-warning, #f59e0b);
+	--card-accent: var(--color-warning, #0e7490);
 }
 
 .admin-exams-list-card--published {
@@ -1329,6 +1329,27 @@
 	margin: 0 auto;
 }
 
+.admin-exams-list-sections {
+	display: flex;
+	flex-direction: column;
+	gap: 28px;
+}
+
+.admin-exams-list-section-title {
+	margin: 0 0 12px;
+	font-size: 1rem;
+	font-weight: 700;
+	color: var(--text-primary);
+}
+
+.admin-exams-list-section-hint {
+	margin: 0 0 12px;
+	font-size: 0.875rem;
+	line-height: 1.45;
+	color: var(--text-secondary);
+	max-width: 52rem;
+}
+
 /* Toate secИ›iunile Г®n afarДѓ de вЂћCreare exameneвЂќ: Г®nДѓlИ›ime panou = builder, conИ›inut derulabil */
 .admin-exams-content.is-pane-expanded {
 	width: min(100%, 980px);
@@ -1822,7 +1843,7 @@
 }
 
 .admin-exams-manual-q-card.is-manual {
-	border-left: 4px solid var(--color-warning, #f59e0b);
+	border-left: 4px solid var(--color-warning, #0e7490);
 	background: var(--bg-elevated);
 }
 
@@ -2567,8 +2588,8 @@
 }
 
 .admin-tests-card.admin-exams-modern-card--draft {
-	--card-accent: var(--color-warning, #f59e0b);
-	border-top-color: var(--color-warning, #f59e0b);
+	--card-accent: var(--color-warning, #0e7490);
+	border-top-color: var(--color-warning, #0e7490);
 }
 
 .admin-tests-card.admin-exams-modern-card--archived {

@@ -41,6 +41,50 @@ class ExamResultController extends Controller
         ] : null;
     }
 
+    protected function shouldShowOnlySubmittedAnswers(?Test $test = null, ?array $examSettings = null): bool
+    {
+        if ($test && (bool) ($test->show_only_submitted_answers ?? false)) {
+            return true;
+        }
+
+        return (bool) ($examSettings['show_only_submitted_answers'] ?? false);
+    }
+
+    protected function sanitizeQuestionWireForSubmittedOnly(array $wire): array
+    {
+        unset(
+            $wire['is_correct'],
+            $wire['correct_answer_index'],
+            $wire['correct_answer_indices'],
+            $wire['answerIndex'],
+            $wire['answerIndices'],
+            $wire['explanation'],
+            $wire['correct_answer_labels'],
+            $wire['reference_answers']
+        );
+
+        if (isset($wire['answers']) && is_array($wire['answers'])) {
+            $wire['answers'] = array_map(function ($answer) {
+                if (! is_array($answer)) {
+                    return $answer;
+                }
+                unset($answer['is_correct']);
+
+                return $answer;
+            }, $wire['answers']);
+        }
+
+        if (isset($wire['matching']) && is_array($wire['matching'])) {
+            unset($wire['matching']['correctMap']);
+        }
+
+        if (isset($wire['ordering']) && is_array($wire['ordering'])) {
+            unset($wire['ordering']['correctOrder']);
+        }
+
+        return $wire;
+    }
+
     protected function normalizeAnswerIndex($value): ?int
     {
         if ($value === null || $value === '') {
@@ -485,6 +529,35 @@ class ExamResultController extends Controller
         $userAnswer = $userAnswers[$question->id] ?? $userAnswers[(string) $question->id] ?? $userAnswers[(int) $question->id] ?? null;
         $questionType = $question->type ?? 'multiple_choice';
 
+        if (in_array($questionType, ['short_answer', 'essay', 'fill_in_blank'], true)) {
+            $textAnswer = is_string($userAnswer)
+                ? trim($userAnswer)
+                : (is_scalar($userAnswer) ? trim((string) $userAnswer) : '');
+
+            return [
+                'id' => $question->id,
+                'type' => $questionType,
+                'question_type' => $questionType,
+                'text' => $question->content ?? '',
+                'content' => $question->content ?? '',
+                'question_text' => $question->content ?? '',
+                'metadata' => is_array($question->metadata ?? null) ? $question->metadata : null,
+                'points' => $question->points ?? 1,
+                'order' => $question->order ?? 0,
+                'explanation' => $question->explanation ?? null,
+                'answers' => [],
+                'options' => [],
+                'user_answer' => $textAnswer,
+                'is_correct' => null,
+                'pending_manual_review' => true,
+                'reference_answers' => collect(is_array($question->answers) ? $question->answers : [])
+                    ->map(fn ($answer) => is_array($answer) ? trim((string) ($answer['text'] ?? $answer['answer_text'] ?? '')) : '')
+                    ->filter(fn (string $text) => $text !== '')
+                    ->values()
+                    ->all(),
+            ];
+        }
+
         $attemptNumber = (int) ($testResult->attempt_number ?? 1);
         $order = $this->answerOrderService->resolveChoiceOrderForAttempt(
             $testResult->test,
@@ -689,65 +762,13 @@ class ExamResultController extends Controller
     }
 
     /**
-     * Get all exam results for the authenticated user
-     * Includes both legacy ExamResult and new TestResult
+     * Rezultate teste din curs (TestResult) — nu include examene independente (ExamResult).
      */
     public function index(Request $request)
     {
         try {
             $user = Auth::user();
-            
-            // Get legacy exam results (only if exam_results table exists)
-            $examResults = collect();
-            if (Schema::hasTable('exam_results')) {
-                try {
-                    $examResults = ExamResult::with([
-                        'exam.course:id,title',
-                        'exam.questions' => function($query) {
-                            $query->orderBy('order');
-                        },
-                        'exam.questions.answers' => function($query) {
-                            $query->orderBy('order');
-                        }
-                    ])
-                    ->where('user_id', $user->id)
-                    ->get()
-                    ->map(function($result) {
-                        return [
-                            'id' => $result->id,
-                            'type' => 'exam', // Legacy type
-                            'exam_id' => $result->exam_id,
-                            'test_id' => null,
-                            'user_id' => $result->user_id,
-                            'attempt_number' => $result->attempt_number,
-                            'score' => $result->score,
-                            'max_score' => $result->total_points ?? $result->score,
-                            'total_points' => $result->total_points ?? $result->score,
-                            'percentage' => $result->percentage,
-                            'passed' => $result->passed,
-                            'answers' => $result->answers,
-                            'completed_at' => $result->completed_at,
-                            'needs_manual_review' => $result->needs_manual_review ?? false,
-                            'reviewed_at' => $result->reviewed_at,
-                            'exam' => $result->exam ? [
-                                'id' => $result->exam->id,
-                                'title' => $result->exam->title,
-                                'course' => $result->exam->course ? [
-                                    'id' => $result->exam->course->id,
-                                    'title' => $result->exam->course->title,
-                                ] : null,
-                            ] : null,
-                        ];
-                    });
-                } catch (\Exception $e) {
-                    Log::warning('Error fetching legacy exam results', [
-                        'error' => $e->getMessage(),
-                    ]);
-                    // Continue with empty collection
-                }
-            }
-            
-            // Get new test results
+
             $testResults = TestResult::with([
                 'test:id,title,description,type,status',
                 'course:id,title',
@@ -788,9 +809,8 @@ class ExamResultController extends Controller
                     ] : null,
                 ];
             });
-            
-            // Combine every saved attempt. The UI displays attempt numbers, so hiding older attempts here is misleading.
-            $allResults = $examResults->concat($testResults)
+
+            $allResults = $testResults
                 ->filter()
                 ->sort(function ($a, $b) {
                     $dateA = isset($a['completed_at']) ? strtotime((string) $a['completed_at']) : 0;
@@ -817,18 +837,15 @@ class ExamResultController extends Controller
     }
 
     /**
-     * Get a specific exam result with full details
-     * Supports both legacy ExamResult and new TestResult
+     * Detaliu rezultat test (TestResult) — nu examene (ExamResult).
      */
     public function show(Request $request, $id)
     {
         try {
             $user = Auth::user();
-            $preferredType = $request->query('type');
-            
-            // Try to find as TestResult first (new system)
-            $testResult = $preferredType === 'exam' ? null : TestResult::with([
-                'test:id,title,description,type,status,question_source,question_set_id',
+
+            $testResult = TestResult::with([
+                'test:id,title,description,type,status,question_source,question_set_id,show_only_submitted_answers',
                 'test.questions' => function($query) {
                     $query->orderBy('order');
                 },
@@ -885,6 +902,8 @@ class ExamResultController extends Controller
                 if (!is_array($userAnswers)) {
                     $userAnswers = [];
                 }
+
+                $submittedOnly = $this->shouldShowOnlySubmittedAnswers($testResult->test);
                 
                 return response()->json([
                     'id' => $testResult->id,
@@ -907,6 +926,7 @@ class ExamResultController extends Controller
                     'manual_review_scores' => is_array($testResult->manual_review_scores) ? $testResult->manual_review_scores : null,
                     'reviewed_at' => $testResult->reviewed_at,
                     'status' => $testResult->status,
+                    'show_only_submitted_answers' => $submittedOnly,
                     'test' => $testResult->test ? [
                         'id' => $testResult->test->id,
                         'title' => $testResult->test->title,
@@ -922,81 +942,25 @@ class ExamResultController extends Controller
                         'type' => $testResult->test->type,
                         'status' => $testResult->test->status,
                         'course' => $course,
-                        'questions' => $questions->map(function($question) use ($userAnswers, $testResult) {
-                            return $this->buildTestQuestionResultWire($testResult, $question, $userAnswers);
+                        'questions' => $questions->map(function($question) use ($userAnswers, $testResult, $submittedOnly) {
+                            $wire = $this->buildTestQuestionResultWire($testResult, $question, $userAnswers);
+                            if (! $wire) {
+                                return null;
+                            }
+
+                            return $submittedOnly
+                                ? $this->sanitizeQuestionWireForSubmittedOnly($wire)
+                                : $wire;
                         })->filter(function($q) {
                             return $q !== null;
                         }),
                     ] : null,
                 ]);
             }
-            
-            // Fallback to legacy ExamResult (only if exam_results table exists)
-            if ($preferredType === 'test' || !Schema::hasTable('exam_results')) {
-                return response()->json([
-                    'error' => 'Rezultatul nu a fost găsit',
-                ], 404);
-            }
-            
-            $examResult = ExamResult::with([
-                'exam.course:id,title',
-                'exam.questions' => function($query) {
-                    $query->orderBy('order');
-                },
-                'exam.questions.answers' => function($query) {
-                    $query->orderBy('order');
-                }
-            ])
-            ->where('user_id', $user->id)
-            ->findOrFail($id);
-            
-            // Get user answers
-            $userAnswers = $examResult->answers ?? [];
-            if (! is_array($userAnswers)) {
-                $userAnswers = [];
-            }
-
-            $legacyQuestionWires = $examResult->exam
-                ? $examResult->exam->questions->map(function ($question) use ($userAnswers, $examResult) {
-                    return $this->buildLegacyExamQuestionResultWire($examResult, $question, $userAnswers);
-                })
-                : collect();
-
-            $gradedLegacy = $legacyQuestionWires->filter(
-                fn (array $wire) => array_key_exists('is_correct', $wire) && $wire['is_correct'] !== null
-            );
-            $legacyCorrectCount = $gradedLegacy->where('is_correct', true)->count();
-            $legacyTotalQuestions = $legacyQuestionWires->count();
 
             return response()->json([
-                'id' => $examResult->id,
-                'type' => 'exam',
-                'exam_id' => $examResult->exam_id,
-                'test_id' => null,
-                'user_id' => $examResult->user_id,
-                'attempt_number' => $examResult->attempt_number,
-                'score' => $examResult->score,
-                'max_score' => $examResult->total_points ?? $examResult->score,
-                'total_points' => $examResult->total_points ?? $examResult->score,
-                'percentage' => $examResult->percentage,
-                'passed' => $examResult->passed,
-                'correct_answers_count' => $legacyCorrectCount,
-                'total_questions' => $legacyTotalQuestions,
-                'answers' => $userAnswers,
-                'completed_at' => $examResult->completed_at,
-                'needs_manual_review' => $examResult->needs_manual_review ?? false,
-                'manual_review_scores' => is_array($examResult->manual_review_scores) ? $examResult->manual_review_scores : null,
-                'reviewed_at' => $examResult->reviewed_at,
-                'exam' => $examResult->exam ? [
-                    'id' => $examResult->exam->id,
-                    'title' => $examResult->exam->title,
-                    'course' => $examResult->exam->course ? [
-                        'id' => $examResult->exam->course->id,
-                        'title' => $examResult->exam->course->title,
-                    ] : null,
-                    'questions' => $legacyQuestionWires->values(),
-                ] : null,
-            ]);
+                'error' => 'Rezultatul nu a fost găsit',
+            ], 404);
         } catch (\Exception $e) {
             \Log::error('Error fetching exam result', [
                 'result_id' => $id,

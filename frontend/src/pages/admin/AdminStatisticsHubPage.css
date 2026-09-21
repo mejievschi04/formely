@@ -51,10 +51,15 @@
 		color var(--transition-base);
 }
 
-.admin-statistics-hub-nav button:hover {
+.admin-statistics-hub-nav button:hover:not(:disabled) {
 	background: var(--bg-tertiary);
 	color: var(--text-primary);
 	border-color: var(--border-secondary);
+}
+
+.admin-statistics-hub-nav button:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
 }
 
 .admin-statistics-hub-nav button.is-active {

@@ -166,7 +166,7 @@
 .va-shell-topnav .va-main > .events-page,
 .va-shell-topnav .va-main > .courses-page-modern,
 .va-shell-topnav .va-main > .library-page,
-.va-shell-topnav .va-main > .course-map-page {
+.va-shell-topnav .va-main > .course-map-page:not(.course-map-page--student) {
 	max-width: 1400px;
 	margin-left: auto;
 	margin-right: auto;
@@ -187,8 +187,8 @@
 
 @media (max-width: 768px) {
 	.va-shell-topnav .va-main {
-		padding: var(--space-4) var(--space-4) var(--space-8);
-		padding-top: var(--space-6);
+		padding: 0 var(--space-4) var(--space-8);
+		padding-top: 0;
 	}
 	.va-shell-topnav .student-dashboard-hero-content {
 		grid-template-columns: 1fr;

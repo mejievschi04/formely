@@ -5,9 +5,6 @@ const TopCourses = ({ courses, title, loading, showEngagement, showWarnings, var
 		<div className="admin-top-courses">
 			<div className="admin-widget-header">
 				<h3>{title}</h3>
-				<p className="admin-widget-subtitle">
-					{showEngagement ? 'By engagement metrics' : 'Courses needing attention'}
-				</p>
 			</div>
 
 			<div className="admin-courses-list">

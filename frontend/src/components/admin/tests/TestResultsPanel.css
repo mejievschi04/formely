@@ -1,0 +1,223 @@
+.admin-test-results-panel {
+	display: grid;
+	gap: 16px;
+	padding: 20px;
+	border: 1px solid var(--border-primary);
+	border-radius: 8px;
+	background: var(--bg-elevated);
+	box-shadow: var(--shadow-sm);
+}
+
+.admin-test-results-panel.is-embedded {
+	padding: 0;
+	border: 0;
+	box-shadow: none;
+	background: transparent;
+}
+
+.admin-test-results-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.admin-test-results-head h2 {
+	margin: 0;
+	font-size: 1.2rem;
+}
+
+.admin-test-results-head p {
+	margin: 6px 0 0;
+	color: var(--text-secondary);
+	font-size: 0.9rem;
+}
+
+.admin-test-results-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px;
+}
+
+.admin-test-results-toolbar input {
+	flex: 1 1 220px;
+	min-height: 40px;
+	padding: 0 12px;
+	border: 1px solid var(--border-primary);
+	border-radius: 8px;
+	background: var(--bg-primary);
+}
+
+.admin-test-results-count {
+	color: var(--text-tertiary);
+	font-size: 0.85rem;
+	font-weight: 700;
+}
+
+.admin-test-results-empty {
+	padding: 28px 16px;
+	text-align: center;
+	color: var(--text-secondary);
+	border: 1px dashed var(--border-primary);
+	border-radius: 8px;
+}
+
+.admin-test-results-table-wrap {
+	overflow-x: auto;
+	border: 1px solid var(--border-primary);
+	border-radius: 8px;
+}
+
+.admin-test-results-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.9rem;
+}
+
+.admin-test-results-table th,
+.admin-test-results-table td {
+	padding: 10px 12px;
+	border-bottom: 1px solid var(--border-primary);
+	text-align: left;
+	vertical-align: middle;
+}
+
+.admin-test-results-table th {
+	background: var(--bg-primary);
+	color: var(--text-secondary);
+	font-size: 0.78rem;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+}
+
+.admin-test-results-table tbody tr:last-child td {
+	border-bottom: 0;
+}
+
+.admin-test-results-max {
+	color: var(--text-tertiary);
+	font-weight: 500;
+}
+
+.admin-test-results-status {
+	display: inline-flex;
+	padding: 0.2rem 0.55rem;
+	border-radius: 999px;
+	font-size: 0.75rem;
+	font-weight: 700;
+}
+
+.admin-test-results-status.is-passed {
+	background: rgba(34, 197, 94, 0.14);
+	color: var(--color-success);
+}
+
+.admin-test-results-status.is-failed {
+	background: rgba(239, 68, 68, 0.12);
+	color: var(--color-error);
+}
+
+.admin-test-results-status.is-pending {
+	background: rgba(234, 179, 8, 0.14);
+	color: var(--color-warning);
+}
+
+.admin-test-results-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.admin-test-results-edit {
+	min-height: 34px;
+	padding: 0 10px;
+	font-size: 0.82rem;
+}
+
+.admin-test-results-modal {
+	display: grid;
+	gap: 14px;
+	min-width: min(100%, 420px);
+}
+
+.admin-test-results-modal h3 {
+	margin: 0;
+}
+
+.admin-test-results-modal-sub {
+	margin: 0;
+	color: var(--text-secondary);
+	font-size: 0.9rem;
+}
+
+.admin-test-results-field {
+	display: grid;
+	gap: 6px;
+	font-size: 0.88rem;
+	font-weight: 700;
+}
+
+.admin-test-results-field input,
+.admin-test-results-field textarea {
+	padding: 10px 12px;
+	border: 1px solid var(--border-primary);
+	border-radius: 8px;
+	background: var(--bg-primary);
+	font-weight: 500;
+}
+
+.admin-test-results-modal-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+}
+
+.admin-test-breakdown-list {
+	display: grid;
+	gap: 10px;
+	max-height: min(60vh, 480px);
+	overflow: auto;
+}
+
+.admin-test-breakdown-row {
+	padding: 10px 12px;
+	border: 1px solid var(--border-primary);
+	border-radius: 8px;
+}
+
+.admin-test-breakdown-row.is-correct {
+	border-color: color-mix(in srgb, var(--color-success, #16a34a) 40%, var(--border-primary));
+}
+
+.admin-test-breakdown-row.is-wrong {
+	border-color: color-mix(in srgb, var(--color-danger, #dc2626) 35%, var(--border-primary));
+}
+
+.admin-test-breakdown-row-head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.admin-test-breakdown-question {
+	display: flex;
+	align-items: flex-start;
+	gap: 4px;
+	flex: 1;
+	min-width: 0;
+	font-weight: 700;
+}
+
+.admin-test-breakdown-question :is(p, div) {
+	margin: 0;
+	display: inline;
+}
+
+.admin-test-breakdown-answer {
+	margin: 6px 0 0;
+	color: var(--text-secondary);
+	font-size: 0.88rem;
+}

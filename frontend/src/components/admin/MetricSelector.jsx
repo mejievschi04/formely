@@ -5,9 +5,6 @@ const MetricSelector = ({ availableMetrics, selectedMetrics, onToggleMetric }) =
 		<div className="admin-metric-selector">
 			<div className="admin-metric-selector-header">
 				<h3>Metrici afișate</h3>
-				<p className="admin-metric-selector-subtitle">
-					Selectează metricile pe care dorești să le vezi pe dashboard
-				</p>
 			</div>
 			<div className="admin-metric-selector-grid">
 				{availableMetrics.map((metric) => {

@@ -136,7 +136,7 @@ const ModuleCreatorPage = () => {
 							{id && id !== 'new' ? 'Editează Modul' : 'Creează Modul Nou'}
 						</h1>
 						<p className="admin-page-subtitle">
-							Completează informațiile pentru {id && id !== 'new' ? 'actualizarea' : 'crearea'} modulului
+							Modul în cursul Formely — {id && id !== 'new' ? 'actualizează' : 'completează'} structura și titlul.
 						</p>
 					</div>
 					<button 

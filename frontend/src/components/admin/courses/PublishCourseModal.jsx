@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { adminService } from '../../../services/api';
 import { teamAccentNeutral } from '../../../utils/teamAccent';
 
-const PublishCourseModal = ({ open, onClose, courseId, onPublished, validationReport, onValidate }) => {
+const PublishCourseModal = ({ open, onClose, course, courseId: courseIdProp, onPublished, validationReport, onValidate }) => {
+	const courseId = course?.id ?? courseIdProp;
 	const [teams, setTeams] = useState([]);
 	const [selectedTeamIds, setSelectedTeamIds] = useState([]);
+	const [catalogOutsideMap, setCatalogOutsideMap] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [loadingTeams, setLoadingTeams] = useState(true);
 	const [validating, setValidating] = useState(false);
@@ -20,13 +22,14 @@ const PublishCourseModal = ({ open, onClose, courseId, onPublished, validationRe
 		if (open) {
 			setError(null);
 			setPublishErrorReport(null);
+			setCatalogOutsideMap(Boolean(course?.settings?.catalog_outside_map));
 			setLoadingTeams(true);
 			adminService.getTeams().then((data) => {
 				setTeams(Array.isArray(data) ? data : data?.data || []);
 				setSelectedTeamIds([]);
 			}).catch(() => setTeams([])).finally(() => setLoadingTeams(false));
 		}
-	}, [open]);
+	}, [open, course?.id, course?.settings?.catalog_outside_map]);
 
 	const handleValidateClick = async () => {
 		if (!onValidate) return;
@@ -39,12 +42,12 @@ const PublishCourseModal = ({ open, onClose, courseId, onPublished, validationRe
 	};
 
 	const handlePublish = async () => {
-		if (!canPublish) return;
+		if (!canPublish || !courseId) return;
 		setError(null);
 		setLoading(true);
 		try {
-			const res = await adminService.builderPublishCourse(courseId, selectedTeamIds);
-			onPublished?.(res);
+			const res = await adminService.builderPublishCourse(courseId, selectedTeamIds, { catalogOutsideMap });
+			onPublished?.(res, { catalogOutsideMap });
 			onClose?.();
 		} catch (e) {
 			console.error('Publish failed:', e);
@@ -128,9 +131,20 @@ const PublishCourseModal = ({ open, onClose, courseId, onPublished, validationRe
 						</div>
 					)}
 
-					<p className="admin-page-subtitle publish-course-subtitle-margin">
-						Poți limita cursul la anumite echipe. Dacă nu selectezi nicio echipă, cursul va fi disponibil pentru toți studenții și vor primi notificare.
-					</p>
+					<div className="admin-form-group publish-course-catalog-option">
+						<label className="publish-course-team-item publish-course-catalog-option__label">
+							<input
+								type="checkbox"
+								checked={catalogOutsideMap}
+								onChange={(e) => setCatalogOutsideMap(e.target.checked)}
+							/>
+							<span>Publică în catalog, fără mapă</span>
+						</label>
+						<p className="publish-course-teams-muted publish-course-catalog-option__hint">
+							Elevii vor vedea cursul direct pe pagina Cursuri, nu doar într-o mapă. Poți adăuga cursul într-o mapă oricând, separat.
+						</p>
+					</div>
+
 					<div className="admin-form-group">
 						<label className="admin-settings-label">Echipe (opțional)</label>
 						{loadingTeams ? (
@@ -159,7 +173,7 @@ const PublishCourseModal = ({ open, onClose, courseId, onPublished, validationRe
 					</div>
 					<div className="publish-course-actions">
 						<button type="button" className="admin-btn admin-btn-secondary" onClick={onClose}>
-							Anulare
+							Anulează
 						</button>
 						<button
 							type="button"

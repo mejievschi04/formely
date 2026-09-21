@@ -127,7 +127,6 @@ const CourseTestsManager = ({ courseId, courseData, onUpdate }) => {
 			<div className="course-tests-header">
 				<div>
 					<h2>Teste & Evaluări</h2>
-					<p>Gestionează testele atribuite acestui curs</p>
 				</div>
 				<button
 					className="admin-btn admin-btn-primary"

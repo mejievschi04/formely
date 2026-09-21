@@ -13,8 +13,8 @@ const CourseProgressWidget = React.memo(({ course, isMandatory = false }) => {
 	const progressColor = course.progress >= 100 
 		? '#10b981' 
 		: course.progress >= 50 
-		? '#ffd700' 
-		: '#f59e0b';
+		? '#0891b2' 
+		: '#0e7490';
 
 	return (
 		<div className={`student-course-progress-card ${isMandatory ? 'student-course-mandatory' : ''}`}>

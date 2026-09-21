@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { libraryService } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { scrollAppToTop } from '../utils/scrollToTop';
+import { toImageUrl } from '../utils/imageUrl';
 import '../styles/library-reader-page.css';
 
 function isPdfItem(item) {
@@ -11,11 +13,17 @@ function isPdfItem(item) {
 	return mimeType === 'application/pdf' || filename.endsWith('.pdf') || item?.is_pdf === true;
 }
 
+function isTextItem(item) {
+	return item?.is_text === true || item?.content_type === 'text';
+}
+
 const LibraryReaderPage = () => {
 	const { itemId } = useParams();
 	const navigate = useNavigate();
 	const location = useLocation();
+	const { user } = useAuth();
 	const { error: showError } = useToast();
+	const actualRole = user?.actualRole ?? user?.role ?? 'student';
 
 	const [item, setItem] = useState(location.state?.item ?? null);
 	const [loading, setLoading] = useState(true);
@@ -46,7 +54,7 @@ const LibraryReaderPage = () => {
 				setItem(response?.item || null);
 			} catch (err) {
 				if (!active) return;
-				setError(err?.response?.data?.message || 'Nu s-a putut incarca materialul din biblioteca.');
+				setError(err?.response?.data?.message || 'Nu s-a putut încărca materialul din bibliotecă.');
 			} finally {
 				if (active) setLoading(false);
 			}
@@ -64,7 +72,7 @@ const LibraryReaderPage = () => {
 		let objectUrl = null;
 
 		const loadPdf = async () => {
-			if (!item || !isPdfItem(item)) {
+			if (!item || !isPdfItem(item) || isTextItem(item)) {
 				setPdfUrl('');
 				setPdfLoading(false);
 				setPdfError(null);
@@ -106,6 +114,12 @@ const LibraryReaderPage = () => {
 	}, [item]);
 
 	const isPdf = isPdfItem(item);
+	const isText = isTextItem(item);
+	const canEditItem =
+		user?.role !== 'student' &&
+		isText &&
+		(actualRole === 'admin' || actualRole === 'company_owner'
+			|| (actualRole === 'instructor' && item?.uploader?.id === user?.id));
 
 	const handleDownload = async () => {
 		if (!item) return;
@@ -125,7 +139,7 @@ const LibraryReaderPage = () => {
 			anchor.remove();
 			URL.revokeObjectURL(url);
 		} catch (err) {
-			showError(err?.response?.data?.message || 'Descarcarea a esuat.');
+			showError(err?.response?.data?.message || 'Descărcarea a eșuat.');
 		}
 	};
 
@@ -134,7 +148,7 @@ const LibraryReaderPage = () => {
 			<div className="library-reader-page library-reader-page--fullscreen">
 				<div className="library-reader-loading">
 					<div className="library-reader-spinner" />
-					<p>Se incarca materialul...</p>
+					<p>Se încarcă materialul...</p>
 				</div>
 			</div>
 		);
@@ -146,11 +160,52 @@ const LibraryReaderPage = () => {
 				<div className="library-reader-empty-state">
 					<div className="library-reader-empty-icon">PDF</div>
 					<h1>Material indisponibil</h1>
-					<p>{error || 'Fisierul nu a fost gasit.'}</p>
+					<p>{error || 'Materialul nu a fost găsit.'}</p>
 					<button type="button" className="library-reader-btn library-reader-btn-primary" onClick={() => navigate('/library')}>
-						Inapoi la biblioteca
+						Înapoi la bibliotecă
 					</button>
 				</div>
+			</div>
+		);
+	}
+
+	if (isText) {
+		const coverSrc = item.cover_image_url ? (toImageUrl(item.cover_image_url) || item.cover_image_url) : '';
+
+		return (
+			<div className="library-reader-page library-reader-page--article">
+				<header className="library-reader-article-header">
+					<button type="button" className="library-reader-btn" onClick={() => navigate('/library')}>
+						← Bibliotecă
+					</button>
+					<div className="library-reader-article-actions">
+						{canEditItem ? (
+							<button
+								type="button"
+								className="library-reader-btn"
+								onClick={() => navigate(`/library/compose/${item.id}`)}
+							>
+								Editează
+							</button>
+						) : null}
+						<button type="button" className="library-reader-btn" onClick={handleDownload}>
+							Descarcă HTML
+						</button>
+					</div>
+				</header>
+				<article className="library-reader-article">
+					{coverSrc ? (
+						<div className="library-reader-article-cover-wrap">
+							<img src={coverSrc} alt="" className="library-reader-article-cover" />
+						</div>
+					) : null}
+					<h1 className="library-reader-article-title">{item.title}</h1>
+					{item.description ? <p className="library-reader-article-lead">{item.description}</p> : null}
+					<div
+						className="library-reader-article-body lesson-preview-content"
+						dangerouslySetInnerHTML={{ __html: item.body || '' }}
+					/>
+				</article>
 			</div>
 		);
 	}
@@ -158,12 +213,12 @@ const LibraryReaderPage = () => {
 	return (
 		<div className="library-reader-page library-reader-page--fullscreen">
 			<main className="library-reader-stage">
-				<div className="library-reader-floating-actions" aria-label="Actiuni rapide">
+				<div className="library-reader-floating-actions" aria-label="Acțiuni rapide">
 					<button type="button" className="library-reader-btn library-reader-floating-btn" onClick={() => navigate('/library')}>
-						← Biblioteca
+						← Bibliotecă
 					</button>
 					<button type="button" className="library-reader-btn library-reader-floating-btn" onClick={handleDownload}>
-						Descarca
+						Descarcă
 					</button>
 				</div>
 
@@ -171,15 +226,15 @@ const LibraryReaderPage = () => {
 					<div className="library-reader-empty-state library-reader-empty-state--embedded">
 						<div className="library-reader-empty-icon">PDF</div>
 						<h1>Acest material nu este PDF</h1>
-						<p>Fisierul poate fi descarcat din biblioteca.</p>
+						<p>Fișierul poate fi descărcat din bibliotecă.</p>
 						<button type="button" className="library-reader-btn library-reader-btn-primary" onClick={handleDownload}>
-							Descarca fisierul
+							Descarcă fișierul
 						</button>
 					</div>
 				) : pdfLoading ? (
 					<div className="library-reader-loading library-reader-loading--embedded">
 						<div className="library-reader-spinner" />
-						<p>Se pregateste PDF-ul...</p>
+						<p>Se pregătește PDF-ul...</p>
 					</div>
 				) : pdfError ? (
 					<div className="library-reader-empty-state library-reader-empty-state--embedded">
@@ -187,7 +242,7 @@ const LibraryReaderPage = () => {
 						<h1>Nu am putut deschide PDF-ul</h1>
 						<p>{pdfError}</p>
 						<button type="button" className="library-reader-btn library-reader-btn-primary" onClick={handleDownload}>
-							Descarca documentul
+							Descarcă documentul
 						</button>
 					</div>
 				) : (

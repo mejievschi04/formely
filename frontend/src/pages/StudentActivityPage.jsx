@@ -113,7 +113,7 @@ const StudentActivityPage = () => {
 				<div>
 					<h1 className="va-student-activity-title">Activitatea mea</h1>
 					<p className="va-student-activity-subtitle">
-						Istoricul acțiunilor tale în platformă: înscrieri, lecții, teste și autentificări.
+						Istoricul progresului tău în Formely — cursuri, lecții, teste și autentificări.
 					</p>
 				</div>
 			</div>

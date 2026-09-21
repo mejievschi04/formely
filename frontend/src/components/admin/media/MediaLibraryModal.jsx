@@ -88,9 +88,6 @@ const MediaLibraryModal = ({ open, onClose, courseId, type, onSelect }) => {
 				<div className="admin-team-modal-header">
 					<div>
 						<h2 className="admin-team-modal-title">{title}</h2>
-						<p className="admin-page-subtitle" style={{ marginTop: '0.5rem', marginBottom: 0 }}>
-							Alege un fișier deja încărcat (reutilizare) sau caută după nume.
-						</p>
 					</div>
 					<button type="button" className="admin-team-modal-close" onClick={onClose} aria-label="Închide">
 						×

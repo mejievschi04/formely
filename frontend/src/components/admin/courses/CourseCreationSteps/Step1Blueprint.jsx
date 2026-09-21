@@ -250,9 +250,6 @@ const Step1Blueprint = ({ data, onUpdate }) => {
 		<div className="step1-blueprint">
 			<div className="step1-header">
 				<h3>Curriculum</h3>
-				<p className="step1-description">
-					Structură module și lecții. Glisează pentru reordonare; redenumește inline.
-				</p>
 			</div>
 			<div className="step1-content">
 				<div className="step1-modules">

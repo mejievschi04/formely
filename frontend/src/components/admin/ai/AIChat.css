@@ -9,7 +9,7 @@
 	overflow: hidden;
 }
 
-.ai-chat-volt-unavailable {
+.ai-chat-coming-soon {
 	flex: 1;
 	display: flex;
 	align-items: center;
@@ -18,7 +18,7 @@
 	text-align: center;
 }
 
-.ai-chat-volt-unavailable p {
+.ai-chat-coming-soon p {
 	margin: 0;
 	font-size: 0.95rem;
 	color: var(--text-secondary);
@@ -28,6 +28,13 @@
 .ai-chat-container-create {
 	border: 1px solid var(--border-primary, var(--border-secondary));
 	box-shadow: 0 16px 36px -26px rgba(15, 23, 42, 0.55);
+}
+
+.ai-chat-container-embed {
+	height: 100%;
+	max-height: none;
+	border-radius: 0;
+	box-shadow: none;
 }
 
 .ai-chat-header {
@@ -153,22 +160,22 @@
 	flex-direction: column;
 	gap: 8px;
 	min-width: 240px;
-	background: #0b0b0b;
-	border: 1px solid #f7df1e;
+	background: var(--formely-secondary, #0f172a);
+	border: 1px solid var(--formely-primary, #0891b2);
 	border-radius: 10px;
 	padding: 10px 12px;
 }
 
 .ai-chat-build-status-live {
 	min-width: 260px;
-	box-shadow: 0 12px 26px -18px rgba(247, 223, 30, 0.45);
+	box-shadow: 0 12px 26px -18px rgba(var(--formely-primary-rgb, 8, 145, 178), 0.45);
 }
 
 .ai-chat-build-status-title {
 	margin: 0;
 	font-size: 0.92rem;
 	font-weight: 600;
-	color: #f7df1e;
+	color: var(--formely-accent, #22d3ee);
 	display: flex;
 	align-items: center;
 	gap: 6px;
@@ -178,7 +185,7 @@
 .ai-chat-build-status-subtitle {
 	margin: 0;
 	font-size: 0.82rem;
-	color: rgba(247, 223, 30, 0.82);
+	color: color-mix(in srgb, var(--formely-accent, #22d3ee) 82%, transparent);
 }
 
 .ai-chat-build-title-text {
@@ -195,7 +202,7 @@
 	width: 4px;
 	height: 4px;
 	border-radius: 999px;
-	background: #f7df1e;
+	background: var(--formely-accent, #22d3ee);
 	opacity: 0.35;
 	animation: ai-chat-dot-pulse 1.4s ease-in-out infinite;
 }
@@ -224,7 +231,7 @@
 	height: 8px;
 	border-radius: 999px;
 	overflow: hidden;
-	background: rgba(247, 223, 30, 0.18);
+	background: color-mix(in srgb, var(--formely-primary, #0891b2) 18%, transparent);
 }
 
 .ai-chat-build-progress-bar {
@@ -232,7 +239,12 @@
 	inset: 0 auto 0 -35%;
 	width: 35%;
 	border-radius: inherit;
-	background: linear-gradient(90deg, rgba(247, 223, 30, 0.2), #f7df1e, rgba(247, 223, 30, 0.2));
+	background: linear-gradient(
+		90deg,
+		color-mix(in srgb, var(--formely-accent, #22d3ee) 20%, transparent),
+		var(--formely-accent, #22d3ee),
+		color-mix(in srgb, var(--formely-accent, #22d3ee) 20%, transparent)
+	);
 	animation: ai-chat-progress-sweep 1.2s ease-in-out infinite;
 }
 

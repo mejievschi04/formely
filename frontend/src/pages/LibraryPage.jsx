@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { libraryService } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
+import { isStaffAdminRole } from '../constants/staffRoles';
 import Modal from '../components/common/Modal';
 import { logger } from '../utils/logger';
 import { toImageUrl } from '../utils/imageUrl';
@@ -27,7 +28,12 @@ function isPdfItem(item) {
 	return mimeType === 'application/pdf' || filename.endsWith('.pdf') || item?.is_pdf === true;
 }
 
+function isTextItem(item) {
+	return item?.is_text === true || item?.content_type === 'text';
+}
+
 function getItemTypeLabel(item) {
+	if (isTextItem(item)) return 'Text';
 	if (isPdfItem(item)) return 'PDF';
 	const filename = String(item?.original_filename || '').toLowerCase();
 	if (filename.endsWith('.doc') || filename.endsWith('.docx')) return 'DOC';
@@ -38,14 +44,14 @@ function getItemTypeLabel(item) {
 
 /** Palete pentru coperte CSS (gradient + accente). */
 const COVER_PALETTES = [
-	{ a: '#0c4a6e', b: '#0d9488', accent: '#fcd34d', glow: 'rgba(250, 204, 21, 0.35)' },
-	{ a: '#1e1b4b', b: '#6366f1', accent: '#a5b4fc', glow: 'rgba(129, 140, 248, 0.4)' },
-	{ a: '#134e4a', b: '#047857', accent: '#6ee7b7', glow: 'rgba(52, 211, 153, 0.35)' },
-	{ a: '#4c0519', b: '#be123c', accent: '#fda4af', glow: 'rgba(251, 113, 133, 0.35)' },
-	{ a: '#312e81', b: '#4338ca', accent: '#fde68a', glow: 'rgba(253, 224, 71, 0.3)' },
-	{ a: '#14532d', b: '#15803d', accent: '#bbf7d0', glow: 'rgba(187, 247, 208, 0.35)' },
-	{ a: '#1c1917', b: '#78716c', accent: '#e7e5e4', glow: 'rgba(255, 255, 255, 0.12)' },
-	{ a: 'var(--formely-bg)', b: '#0ea5e9', accent: '#7dd3fc', glow: 'rgba(14, 165, 233, 0.35)' },
+	{ a: '#0c4a6e', b: '#0891b2', accent: '#22d3ee', glow: 'rgba(34, 211, 238, 0.35)' },
+	{ a: '#0f172a', b: '#155e75', accent: '#67e8f9', glow: 'rgba(103, 232, 249, 0.35)' },
+	{ a: '#083344', b: '#0e7490', accent: '#a5f3fc', glow: 'rgba(8, 145, 178, 0.4)' },
+	{ a: '#164e63', b: '#22d3ee', accent: '#ecfeff', glow: 'rgba(34, 211, 238, 0.3)' },
+	{ a: '#082f49', b: '#0284c7', accent: '#7dd3fc', glow: 'rgba(14, 165, 233, 0.35)' },
+	{ a: '#0f172a', b: '#334155', accent: '#e2e8f0', glow: 'rgba(226, 232, 240, 0.2)' },
+	{ a: '#042f2e', b: '#0e7490', accent: '#99f6e4', glow: 'rgba(8, 145, 178, 0.3)' },
+	{ a: '#020617', b: '#0891b2', accent: '#22d3ee', glow: 'rgba(8, 145, 178, 0.4)' },
 ];
 
 function coverPaletteForItem(item) {
@@ -72,16 +78,21 @@ const LibraryPage = () => {
 	const dropDepthRef = useRef(0);
 
 	const actualRole = user?.actualRole ?? user?.role ?? 'student';
-	const canUpload = actualRole === 'admin' || actualRole === 'instructor';
+	const canUpload = user?.role !== 'student' && isStaffAdminRole(actualRole);
 
 	const canDeleteItem = useCallback(
 		(item) => {
-			if (!item || !user) return false;
+			if (!item || !user || user.role === 'student') return false;
 			if (actualRole === 'admin') return true;
 			if (actualRole === 'instructor' && item.uploader?.id === user.id) return true;
 			return false;
 		},
 		[actualRole, user],
+	);
+
+	const canEditItem = useCallback(
+		(item) => canDeleteItem(item) && isTextItem(item),
+		[canDeleteItem],
 	);
 
 	const load = useCallback(async (p = 1) => {
@@ -261,12 +272,19 @@ const LibraryPage = () => {
 				<div className="library-page-header-copy">
 					<h1 className="library-page-title">Bibliotecă</h1>
 					<p className="library-page-lead">
-						Materiale partajate: cărți, documente și alte fișiere utile. Toți utilizatorii autentificați pot
-						descărca. Încărcarea este disponibilă pentru administratori și instructori.
+						Biblioteca organizației tale în Formely — cărți, documente și articole partajate.
+						Toți utilizatorii autentificați pot citi; administratorii și instructorii pot încărca sau compune materiale noi.
 					</p>
 				</div>
 				{canUpload && (
 					<div className="library-page-header-actions">
+						<button
+							type="button"
+							className="library-btn library-btn--secondary library-upload-trigger"
+							onClick={() => navigate('/library/compose')}
+						>
+							Scrie material
+						</button>
 						<button
 							type="button"
 							className="library-btn library-btn--primary library-upload-trigger"
@@ -287,7 +305,7 @@ const LibraryPage = () => {
 				{loading ? (
 					<p className="library-empty">Se încarcă...</p>
 				) : items.length === 0 ? (
-					<p className="library-empty">Nu există încă materiale în bibliotecă.</p>
+					<p className="library-empty">Biblioteca Formely este goală — revino când apar materiale noi.</p>
 				) : (
 					<ul className="library-book-grid">
 						{items.map((item) => {
@@ -341,8 +359,8 @@ const LibraryPage = () => {
 											</div>
 										</div>
 										<div className="library-book-info">
-											<p className="library-book-filename" title={item.original_filename}>
-												{item.original_filename}
+											<p className="library-book-filename" title={isTextItem(item) ? item.description || item.title : item.original_filename}>
+												{isTextItem(item) ? (item.description || 'Material scris') : item.original_filename}
 											</p>
 											<div className="library-book-actions">
 												<button
@@ -350,11 +368,29 @@ const LibraryPage = () => {
 													className="library-btn library-btn--primary library-btn--grow"
 													onClick={(e) => {
 														e.stopPropagation();
-														onDownload(item);
+														if (isTextItem(item)) {
+															onOpen(item);
+														} else {
+															onDownload(item);
+														}
 													}}
 												>
-													Descarcă
+													{isTextItem(item) ? 'Citește' : 'Descarcă'}
 												</button>
+												{canEditItem(item) && (
+													<button
+														type="button"
+														className="library-btn library-btn--secondary library-btn--icon"
+														onClick={(e) => {
+															e.stopPropagation();
+															navigate(`/library/compose/${item.id}`);
+														}}
+														title="Editează materialul"
+														aria-label="Editează materialul"
+													>
+														✎
+													</button>
+												)}
 												{canDeleteItem(item) && (
 													<button
 														type="button"

@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\User;
+use App\Support\UserRoles;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 
@@ -10,7 +11,11 @@ class LearningVisibility
 {
     public static function isStaff(?User $user): bool
     {
-        return $user && in_array($user->role ?? '', ['admin', 'instructor'], true);
+        if (! $user) {
+            return false;
+        }
+
+        return in_array(UserRoles::normalize($user->role ?? ''), UserRoles::staffRoles(), true);
     }
 
     public static function isStaffRequest(Request $request): bool

@@ -401,6 +401,79 @@ export const openaiService = {
 			throw error;
 		}
 	},
+
+	/**
+	 * Stream student tutor chat for a lesson.
+	 */
+	streamStudentTutor: async (lessonId, prompt, messages = [], onChunk = null) => {
+		assertAiEnabled();
+		try {
+			const token = localStorage.getItem('token');
+			const response = await fetchWithCsrfRetry(`/api/lessons/${lessonId}/tutor`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'Accept': 'text/event-stream',
+					...(token ? { Authorization: `Bearer ${token}` } : {}),
+				},
+				credentials: 'include',
+				body: JSON.stringify({
+					prompt,
+					messages,
+					lessonId,
+					mode: 'student_tutor',
+					type: 'tutor',
+				}),
+			});
+
+			if (!response.ok) {
+				const errorText = await response.text();
+				throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+			}
+
+			if (!response.body) {
+				throw new Error('Response body is null');
+			}
+
+			const reader = response.body.getReader();
+			const decoder = new TextDecoder();
+			let fullResponse = '';
+			let buffer = '';
+
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+
+				buffer += decoder.decode(value, { stream: true });
+				const lines = buffer.split('\n');
+				buffer = lines.pop() || '';
+
+				for (const line of lines) {
+					if (!line.startsWith('data: ')) continue;
+					const data = line.slice(6).trim();
+					if (!data || data === '[DONE]') continue;
+					try {
+						const parsed = JSON.parse(data);
+						if (parsed.content) {
+							fullResponse += parsed.content;
+							if (onChunk) onChunk(parsed.content);
+						} else if (parsed.error) {
+							throw new Error(parsed.error);
+						}
+					} catch (e) {
+						if (e instanceof Error && e.message && !e.message.includes('JSON')) {
+							throw e;
+						}
+					}
+				}
+			}
+
+			return { content: fullResponse };
+		} catch (error) {
+			console.error('Error streaming student tutor:', error);
+			throw error;
+		}
+	},
 };
 
 

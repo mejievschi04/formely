@@ -1,0 +1,438 @@
+{
+  "seo": {
+    "title": "Formely — Crea corsi. Sviluppa il tuo team. Monitora i progressi.",
+    "description": "Formely riunisce creazione dei corsi, gestione degli utenti e monitoraggio dei progressi in un'unica piattaforma — senza processi complicati o strumenti sparsi."
+  },
+  "nav": {
+    "product": "Prodotto",
+    "solutions": "Soluzioni",
+    "how": "Come funziona",
+    "pricing": "Prezzi",
+    "faq": "Domande",
+    "login": "Accedi",
+    "cta": "Inizia",
+    "menu": "Menu",
+    "close": "Chiudi",
+    "skip": "Vai al contenuto",
+    "lang": "Lingua"
+  },
+  "hero": {
+    "eyebrow": "La formazione del team, in un unico posto",
+    "lines": ["Crea corsi.", "Sviluppa il tuo team.", "Monitora i progressi."],
+    "sub": "Formely riunisce creazione dei corsi, gestione degli utenti e monitoraggio dei progressi in un'unica piattaforma — senza processi complicati o strumenti sparsi.",
+    "ctaPrimary": "Inizia con Formely",
+    "ctaSecondary": "Scopri la piattaforma"
+  },
+  "positioning": {
+    "title": "Pensato per chi trasforma la conoscenza in crescita.",
+    "items": [
+      {
+        "title": "Aziende",
+        "text": "Organizza la formazione interna e monitora lo sviluppo del team da un unico posto."
+      },
+      {
+        "title": "Accademie",
+        "text": "Gestisci corsi, partecipanti e progressi riducendo il lavoro manuale."
+      },
+      {
+        "title": "Formatori",
+        "text": "Crea programmi di formazione e gestisci i partecipanti in modo più semplice."
+      }
+    ]
+  },
+  "problem": {
+    "title": "La formazione non dovrebbe significare file, fogli di calcolo e caos.",
+    "items": [
+      {
+        "title": "Contenuti sparsi",
+        "text": "Materiali e corsi finiscono in troppi posti e l'organizzazione diventa sempre più difficile."
+      },
+      {
+        "title": "Progressi difficili da seguire",
+        "text": "Senza una visione centralizzata, è difficile capire chi avanza e dove serve attenzione."
+      },
+      {
+        "title": "Amministrazione inutile",
+        "text": "I compiti ripetitivi consumano il tempo che potrebbe essere dedicato alla formazione."
+      }
+    ],
+    "solution": "Formely riunisce corsi, partecipanti e progressi in un unico sistema."
+  },
+  "how": {
+    "eyebrow": "Come funziona",
+    "title": "Dal primo corso ai progressi, in un unico flusso.",
+    "steps": [
+      {
+        "num": "01",
+        "title": "Crea",
+        "text": "Struttura i corsi e organizza i contenuti formativi."
+      },
+      {
+        "num": "02",
+        "title": "Assegna",
+        "text": "Aggiungi i partecipanti e assegna la formazione giusta."
+      },
+      {
+        "num": "03",
+        "title": "Monitora",
+        "text": "Visualizza progressi e risultati direttamente dalla piattaforma."
+      }
+    ]
+  },
+  "showcase": {
+    "eyebrow": "Prodotto",
+    "title": "Tutto ciò che serve per rendere la formazione un processo chiaro.",
+    "items": [
+      {
+        "id": "courses",
+        "title": "Corsi organizzati come vuoi tu",
+        "text": "Crea corsi strutturati e mantieni i contenuti formativi organizzati in un unico posto."
+      },
+      {
+        "id": "tests",
+        "title": "Valutazioni che mostrano i risultati",
+        "text": "Integra test e valutazioni nella formazione e controlla i risultati dei partecipanti."
+      },
+      {
+        "id": "progress",
+        "title": "Progressi chiari per ogni partecipante",
+        "text": "Controlla quanto ha completato ogni persona senza creare report manualmente."
+      },
+      {
+        "id": "library",
+        "title": "Materiali formativi sempre a portata di mano",
+        "text": "Nei piani Academie e Business: mantieni le risorse organizzate in una libreria facile da consultare."
+      }
+    ]
+  },
+  "useCases": {
+    "title": "Un solo Formely. Più modi di organizzare la formazione.",
+    "subtitle": "Dai corsi individuali ai programmi per team, Formely offre una visione chiara di attività e progressi.",
+    "tabs": [
+      {
+        "id": "corporate",
+        "label": "Aziende",
+        "title": "Organizza la formazione interna",
+        "text": "Organizza la formazione interna e monitora lo sviluppo del team da un unico posto.",
+        "points": ["Formazione per team", "Progressi visibili", "Gestione chiara"]
+      },
+      {
+        "id": "academy",
+        "label": "Accademie",
+        "title": "Gestisci corsi e partecipanti",
+        "text": "Gestisci corsi, partecipanti e progressi riducendo il lavoro manuale.",
+        "points": ["Corsi strutturati", "Progressi centralizzati", "Meno lavoro manuale"]
+      },
+      {
+        "id": "instructor",
+        "label": "Formatori",
+        "title": "Crea programmi di formazione",
+        "text": "Crea programmi di formazione e gestisci i partecipanti in modo più semplice.",
+        "points": ["Programmi chiari", "Gestione partecipanti", "Flusso semplice"]
+      }
+    ]
+  },
+  "analytics": {
+    "title": "Più chiaro per gli amministratori. Più semplice per chi impara.",
+    "subtitle": "Formely elimina la complessità inutile dalla formazione, così il team può concentrarsi sull'apprendimento anziché sugli strumenti.",
+    "metrics": [
+      { "label": "Progressi dei partecipanti" },
+      { "label": "Risultati delle valutazioni" },
+      { "label": "Attività sui corsi" },
+      { "label": "Visione chiara del team" }
+    ]
+  },
+  "pricing": {
+    "eyebrow": "Prezzi",
+    "title": "Inizia in modo semplice. Cresci quando ne hai bisogno.",
+    "subtitle": "Scegli il piano più adatto al numero di utenti attivi.",
+    "recommended": "Consigliato",
+    "perMonth": "/ mese",
+    "from": "Da",
+    "learners": "Fino a {n} utenti attivi",
+    "learnersUnlimited": "Oltre 150 utenti",
+    "staff": "fino a {n} staff",
+    "cta": "Inizia",
+    "note": "L'attivazione avviene dopo conferma — senza checkout pubblico.",
+    "plans": {
+      "instructor": {
+        "name": "Instructor",
+        "features": [
+          "Corsi, moduli e lezioni",
+          "Test e progressi",
+          "Team e inviti",
+          "Fino a 50 utenti attivi"
+        ]
+      },
+      "academie": {
+        "name": "Academy",
+        "features": [
+          "Tutto di Instructor",
+          "Biblioteca digitale",
+          "Eventi",
+          "Ruolo analista",
+          "Fino a 150 utenti attivi"
+        ]
+      },
+      "business": {
+        "name": "Business",
+        "features": [
+          "Tutto di Academy",
+          "Volume utenti più alto",
+          "Più posti staff",
+          "Per organizzazioni in crescita"
+        ]
+      }
+    }
+  },
+  "why": {
+    "title": "Formazione senza complessità inutile.",
+    "subtitle": "Gli strumenti necessari per organizzare l'apprendimento del team — in una piattaforma chiara e facile da amministrare.",
+    "items": [
+      {
+        "title": "Più chiaro per gli amministratori",
+        "text": "Formely riduce la complessità intorno alla formazione, così il team può concentrarsi sull'apprendimento."
+      },
+      {
+        "title": "Più semplice per chi impara",
+        "text": "Accesso chiaro a corsi e progressi, senza strumenti sparsi."
+      },
+      {
+        "title": "Un solo sistema",
+        "text": "Corsi, partecipanti e progressi — in un unico posto."
+      },
+      {
+        "title": "Cresci quando serve",
+        "text": "Inizi in modo semplice e passi a un piano superiore man mano che il team cresce."
+      }
+    ]
+  },
+  "faq": {
+    "title": "Domande frequenti",
+    "items": [
+      {
+        "q": "Cos'è Formely?",
+        "a": "Formely è una piattaforma per creare e gestire corsi, organizzare i partecipanti e monitorare i progressi."
+      },
+      {
+        "q": "Per chi è Formely?",
+        "a": "Formely è pensato per aziende, accademie e formatori che vogliono organizzare la formazione in un unico sistema."
+      },
+      {
+        "q": "Posso monitorare i progressi dei partecipanti?",
+        "a": "Sì. Formely ti permette di vedere i progressi dei partecipanti direttamente dalla piattaforma."
+      },
+      {
+        "q": "Posso creare test e valutazioni?",
+        "a": "Sì. Le valutazioni possono essere integrate nel processo formativo per seguire i risultati dei partecipanti."
+      },
+      {
+        "q": "Come scelgo il piano giusto?",
+        "a": "I piani si differenziano principalmente per il numero di utenti attivi. Puoi iniziare con il piano adatto al tuo team e passare a uno superiore man mano che cresci."
+      }
+    ]
+  },
+  "contact": {
+    "title": "Inizia con Formely",
+    "subtitle": "Dicci chi sei e quale piano ti interessa. Torneremo con i passi di attivazione.",
+    "name": "Nome",
+    "email": "Email",
+    "org": "Organizzazione",
+    "plan": "Piano di interesse",
+    "message": "Messaggio (opzionale)",
+    "submit": "Invia richiesta",
+    "sending": "Invio…",
+    "success": "Richiesta inviata. Ti contatteremo presto.",
+    "error": "Impossibile inviare la richiesta. Riprova.",
+    "consentBefore": "Accetto che Formely tratti i dati di questo modulo per contattarmi sull'attivazione, come descritto nella",
+    "consentLink": "informativa sulla privacy",
+    "consentAfter": ".",
+    "consentRequired": "Seleziona il consenso al trattamento dei dati."
+  },
+  "finalCta": {
+    "title": "La formazione del tuo team può essere più semplice.",
+    "description": "Crea, organizza e monitora la formazione da un unico posto.",
+    "cta": "Inizia con Formely"
+  },
+  "footer": {
+    "tagline": "La formazione del team, in un unico posto.",
+    "product": "Prodotto",
+    "features": "Funzioni",
+    "pricing": "Prezzi",
+    "resources": "Risorse",
+    "faq": "Domande",
+    "contact": "Contatto",
+    "legal": "Legale",
+    "privacy": "Privacy",
+    "terms": "Termini",
+    "cookies": "Cookie",
+    "languages": "Lingue",
+    "credit": "Powered by Mejievski",
+    "rights": "© {year} Formely"
+  },
+  "frames": {
+    "browser": "formely.app",
+    "navAdmin": "Admin",
+    "navCourses": "Corsi",
+    "navTests": "Test",
+    "navStats": "Statistiche",
+    "navUsers": "Utenti",
+    "dashboardTitle": "Pannello",
+    "dashboardHint": "Corsi · Progressi · Risultati",
+    "courseBuilder": "Builder corso",
+    "module": "Modulo",
+    "lesson": "Lezione",
+    "block": "Blocco",
+    "publish": "Pubblica",
+    "questionBank": "Banca domande",
+    "test": "Test",
+    "attempts": "Tentativi",
+    "progress": "Progresso",
+    "unlocked": "Sbloccato",
+    "locked": "Bloccato",
+    "team": "Team",
+    "department": "Dipartimento",
+    "invite": "Invita",
+    "assign": "Assegna",
+    "library": "Biblioteca",
+    "events": "Eventi",
+    "metricProgress": "Progressi partecipanti",
+    "metricCompletion": "Completamenti",
+    "metricTests": "Risultati test",
+    "metricExport": "Export"
+  },
+  "legal": {
+    "updated": "Ultimo aggiornamento: {date}",
+    "privacyTitle": "Informativa sulla privacy",
+    "privacyIntro": "Questa pagina spiega quali dati personali raccoglie il sito pubblico Formely e perché. Riguarda il modulo di contatto e la visita al sito, non i dati dei partecipanti in un’accademia già attiva.",
+    "controller": "Il titolare di questo sito è Formely. Per richieste sui tuoi dati:",
+    "cookieTitle": "Nessun cookie di tracciamento",
+    "cookieBody": "Salviamo solo la lingua scelta nel tuo browser. Questo sito non usa cookie di analisi o pubblicità.",
+    "cookieMore": "Dettagli",
+    "cookieOk": "Ho capito",
+    "privacySections": [
+      {
+        "title": "Cosa copre questa pagina",
+        "paragraphs": [
+          "L’informativa vale per il sito Formely: pagine pubbliche e il modulo «Inizia con Formely».",
+          "Quando un’organizzazione usa la piattaforma, è titolare dei dati di partecipanti e staff. Formely tratta quei dati come responsabile del trattamento, in base al contratto con l’organizzazione. Quel trattamento non è descritto qui."
+        ]
+      },
+      {
+        "title": "Quali dati raccogliamo sul sito",
+        "paragraphs": [
+          "Dal modulo: nome, email, organizzazione, piano di interesse e il messaggio, se lo scrivi.",
+          "Salviamo anche il momento del consenso e l’indirizzo IP, per mostrare che la richiesta è stata inviata volontariamente e per limitare gli abusi.",
+          "Il server può conservare brevi log tecnici: IP, tipo di browser, pagina e ora, per sicurezza.",
+          "La lingua scelta resta nel browser (localStorage). Non la inviamo al server."
+        ]
+      },
+      {
+        "title": "Cosa non facciamo",
+        "paragraphs": [
+          "Non inseriamo cookie di marketing o analisi di terze parti. Non vendiamo i dati e l’invio del modulo non crea un account pubblico."
+        ]
+      },
+      {
+        "title": "Perché li usiamo",
+        "paragraphs": [
+          "Per rispondere a una richiesta di attivazione: il tuo consenso e i passi prima di un contratto.",
+          "Per proteggere il sito dagli abusi: interesse legittimo (sicurezza).",
+          "Per ricordare la lingua: il sito resta nella lingua che hai scelto."
+        ]
+      },
+      {
+        "title": "Per quanto li conserviamo",
+        "paragraphs": [
+          "Richieste di contatto: fino a 24 mesi dall’ultimo scambio, prima se chiedi la cancellazione, oppure finché diventano parte di un contratto.",
+          "Log di sicurezza: fino a 90 giorni.",
+          "Lingua nel browser: finché non la cambi o non cancelli i dati del sito."
+        ]
+      },
+      {
+        "title": "A chi li comunichiamo",
+        "paragraphs": [
+          "Al team Formely che gestisce le richieste, al provider email (se la notifica interna è attiva) e al provider di hosting. Non li inviamo a reti pubblicitarie."
+        ]
+      },
+      {
+        "title": "Dove sono conservati",
+        "paragraphs": [
+          "Puntiamo a conservare i dati nello Spazio economico europeo. Se un fornitore tratta dati fuori dal SEE, usiamo garanzie come le clausole contrattuali standard."
+        ]
+      },
+      {
+        "title": "I tuoi diritti",
+        "paragraphs": [
+          "Puoi chiedere accesso, rettifica, cancellazione, limitazione, opposizione o una copia dei dati. Puoi revocare il consenso in qualsiasi momento. Questo non annulla il trattamento già fatto.",
+          "Scrivici all’indirizzo sopra. Puoi anche reclamare presso l’ANSPDCP (Romania) o l’autorità di controllo del tuo Paese."
+        ]
+      },
+      {
+        "id": "cookies",
+        "title": "Cookie e archiviazione locale",
+        "paragraphs": [
+          "Non impostiamo cookie di tracciamento. Salviamo in locale la lingua scelta per non chiederla a ogni visita. Puoi cancellare la preferenza dalle impostazioni del browser."
+        ]
+      },
+      {
+        "title": "Modifiche",
+        "paragraphs": [
+          "Se cambiamo questa informativa, aggiorniamo la data in pagina. Le richieste già inviate seguono la versione in vigore in quel momento, più i diritti che la legge ti riconosce comunque."
+        ]
+      }
+    ],
+    "termsTitle": "Termini di utilizzo del sito",
+    "termsIntro": "Questi termini valgono per il sito pubblico Formely. Il contratto della piattaforma si firma a parte, dopo la conferma dell’offerta.",
+    "termsSections": [
+      {
+        "title": "Cos’è il sito",
+        "paragraphs": [
+          "Le pagine descrivono il prodotto. Non sono un’offerta di prezzo vincolante e da sole non aprono un contratto di servizi."
+        ]
+      },
+      {
+        "title": "Accesso alla piattaforma",
+        "paragraphs": [
+          "Gli account si creano dopo la conferma dell’offerta, su invito. L’uso dell’accademia è regolato dal contratto con l’organizzazione, non da queste pagine."
+        ]
+      },
+      {
+        "title": "Modulo di contatto",
+        "paragraphs": [
+          "Le informazioni devono essere corrette. Non inviare dati di altre persone senza una base lecita. Il trattamento è descritto nell’informativa sulla privacy."
+        ]
+      },
+      {
+        "title": "Contenuti",
+        "paragraphs": [
+          "Testi, marchio e interfaccia Formely sono protetti. Una citazione breve con fonte va bene. Non copiare il sito per un prodotto concorrente."
+        ]
+      },
+      {
+        "title": "Disponibilità",
+        "paragraphs": [
+          "Il sito può essere interrotto per manutenzione. Le descrizioni commerciali possono cambiare."
+        ]
+      },
+      {
+        "title": "Responsabilità",
+        "paragraphs": [
+          "Per l’uso del sito pubblico, la responsabilità è limitata al danno diretto prevedibile, nei limiti di legge. Non escludiamo responsabilità che la legge non consente di escludere."
+        ]
+      },
+      {
+        "title": "Legge applicabile",
+        "paragraphs": [
+          "Si applica la legge rumena. Questo non limita il diritto di rivolgerti a un’autorità di controllo del tuo Paese UE."
+        ]
+      }
+    ],
+    "back": "Torna alla home"
+  },
+  "notFound": {
+    "title": "Pagina non trovata",
+    "text": "Questo link non porta da nessuna parte sul sito Formely.",
+    "cta": "Home"
+  }
+}

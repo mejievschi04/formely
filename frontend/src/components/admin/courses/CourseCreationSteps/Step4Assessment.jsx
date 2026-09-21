@@ -17,22 +17,13 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import './Step4Assessment.css';
 import { DragGripIcon } from '../../../common/DragGripIcon';
+import { WIZARD_QUESTION_TYPES } from '../../../../utils/questionTypeLabels';
 
 /**
  * Step 4 — Quiz Builder (instructiuni.md)
- * Quiz settings: passing score, time limit, attempts.
- * Question editor: inline creation, drag reorder, answer options. Types: single_choice, multiple_choice, true_false, matching, ordering.
- * Scoring: auto grading for structured question types.
- * Google Forms style, live preview.
  */
 
-const QUESTION_TYPES = [
-	{ id: 'single_choice', label: 'Răspuns unic', icon: '○', autoGrade: true },
-	{ id: 'multiple_choice', label: 'Răspuns multiplu', icon: '☑', autoGrade: true },
-	{ id: 'true_false', label: 'Adevărat / Fals', icon: '✓✗', autoGrade: true },
-	{ id: 'matching', label: 'Potrivire perechi', icon: '↔', autoGrade: true },
-	{ id: 'ordering', label: 'Ordonare', icon: '🔢', autoGrade: true },
-];
+const QUESTION_TYPES = WIZARD_QUESTION_TYPES;
 
 const assessmentTypes = [
 	{ id: 'quiz', label: 'Quiz', icon: '❓' },
@@ -194,6 +185,41 @@ function SortableQuestionCard({ question, index, onUpdate, onDelete, typeInfo })
 					</div>
 				)}
 
+				{question.question_type === 'short_answer' && (
+					<div className="step4-answers-group">
+						<label>Răspunsuri acceptate (opțional, pentru referință la corectare manuală)</label>
+						{(question.answers || []).map((ans, idx) => (
+							<div key={ans.id ?? idx} className="step4-answer-row">
+								<input
+									type="text"
+									value={ans.answer_text || ''}
+									onChange={(e) => {
+										const answers = [...(question.answers || [])];
+										answers[idx] = { ...answers[idx], answer_text: e.target.value, is_correct: true };
+										onUpdate({ answers });
+									}}
+									placeholder="Răspuns acceptat"
+									className="step4-input step4-answer-input"
+								/>
+								<button type="button" className="step4-answer-remove" onClick={() => {
+									const answers = (question.answers || []).filter((_, i) => i !== idx);
+									onUpdate({ answers });
+								}}>✕</button>
+							</div>
+						))}
+						<button
+							type="button"
+							className="step4-add-answer"
+							onClick={() => {
+								const answers = [...(question.answers || []), { id: Date.now(), answer_text: '', is_correct: true, order: (question.answers || []).length }];
+								onUpdate({ answers });
+							}}
+						>
+							+ Răspuns acceptat
+						</button>
+					</div>
+				)}
+
 			</div>
 		</div>
 	);
@@ -347,6 +373,11 @@ function QuizPreview({ assessment }) {
 								))}
 							</div>
 						)}
+						{q.question_type === 'short_answer' && (
+							<div className="step4-preview-options">
+								<textarea className="step4-textarea" rows={2} disabled placeholder="Răspuns scurt (elev)" />
+							</div>
+						)}
 					</div>
 				))}
 			</div>
@@ -443,9 +474,6 @@ const Step4Assessment = ({ data, onUpdate }) => {
 		<div className="step4-assessment">
 			<div className="step4-header">
 				<h3>Evaluare & Quiz</h3>
-				<p className="step4-description">
-					Configurează evaluările pentru lecții. Pentru quiz: setări (prag, timp, încercări), întrebări cu reordonare drag-and-drop.
-				</p>
 			</div>
 
 			{modules.length === 0 ? (

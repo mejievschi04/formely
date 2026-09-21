@@ -24,11 +24,11 @@ function normalizeRgbInput(raw) {
 	return `#${byteToHex(match[1])}${byteToHex(match[2])}${byteToHex(match[3])}`;
 }
 
-export function normalizeColorInputToHex(value, fallback = '#6366f1') {
+export function normalizeColorInputToHex(value, fallback = '#0891b2') {
 	const normalized = normalizeHexInput(value) || normalizeRgbInput(value);
 	if (normalized) return normalized;
 	if (fallback == null) return null;
-	return normalizeHexInput(fallback) || '#6366f1';
+	return normalizeHexInput(fallback) || '#0891b2';
 }
 
 export function isValidColorInput(value) {

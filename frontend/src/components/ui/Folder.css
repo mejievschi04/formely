@@ -161,12 +161,27 @@
 
 /* Copertă mapă: o singură imagine, se ridică ca un capac (fără dublare) */
 .rb-folder__front--image {
-	background-image:
-		linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.12)),
-		var(--rb-folder-front-image);
-	background-size: cover;
-	background-position: center;
+	overflow: hidden;
+	background: #0f172a;
 	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.rb-folder__front--image::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	pointer-events: none;
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.12));
+}
+
+.rb-folder__cover-img {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	pointer-events: none;
 }
 
 .rb-folder__front--lid {

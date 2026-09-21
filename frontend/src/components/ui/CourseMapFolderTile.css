@@ -248,12 +248,17 @@
 	}
 
 	.courses-page-student .course-map-folder-tile__hit {
-		--course-map-tile-hit-height: 380px;
+		--course-map-tile-hit-height: 260px;
 		width: 100%;
 	}
 
+	.courses-page-student .course-map-folder-tile__stage {
+		height: 188px;
+	}
+
 	.courses-page-student .course-map-folder-tile__visual {
-		width: min(100%, 300px);
+		width: min(100%, 220px);
+		height: 176px;
 	}
 }
 
@@ -267,15 +272,19 @@
 	}
 
 	.course-map-folder-tile__hit {
-		--course-map-tile-hit-height: 398px;
+		--course-map-tile-hit-height: 320px;
 	}
 
 	.courses-page-student .course-map-folder-tile__hit {
-		--course-map-tile-hit-height: 360px;
+		--course-map-tile-hit-height: 250px;
 	}
 
 	.course-map-folder-tile__stage {
 		height: 248px;
+	}
+
+	.courses-page-student .course-map-folder-tile__stage {
+		height: 180px;
 	}
 
 	.course-map-folder-tile__visual {
@@ -283,7 +292,16 @@
 		height: 230px;
 	}
 
+	.courses-page-student .course-map-folder-tile__visual {
+		width: min(100%, 210px);
+		height: 168px;
+	}
+
 	.course-map-folder-tile__visual .rb-folder-wrap {
 		transform: scale(2.35) !important;
+	}
+
+	.courses-page-student .course-map-folder-tile__visual .rb-folder-wrap {
+		transform: scale(1.85) !important;
 	}
 }

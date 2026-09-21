@@ -4,13 +4,14 @@ import { adminService } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 import AICourseChat from '../../components/admin/ai/AICourseChat';
-import { notifyAiComingSoon } from '../../utils/aiAvailability';
+import { canUseAiFeature, isAiEnabled } from '../../utils/aiAvailability';
 import './CourseCreationPage.css';
 
 const CourseCreationPage = () => {
 	const navigate = useNavigate();
 	const { showToast } = useToast();
-	const { canMutateInAdminArea } = useAuth();
+	const { canMutateInAdminArea, user } = useAuth();
+	const aiCreatorAllowed = isAiEnabled() && canUseAiFeature(user, 'ai_creator');
 
 	const [title, setTitle] = useState('');
 	const [description, setDescription] = useState('');
@@ -103,7 +104,7 @@ const CourseCreationPage = () => {
 					</button>
 					<h1 className="course-creation-simple-title">Creează curs nou</h1>
 					<p className="course-creation-simple-subtitle">
-						Alege una dintre cele două căi: curs creat cu AI sau curs creat manual.
+						Pornește un curs Formely, apoi continuă în Builder.
 					</p>
 				</header>
 
@@ -122,12 +123,13 @@ const CourseCreationPage = () => {
 							<span className="course-creation-mode-card-title">Creează manual</span>
 							<span className="course-creation-mode-card-desc">Completezi titlul și descrierea, apoi intri în Builder.</span>
 						</button>
+						{aiCreatorAllowed ? (
 						<button
 							type="button"
 							className={`course-creation-mode-card${creationMode === 'ai' ? ' is-active' : ''}`}
 							onClick={() => {
 								setCreationMode('ai');
-								notifyAiComingSoon(showToast);
+								setShowAiCourseChat(true);
 							}}
 							disabled={loading}
 						>
@@ -135,6 +137,7 @@ const CourseCreationPage = () => {
 							<span className="course-creation-mode-card-title">Creează cu AI</span>
 							<span className="course-creation-mode-card-desc">AI îți construiește cursul complet cu module și lecții.</span>
 						</button>
+						) : null}
 					</div>
 
 					<div className="course-creation-simple-field">
@@ -179,7 +182,7 @@ const CourseCreationPage = () => {
 						<button
 							type={creationMode === 'ai' ? 'button' : 'submit'}
 							className="course-creation-simple-btn-primary"
-							onClick={creationMode === 'ai' ? () => notifyAiComingSoon(showToast) : undefined}
+							onClick={creationMode === 'ai' ? () => setShowAiCourseChat(true) : undefined}
 							disabled={loading}
 						>
 							{loading ? 'Se creează...' : creationMode === 'ai' ? 'Deschide asistentul AI' : 'Creează curs'}

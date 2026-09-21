@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { isPlatformAdmin } from '../utils/entitlements';
 
 const UserRoute = ({ children }) => {
 	const { user, loading } = useAuth();
@@ -11,8 +12,10 @@ const UserRoute = ({ children }) => {
 		return <Navigate to="/login" replace />;
 	}
 
-	// Allow admins to view user pages (for preview purposes)
-	// They can navigate back to admin via the sidebar button
+	if (isPlatformAdmin(user)) {
+		window.location.href = import.meta.env.VITE_BACKOFFICE_URL || 'http://localhost:5180';
+		return null;
+	}
 
 	return children;
 };

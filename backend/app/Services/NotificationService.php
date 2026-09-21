@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Conversation;
 use App\Models\Course;
 use App\Models\Notification;
 use App\Models\User;
@@ -99,62 +98,6 @@ class NotificationService
         ]);
 
         $this->emailNotificationService->sendToUser($student, $title, $description, $actionUrl, 'Continuă cursul');
-    }
-
-    /**
-     * Notify conversation participants about a new message (except sender).
-     */
-    public function notifyNewMessage(User $sender, Conversation $conversation, string $preview): void
-    {
-        if (! Schema::hasTable('notifications')) {
-            return;
-        }
-
-        $recipientIds = $conversation->participants()
-            ->where('users.id', '!=', $sender->id)
-            ->pluck('users.id')
-            ->all();
-
-        $title = $conversation->name
-            ? 'Mesaj nou în ' . $conversation->name
-            : 'Mesaj nou de la ' . $sender->name;
-
-        $previewText = mb_strlen($preview) > 120 ? mb_substr($preview, 0, 117) . '...' : $preview;
-        $actionUrl = '/messages?conversation=' . $conversation->id;
-        $emailRecipientIds = [];
-
-        foreach ($recipientIds as $recipientId) {
-            try {
-                Notification::create([
-                    'user_id' => $recipientId,
-                    'type' => 'new_message',
-                    'title' => $title,
-                    'description' => $previewText,
-                    'data' => [
-                        'conversation_id' => $conversation->id,
-                        'sender_id' => $sender->id,
-                    ],
-                    'action_url' => $actionUrl,
-                    'severity' => 'info',
-                ]);
-                $emailRecipientIds[] = (int) $recipientId;
-            } catch (\Throwable $e) {
-                \Log::warning('NotificationService::notifyNewMessage failed', [
-                    'recipient_id' => $recipientId,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
-
-        if ($emailRecipientIds !== []) {
-            $this->emailNotificationService->sendToMany(
-                User::whereIn('id', $emailRecipientIds)->get(),
-                $title,
-                $previewText,
-                $actionUrl,
-                'Citește mesajul'
-            );
-        }
     }
 
     /**
