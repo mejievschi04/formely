@@ -41,6 +41,8 @@ export default function ClientsPage() {
   const [editDraft, setEditDraft] = useState(null);
   const [editSaving, setEditSaving] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
+  const [deleteSlug, setDeleteSlug] = useState('');
+  const [deleting, setDeleting] = useState(false);
   const [query, setQuery] = useState(params.get('q') || '');
   const [planFilter, setPlanFilter] = useState(params.get('plan') || '');
   const [statusFilter, setStatusFilter] = useState(params.get('status') || '');
@@ -225,6 +227,7 @@ export default function ClientsPage() {
     }
     setEditing(detail);
     setInviteEmail('');
+    setDeleteSlug('');
     setEditDraft({
       plan: detail.plan || 'instructor',
       status: detail.status || 'active',
@@ -293,6 +296,32 @@ export default function ClientsPage() {
       setInviteEmail('');
     } catch (err) {
       push(errMessage(err, 'Invitația a eșuat.'), 'error');
+    }
+  };
+
+  const handleDeleteCompany = async () => {
+    if (!editing) return;
+    if (deleteSlug.trim() !== editing.slug) {
+      push(`Scrie exact slug-ul „${editing.slug}” pentru a confirma.`, 'error');
+      return;
+    }
+    if (!window.confirm(
+      `Ștergi DEFINITIV academia „${editing.name}”?\n\nSe șterg utilizatori, cursuri, teste și tot conținutul. Acțiunea nu poate fi anulată.`,
+    )) {
+      return;
+    }
+    setDeleting(true);
+    try {
+      await platform.deleteCompany(editing.id, editing.slug);
+      push('Academia a fost ștearsă definitiv.', 'success');
+      setEditing(null);
+      setEditDraft(null);
+      setDeleteSlug('');
+      await load();
+    } catch (err) {
+      push(errMessage(err, 'Ștergerea a eșuat.'), 'error');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -591,6 +620,31 @@ export default function ClientsPage() {
                 />
                 <button type="button" className="bo-btn bo-btn--sm" onClick={handleResendInvite}>
                   Trimite
+                </button>
+              </div>
+            </div>
+
+            <div className="bo-danger-zone">
+              <h3>Zonă periculoasă</h3>
+              <p className="bo-muted">
+                Ștergere definitivă: utilizatori, cursuri, teste și tot conținutul academiei.
+                Scrie slug-ul <code>{editing.slug}</code> pentru confirmare.
+              </p>
+              <div className="bo-invite-row">
+                <input
+                  type="text"
+                  placeholder={editing.slug}
+                  value={deleteSlug}
+                  onChange={(e) => setDeleteSlug(e.target.value)}
+                  autoComplete="off"
+                />
+                <button
+                  type="button"
+                  className="bo-btn bo-btn--sm bo-btn--danger"
+                  disabled={deleting || deleteSlug.trim() !== editing.slug}
+                  onClick={handleDeleteCompany}
+                >
+                  {deleting ? 'Se șterge…' : 'Șterge academia'}
                 </button>
               </div>
             </div>

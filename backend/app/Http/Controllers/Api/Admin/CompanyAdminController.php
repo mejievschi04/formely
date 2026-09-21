@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Models\Lead;
 use App\Models\User;
 use App\Models\UserInvitation;
+use App\Services\CompanyDeletionService;
 use App\Services\PlanEntitlementService;
 use App\Services\UserInvitationService;
 use App\Support\UserRoles;
@@ -20,6 +21,7 @@ class CompanyAdminController extends Controller
     public function __construct(
         private PlanEntitlementService $entitlements,
         private UserInvitationService $invitations,
+        private CompanyDeletionService $companyDeletion,
     ) {}
 
     public function index(Request $request)
@@ -201,6 +203,27 @@ class CompanyAdminController extends Controller
             'message' => 'Invitația pentru proprietar a fost trimisă.',
             'invite_url' => $result['invite_url'],
             'invitation' => $result['invitation'],
+        ]);
+    }
+
+    public function destroy(Request $request, int $id)
+    {
+        $company = Company::findOrFail($id);
+        $validated = $request->validate([
+            'confirm_slug' => 'required|string|max:100',
+        ]);
+
+        if (strcasecmp(trim($validated['confirm_slug']), (string) $company->slug) !== 0) {
+            return response()->json([
+                'message' => 'Pentru confirmare, scrie exact slug-ul academiei ('.$company->slug.').',
+            ], 422);
+        }
+
+        $name = $company->name;
+        $this->companyDeletion->deletePermanently($company);
+
+        return response()->json([
+            'message' => "Academia „{$name}” a fost ștearsă definitiv.",
         ]);
     }
 

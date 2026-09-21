@@ -15,14 +15,25 @@ class CompanyBrandingController extends Controller
     {
         $company = Company::query()
             ->where('slug', $slug)
-            ->where('status', 'active')
             ->first();
 
-        if (! $company) {
-            return response()->json(['message' => 'Compania nu a fost găsită.'], 404);
+        if ($company && $company->isUsable()) {
+            return response()->json(['company' => $company->brandingPayload()]);
         }
 
-        return response()->json(['company' => $company->brandingPayload()]);
+        // Login fără ?company= sau slug inexistent: branding Formely default (fără 404 în consolă).
+        return response()->json([
+            'company' => [
+                'id' => null,
+                'name' => config('app.name', 'Formely'),
+                'slug' => $slug !== '' ? $slug : (string) config('formely.default_company_slug', 'default'),
+                'logo_url' => null,
+                'primary_color' => '#0891b2',
+                'secondary_color' => '#22d3ee',
+                'plan' => null,
+                'status' => null,
+            ],
+        ]);
     }
 
     public function showMine()

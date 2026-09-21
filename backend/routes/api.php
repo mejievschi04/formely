@@ -244,6 +244,7 @@ Route::middleware([
     Route::post('/companies', [CompanyAdminController::class, 'store']);
     Route::get('/companies/{id}', [CompanyAdminController::class, 'show']);
     Route::put('/companies/{id}', [CompanyAdminController::class, 'update']);
+    Route::delete('/companies/{id}', [CompanyAdminController::class, 'destroy']);
     Route::post('/companies/{id}/invite-owner', [CompanyAdminController::class, 'sendOwnerInvite']);
     Route::get('/leads', [LeadAdminController::class, 'index']);
     Route::put('/leads/{id}', [LeadAdminController::class, 'update']);
@@ -525,6 +526,7 @@ Route::middleware([
         Route::post('/companies', [CompanyAdminController::class, 'store']);
         Route::get('/companies/{id}', [CompanyAdminController::class, 'show']);
         Route::put('/companies/{id}', [CompanyAdminController::class, 'update']);
+        Route::delete('/companies/{id}', [CompanyAdminController::class, 'destroy']);
         Route::post('/companies/{id}/invite-owner', [CompanyAdminController::class, 'sendOwnerInvite']);
         Route::get('/leads', [LeadAdminController::class, 'index']);
         Route::put('/leads/{id}', [LeadAdminController::class, 'update']);

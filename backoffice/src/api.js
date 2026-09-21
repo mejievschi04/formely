@@ -41,6 +41,9 @@ export const platform = {
   company: async (id) => (await api.get(`/platform/companies/${id}`)).data,
   createCompany: async (payload) => (await api.post('/platform/companies', payload)).data,
   updateCompany: async (id, payload) => (await api.put(`/platform/companies/${id}`, payload)).data,
+  deleteCompany: async (id, confirmSlug) => (
+    await api.delete(`/platform/companies/${id}`, { data: { confirm_slug: confirmSlug } })
+  ).data,
   inviteOwner: async (id, payload) => (await api.post(`/platform/companies/${id}/invite-owner`, payload)).data,
   leads: async (params) => (await api.get('/platform/leads', { params })).data,
   updateLead: async (id, payload) => (await api.put(`/platform/leads/${id}`, payload)).data,
