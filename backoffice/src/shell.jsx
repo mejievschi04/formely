@@ -7,7 +7,7 @@ const links = [
   { to: '/clients', label: 'Clienți' },
   { to: '/leads', label: 'Cereri' },
   { to: '/plans', label: 'Planuri' },
-  { to: '/invoices', label: 'Facturi' },
+  { to: '/pipeline', label: 'De facturat' },
 ];
 
 export default function Shell({ children }) {

@@ -115,3 +115,29 @@ export function errMessage(err, fallback) {
     || err?.message
     || fallback;
 }
+
+/** YYYY-MM-DD for <input type="date"> from ISO string */
+export function toDateInput(iso) {
+  if (!iso) return '';
+  const s = String(iso);
+  return s.length >= 10 ? s.slice(0, 10) : '';
+}
+
+export function formatDate(iso) {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleDateString('ro-RO', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch {
+    return String(iso);
+  }
+}
+
+/** Local midnight ISO for API date fields (nullable). */
+export function dateInputToIso(value) {
+  if (!value) return null;
+  return `${value}T12:00:00.000Z`;
+}

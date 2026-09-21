@@ -106,7 +106,7 @@ export default function OverviewPage() {
                         : ''}
                     </span>
                   </div>
-                  <Link className="bo-btn bo-btn--sm" to={`/clients?q=${encodeURIComponent(item.slug || item.name)}`}>
+                  <Link className="bo-btn bo-btn--sm" to={`/clients/${item.id}`}>
                     Deschide
                   </Link>
                 </li>
@@ -143,7 +143,7 @@ export default function OverviewPage() {
                   <li key={lead.id}>
                     <strong>{lead.company_name || lead.name}</strong>
                     <span>{lead.email} · {lead.source_label || 'Site'}</span>
-                    <Link className="bo-btn bo-btn--sm" to={`/clients?new=1&lead=${lead.id}`}>
+                    <Link className="bo-btn bo-btn--sm" to={`/leads?convert=${lead.id}`}>
                       Convertește
                     </Link>
                   </li>
@@ -179,7 +179,7 @@ export default function OverviewPage() {
               {companies.map((c) => (
                 <tr key={c.id} data-severity={c.health?.severity || 'ok'}>
                   <td>
-                    <Link to={`/clients?q=${encodeURIComponent(c.slug || c.name)}`}>
+                    <Link to={`/clients/${c.id}`}>
                       <strong>{c.name}</strong>
                     </Link>
                     <div className="bo-muted">{c.slug}</div>
