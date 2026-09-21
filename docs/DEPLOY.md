@@ -22,6 +22,7 @@ postgres · backend · queue · scheduler  (doar rețea Docker, fără port publ
 
 Nu pornim Caddy — pe acest VPS Nginx pe host deține deja 80/443.
 Porturile Formely sunt doar pe `127.0.0.1` (nu se ciocnesc cu alte proiecte pe 8000/8080).
+Postgres Formely **nu** ocupă 5432 pe host — rulează intern în Docker (`postgres:5432`). Dacă pe VPS ai deja Postgres pe 5432, e OK; cele două nu se ating.
 
 ## Cerințe
 

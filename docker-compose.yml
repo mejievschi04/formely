@@ -14,7 +14,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "${DB_PORT:-5432}:5432"
+      # Host publish doar pentru debug local. În prod.yml portul e șters (!reset).
+      # Default 15432 ca să nu se ciocnească de Postgres deja pe 5432 pe VPS.
+      - "${DB_PUBLISH_PORT:-15432}:5432"
     networks:
       - formely-network
     healthcheck:
