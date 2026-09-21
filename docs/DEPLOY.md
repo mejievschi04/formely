@@ -38,8 +38,8 @@ Website-ul apelează `https://api.formely.org/api/leads` (CORS).
 
 ```bash
 # pe VPS
-# pe VPS — proiectul stă în /var/www/app
-cd /var/www/app
+# pe VPS — proiectul stă în /var/www/app/formely
+cd /var/www/app/formely
 cp .env.example .env
 nano .env   # APP_KEY, DB_PASSWORD, SMTP, FORMELY_PLATFORM_OPERATOR_PASSWORD, CADDY_EMAIL
 ```

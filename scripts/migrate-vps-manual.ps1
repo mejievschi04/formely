@@ -58,7 +58,7 @@ $Files = @(
 )
 
 # Directorul de destinație pe VPS (ajustează după setup)
-$VpsPath = "/var/www/app"
+$VpsPath = "/var/www/app/formely"
 
 Write-Host "`nFormely - Migrare manuala pe VPS`n" -ForegroundColor Cyan
 

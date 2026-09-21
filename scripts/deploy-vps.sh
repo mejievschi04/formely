@@ -1,6 +1,6 @@
 #!/bin/bash
 # Deploy complet Formely pe VPS (Docker + Caddy + domenii formely.org)
-# Folosire: cd /var/www/app && chmod +x scripts/deploy-vps.sh && ./scripts/deploy-vps.sh
+# Folosire: cd /var/www/app/formely && chmod +x scripts/deploy-vps.sh && ./scripts/deploy-vps.sh
 # Opțional: DEPLOY_PRUNE=1 ./scripts/deploy-vps.sh
 # Opțional: DEPLOY_SEED=1 ./scripts/deploy-vps.sh  → ProductionSeeder după migrate
 
