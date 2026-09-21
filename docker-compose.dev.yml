@@ -1,0 +1,23 @@
+# Override local (debug) — porturi pe host
+# Folosire: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+services:
+  postgres:
+    ports:
+      - "${DB_PUBLISH_PORT:-15432}:5432"
+
+  nginx-backend:
+    ports:
+      - "${BACKEND_PORT:-8000}:80"
+
+  frontend:
+    ports:
+      - "${FRONTEND_PORT:-3001}:80"
+
+  website:
+    ports:
+      - "${WEBSITE_PORT:-4322}:80"
+
+  backoffice:
+    ports:
+      - "${BACKOFFICE_PORT:-5181}:80"
