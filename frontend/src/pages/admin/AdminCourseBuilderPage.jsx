@@ -1807,15 +1807,6 @@ const AdminCourseBuilderPage = () => {
 												type="button"
 												onClick={() => {
 													setQuickAddMenuOpen(false);
-													handleQuickCreateLesson(null);
-												}}
-											>
-												Lecție fără modul
-											</button>
-											<button
-												type="button"
-												onClick={() => {
-													setQuickAddMenuOpen(false);
 													handleOpenCreateTestModal();
 												}}
 											>
