@@ -2476,7 +2476,10 @@ body.admin-course-builder-test-drag-active .admin-course-builder-outline-test-ro
 	border: none;
 	border-radius: 0;
 	background: #ffffff;
-	height: 100%;
+	/* Nu bloca la 100% — altfel overflow:hidden pe .rte-container taie conținutul. */
+	height: auto;
+	min-height: min(55vh, 640px);
+	overflow: visible;
 }
 
 .admin-course-builder-direct-editor-wrap .rte-toolbar {
@@ -2485,20 +2488,22 @@ body.admin-course-builder-test-drag-active .admin-course-builder-outline-test-ro
 }
 
 .admin-course-builder-direct-editor-wrap .rte-editor {
-	min-height: 100%;
+	min-height: min(55vh, 640px);
+	height: auto;
 	padding: 28px;
 	color: #000000;
 }
 
 .admin-course-builder-direct-editor-wrap-full {
-	flex: 1;
-	min-height: 0;
+	flex: 0 0 auto;
+	width: 100%;
+	min-height: min(55vh, 640px);
 }
 
 .admin-course-builder-direct-editor-wrap-full .rte-editor-shell {
 	grid-template-columns: minmax(0, 1fr);
-	min-height: 100%;
-	height: 100%;
+	min-height: min(55vh, 640px);
+	height: auto;
 }
 
 .admin-course-builder-direct-editor-wrap-full .rte-side-tools {
@@ -3164,14 +3169,17 @@ body.sidebar-expanded .admin-course-builder-sidebar-show-btn {
 
 .admin-course-builder-workspace-content {
 	width: min(100%, 980px);
-	flex: 1;
+	flex: 1 1 auto;
 	min-height: 0;
 	margin: 0 auto;
 	display: flex;
 	flex-direction: column;
+	overflow-x: hidden;
 	overflow-y: auto;
 	overscroll-behavior: contain;
-	padding-bottom: 20px;
+	-webkit-overflow-scrolling: touch;
+	padding-bottom: 48px;
+	/* Foia e scroll container-ul; conținutul trebuie să poată crește. */
 }
 
 @media (max-width: 992px) {
@@ -3363,6 +3371,32 @@ body.sidebar-expanded .admin-course-builder-sidebar-show-btn {
 	border: none;
 	box-shadow: none;
 	color: var(--lesson-sheet-fg);
+}
+
+/* Scroll pe foaia lecției: conținutul crește, workspace-content derulează. */
+.admin-course-builder-page .admin-course-builder-workspace-content {
+	overflow-x: hidden !important;
+	overflow-y: auto !important;
+}
+
+.admin-course-builder-page .admin-course-builder-direct-editor-wrap-full {
+	flex: 0 0 auto !important;
+	min-height: min(55vh, 640px) !important;
+	height: auto !important;
+}
+
+.admin-course-builder-page .admin-course-builder-direct-editor-wrap .rte-container,
+.admin-course-builder-page .admin-course-builder-direct-editor-wrap-full .rte-editor-shell,
+.admin-course-builder-page .admin-course-builder-direct-editor-wrap .rte-editor {
+	height: auto !important;
+	max-height: none !important;
+	overflow: visible !important;
+}
+
+.admin-course-builder-page .admin-course-builder-direct-editor-wrap .rte-container,
+.admin-course-builder-page .admin-course-builder-direct-editor-wrap-full .rte-editor-shell,
+.admin-course-builder-page .admin-course-builder-direct-editor-wrap .rte-editor {
+	min-height: min(55vh, 640px);
 }
 
 .admin-course-builder-page .admin-course-builder-quick-add-btn,
