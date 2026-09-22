@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { useI18n } from '../../i18n/I18nContext';
+import { PRODUCT_SCREENS } from '../../data/productScreens';
 
 function Chrome({ label }) {
   return (
@@ -233,7 +235,34 @@ const FRAME_MAP = {
   analytics: FrameAnalytics,
 };
 
+function ProductShot({ screen, Fallback }) {
+  const { t } = useI18n();
+  const [failed, setFailed] = useState(false);
+  if (failed) return <Fallback />;
+  return (
+    <div className="ui-frame ui-frame--shot">
+      <Chrome label={screen.url || t('frames.browser')} />
+      <div className="ui-frame-shot-wrap">
+        <img
+          className="ui-frame-shot"
+          src={screen.src}
+          alt={t(screen.altKey) || 'Formely'}
+          width={1440}
+          height={900}
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailed(true)}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function ProductUiFrame({ variant = 'dashboard' }) {
-  const Comp = FRAME_MAP[variant] || FrameDashboard;
-  return <Comp />;
+  const screen = PRODUCT_SCREENS[variant];
+  const Fallback = FRAME_MAP[variant] || FrameDashboard;
+  if (screen?.src) {
+    return <ProductShot screen={screen} Fallback={Fallback} />;
+  }
+  return <Fallback />;
 }

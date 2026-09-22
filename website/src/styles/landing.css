@@ -1018,6 +1018,25 @@
   box-shadow: var(--fm-shadow-lg), 0 0 0 1px rgba(34, 211, 238, 0.06);
 }
 
+.ui-frame--shot {
+  background: #020617;
+}
+
+.ui-frame-shot-wrap {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background: #0a0f1c;
+  overflow: hidden;
+}
+
+.ui-frame-shot {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top left;
+}
+
 .ui-frame-chrome {
   display: flex;
   align-items: center;
