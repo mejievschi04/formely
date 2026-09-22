@@ -24,6 +24,9 @@ services:
       - "127.0.0.1:${BACKEND_PORT:-18080}:80"
     volumes: !override
       - ./docker/nginx-backend.conf:/etc/nginx/conf.d/default.conf:ro
+      # Public HTML from the backend image path is not shared via volumes_from alone;
+      # mount storage so /storage/* (alias → storage/app/public) can be served.
+      - backend_storage:/var/www/html/storage:ro
     volumes_from:
       - backend
 
