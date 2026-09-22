@@ -73,7 +73,7 @@ const LessonBlocksPreview = ({ blocks, variant = 'admin' }) => {
 					return (
 						<BlockCard key={b.id || idx} title={label} showLabel={showLabels}>
 							<div
-								className="lesson-preview-content"
+								className="lesson-preview-content rte-content"
 								dangerouslySetInnerHTML={{ __html: html }}
 							/>
 						</BlockCard>

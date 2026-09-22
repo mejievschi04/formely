@@ -7,5 +7,6 @@ export default function RichTextHtml({ html, className, as: Tag = 'div', fallbac
 	if (!plain) {
 		return fallback;
 	}
-	return <Tag className={className} dangerouslySetInnerHTML={{ __html: normalized }} />;
+	const classes = ['rte-content', className].filter(Boolean).join(' ');
+	return <Tag className={classes} dangerouslySetInnerHTML={{ __html: normalized }} />;
 }

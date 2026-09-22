@@ -814,7 +814,7 @@ const LessonsPage = () => {
 								if (legacyHtml.trim()) {
 									return (
 										<div
-											className="lessons-page-lesson-content-text"
+											className="lessons-page-lesson-content-text rte-content"
 											dangerouslySetInnerHTML={{ __html: normalizeRichTextMediaHtml(legacyHtml) }}
 										/>
 									);

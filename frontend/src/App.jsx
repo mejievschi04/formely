@@ -78,6 +78,7 @@ import './styles/common-components.css';
 import './styles/auth-modern.css';
 import './styles/course-detail-modern.css';
 import './styles/builder-overrides.css';
+import './styles/rte-rich-content.css';
 import './components/auth/AuthExperience.css';
 /* Mobile optimizations must be last to override base styles */
 import './styles/mobile-optimizations.css';

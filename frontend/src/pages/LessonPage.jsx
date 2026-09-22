@@ -522,7 +522,7 @@ const LessonPage = () => {
 								const html = normalizeRichTextMediaHtml(legacyHtml);
 								return (
 									<div
-										className="lesson-page-content-text"
+										className="lesson-page-content-text rte-content"
 										dangerouslySetInnerHTML={{ __html: html }}
 									/>
 								);
