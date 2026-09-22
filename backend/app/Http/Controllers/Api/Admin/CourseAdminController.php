@@ -268,6 +268,8 @@ class CourseAdminController extends Controller
 
             // Add metrics to course
             $course->enrollments_count = $enrollmentsCount;
+            // UI Overview citește total_enrollments (coloană DB); sincronizează cu numărul real.
+            $course->total_enrollments = $enrollmentsCount;
             $course->completion_rate = $completionRate;
             $course->revenue = $revenue;
             $course->rating = $rating;
@@ -280,6 +282,7 @@ class CourseAdminController extends Controller
             \Log::error("Error adding course metrics for course {$course->id}: " . $e->getMessage());
             // Return course with default metrics on error
             $course->enrollments_count = 0;
+            $course->total_enrollments = 0;
             $course->completion_rate = 0;
             $course->revenue = 0;
             $course->rating = null;
@@ -323,12 +326,23 @@ class CourseAdminController extends Controller
                 }
             ])->findOrFail($id);
 
-            // Add counts
+            // Add counts — lecțiile pot exista și fără modul (module_id null).
             $course->modules_count = $course->modules->count();
-            $course->lessons_count = $course->modules->sum(function($module) {
-                return $module->lessons->count();
-            });
-            
+            $course->lessons_count = (int) \App\Models\Lesson::query()
+                ->where('course_id', $course->id)
+                ->count();
+
+            // Root lessons for clients that render structure without modules.
+            $course->setRelation(
+                'root_lessons',
+                \App\Models\Lesson::query()
+                    ->where('course_id', $course->id)
+                    ->where(function ($q) {
+                        $q->whereNull('module_id')->orWhere('module_id', 0);
+                    })
+                    ->orderBy('order')
+                    ->get()
+            );            
             // Load all course-test links for this course
             $courseTests = \App\Models\CourseTest::where('course_id', $course->id)
                 ->with('test')
