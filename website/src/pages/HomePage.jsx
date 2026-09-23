@@ -3,12 +3,9 @@ import Seo from '../components/Seo';
 import { FaqJsonLd } from '../components/JsonLd';
 import { useI18n } from '../i18n/I18nContext';
 import Hero from '../components/landing/Hero';
-import Positioning from '../components/landing/Positioning';
-import ProblemSolution from '../components/landing/ProblemSolution';
+import ProofStrip from '../components/landing/ProofStrip';
 import HowItWorks from '../components/landing/HowItWorks';
 import ProductShowcase from '../components/landing/ProductShowcase';
-import UseCases from '../components/landing/UseCases';
-import Analytics from '../components/landing/Analytics';
 import Pricing from '../components/landing/Pricing';
 import WhyFormely from '../components/landing/WhyFormely';
 import Faq from '../components/landing/Faq';
@@ -46,12 +43,9 @@ export default function HomePage() {
       <FaqJsonLd items={faqItems} />
       <div className="landing-ambient" aria-hidden />
       <Hero />
-      <Positioning />
-      <ProblemSolution />
+      <ProofStrip />
       <HowItWorks />
       <ProductShowcase />
-      <UseCases />
-      <Analytics />
       <Pricing />
       <WhyFormely />
       <Faq />

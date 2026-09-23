@@ -18,10 +18,43 @@
   },
   "hero": {
     "eyebrow": "Team training, all in one place",
-    "lines": ["Create courses.", "Develop teams.", "Track progress."],
+    "lines": [
+      "Create courses.",
+      "Develop teams.",
+      "Track progress."
+    ],
     "sub": "Formely gives you one place to create courses, organize learners and track their progress — without complicated processes or scattered tools.",
     "ctaPrimary": "Get started with Formely",
-    "ctaSecondary": "Explore the platform"
+    "ctaSecondary": "Explore the platform",
+    "orbit": [
+      { "emoji": "📚", "label": "Clear courses" },
+      { "emoji": "👥", "label": "Organized teams" },
+      { "emoji": "📈", "label": "Visible progress" },
+      { "emoji": "✅", "label": "Built-in tests" },
+      { "emoji": "🎓", "label": "Clear results" },
+      { "emoji": "📝", "label": "Lessons in place" }
+    ]
+  },
+  "proof": {
+    "eyebrow": "Why Formely",
+    "lines": ["Clear for admins.", "Simple for learners."],
+    "items": [
+      {
+        "value": "01",
+        "label": "One place",
+        "text": "Courses, learners, and progress — without scattered files and spreadsheets."
+      },
+      {
+        "value": "02",
+        "label": "Visible progress",
+        "text": "See who is advancing and where attention is needed, right in the platform."
+      },
+      {
+        "value": "03",
+        "label": "Simple start",
+        "text": "Start on the right plan and grow when your team needs it."
+      }
+    ]
   },
   "positioning": {
     "title": "Built for people who turn knowledge into progress.",
@@ -60,7 +93,7 @@
   },
   "how": {
     "eyebrow": "How it works",
-    "title": "From the first course to measurable progress, in one simple flow.",
+    "lines": ["From the first course", "to measurable progress,", "in one simple flow."],
     "steps": [
       {
         "num": "01",
@@ -77,11 +110,21 @@
         "title": "Track",
         "text": "See progress and results directly from the platform."
       }
-    ]
+    ],
+    "subtitle": "Three steps. One flow. No scattered tools.",
+    "scheme": {
+      "course": "Course",
+      "module": "Module",
+      "lesson": "Lesson",
+      "learners": "Learners",
+      "people": ["Emma", "James", "Sofia"],
+      "access": "Access",
+      "progress": "Progress"
+    }
   },
   "showcase": {
     "eyebrow": "Product",
-    "title": "Everything you need to make training a clear process.",
+    "lines": ["Everything you need", "to make training", "a clear process."],
     "items": [
       {
         "id": "courses",
@@ -106,87 +149,80 @@
     ]
   },
   "useCases": {
-    "title": "One Formely. Multiple ways to organize training.",
-    "subtitle": "From individual courses to team programs, Formely gives you a clear view of activity and progress.",
-    "tabs": [
-      {
-        "id": "corporate",
-        "label": "Companies",
-        "title": "Organize internal training",
-        "text": "Organize internal training and track your team's development from one place.",
-        "points": ["Team training", "Visible progress", "Clear administration"]
+    "lines": ["Multiple ways to", "organize training."],
+    "subtitle": "The same three plans. Here is who each one is for.",
+    "plans": {
+      "instructor": {
+        "title": "You teach. Formely organizes the rest.",
+        "text": "Turn your experience into a professional training program. You create the content, invite learners and follow their progress."
       },
-      {
-        "id": "academy",
-        "label": "Academies",
-        "title": "Manage courses and learners",
-        "text": "Manage courses, learners and progress without unnecessary manual work.",
-        "points": ["Structured courses", "Centralized progress", "Less manual work"]
+      "academie": {
+        "title": "The whole academy, on one platform",
+        "text": "Create programs, manage learners and track performance without spreadsheets and scattered tools."
       },
-      {
-        "id": "instructor",
-        "label": "Trainers",
-        "title": "Build training programs",
-        "text": "Build training programs and manage learners with less administrative work.",
-        "points": ["Clear programs", "Learner management", "Simple flow"]
+      "business": {
+        "title": "Training that grows with the team",
+        "text": "Onboarding, internal procedures or professional development — you build it once, and Formely helps you deliver the right training to each team."
       }
-    ]
+    }
   },
   "analytics": {
     "title": "Clearer for administrators. Simpler for learners.",
     "subtitle": "Formely removes unnecessary complexity from training, so your team can focus on learning instead of tools.",
     "metrics": [
-      { "label": "Learner progress" },
-      { "label": "Assessment results" },
-      { "label": "Course activity" },
-      { "label": "Clear team overview" }
+      {
+        "label": "Learner progress"
+      },
+      {
+        "label": "Assessment results"
+      },
+      {
+        "label": "Course activity"
+      },
+      {
+        "label": "Clear team overview"
+      }
     ]
   },
   "pricing": {
     "eyebrow": "Pricing",
-    "title": "Start simple. Grow when you need to.",
-    "subtitle": "Choose the plan that fits your number of active learners.",
+    "lines": ["Start simple.", "Grow when you need to."],
+    "subtitle": "Instructor and Academy follow learner count. Business is for organizations.",
     "recommended": "Recommended",
     "perMonth": "/ month",
     "from": "From",
-    "learners": "Up to {n} active learners",
-    "learnersUnlimited": "For more than 150 learners",
-    "staff": "up to {n} staff",
+    "launch": "−30% for the first 50 customers.",
+    "demo": "14-day free demo",
+    "listPrice": "List price",
+    "learners": "Up to {n} learners",
+    "learnersUnlimited": "Teams and organizations",
+    "staff": "{n} staff seats",
     "cta": "Get started",
+    "included": "Included",
+    "excluded": "Not included",
     "note": "Activation happens after confirmation — no public checkout.",
+    "features": {
+      "courses": "Courses, modules and lessons",
+      "tests": "Tests and progress",
+      "teams": "Teams and invites",
+      "library": "Digital library",
+      "events": "Events",
+      "analyst": "Analyst role"
+    },
     "plans": {
       "instructor": {
-        "name": "Instructor",
-        "features": [
-          "Courses, modules and lessons",
-          "Tests and progress",
-          "Teams and invites",
-          "Up to 50 active learners"
-        ]
+        "name": "Instructor"
       },
       "academie": {
-        "name": "Academy",
-        "features": [
-          "Everything in Instructor",
-          "Digital library",
-          "Events",
-          "Analyst role",
-          "Up to 150 active learners"
-        ]
+        "name": "Academy"
       },
       "business": {
-        "name": "Business",
-        "features": [
-          "Everything in Academy",
-          "Higher learner volume",
-          "More staff seats",
-          "For growing organizations"
-        ]
+        "name": "Business"
       }
     }
   },
   "why": {
-    "title": "Training without unnecessary complexity.",
+    "lines": ["Training without", "unnecessary complexity."],
     "subtitle": "The tools you need to organize team learning — in a clear platform that is easy to administer.",
     "items": [
       {
@@ -228,7 +264,11 @@
       },
       {
         "q": "How do I choose the right plan?",
-        "a": "Plans are differentiated mainly by the number of active learners. You can start with the plan that fits your team and move up as you grow."
+        "a": "Instructor and Academy differ by active learner count and by features: the library, events and analyst role are on Academy. Business is for teams and organizations, and the price depends on the number of users."
+      },
+      {
+        "q": "How do I get started?",
+        "a": "Tell us who you are and which plan you need. Activation happens after confirmation, with no public checkout."
       }
     ]
   },
@@ -250,7 +290,7 @@
     "consentRequired": "Please accept data processing to submit."
   },
   "finalCta": {
-    "title": "Team training can be simpler.",
+    "title": "Team training,\nsimpler and organized",
     "description": "Create, organize and track training from one place.",
     "cta": "Get started with Formely"
   },
@@ -272,6 +312,7 @@
   },
   "frames": {
     "browser": "formely.app",
+    "loading": "Formely",
     "navAdmin": "Admin",
     "navCourses": "Courses",
     "navTests": "Tests",

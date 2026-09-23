@@ -130,6 +130,18 @@ ul {
   max-width: 22ch;
 }
 
+.section-title-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.06em;
+  max-width: none;
+}
+
+.section-title-line {
+  display: block;
+  white-space: nowrap;
+}
+
 .section-sub {
   margin-top: 0.85rem;
   color: var(--fm-muted);

@@ -1,7 +1,7 @@
 {
   "seo": {
     "title": "Formely — Crea corsi. Sviluppa il tuo team. Monitora i progressi.",
-    "description": "Formely riunisce creazione dei corsi, gestione degli utenti e monitoraggio dei progressi in un'unica piattaforma — senza processi complicati o strumenti sparsi."
+    "description": "Formely riunisce il tutto dalla creazione dei corsi, gestione degli utenti ed il monitoraggio dei progressi in un'unica piattaforma — senza processi complicati o strumenti sparsi."
   },
   "nav": {
     "product": "Prodotto",
@@ -18,21 +18,54 @@
   },
   "hero": {
     "eyebrow": "La formazione del team, in un unico posto",
-    "lines": ["Crea corsi.", "Sviluppa il tuo team.", "Monitora i progressi."],
-    "sub": "Formely riunisce creazione dei corsi, gestione degli utenti e monitoraggio dei progressi in un'unica piattaforma — senza processi complicati o strumenti sparsi.",
+    "lines": [
+      "Crea corsi.",
+      "Sviluppa il tuo team.",
+      "Monitora i progressi."
+    ],
+    "sub": "Formely riunisce il tutto dalla creazione dei corsi, gestione degli utenti ed il monitoraggio dei progressi in un'unica piattaforma — senza processi complicati o strumenti sparsi.",
     "ctaPrimary": "Inizia con Formely",
-    "ctaSecondary": "Scopri la piattaforma"
+    "ctaSecondary": "Scopri la piattaforma",
+    "orbit": [
+      { "emoji": "📚", "label": "Corsi chiari" },
+      { "emoji": "👥", "label": "Team organizzati" },
+      { "emoji": "📈", "label": "Progressi visibili" },
+      { "emoji": "✅", "label": "Test integrati" },
+      { "emoji": "🎓", "label": "Risultati chiari" },
+      { "emoji": "📝", "label": "Lezioni in ordine" }
+    ]
+  },
+  "proof": {
+    "eyebrow": "Perché Formely",
+    "lines": ["Chiaro per gli admin.", "Semplice per i corsisti."],
+    "items": [
+      {
+        "value": "01",
+        "label": "Un solo posto",
+        "text": "Corsi, corsisti e progressi — senza file e fogli sparsi."
+      },
+      {
+        "value": "02",
+        "label": "Progressi visibili",
+        "text": "Vedi chi avanza e dove serve attenzione, direttamente nella piattaforma."
+      },
+      {
+        "value": "03",
+        "label": "Attivazione semplice",
+        "text": "Parti dal piano giusto e cresci quando il team ne ha bisogno."
+      }
+    ]
   },
   "positioning": {
     "title": "Pensato per chi trasforma la conoscenza in crescita.",
     "items": [
       {
         "title": "Aziende",
-        "text": "Organizza la formazione interna e monitora lo sviluppo del team da un unico posto."
+        "text": "Organizza la formazione interna e monitora lo sviluppo del team in un unico posto."
       },
       {
         "title": "Accademie",
-        "text": "Gestisci corsi, partecipanti e progressi riducendo il lavoro manuale."
+        "text": "Gestisci i corsi, i partecipanti ed i progressi del team riducendo il lavoro manuale."
       },
       {
         "title": "Formatori",
@@ -49,7 +82,7 @@
       },
       {
         "title": "Progressi difficili da seguire",
-        "text": "Senza una visione centralizzata, è difficile capire chi avanza e dove serve attenzione."
+        "text": "Senza una visione centralizzata, è difficile capire chi avanza e chi rimane indietro dal tuo team."
       },
       {
         "title": "Amministrazione inutile",
@@ -60,7 +93,7 @@
   },
   "how": {
     "eyebrow": "Come funziona",
-    "title": "Dal primo corso ai progressi, in un unico flusso.",
+    "lines": ["Dal primo corso", "ai progressi, in un", "unico flusso."],
     "steps": [
       {
         "num": "01",
@@ -75,13 +108,23 @@
       {
         "num": "03",
         "title": "Monitora",
-        "text": "Visualizza progressi e risultati direttamente dalla piattaforma."
+        "text": "Visualizza i progressi ed i risultati direttamente dalla piattaforma."
       }
-    ]
+    ],
+    "subtitle": "Tre passi. Un flusso. Niente strumenti sparsi.",
+    "scheme": {
+      "course": "Corso",
+      "module": "Modulo",
+      "lesson": "Lezione",
+      "learners": "Partecipanti",
+      "people": ["Giulia", "Marco", "Sofia"],
+      "access": "Accesso",
+      "progress": "Progressi"
+    }
   },
   "showcase": {
     "eyebrow": "Prodotto",
-    "title": "Tutto ciò che serve per rendere la formazione un processo chiaro.",
+    "lines": ["Tutto ciò che serve per", "rendere la formazione", "un processo chiaro."],
     "items": [
       {
         "id": "courses",
@@ -96,7 +139,7 @@
       {
         "id": "progress",
         "title": "Progressi chiari per ogni partecipante",
-        "text": "Controlla quanto ha completato ogni persona senza creare report manualmente."
+        "text": "Controlla i corsi completati, le lezioni in corso, il progresso di ogni persona senza creare report manualmente."
       },
       {
         "id": "library",
@@ -106,88 +149,81 @@
     ]
   },
   "useCases": {
-    "title": "Un solo Formely. Più modi di organizzare la formazione.",
-    "subtitle": "Dai corsi individuali ai programmi per team, Formely offre una visione chiara di attività e progressi.",
-    "tabs": [
-      {
-        "id": "corporate",
-        "label": "Aziende",
-        "title": "Organizza la formazione interna",
-        "text": "Organizza la formazione interna e monitora lo sviluppo del team da un unico posto.",
-        "points": ["Formazione per team", "Progressi visibili", "Gestione chiara"]
+    "lines": ["Più modi di organizzare", "la formazione."],
+    "subtitle": "Gli stessi tre piani. Ecco a chi è destinato ciascuno.",
+    "plans": {
+      "instructor": {
+        "title": "Tu insegni. Formely organizza il resto.",
+        "text": "Trasforma la tua esperienza in un programma di formazione professionale. Crei i contenuti, inviti i partecipanti e segui la loro evoluzione."
       },
-      {
-        "id": "academy",
-        "label": "Accademie",
-        "title": "Gestisci corsi e partecipanti",
-        "text": "Gestisci corsi, partecipanti e progressi riducendo il lavoro manuale.",
-        "points": ["Corsi strutturati", "Progressi centralizzati", "Meno lavoro manuale"]
+      "academie": {
+        "title": "Tutta l'accademia, su un'unica piattaforma",
+        "text": "Crei programmi, gestisci i partecipanti e segui le performance senza fogli Excel e strumenti sparsi."
       },
-      {
-        "id": "instructor",
-        "label": "Formatori",
-        "title": "Crea programmi di formazione",
-        "text": "Crea programmi di formazione e gestisci i partecipanti in modo più semplice.",
-        "points": ["Programmi chiari", "Gestione partecipanti", "Flusso semplice"]
+      "business": {
+        "title": "Formazione che cresce con il team",
+        "text": "Onboarding, procedure interne o sviluppo professionale: lo costruisci una volta, e Formely ti aiuta a consegnare la formazione giusta a ogni team."
       }
-    ]
+    }
   },
   "analytics": {
     "title": "Più chiaro per gli amministratori. Più semplice per chi impara.",
     "subtitle": "Formely elimina la complessità inutile dalla formazione, così il team può concentrarsi sull'apprendimento anziché sugli strumenti.",
     "metrics": [
-      { "label": "Progressi dei partecipanti" },
-      { "label": "Risultati delle valutazioni" },
-      { "label": "Attività sui corsi" },
-      { "label": "Visione chiara del team" }
+      {
+        "label": "Progressi dei partecipanti"
+      },
+      {
+        "label": "Risultati delle valutazioni"
+      },
+      {
+        "label": "Attività sui corsi"
+      },
+      {
+        "label": "Visione chiara del team"
+      }
     ]
   },
   "pricing": {
     "eyebrow": "Prezzi",
-    "title": "Inizia in modo semplice. Cresci quando ne hai bisogno.",
-    "subtitle": "Scegli il piano più adatto al numero di utenti attivi.",
+    "lines": ["Inizia in modo semplice.", "Cresci quando ne hai bisogno."],
+    "subtitle": "Instructor e Academy in base al numero di utenti. Business per le organizzazioni.",
     "recommended": "Consigliato",
     "perMonth": "/ mese",
     "from": "Da",
-    "learners": "Fino a {n} utenti attivi",
-    "learnersUnlimited": "Oltre 150 utenti",
-    "staff": "fino a {n} staff",
+    "launch": "−30% per i primi 50 clienti.",
+    "demo": "14 giorni di demo gratuita",
+    "listPrice": "Prezzo di listino",
+    "learners": "Fino a {n} utenti",
+    "learnersUnlimited": "Team e organizzazioni",
+    "staff": "{n} posti staff",
     "cta": "Inizia",
+    "included": "Incluso",
+    "excluded": "Non incluso",
     "note": "L'attivazione avviene dopo conferma — senza checkout pubblico.",
+    "features": {
+      "courses": "Corsi, moduli e lezioni",
+      "tests": "Test e progressi",
+      "teams": "Team e inviti",
+      "library": "Biblioteca digitale",
+      "events": "Eventi",
+      "analyst": "Ruolo analista"
+    },
     "plans": {
       "instructor": {
-        "name": "Instructor",
-        "features": [
-          "Corsi, moduli e lezioni",
-          "Test e progressi",
-          "Team e inviti",
-          "Fino a 50 utenti attivi"
-        ]
+        "name": "Instructor"
       },
       "academie": {
-        "name": "Academy",
-        "features": [
-          "Tutto di Instructor",
-          "Biblioteca digitale",
-          "Eventi",
-          "Ruolo analista",
-          "Fino a 150 utenti attivi"
-        ]
+        "name": "Academy"
       },
       "business": {
-        "name": "Business",
-        "features": [
-          "Tutto di Academy",
-          "Volume utenti più alto",
-          "Più posti staff",
-          "Per organizzazioni in crescita"
-        ]
+        "name": "Business"
       }
     }
   },
   "why": {
-    "title": "Formazione senza complessità inutile.",
-    "subtitle": "Gli strumenti necessari per organizzare l'apprendimento del team — in una piattaforma chiara e facile da amministrare.",
+    "lines": ["Formazione senza", "complessità inutile."],
+    "subtitle": "Gli strumenti necessari per organizzare l'apprendimento del team — in un'unica piattaforma chiara e facile da utilizzare e amministrare.",
     "items": [
       {
         "title": "Più chiaro per gli amministratori",
@@ -228,7 +264,11 @@
       },
       {
         "q": "Come scelgo il piano giusto?",
-        "a": "I piani si differenziano principalmente per il numero di utenti attivi. Puoi iniziare con il piano adatto al tuo team e passare a uno superiore man mano che cresci."
+        "a": "Instructor e Academy si differenziano per il numero di utenti attivi e per le funzioni: biblioteca, eventi e ruolo analista sono su Academy. Business è per team e organizzazioni, e il prezzo dipende dal numero di utenti."
+      },
+      {
+        "q": "Come inizio?",
+        "a": "Ci scrivi chi sei e quale piano ti interessa. L'attivazione avviene dopo la conferma, senza checkout pubblico."
       }
     ]
   },
@@ -250,7 +290,7 @@
     "consentRequired": "Seleziona il consenso al trattamento dei dati."
   },
   "finalCta": {
-    "title": "La formazione del tuo team può essere più semplice.",
+    "title": "La formazione del tuo team,\npiù semplice e organizzata",
     "description": "Crea, organizza e monitora la formazione da un unico posto.",
     "cta": "Inizia con Formely"
   },
@@ -272,6 +312,7 @@
   },
   "frames": {
     "browser": "formely.app",
+    "loading": "Formely",
     "navAdmin": "Admin",
     "navCourses": "Corsi",
     "navTests": "Test",

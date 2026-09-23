@@ -6,7 +6,6 @@ import LangSelect from './LangSelect';
 
 const LINKS = [
   { href: '/#produs', key: 'nav.product' },
-  { href: '/#solutii', key: 'nav.solutions' },
   { href: '/#cum-functioneaza', key: 'nav.how' },
   { href: '/#preturi', key: 'nav.pricing' },
   { href: '/#faq', key: 'nav.faq' },

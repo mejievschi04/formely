@@ -228,7 +228,7 @@ class SaasPlanEntitlementsTest extends TestCase
         $this->assertDatabaseHas('companies', [
             'slug' => 'academia-nord',
             'plan' => 'academie',
-            'max_active_learners' => 150,
+            'max_active_learners' => 250,
         ]);
     }
 

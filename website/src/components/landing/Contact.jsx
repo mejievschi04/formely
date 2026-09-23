@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useI18n } from '../../i18n/I18nContext';
 import { submitLead } from '../../lib/leads';
-import { planOrder, saasPlanCatalog } from '../../data/plans';
+import { planOrder } from '../../data/plans';
 
 export default function Contact() {
   const { t } = useI18n();
@@ -103,7 +103,6 @@ export default function Contact() {
                   {planOrder.map((id) => (
                     <option key={id} value={id}>
                       {t(`pricing.plans.${id}.name`)}
-                      {saasPlanCatalog[id].recommended ? ` · ${t('pricing.recommended')}` : ''}
                     </option>
                   ))}
                 </select>

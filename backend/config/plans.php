@@ -25,8 +25,8 @@ return [
 
     'academie' => [
         'label' => 'Academie',
-        'max_active_learners' => 150,
-        'max_staff' => 10,
+        'max_active_learners' => 250,
+        'max_staff' => 6,
         'features' => [
             'ai_creator' => false,
             'ai_builder' => false,
@@ -43,7 +43,7 @@ return [
     'business' => [
         'label' => 'Business',
         'max_active_learners' => null, // unlimited
-        'max_staff' => 50,
+        'max_staff' => 20,
         'features' => [
             'ai_creator' => true,
             'ai_builder' => true,

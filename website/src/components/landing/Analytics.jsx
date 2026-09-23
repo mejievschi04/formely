@@ -21,7 +21,7 @@ export default function Analytics() {
             ))}
           </ul>
           <div className="reveal">
-            <ProductUiFrame variant="analytics" />
+            <ProductUiFrame variant="track" />
           </div>
         </div>
       </div>

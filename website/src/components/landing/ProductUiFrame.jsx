@@ -2,19 +2,6 @@ import { useState } from 'react';
 import { useI18n } from '../../i18n/I18nContext';
 import { PRODUCT_SCREENS } from '../../data/productScreens';
 
-function Chrome({ label }) {
-  return (
-    <div className="ui-frame-chrome">
-      <div className="ui-dots" aria-hidden>
-        <i />
-        <i />
-        <i />
-      </div>
-      <div className="ui-url">{label}</div>
-    </div>
-  );
-}
-
 function Side({ active }) {
   const { t } = useI18n();
   const items = [
@@ -36,13 +23,24 @@ function Side({ active }) {
 }
 
 function Shell({ active, children }) {
-  const { t } = useI18n();
   return (
     <div className="ui-frame">
-      <Chrome label={t('frames.browser')} />
       <div className="ui-body">
         <Side active={active} />
         <div className="ui-main">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+export function FrameLoading() {
+  return (
+    <div className="ui-frame ui-frame--shot">
+      <div className="ui-frame-shot-wrap ui-frame-shot-wrap--loading">
+        <div className="ui-loading-mark" aria-hidden>
+          <img src="/logo.png" alt="" width={120} height={120} />
+          <span className="ui-loading-bar" />
+        </div>
       </div>
     </div>
   );
@@ -226,7 +224,11 @@ export function FrameAnalytics() {
 }
 
 const FRAME_MAP = {
+  loading: FrameLoading,
   dashboard: FrameDashboard,
+  create: FrameCourses,
+  assign: FramePeople,
+  track: FrameAnalytics,
   courses: FrameCourses,
   tests: FrameTests,
   progress: FrameProgress,
@@ -235,13 +237,12 @@ const FRAME_MAP = {
   analytics: FrameAnalytics,
 };
 
-function ProductShot({ screen, Fallback }) {
+function ProductShot({ screen, Fallback, compact, priority }) {
   const { t } = useI18n();
   const [failed, setFailed] = useState(false);
   if (failed) return <Fallback />;
   return (
-    <div className="ui-frame ui-frame--shot">
-      <Chrome label={screen.url || t('frames.browser')} />
+    <div className={`ui-frame ui-frame--shot ui-frame--bare${compact ? ' ui-frame--compact' : ''}`}>
       <div className="ui-frame-shot-wrap">
         <img
           className="ui-frame-shot"
@@ -249,7 +250,7 @@ function ProductShot({ screen, Fallback }) {
           alt={t(screen.altKey) || 'Formely'}
           width={1440}
           height={900}
-          loading="lazy"
+          loading={priority ? 'eager' : 'lazy'}
           decoding="async"
           onError={() => setFailed(true)}
         />
@@ -258,11 +259,22 @@ function ProductShot({ screen, Fallback }) {
   );
 }
 
-export default function ProductUiFrame({ variant = 'dashboard' }) {
+export default function ProductUiFrame({
+  variant = 'dashboard',
+  compact = false,
+  priority = false,
+}) {
   const screen = PRODUCT_SCREENS[variant];
   const Fallback = FRAME_MAP[variant] || FrameDashboard;
   if (screen?.src) {
-    return <ProductShot screen={screen} Fallback={Fallback} />;
+    return (
+      <ProductShot
+        screen={screen}
+        Fallback={Fallback}
+        compact={compact}
+        priority={priority}
+      />
+    );
   }
   return <Fallback />;
 }

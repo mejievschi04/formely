@@ -24,7 +24,7 @@ la conoscenza in crescita.
 
 AZIENDE
 Organizza la formazione interna e monitora lo sviluppo
-del team da un unico posto.
+del team in un unico posto.
 
 ACCADEMIE
 Gestisci corsi, partecipanti e progressi riducendo

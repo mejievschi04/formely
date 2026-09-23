@@ -1,53 +1,79 @@
 /**
- * Real product screens for the marketing site.
- * Files live in website/public/screens/*.webp (or .png).
- * Capture from academy.formely.org (admin dark theme, sample data, no PII).
+ * Marketing product screens — one visual per copy block.
+ * Files in website/public/screens/*.webp
+ *
+ * Hero          → loading (splash + logo)
+ * How 01 Creezi → create (course maps / structure)
+ * How 02 Atribui → assign (users & access)
+ * How 03 Urmărești → track (progress per learner)
+ * Showcase      → create / tests / track / library
+ * Use cases     → assign / create / track
+ * Analytics     → track
  */
 export const PRODUCT_SCREENS = {
-  dashboard: {
-    src: '/screens/dashboard.webp',
-    url: 'academy.formely.org/admin',
-    altKey: 'frames.dashboardTitle',
+  loading: {
+    src: '/screens/loading.webp',
+    url: 'academy.formely.org',
+    altKey: 'frames.loading',
   },
-  courses: {
-    src: '/screens/courses.webp',
-    url: 'academy.formely.org/admin/courses',
+  create: {
+    src: '/screens/create.webp',
+    url: 'academy.formely.org/admin/content',
     altKey: 'frames.courseBuilder',
+  },
+  assign: {
+    src: '/screens/assign.webp',
+    url: 'academy.formely.org/admin/users',
+    altKey: 'frames.navUsers',
+  },
+  track: {
+    src: '/screens/track.webp',
+    url: 'academy.formely.org/admin/statistics',
+    altKey: 'frames.progress',
   },
   tests: {
     src: '/screens/tests.webp',
     url: 'academy.formely.org/admin/question-banks',
     altKey: 'frames.test',
   },
-  progress: {
-    src: '/screens/progress.webp',
-    url: 'academy.formely.org/courses',
-    altKey: 'frames.progress',
-  },
-  people: {
-    src: '/screens/people.webp',
-    url: 'academy.formely.org/admin/users',
-    altKey: 'frames.navUsers',
-  },
   library: {
     src: '/screens/library.webp',
     url: 'academy.formely.org/library',
     altKey: 'frames.library',
   },
+  // Back-compat aliases used by older call sites
+  dashboard: {
+    src: '/screens/loading.webp',
+    url: 'academy.formely.org',
+    altKey: 'frames.loading',
+  },
+  courses: {
+    src: '/screens/create.webp',
+    url: 'academy.formely.org/admin/content',
+    altKey: 'frames.courseBuilder',
+  },
+  people: {
+    src: '/screens/assign.webp',
+    url: 'academy.formely.org/admin/users',
+    altKey: 'frames.navUsers',
+  },
+  progress: {
+    src: '/screens/track.webp',
+    url: 'academy.formely.org/admin/statistics',
+    altKey: 'frames.progress',
+  },
   analytics: {
-    src: '/screens/analytics.webp',
+    src: '/screens/track.webp',
     url: 'academy.formely.org/admin/statistics',
     altKey: 'frames.navStats',
   },
 };
 
-/** Which LMS route to capture for each marketing slot */
 export const SCREEN_CAPTURE_PLAN = [
-  { id: 'dashboard', path: '/admin', note: 'Hero — panou admin KPI' },
-  { id: 'courses', path: '/admin/content?tab=courses&view=maps', note: 'Showcase / How — mape + builder context; prefer open builder if possible' },
-  { id: 'tests', path: '/admin/question-banks', note: 'Showcase — bănci / teste' },
-  { id: 'progress', path: '/courses', note: 'Showcase / How / Use cases — elev: cursuri + progres' },
-  { id: 'people', path: '/admin/users', note: 'How / Use cases — utilizatori & invitații' },
-  { id: 'library', path: '/library', note: 'Showcase — bibliotecă' },
-  { id: 'analytics', path: '/admin/statistics', note: 'Analytics section — hub statistici' },
+  { id: 'loading', path: 'splash', note: 'Hero — ecran loading cu logo Formely' },
+  { id: 'create', path: '/admin/content?tab=courses&view=maps → open map', note: 'Creezi / Showcase cursuri — mape + cursuri' },
+  { id: 'assign', path: '/admin/users', note: 'Atribui / Use case companii — utilizatori & acces' },
+  { id: 'track', path: '/admin/statistics', note: 'Urmărești / Progres / Analytics — raport progres elevi' },
+  { id: 'tests', path: '/admin/question-banks', note: 'Showcase teste — bănci de întrebări' },
+  { id: 'library', path: '/library', note: 'Showcase bibliotecă' },
 ];

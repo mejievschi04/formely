@@ -59,8 +59,8 @@ export default function ClientsPage() {
       ? plans
       : [
         { id: 'instructor', label: 'Instructor', max_active_learners: 50, max_staff: 2 },
-        { id: 'academie', label: 'Academie', max_active_learners: 150, max_staff: 10 },
-        { id: 'business', label: 'Business', max_active_learners: null, max_staff: 50 },
+        { id: 'academie', label: 'Academie', max_active_learners: 250, max_staff: 6 },
+        { id: 'business', label: 'Business', max_active_learners: null, max_staff: 20 },
       ]),
     [plans],
   );

@@ -1,0 +1,1 @@
+import{j as r}from"./index-CBickAzg.js";import{n as a,s as l}from"./richTextContent-BzLgR73K.js";function x({html:n,className:e,as:s="div",fallback:i=null}){const t=a(n);if(!l(t))return i;const o=["rte-content",e].filter(Boolean).join(" ");return r.jsx(s,{className:o,dangerouslySetInnerHTML:{__html:t}})}export{x as R};

@@ -18,10 +18,43 @@
   },
   "hero": {
     "eyebrow": "Trainingul echipei, într-un singur loc",
-    "lines": ["Creează cursuri.", "Dezvoltă echipe.", "Urmărește progresul."],
+    "lines": [
+      "Creează cursuri.",
+      "Dezvoltă echipe.",
+      "Urmărește progresul."
+    ],
     "sub": "Formely îți oferă un singur loc pentru a crea cursuri, organiza cursanții și urmări progresul lor — fără procese complicate și instrumente împrăștiate.",
     "ctaPrimary": "Începe cu Formely",
-    "ctaSecondary": "Descoperă platforma"
+    "ctaSecondary": "Descoperă platforma",
+    "orbit": [
+      { "emoji": "📚", "label": "Cursuri clare" },
+      { "emoji": "👥", "label": "Echipe organizate" },
+      { "emoji": "📈", "label": "Progres vizibil" },
+      { "emoji": "✅", "label": "Teste integrate" },
+      { "emoji": "🎓", "label": "Rezultate clare" },
+      { "emoji": "📝", "label": "Lecții la loc" }
+    ]
+  },
+  "proof": {
+    "eyebrow": "De ce Formely",
+    "lines": ["Clar pentru administratori.", "Simplu pentru cursanți."],
+    "items": [
+      {
+        "value": "01",
+        "label": "Un singur loc",
+        "text": "Cursuri, cursanți și progres — fără fișiere și tabele împrăștiate."
+      },
+      {
+        "value": "02",
+        "label": "Progres vizibil",
+        "text": "Vezi cine avansează și unde e nevoie de atenție, direct din platformă."
+      },
+      {
+        "value": "03",
+        "label": "Activare simplă",
+        "text": "Începi pe planul potrivit și crești când echipa are nevoie."
+      }
+    ]
   },
   "positioning": {
     "title": "Creat pentru cei care transformă cunoștințele în progres.",
@@ -60,7 +93,7 @@
   },
   "how": {
     "eyebrow": "Cum funcționează",
-    "title": "De la primul curs la progres, într-un singur flux.",
+    "lines": ["De la primul curs", "la progres, într-un", "singur flux."],
     "steps": [
       {
         "num": "01",
@@ -77,11 +110,21 @@
         "title": "Urmărești",
         "text": "Vezi progresul și rezultatele direct din platformă."
       }
-    ]
+    ],
+    "subtitle": "Trei pași. Un flux. Fără instrumente împrăștiate.",
+    "scheme": {
+      "course": "Curs",
+      "module": "Modul",
+      "lesson": "Lecție",
+      "learners": "Cursanți",
+      "people": ["Ana", "Ion", "Maria"],
+      "access": "Acces",
+      "progress": "Progres"
+    }
   },
   "showcase": {
     "eyebrow": "Produs",
-    "title": "Tot ce ai nevoie pentru a transforma trainingul într-un proces clar.",
+    "lines": ["Tot ce ai nevoie pentru", "a transforma trainingul", "într-un proces clar."],
     "items": [
       {
         "id": "courses",
@@ -106,87 +149,80 @@
     ]
   },
   "useCases": {
-    "title": "Un singur Formely. Mai multe moduri de a organiza trainingul.",
-    "subtitle": "De la cursuri individuale până la programe pentru echipe, Formely îți oferă o imagine clară asupra activității și progresului.",
-    "tabs": [
-      {
-        "id": "corporate",
-        "label": "Companii",
-        "title": "Organizează trainingul intern",
-        "text": "Organizează trainingul intern și urmărește dezvoltarea echipei într-un singur loc.",
-        "points": ["Training pe echipe", "Progres vizibil", "Administrare clară"]
+    "lines": ["Mai multe moduri de a", "organiza trainingul."],
+    "subtitle": "Aceleași trei planuri. Iată pentru cine e fiecare.",
+    "plans": {
+      "instructor": {
+        "title": "Tu predai. Formely organizează restul.",
+        "text": "Transformă-ți experiența într-un program de training profesionist. Creezi conținutul, inviți cursanții și urmărești evoluția lor."
       },
-      {
-        "id": "academy",
-        "label": "Academii",
-        "title": "Administrează cursuri și cursanți",
-        "text": "Administrează cursuri, cursanți și progres fără procese manuale inutile.",
-        "points": ["Cursuri structurate", "Progres centralizat", "Mai puțină muncă manuală"]
+      "academie": {
+        "title": "Toată academia, într-o singură platformă",
+        "text": "Creezi programe, gestionezi cursanții și urmărești performanța fără foi Excel și instrumente împrăștiate."
       },
-      {
-        "id": "instructor",
-        "label": "Traineri",
-        "title": "Construiește programe de training",
-        "text": "Construiește programe de training și gestionează cursanții mai simplu.",
-        "points": ["Programe clare", "Gestionare cursanți", "Flux simplu"]
+      "business": {
+        "title": "Training care crește odată cu echipa",
+        "text": "Onboarding, proceduri interne sau dezvoltare profesională — construiești o singură dată, iar Formely te ajută să livrezi trainingul potrivit fiecărei echipe."
       }
-    ]
+    }
   },
   "analytics": {
     "title": "Mai clar pentru administratori. Mai simplu pentru cursanți.",
     "subtitle": "Formely reduce complexitatea din jurul trainingului, astfel încât echipa să se poată concentra pe învățare, nu pe instrumente.",
     "metrics": [
-      { "label": "Progres pe cursant" },
-      { "label": "Rezultate evaluări" },
-      { "label": "Activitate pe cursuri" },
-      { "label": "Imagine clară asupra echipei" }
+      {
+        "label": "Progres pe cursant"
+      },
+      {
+        "label": "Rezultate evaluări"
+      },
+      {
+        "label": "Activitate pe cursuri"
+      },
+      {
+        "label": "Imagine clară asupra echipei"
+      }
     ]
   },
   "pricing": {
     "eyebrow": "Prețuri",
-    "title": "Începe simplu. Crește când ai nevoie.",
-    "subtitle": "Alege planul potrivit pentru numărul de cursanți activi.",
+    "lines": ["Începe simplu.", "Crește când ai nevoie."],
+    "subtitle": "Instructor și Academie după numărul de cursanți. Business pentru organizații.",
     "recommended": "Recomandat",
     "perMonth": "/ lună",
     "from": "De la",
-    "learners": "Până la {n} de cursanți activi",
-    "learnersUnlimited": "Pentru peste 150 de cursanți",
-    "staff": "până la {n} staff",
+    "launch": "−30% pentru primii 50 de clienți.",
+    "demo": "14 zile demo gratuit",
+    "listPrice": "Preț de listă",
+    "learners": "Până la {n} cursanți",
+    "learnersUnlimited": "Echipe și organizații",
+    "staff": "{n} locuri staff",
     "cta": "Începe",
+    "included": "Inclus",
+    "excluded": "Nu este inclus",
     "note": "Activarea se face după confirmare — fără checkout public.",
+    "features": {
+      "courses": "Cursuri, module și lecții",
+      "tests": "Teste și progres",
+      "teams": "Echipe și invitații",
+      "library": "Bibliotecă digitală",
+      "events": "Evenimente",
+      "analyst": "Rol analist"
+    },
     "plans": {
       "instructor": {
-        "name": "Instructor",
-        "features": [
-          "Cursuri, module și lecții",
-          "Teste și progres",
-          "Echipe și invitații",
-          "Până la 50 de cursanți activi"
-        ]
+        "name": "Instructor"
       },
       "academie": {
-        "name": "Academie",
-        "features": [
-          "Tot din Instructor",
-          "Bibliotecă digitală",
-          "Evenimente",
-          "Rol analist",
-          "Până la 150 de cursanți activi"
-        ]
+        "name": "Academie"
       },
       "business": {
-        "name": "Business",
-        "features": [
-          "Tot din Academie",
-          "Volum mai mare de cursanți",
-          "Mai multe locuri staff",
-          "Pentru organizații în creștere"
-        ]
+        "name": "Business"
       }
     }
   },
   "why": {
-    "title": "Training fără complexitate inutilă.",
+    "lines": ["Training fără", "complexitate inutilă."],
     "subtitle": "Instrumentele de care ai nevoie pentru a organiza învățarea echipei — într-o platformă clară și ușor de administrat.",
     "items": [
       {
@@ -228,7 +264,11 @@
       },
       {
         "q": "Cum aleg planul potrivit?",
-        "a": "Planurile sunt diferențiate în principal după numărul de cursanți activi. Poți începe cu planul potrivit echipei tale și trece la unul superior pe măsură ce crești."
+        "a": "Instructor și Academie diferă după numărul de cursanți activi și după funcții: biblioteca, evenimentele și rolul de analist sunt pe Academie. Business e pentru echipe și organizații, iar prețul se stabilește după numărul de utilizatori."
+      },
+      {
+        "q": "Cum încep?",
+        "a": "Ne scrii cine ești și ce plan te interesează. Activarea se face după confirmare, fără checkout public."
       }
     ]
   },
@@ -250,7 +290,7 @@
     "consentRequired": "Bifează acordul pentru prelucrarea datelor."
   },
   "finalCta": {
-    "title": "Trainingul echipei tale poate fi mai simplu.",
+    "title": "Trainingul echipei tale\nmai simplu, organizat",
     "description": "Creează, organizează și urmărește trainingul dintr-un singur loc.",
     "cta": "Începe cu Formely"
   },
@@ -272,6 +312,7 @@
   },
   "frames": {
     "browser": "formely.app",
+    "loading": "Formely",
     "navAdmin": "Admin",
     "navCourses": "Cursuri",
     "navTests": "Teste",
