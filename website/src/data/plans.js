@@ -36,6 +36,17 @@ export function launchPrice(listPrice) {
   return Math.round(listPrice * (1 - launchOffer.percent / 100));
 }
 
+/** Plata anuală e cu 10% mai mică decât 12 luni la prețul lunar de lansare. */
+export const annualDiscount = 10;
+
+export function annualPrice(monthlyPrice) {
+  return Math.round(monthlyPrice * 12 * (1 - annualDiscount / 100));
+}
+
+export function annualSavings(monthlyPrice) {
+  return monthlyPrice * 12 - annualPrice(monthlyPrice);
+}
+
 /** Aceeași listă pe fiecare plan. Business e setul complet. */
 export const planFeatureOrder = [
   'courses',

@@ -46,6 +46,12 @@ function LeadDrawer({ lead, open, onClose, onConvert, onStatus }) {
               {lead.name}
               <br />
               <a href={`mailto:${lead.email}`}>{lead.email}</a>
+              {lead.phone ? (
+                <>
+                  <br />
+                  <a href={`tel:${lead.phone}`}>{lead.phone}</a>
+                </>
+              ) : null}
             </dd>
           </div>
           <div>
@@ -61,9 +67,15 @@ function LeadDrawer({ lead, open, onClose, onConvert, onStatus }) {
             <dd>{leadReason(lead) || '—'}</dd>
           </div>
           <div>
-            <dt>Mesaj</dt>
-            <dd className="bo-drawer__message">{lead.message || '—'}</dd>
+            <dt>Telefon</dt>
+            <dd>{lead.phone ? <a href={`tel:${lead.phone}`}>{lead.phone}</a> : '—'}</dd>
           </div>
+          {lead.message ? (
+            <div>
+              <dt>Mesaj</dt>
+              <dd className="bo-drawer__message">{lead.message}</dd>
+            </div>
+          ) : null}
           <div>
             <dt>Sursă</dt>
             <dd>{leadSource(lead)}</dd>
@@ -188,7 +200,7 @@ export default function LeadsPage() {
       status: 'trial',
       owner_email: lead.email || '',
       owner_name: lead.name || '',
-      notes: [lead.reason, lead.message].filter(Boolean).join('\n'),
+      notes: [lead.reason, lead.phone ? `Telefon: ${lead.phone}` : null, lead.message].filter(Boolean).join('\n'),
     });
   }, []);
 
@@ -408,7 +420,7 @@ export default function LeadsPage() {
                     </td>
                     <td>
                       <strong>{lead.company_name || lead.name}</strong>
-                      <div className="bo-muted">{lead.message || leadReason(lead) || '—'}</div>
+                      <div className="bo-muted">{lead.phone || lead.message || leadReason(lead) || '—'}</div>
                       {lead.company_id ? (
                         <div className="bo-muted">
                           <Link to={`/clients/${lead.company_id}`} onClick={(e) => e.stopPropagation()}>

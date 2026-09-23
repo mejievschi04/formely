@@ -27,12 +27,12 @@
     "ctaPrimary": "Începe cu Formely",
     "ctaSecondary": "Descoperă platforma",
     "orbit": [
-      { "emoji": "📚", "label": "Cursuri clare" },
-      { "emoji": "👥", "label": "Echipe organizate" },
-      { "emoji": "📈", "label": "Progres vizibil" },
-      { "emoji": "✅", "label": "Teste integrate" },
-      { "emoji": "🎓", "label": "Rezultate clare" },
-      { "emoji": "📝", "label": "Lecții la loc" }
+      { "emoji": "📚", "label": "Creează cursuri" },
+      { "emoji": "👥", "label": "Gestionează echipa" },
+      { "emoji": "📈", "label": "Urmărește progresul" },
+      { "emoji": "✅", "label": "Evaluează cunoștințele" },
+      { "emoji": "📝", "label": "Organizează conținutul" },
+      { "emoji": "🎓", "label": "Măsoară rezultatele" }
     ]
   },
   "proof": {
@@ -190,6 +190,12 @@
     "subtitle": "Instructor și Academie după numărul de cursanți. Business pentru organizații.",
     "recommended": "Recomandat",
     "perMonth": "/ lună",
+    "perYear": "/ an",
+    "monthly": "Lunar",
+    "yearly": "Anual",
+    "billing": "Facturare",
+    "yearAtMonthly": "Un an la preț lunar",
+    "save": "Economisești €{n} pe an",
     "from": "De la",
     "launch": "−30% pentru primii 50 de clienți.",
     "demo": "14 zile demo gratuit",
@@ -279,7 +285,8 @@
     "email": "Email",
     "org": "Organizație",
     "plan": "Plan de interes",
-    "message": "Mesaj (opțional)",
+    "phone": "Telefon",
+    "countryCode": "Cod de țară",
     "submit": "Trimite cererea",
     "sending": "Se trimite…",
     "success": "Cererea a fost trimisă. Te contactăm în curând.",
@@ -362,7 +369,7 @@
       {
         "title": "Ce date colectăm pe site",
         "paragraphs": [
-          "Din formular: nume, email, organizație, planul de interes și mesajul, dacă îl scrii.",
+          "Din formular: nume, email, telefon, organizație și planul de interes.",
           "Salvăm și momentul consimțământului plus adresa IP, ca să putem arăta că cererea a fost trimisă de bunăvoie și ca să limităm abuzul.",
           "Serverul poate păstra jurnale tehnice scurte: adresă IP, tip de browser, pagină accesată și oră, pentru securitate.",
           "Limba aleasă rămâne doar în browser (localStorage). Nu o trimitem către server."

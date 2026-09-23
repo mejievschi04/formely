@@ -16,6 +16,7 @@ class LeadController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
+            'phone' => 'nullable|string|max:40',
             'company_name' => 'nullable|string|max:255',
             'reason' => 'nullable|string|max:64',
             'plan_interest' => 'nullable|in:instructor,academie,business',
@@ -29,6 +30,7 @@ class LeadController extends Controller
         $lead = Lead::create([
             'name' => strip_tags($validated['name']),
             'email' => strtolower(trim($validated['email'])),
+            'phone' => isset($validated['phone']) ? trim(strip_tags($validated['phone'])) : null,
             'company_name' => isset($validated['company_name']) ? strip_tags($validated['company_name']) : null,
             'reason' => $validated['reason'] ?? 'oferta',
             'plan_interest' => $validated['plan_interest'] ?? null,
@@ -45,10 +47,11 @@ class LeadController extends Controller
                 $body = "Lead nou Formely\n\n"
                     . "Nume: {$lead->name}\n"
                     . "Email: {$lead->email}\n"
+                    . "Telefon: ".($lead->phone ?: '—')."\n"
                     . "Companie: ".($lead->company_name ?: '—')."\n"
                     . "Motiv: ".($lead->reason ?: '—')."\n"
                     . "Plan: ".($lead->plan_interest ?: '—')."\n"
-                    . "Mesaj:\n".($lead->message ?: '—')."\n";
+                    . ($lead->message ? "Mesaj:\n{$lead->message}\n" : '');
 
                 Mail::to($notify)->queue(new UserNotificationMail(
                     'Lead nou: '.$lead->name,

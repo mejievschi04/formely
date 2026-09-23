@@ -27,12 +27,12 @@
     "ctaPrimary": "Inizia con Formely",
     "ctaSecondary": "Scopri la piattaforma",
     "orbit": [
-      { "emoji": "📚", "label": "Corsi chiari" },
-      { "emoji": "👥", "label": "Team organizzati" },
-      { "emoji": "📈", "label": "Progressi visibili" },
-      { "emoji": "✅", "label": "Test integrati" },
-      { "emoji": "🎓", "label": "Risultati chiari" },
-      { "emoji": "📝", "label": "Lezioni in ordine" }
+      { "emoji": "📚", "label": "Crea corsi" },
+      { "emoji": "👥", "label": "Gestisci il team" },
+      { "emoji": "📈", "label": "Monitora i progressi" },
+      { "emoji": "✅", "label": "Valuta le conoscenze" },
+      { "emoji": "📝", "label": "Organizza i contenuti" },
+      { "emoji": "🎓", "label": "Misura i risultati" }
     ]
   },
   "proof": {
@@ -190,6 +190,12 @@
     "subtitle": "Instructor e Academy in base al numero di utenti. Business per le organizzazioni.",
     "recommended": "Consigliato",
     "perMonth": "/ mese",
+    "perYear": "/ anno",
+    "monthly": "Mensile",
+    "yearly": "Annuale",
+    "billing": "Fatturazione",
+    "yearAtMonthly": "Un anno al prezzo mensile",
+    "save": "Risparmi €{n} all'anno",
     "from": "Da",
     "launch": "−30% per i primi 50 clienti.",
     "demo": "14 giorni di demo gratuita",
@@ -279,7 +285,8 @@
     "email": "Email",
     "org": "Organizzazione",
     "plan": "Piano di interesse",
-    "message": "Messaggio (opzionale)",
+    "phone": "Telefono",
+    "countryCode": "Prefisso",
     "submit": "Invia richiesta",
     "sending": "Invio…",
     "success": "Richiesta inviata. Ti contatteremo presto.",
@@ -362,7 +369,7 @@
       {
         "title": "Quali dati raccogliamo sul sito",
         "paragraphs": [
-          "Dal modulo: nome, email, organizzazione, piano di interesse e il messaggio, se lo scrivi.",
+          "Dal modulo: nome, email, telefono, organizzazione e piano di interesse.",
           "Salviamo anche il momento del consenso e l’indirizzo IP, per mostrare che la richiesta è stata inviata volontariamente e per limitare gli abusi.",
           "Il server può conservare brevi log tecnici: IP, tipo di browser, pagina e ora, per sicurezza.",
           "La lingua scelta resta nel browser (localStorage). Non la inviamo al server."

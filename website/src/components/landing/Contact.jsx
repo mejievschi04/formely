@@ -4,16 +4,38 @@ import { useI18n } from '../../i18n/I18nContext';
 import { submitLead } from '../../lib/leads';
 import { planOrder } from '../../data/plans';
 
+const COUNTRY_CODES = [
+  { iso: 'RO', dial: '+40', flag: '🇷🇴' },
+  { iso: 'IT', dial: '+39', flag: '🇮🇹' },
+  { iso: 'RU', dial: '+7', flag: '🇷🇺' },
+  { iso: 'MD', dial: '+373', flag: '🇲🇩' },
+  { iso: 'UA', dial: '+380', flag: '🇺🇦' },
+  { iso: 'DE', dial: '+49', flag: '🇩🇪' },
+  { iso: 'FR', dial: '+33', flag: '🇫🇷' },
+  { iso: 'ES', dial: '+34', flag: '🇪🇸' },
+  { iso: 'GB', dial: '+44', flag: '🇬🇧' },
+  { iso: 'US', dial: '+1', flag: '🇺🇸' },
+  { iso: 'AT', dial: '+43', flag: '🇦🇹' },
+  { iso: 'BE', dial: '+32', flag: '🇧🇪' },
+  { iso: 'CH', dial: '+41', flag: '🇨🇭' },
+  { iso: 'NL', dial: '+31', flag: '🇳🇱' },
+  { iso: 'PL', dial: '+48', flag: '🇵🇱' },
+];
+
+const DIAL_BY_LANG = { ro: 'RO', it: 'IT', ru: 'RU', en: 'RO' };
+
 export default function Contact() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [searchParams] = useSearchParams();
   const planFromUrl = searchParams.get('plan') || '';
+  const [dialIso, setDialIso] = useState(DIAL_BY_LANG[lang] || 'RO');
+  const [dialTouched, setDialTouched] = useState(false);
   const [form, setForm] = useState({
     name: '',
     email: '',
     org: '',
     plan_interest: planOrder.includes(planFromUrl) ? planFromUrl : 'academie',
-    msg: '',
+    phone: '',
     privacy_accepted: false,
   });
   const [submitting, setSubmitting] = useState(false);
@@ -25,6 +47,12 @@ export default function Contact() {
       setForm((prev) => ({ ...prev, plan_interest: planFromUrl }));
     }
   }, [planFromUrl]);
+
+  useEffect(() => {
+    if (!dialTouched) setDialIso(DIAL_BY_LANG[lang] || 'RO');
+  }, [lang, dialTouched]);
+
+  const dial = COUNTRY_CODES.find((item) => item.iso === dialIso) || COUNTRY_CODES[0];
 
   const update = (field) => (e) => setForm({ ...form, [field]: e.target.value });
   const updateChecked = (field) => (e) => setForm({ ...form, [field]: e.target.checked });
@@ -43,7 +71,7 @@ export default function Contact() {
         email: form.email,
         company_name: form.org,
         plan_interest: form.plan_interest,
-        message: form.msg,
+        phone: `${dial.dial} ${form.phone.trim()}`,
         source: 'website-landing',
         privacy_accepted: true,
       });
@@ -94,8 +122,36 @@ export default function Contact() {
             </div>
             <div className="contact-form-row">
               <div className="field">
-                <label htmlFor="lead-org">{t('contact.org')}</label>
-                <input id="lead-org" required value={form.org} onChange={update('org')} />
+                <label htmlFor="lead-phone">{t('contact.phone')}</label>
+                <div className="phone-field">
+                  <div className="phone-code">
+                    <span className="phone-flag" aria-hidden="true">{dial.flag}</span>
+                    <select
+                      aria-label={t('contact.countryCode')}
+                      value={dial.iso}
+                      onChange={(e) => {
+                        setDialTouched(true);
+                        setDialIso(e.target.value);
+                      }}
+                    >
+                      {COUNTRY_CODES.map((item) => (
+                        <option key={item.iso} value={item.iso}>
+                          {item.flag} {item.iso} {item.dial}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="phone-dial" aria-hidden="true">{dial.dial}</span>
+                  </div>
+                  <input
+                    id="lead-phone"
+                    type="tel"
+                    required
+                    autoComplete="tel-national"
+                    inputMode="tel"
+                    value={form.phone}
+                    onChange={update('phone')}
+                  />
+                </div>
               </div>
               <div className="field">
                 <label htmlFor="lead-plan">{t('contact.plan')}</label>
@@ -109,8 +165,8 @@ export default function Contact() {
               </div>
             </div>
             <div className="field">
-              <label htmlFor="lead-msg">{t('contact.message')}</label>
-              <textarea id="lead-msg" value={form.msg} onChange={update('msg')} />
+              <label htmlFor="lead-org">{t('contact.org')}</label>
+              <input id="lead-org" required value={form.org} onChange={update('org')} />
             </div>
             <div className="field field-consent">
               <label htmlFor="lead-consent" className="consent-label">

@@ -10,6 +10,7 @@ class Lead extends Model
     protected $fillable = [
         'name',
         'email',
+        'phone',
         'company_name',
         'reason',
         'plan_interest',
@@ -44,6 +45,7 @@ class Lead extends Model
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
+            'phone' => $this->phone,
             'company_name' => $this->company_name,
             'reason' => $this->reason,
             'plan_interest' => $this->plan_interest,

@@ -27,12 +27,12 @@
     "ctaPrimary": "Get started with Formely",
     "ctaSecondary": "Explore the platform",
     "orbit": [
-      { "emoji": "📚", "label": "Clear courses" },
-      { "emoji": "👥", "label": "Organized teams" },
-      { "emoji": "📈", "label": "Visible progress" },
-      { "emoji": "✅", "label": "Built-in tests" },
-      { "emoji": "🎓", "label": "Clear results" },
-      { "emoji": "📝", "label": "Lessons in place" }
+      { "emoji": "📚", "label": "Create courses" },
+      { "emoji": "👥", "label": "Manage the team" },
+      { "emoji": "📈", "label": "Track progress" },
+      { "emoji": "✅", "label": "Assess knowledge" },
+      { "emoji": "📝", "label": "Organize content" },
+      { "emoji": "🎓", "label": "Measure results" }
     ]
   },
   "proof": {
@@ -190,6 +190,12 @@
     "subtitle": "Instructor and Academy follow learner count. Business is for organizations.",
     "recommended": "Recommended",
     "perMonth": "/ month",
+    "perYear": "/ year",
+    "monthly": "Monthly",
+    "yearly": "Annual",
+    "billing": "Billing",
+    "yearAtMonthly": "A year at the monthly price",
+    "save": "You save €{n} a year",
     "from": "From",
     "launch": "−30% for the first 50 customers.",
     "demo": "14-day free demo",
@@ -279,7 +285,8 @@
     "email": "Email",
     "org": "Organization",
     "plan": "Plan of interest",
-    "message": "Message (optional)",
+    "phone": "Phone",
+    "countryCode": "Country code",
     "submit": "Submit request",
     "sending": "Sending…",
     "success": "Request sent. We will contact you soon.",
@@ -362,7 +369,7 @@
       {
         "title": "What we collect on the site",
         "paragraphs": [
-          "From the form: name, email, organization, plan of interest, and your message if you write one.",
+          "From the form: name, email, phone, organization, and plan of interest.",
           "We also store the time of consent and the IP address, so we can show the request was sent voluntarily and to limit abuse.",
           "The server may keep short technical logs: IP address, browser type, page, and time, for security.",
           "Your language choice stays in the browser (localStorage). We do not send it to the server."

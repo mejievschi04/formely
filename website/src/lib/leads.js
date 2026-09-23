@@ -19,10 +19,10 @@ export async function submitLead(payload) {
     body: JSON.stringify({
       name: payload.name,
       email: payload.email,
+      phone: payload.phone || null,
       company_name: payload.company_name || null,
       reason: payload.reason || 'oferta',
       plan_interest: payload.plan_interest || null,
-      message: payload.message || null,
       source: payload.source || 'website',
       privacy_accepted: payload.privacy_accepted === true || payload.privacy_accepted === 1 || payload.privacy_accepted === '1' || payload.privacy_accepted === 'true' || payload.privacy_accepted === 'on',
     }),
