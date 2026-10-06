@@ -1,7 +1,7 @@
 /*
  * Single control style for the app.
  * Surface: elevated background, secondary border, 40px, shared radius.
- * Primary and selected: brand yellow, dark text, same shape.
+ * Primary and selected: Formely blue, white text, same shape.
  * No lift and no offset shadow.
  *
  * Butonul principal are o singură clasă: .lms-btn-primary. Clasele proprii ale componentelor
@@ -52,19 +52,8 @@ html body :is(
 
 /*
  * Tema întunecată: dark-theme.css forțează culoarea pe orice p/span/div/label (text deschis)
- * și pe orice link (galben), cu specificitate mai mare decât regulile de mai sus. Pe butoanele
- * galbene asta dădea text alb sau galben pe galben; aici textul rămâne cel definit pentru buton.
- */
-html[data-theme="dark"] body :is(
-	.lms-btn-primary,
-	.modern-auth-submit
-):not(.va-btn-danger):not(:disabled):not([aria-disabled="true"]),
-html[data-theme="dark"] body :is(
-	.lms-btn-primary,
-	.modern-auth-submit
-):not(.va-btn-danger):not(:disabled):not([aria-disabled="true"]) :is(svg, span, div, p, small, strong) {
-	color: var(--btn-primary-text) !important;
-}
+ * și pe orice link (albastru), cu specificitate mai mare decât regulile de mai sus. Pe butoanele
+ * primare asta dădea text de culoarea fundalului; 
 
 html body :is(
 	.lms-btn-secondary,
@@ -147,7 +136,7 @@ html body :is(
 /*
  * Butoanele cu contur (iconițele din bara de sus, Înapoi, filtre și file neselectate, butoanele
  * secundare ale paginilor): aceeași margine, vizibilă pe fundal în ambele teme. Starea activă
- * (galbenă) și butoanele de ștergere își păstrează culorile.
+ * (albastră) și butoanele de ștergere își păstrează culorile.
  */
 
 /* One Save, one Back, one Delete. */
@@ -385,7 +374,7 @@ html body :is(.va-input, .form-input, .form-select, input.va-input, select.va-in
 	box-shadow: none !important;
 }
 
-/* One published switch. On = green track, never brand yellow or white. */
+/* One published switch. On = green track, never brand blue or white. */
 html body .va-publish.va-publish {
 	display: inline-flex !important;
 	align-items: center !important;
@@ -467,11 +456,6 @@ html body .va-publish.is-published .va-publish-switch-thumb {
 html body .va-publish-switch.va-publish-switch:disabled {
 	opacity: 0.55 !important;
 	cursor: wait !important;
-}
-
-html[data-theme='dark'] body .va-publish-switch.va-publish-switch:not([aria-checked='true']) {
-	background: #4b5563 !important;
-	background-color: #4b5563 !important;
 }
 
 /*

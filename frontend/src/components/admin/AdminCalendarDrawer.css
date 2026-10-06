@@ -1,4 +1,4 @@
-/* Sertar calendar — lățime mărită, înălțime/celule mai generoase, culori Volta (tokeni temă) */
+/* Sertar calendar — lățime mărită, înălțime/celule mai generoase, culori Formely (tokeni temă) */
 .va-cal-drawer-backdrop {
 	position: fixed;
 	inset: 0;
@@ -95,7 +95,7 @@
 .va-cal-drawer-close:hover {
 	background: var(--color-primary-alpha-15);
 	border-color: var(--color-primary-alpha-30);
-	color: var(--text-primary);
+	color: var(--btn-primary-text);
 }
 
 .va-cal-drawer-toolbar {
@@ -193,7 +193,7 @@
 .va-cal-drawer-today:hover {
 	border-color: var(--color-primary);
 	background: var(--color-primary-alpha-15);
-	color: var(--text-primary);
+	color: var(--btn-primary-text);
 }
 
 .va-cal-drawer-weekdays {

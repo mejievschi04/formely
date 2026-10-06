@@ -1,7 +1,7 @@
 # Script pentru configurare MySQL
 # Acest script configureaza Laravel sa foloseasca MySQL in loc de SQLite
 
-Write-Host "=== Configurare MySQL pentru VoltaAcademy ===" -ForegroundColor Cyan
+Write-Host "=== Configurare MySQL pentru Formely ===" -ForegroundColor Cyan
 Write-Host ""
 
 # Verifica daca .env exista

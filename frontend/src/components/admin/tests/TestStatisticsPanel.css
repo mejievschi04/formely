@@ -6,7 +6,7 @@
 	--ts-accent: var(--color-primary);
 	--ts-success: #10b981;
 	--ts-danger: #ef4444;
-	--ts-warning: #f59e0b;
+	--ts-warning: #ea580c;
 	--ts-muted: var(--text-tertiary);
 	display: grid;
 	gap: 20px;

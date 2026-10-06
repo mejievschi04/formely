@@ -47,17 +47,14 @@
     fill: var(--btn-primary-text);
     flex-shrink: 0;
 }
-[data-theme="light"] .test-attempt-nav-btn,
-html[data-theme="dark"] .test-attempt-nav-btn {
+[data-theme="light"] .test-attempt-nav-btn {
     background: var(--btn-primary-bg);
     background-color: var(--btn-primary-bg);
     color: var(--btn-primary-text);
     border-color: var(--btn-primary-border);
 }
 [data-theme="light"] .test-attempt-nav-btn svg,
-[data-theme="light"] .test-attempt-nav-btn svg path,
-html[data-theme="dark"] .test-attempt-nav-btn svg,
-html[data-theme="dark"] .test-attempt-nav-btn svg path {
+[data-theme="light"] .test-attempt-nav-btn svg path {
     color: var(--btn-primary-text);
     fill: var(--btn-primary-text);
 }
@@ -201,10 +198,9 @@ html[data-theme="dark"] .test-attempt-nav-btn svg path {
     .test-attempt-footer-confirm-actions button { width: 100%; }
 }
 
-/* Înapoi = acțiune secundară; o săgeată blocată e gri, nu galben estompat */
+/* Înapoi = acțiune secundară; o săgeată blocată e gri, nu albastru estompat */
 .test-attempt-nav-btn.test-attempt-nav-btn--prev,
-[data-theme="light"] .test-attempt-nav-btn.test-attempt-nav-btn--prev,
-html[data-theme="dark"] .test-attempt-nav-btn.test-attempt-nav-btn--prev {
+[data-theme="light"] .test-attempt-nav-btn.test-attempt-nav-btn--prev {
     background: var(--bg-elevated);
     border-color: var(--btn-outline-border, var(--border-secondary));
     color: var(--text-primary);
@@ -218,8 +214,7 @@ html[data-theme="dark"] .test-attempt-nav-btn.test-attempt-nav-btn--prev {
     background: var(--bg-secondary) !important;
 }
 .test-attempt-footer .test-attempt-nav-btn:disabled,
-[data-theme="light"] .test-attempt-footer .test-attempt-nav-btn:disabled,
-html[data-theme="dark"] .test-attempt-footer .test-attempt-nav-btn:disabled {
+[data-theme="light"] .test-attempt-footer .test-attempt-nav-btn:disabled {
     opacity: 1;
     background: var(--bg-tertiary, #eef1f5);
     border-color: var(--border-primary);

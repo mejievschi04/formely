@@ -889,7 +889,7 @@
 	cursor: not-allowed;
 }
 
-/* Light theme - yellow background with black text */
+/* Fundal albastru Formely, text alb */
 [data-theme="light"] .admin-courses-header-actions .lms-btn-primary {
 	background-color: var(--color-primary);
 	color: var(--text-inverse);
@@ -1194,12 +1194,12 @@
 }
 
 /* ============================================
-   3. COURSE LIST ITEM (Grid View) - design dosar: galben, tab, gri, plus
+   3. COURSE LIST ITEM (Grid View) - design dosar: albastru, tab, gri, plus
    ============================================ */
 .admin-course-card {
-	--admin-card-yellow: var(--color-primary);
+	--admin-card-accent: var(--color-primary);
 	--admin-card-grey: var(--border-primary);
-	background-color: var(--admin-card-yellow);
+	background-color: var(--admin-card-accent);
 	border-radius: 8px;
 	overflow: visible;
 	border: 2px solid var(--border-primary);
@@ -1221,7 +1221,7 @@
 	right: 24px;
 	width: 72px;
 	height: 16px;
-	background: var(--admin-card-yellow);
+	background: var(--admin-card-accent);
 	border: 2px solid var(--border-primary);
 	border-bottom: none;
 	border-radius: 8px 8px 0 0;
@@ -2266,7 +2266,7 @@
    ============================================ */
 [data-theme="light"] .admin-course-card {
 	border: 2px solid var(--border-primary);
-	background-color: var(--admin-card-yellow);
+	background-color: var(--admin-card-accent);
 }
 
 [data-theme="light"] .admin-course-card:hover {

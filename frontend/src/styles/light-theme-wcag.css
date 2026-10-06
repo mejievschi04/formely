@@ -136,13 +136,13 @@
 	color: var(--text-primary) !important; /* WCAG AAA: 15.8:1 */
 }
 
-/* Avatar topnav - fundal galben, text negru (brand rule) */
+/* Avatar topnav - fundal albastru Formely, text alb */
 [data-theme="light"] .admin-topnav-user-avatar,
 [data-theme="light"] .admin-topnav-user-avatar * {
 	color: var(--text-inverse) !important;
 }
 
-/* Butoane galbene - text NEGRU (brand rule) */
+/* Butoane primare - text alb pe albastru Formely */
 [data-theme="light"] .lms-btn-primary,
 [data-theme="light"] .lms-btn-primary * {
 	color: var(--text-inverse) !important;

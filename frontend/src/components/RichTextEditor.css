@@ -76,7 +76,7 @@
 }
 
 .rte-toolbar-btn.active {
-	background: rgba(var(--color-primary-rgb, 255, 238, 0), 0.2);
+	background: rgba(var(--color-primary-rgb, 25, 112, 240), 0.2);
 	color: var(--text-accent);
 }
 

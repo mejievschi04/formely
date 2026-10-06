@@ -123,8 +123,8 @@
 
 .course-map-page-header--branded .course-map-page-virtual-badge {
 	background: rgba(15, 23, 42, 0.45);
-	color: #fde68a;
-	border-color: rgba(253, 230, 138, 0.45);
+	color: #a5f3fc;
+	border-color: rgba(165, 243, 252, 0.45);
 }
 
 .course-map-page-header--custom-colors .course-map-page-title,
@@ -736,8 +736,8 @@
 
 [data-theme="light"] .course-map-page-header--branded .course-map-page-virtual-badge {
 	background: rgba(255, 255, 255, 0.9);
-	color: #b45309;
-	border-color: rgba(245, 158, 11, 0.42);
+	color: #c2410c;
+	border-color: rgba(234, 88, 12, 0.42);
 	text-shadow: none;
 }
 

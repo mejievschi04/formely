@@ -74,7 +74,7 @@ Trebuie un PHP care are în folderul `ext` fișierele:
 DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
 DB_PORT=5432
-DB_DATABASE=volta_academy
+DB_DATABASE=formely
 DB_USERNAME=postgres
 DB_PASSWORD=...
 ```

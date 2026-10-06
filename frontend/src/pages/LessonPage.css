@@ -377,21 +377,11 @@
 	color: #000000;
 }
 
-html[data-theme='dark'] .lesson-page-main {
-	background: #ffffff;
-	color: #000000;
-}
-
 .lesson-page-main .lesson-page-title-section {
 	margin-bottom: var(--space-8);
 	padding-bottom: var(--space-6);
 	background: #ffffff;
 	border: none;
-	color: #000000;
-}
-
-html[data-theme='dark'] .lesson-page-main .lesson-page-title-section {
-	background: #ffffff;
 	color: #000000;
 }
 
@@ -409,29 +399,6 @@ html[data-theme='dark'] .lesson-page-main .lesson-page-title-section {
 	font-size: var(--font-size-lg);
 	color: #000000 !important;
 	line-height: 1.6;
-}
-
-html[data-theme='dark'] .lesson-page-main .lesson-page-title,
-html[data-theme='dark'] .lesson-page-main .lesson-page-description,
-html[data-theme='dark'] .lesson-page-main .lesson-page-meta-item,
-html[data-theme='dark'] .lesson-page-main .lesson-page-content-text,
-html[data-theme='dark'] .lesson-page-main .lesson-page-blocks .lesson-preview-content {
-	color: #000000 !important;
-}
-
-html[data-theme='dark'] .lesson-page-main .lesson-page-content-text h1:not([style*="color"]),
-html[data-theme='dark'] .lesson-page-main .lesson-page-content-text h2:not([style*="color"]),
-html[data-theme='dark'] .lesson-page-main .lesson-page-content-text h3:not([style*="color"]),
-html[data-theme='dark'] .lesson-page-main .lesson-page-content-text h4:not([style*="color"]),
-html[data-theme='dark'] .lesson-page-main .lesson-page-content-text p:not([style*="color"]),
-html[data-theme='dark'] .lesson-page-main .lesson-page-content-text li:not([style*="color"]),
-html[data-theme='dark'] .lesson-page-main .lesson-page-blocks .lesson-preview-content h1:not([style*="color"]),
-html[data-theme='dark'] .lesson-page-main .lesson-page-blocks .lesson-preview-content h2:not([style*="color"]),
-html[data-theme='dark'] .lesson-page-main .lesson-page-blocks .lesson-preview-content h3:not([style*="color"]),
-html[data-theme='dark'] .lesson-page-main .lesson-page-blocks .lesson-preview-content h4:not([style*="color"]),
-html[data-theme='dark'] .lesson-page-main .lesson-page-blocks .lesson-preview-content p:not([style*="color"]),
-html[data-theme='dark'] .lesson-page-main .lesson-page-blocks .lesson-preview-content li:not([style*="color"]) {
-	color: #000000 !important;
 }
 
 .lesson-page-meta {
@@ -471,11 +438,6 @@ html[data-theme='dark'] .lesson-page-main .lesson-page-blocks .lesson-preview-co
 	border: none;
 	border-radius: 0;
 	padding: 0;
-	color: #000000;
-}
-
-html[data-theme='dark'] .lesson-page-main .lesson-page-body {
-	background: #ffffff;
 	color: #000000;
 }
 

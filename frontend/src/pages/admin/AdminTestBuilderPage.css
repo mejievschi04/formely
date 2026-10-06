@@ -115,7 +115,7 @@
 }
 
 .admin-test-results-status.is-pending {
-	background: rgba(234, 179, 8, 0.14);
+	background: rgba(234, 88, 12, 0.14);
 	color: var(--color-warning);
 }
 
@@ -517,18 +517,6 @@
 	color: #991b1b !important;
 	background-color: rgba(239, 68, 68, 0.22) !important;
 	border-color: rgba(220, 38, 38, 0.55) !important;
-}
-
-html[data-theme='dark'] .admin-test-builder-page .admin-course-builder-test-order-btn.is-delete {
-	color: #fecaca !important;
-	background-color: rgba(239, 68, 68, 0.18) !important;
-	border-color: rgba(248, 113, 113, 0.45) !important;
-}
-
-html[data-theme='dark'] .admin-test-builder-page .admin-course-builder-test-order-btn.is-delete:hover:not(:disabled) {
-	color: #fee2e2 !important;
-	background-color: rgba(239, 68, 68, 0.28) !important;
-	border-color: rgba(248, 113, 113, 0.55) !important;
 }
 
 .admin-test-builder-page .admin-course-builder-test-order-btn:disabled {

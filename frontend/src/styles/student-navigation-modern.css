@@ -121,11 +121,6 @@
 	color: var(--btn-primary-text);
 }
 
-html[data-theme='dark'] .student-more-menu-item:hover,
-html[data-theme='dark'] .student-more-menu-item.active {
-	color: var(--text-primary);
-}
-
 .va-shell-topnav .modern-topnav-item,
 .va-shell-topnav .va-topnav-btn {
 	display: flex;
@@ -188,7 +183,7 @@ html[data-theme='dark'] .student-more-menu-item.active {
 	box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.3);
 }
 
-/* Light theme - yellow background with black text */
+/* Fundal albastru Formely, text alb */
 [data-theme="light"] .va-shell-topnav .modern-topnav-item.active,
 [data-theme="light"] .va-shell-topnav .modern-topnav-item.is-active,
 [data-theme="light"] .va-shell-topnav .va-topnav-btn.active,
@@ -277,7 +272,7 @@ html[data-theme='dark'] .student-more-menu-item.active {
 	height: 36px;
 	border-radius: var(--radius-full);
 	background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
-	color: var(--text-inverse); /* Negru pe fundal galben (brand rule) */
+	color: var(--text-inverse); /* Alb pe fundal albastru Formely */
 	display: flex;
 	align-items: center;
 	justify-content: center;

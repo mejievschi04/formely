@@ -167,11 +167,6 @@ html body [data-qtype="yes_no"] { --tq-accent: #16a34a; --tq-ink: #166534; --tq-
 html body [data-qtype="matching"] { --tq-accent: #ea580c; --tq-ink: #9a3412; --tq-ink-dark: #fdba74; }
 html body [data-qtype="ordering"] { --tq-accent: #db2777; --tq-ink: #9d174d; --tq-ink-dark: #f9a8d4; }
 
-html[data-theme="dark"] body [data-qtype] {
-	--tq-accent: var(--tq-ink-dark);
-	--tq-ink: var(--tq-ink-dark);
-}
-
 /* lista: rândurile albe se desprind de fundalul nuanțat al secțiunii */
 html body .admin-course-builder-test-question-list {
 	display: flex;
@@ -203,15 +198,11 @@ html body [data-qtype] .va-tq-type.va-tq-type {
 	color: var(--tq-ink) !important;
 }
 
-html[data-theme="dark"] body [data-qtype] .va-tq-type.va-tq-type {
-	background: color-mix(in srgb, var(--tq-accent) 22%, var(--bg-elevated)) !important;
-}
-
 html body [data-qtype] .va-tq-type.va-tq-type:hover:not(:disabled) {
 	border-color: var(--tq-accent) !important;
 }
 
-/* numărul întrebării: insigna galbenă Volta */
+/* numărul întrebării: insigna albastră Formely */
 html body .va-tq-num {
 	background: var(--btn-primary-bg);
 	color: var(--btn-primary-text);
@@ -586,10 +577,6 @@ html body .va-tq-option__current {
 	font-weight: 700;
 }
 
-html[data-theme="dark"] body .va-tq-option__current {
-	color: #0f172a;
-}
-
 html body .va-tq-option.is-current .va-tq-option__text {
 	padding-right: 84px;
 }
@@ -600,13 +587,8 @@ html body .va-tq-option.is-current .va-tq-option__text {
 	}
 }
 
-
 html body .va-tq-option.va-tq-option .va-tq-option__current,
 html body .va-tq-option.va-tq-option .va-tq-option__current svg {
 	color: #ffffff !important;
 }
 
-html[data-theme="dark"] body .va-tq-option.va-tq-option .va-tq-option__current,
-html[data-theme="dark"] body .va-tq-option.va-tq-option .va-tq-option__current svg {
-	color: #0f172a !important;
-}

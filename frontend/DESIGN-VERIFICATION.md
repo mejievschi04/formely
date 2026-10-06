@@ -1,4 +1,4 @@
-# Volta Academy - Design Verification
+# Formely - Design Verification
 
 ## Design System Overview
 

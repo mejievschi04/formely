@@ -25,7 +25,7 @@
 	-webkit-font-smoothing: antialiased;
 }
 
-/* Primary - modern, pill-shaped, text NEGRU pe galben */
+/* Primary - modern, pill-shaped, text alb pe albastru Formely */
 .va-shell-main .lms-btn-primary,
 .admin-container .lms-btn-primary {
 	color: var(--text-inverse) !important;

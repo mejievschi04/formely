@@ -37,7 +37,7 @@ import './RichTextEditor.css';
 
 /** Paletă culori pentru text/fundal - o singură sursă pentru afișare corectă */
 const RTE_COLOR_PALETTE = [
-	'#ffee00', '#ffcc00', '#ffd700', '#ffff00',
+	'#6c2df0', '#3755f0', '#1970f0', '#19d2eb',
 	'#ffffff', '#cccccc', '#999999', '#666666', '#000000',
 	'#ff6b6b', '#ff5252', '#ff1744', '#d32f2f',
 	'#4ade80', '#22c55e', '#10b981', '#059669',
@@ -443,8 +443,8 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 	const [contextMenu, setContextMenu] = useState({ open: false, x: 0, y: 0 });
 	const [colorType, setColorType] = useState('foreground'); // 'foreground' or 'background'
 	const [linkUrl, setLinkUrl] = useState('');
-	const [selectedColor, setSelectedColor] = useState('#ffee00');
-	const [selectedCalloutColor, setSelectedCalloutColor] = useState('#ffee00');
+	const [selectedColor, setSelectedColor] = useState('#1970f0');
+	const [selectedCalloutColor, setSelectedCalloutColor] = useState('#1970f0');
 	const [selectedCalloutType, setSelectedCalloutType] = useState('soft');
 	const [pdfFile, setPdfFile] = useState(null);
 	const [pdfFileName, setPdfFileName] = useState('');
@@ -1851,12 +1851,12 @@ const ImageEditModal = ({ draft, onDraftChange, onApply, onClose, onDelete }) =>
 
 // Color Picker Modal Component
 const ColorPickerModal = ({ palette = RTE_COLOR_PALETTE, selectedColor, onColorSelect, onClose, type }) => {
-	const [customColor, setCustomColor] = useState(selectedColor || '#ffee00');
+	const [customColor, setCustomColor] = useState(selectedColor || '#1970f0');
 
 	const [previousColor, setPreviousColor] = useState(selectedColor);
 	if (previousColor !== selectedColor) {
 		setPreviousColor(selectedColor);
-		setCustomColor(selectedColor || '#ffee00');
+		setCustomColor(selectedColor || '#1970f0');
 	}
 
 	const colors = Array.isArray(palette) && palette.length > 0 ? palette : RTE_COLOR_PALETTE;
@@ -1931,7 +1931,7 @@ const ColorPickerModal = ({ palette = RTE_COLOR_PALETTE, selectedColor, onColorS
 								className="rte-modal-input"
 								value={customColor}
 								onChange={(e) => setCustomColor(e.target.value)}
-								placeholder="#ffee00"
+								placeholder="#1970f0"
 							/>
 							<button type="button" className="lms-btn-primary rte-modal-btn" onClick={() => onColorSelect(customColor)}>
 								Aplică

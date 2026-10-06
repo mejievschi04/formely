@@ -5,7 +5,6 @@ import { useToast } from '../../contexts/ToastContextShared.js';
 
 import { useAuth } from '../../contexts/AuthContextShared.js';
 import ConfirmModal from '../../components/common/ConfirmModal';
-import ThemePreferenceControl from '../../components/ThemePreferenceControl';
 import CompanyAcademyPanel from '../../components/admin/settings/CompanyAcademyPanel';
 
 const AdminSettingsPage = () => {
@@ -88,7 +87,7 @@ const AdminSettingsPage = () => {
 			const url = URL.createObjectURL(blob);
 			const a = document.createElement('a');
 			a.href = url;
-			a.download = `volta-backup-${new Date().toISOString().split('T')[0]}.json`;
+			a.download = `formely-backup-${new Date().toISOString().split('T')[0]}.json`;
 			document.body.appendChild(a);
 			a.click();
 			document.body.removeChild(a);
@@ -212,8 +211,6 @@ const AdminSettingsPage = () => {
 						</div>
 
 						<div className="admin-settings-form">
-							<ThemePreferenceControl className="admin-settings-theme-preference" />
-
 							{isTenant ? <CompanyAcademyPanel readOnly={readOnly} /> : (
 							<div className="admin-settings-toggle-group">
 								<div className="admin-settings-toggle">

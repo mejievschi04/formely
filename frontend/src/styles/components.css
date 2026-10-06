@@ -26,7 +26,7 @@
 	white-space: nowrap;
 }
 
-/* Secondary Button - Transparent, Yellow Border/Text */
+/* Secondary Button - Transparent, Brand Border/Text */
 
 /* Light theme - dark text and border for better contrast */
 
@@ -61,26 +61,6 @@ button.lms-btn-secondary.va-btn-danger {
 	color: #991b1b !important;
 	background-color: rgba(239, 68, 68, 0.18) !important;
 	border-color: rgba(220, 38, 38, 0.55) !important;
-}
-
-html[data-theme='dark'] .va-btn-danger,
-html[data-theme='dark'] .admin-btn-danger,
-html[data-theme='dark'] .qb-delete-btn,
-html[data-theme='dark'] .admin-content-card__action.is-danger,
-html[data-theme='dark'] .lms-btn-secondary.va-btn-danger {
-	color: #fecaca !important;
-	background-color: rgba(239, 68, 68, 0.14) !important;
-	border-color: rgba(248, 113, 113, 0.45) !important;
-}
-
-html[data-theme='dark'] .va-btn-danger:hover:not(:disabled),
-html[data-theme='dark'] .admin-btn-danger:hover:not(:disabled),
-html[data-theme='dark'] .qb-delete-btn:hover:not(:disabled),
-html[data-theme='dark'] .admin-content-card__action.is-danger:hover:not(:disabled),
-html[data-theme='dark'] .lms-btn-secondary.va-btn-danger:hover:not(:disabled) {
-	color: #fee2e2 !important;
-	background-color: rgba(239, 68, 68, 0.22) !important;
-	border-color: rgba(248, 113, 113, 0.55) !important;
 }
 
 .qb-delete-btn svg,

@@ -44,11 +44,11 @@ function getItemTypeLabel(item) {
 
 /** Palete pentru coperte CSS (gradient + accente). */
 const COVER_PALETTES = [
-	{ a: '#0c4a6e', b: '#0d9488', accent: '#fcd34d', glow: 'rgba(250, 204, 21, 0.35)' },
+	{ a: '#0c4a6e', b: '#0d9488', accent: '#67e8f9', glow: 'rgba(25, 210, 235, 0.35)' },
 	{ a: '#1e1b4b', b: '#6366f1', accent: '#a5b4fc', glow: 'rgba(129, 140, 248, 0.4)' },
 	{ a: '#134e4a', b: '#047857', accent: '#6ee7b7', glow: 'rgba(52, 211, 153, 0.35)' },
 	{ a: '#4c0519', b: '#be123c', accent: '#fda4af', glow: 'rgba(251, 113, 133, 0.35)' },
-	{ a: '#312e81', b: '#4338ca', accent: '#fde68a', glow: 'rgba(253, 224, 71, 0.3)' },
+	{ a: '#312e81', b: '#4338ca', accent: '#c4b5fd', glow: 'rgba(139, 92, 246, 0.35)' },
 	{ a: '#14532d', b: '#15803d', accent: '#bbf7d0', glow: 'rgba(187, 247, 208, 0.35)' },
 	{ a: '#1c1917', b: '#78716c', accent: '#e7e5e4', glow: 'rgba(255, 255, 255, 0.12)' },
 	{ a: '#0f172a', b: '#0ea5e9', accent: '#7dd3fc', glow: 'rgba(14, 165, 233, 0.35)' },

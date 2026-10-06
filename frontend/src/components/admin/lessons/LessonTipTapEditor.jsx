@@ -184,7 +184,7 @@ const LessonTipTapEditor = ({
 		const current = editor.getAttributes('lessonCallout');
 		editor.chain().focus().setLessonCallout({
 			type: current.type || 'soft',
-			accent: current.accent || '#ffee00',
+			accent: current.accent || '#1970f0',
 			variant: patch.variant || current.variant || 'info',
 			fill: patch.fill || current.fill || 'mono',
 		}).run();

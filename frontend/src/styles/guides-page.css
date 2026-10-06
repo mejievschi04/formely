@@ -12,7 +12,7 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	color: var(--lib-cover-accent, #fde68a);
+	color: var(--lib-cover-accent, #67e8f9);
 	opacity: 0.85;
 	z-index: 1;
 	pointer-events: none;
@@ -169,11 +169,3 @@ html body .guides-cover-picker-actions .library-btn--danger.library-btn--danger 
 	}
 }
 
-[data-theme="dark"] .guides-cover-picker {
-	background: var(--bg-elevated);
-	border-color: #6b7280;
-}
-
-[data-theme="dark"] .guides-cover-picker-copy strong {
-	color: #f8fafc;
-}

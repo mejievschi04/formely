@@ -1459,13 +1459,10 @@
 
 /* Empty state styles are now in lms-dashboard-enterprise.css as .lms-empty-state */
 
-/* Force black text on yellow avatar (tema light) */
 
-/* Force black text on yellow avatar (tema light) */
 
 /* Iconuri Phosphor — nu forța fill/stroke pe <svg> (rupe bold/duotone) */
 
-/* Ensure text is black on yellow background for all themes */
 
 .messages-menu-badge {
 	min-width: 16px;

@@ -32,7 +32,7 @@
 	width: 100%;
 	height: 104px;
 	background-image: none;
-	background-color: var(--color-primary);
+	background: var(--gradient-brand);
 	position: relative;
 	z-index: 1;
 	border-radius: var(--radius-xl) var(--radius-xl) 0 0;
@@ -1132,8 +1132,8 @@ html body .va-profile-section-admin-courses .va-course-card-actions > button {
 	padding: 10px 14px;
 	border: 1px solid rgba(0, 0, 0, 0.14) !important;
 	border-radius: 8px !important;
-	background-color: rgb(255, 238, 0);
-	color: #000000 !important;
+	background-color: var(--color-primary);
+	color: var(--btn-primary-text) !important;
 	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12) !important;
 	font-size: 0.84rem;
 	font-weight: 700;
@@ -1146,7 +1146,7 @@ html body .va-profile-section-admin-courses .va-course-card-actions > button {
 
 html body .va-profile-section-admin-courses .va-course-card-actions > a:hover,
 html body .va-profile-section-admin-courses .va-course-card-actions > button:hover:not(:disabled) {
-	background-color: rgb(230, 216, 0) !important;
+	background-color: var(--color-primary-hover) !important;
 	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14) !important;
 }
 

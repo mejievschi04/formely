@@ -9,7 +9,6 @@ import AdminRoute from './components/AdminRoute';
 import UserRoute from './components/UserRoute';
 import ChangePasswordModal from './components/ChangePasswordModal';
 import LoadingOverlay from './components/LoadingOverlay';
-const SplashScreen = lazy(() => import('./components/SplashScreen'));
 import GlobalSearch from './components/GlobalSearch';
 import { isVoltEnabled } from './utils/voltAvailability';
 import { filterNavByPlan } from './utils/entitlements';
@@ -48,7 +47,6 @@ import {
 /* Modern Design System - Unified & Standardized */
 import './styles/design-system.css';
 import './styles/light-theme-wcag.css';
-import './styles/dark-theme.css';
 import './styles/unified-cards.css';
 import './styles/components.css';
 import './styles/button-modern.css';
@@ -68,12 +66,12 @@ import './styles/student-components.css';
 import './styles/student-overrides.css';
 import './styles/common-components.css';
 import './styles/builder-overrides.css';
-import './components/SplashScreen.css';
 /* Mobile optimizations must be last to override base styles */
 import './styles/mobile-optimizations.css';
 /* One control style, after every other global sheet. */
 import './styles/control-system.css';
 import './styles/dialog-system.css';
+import './styles/primary-surface-contrast.css';
 import formelyLogo from './assets/Formely logo.png';
 import { nameInitials } from './utils/initials';
 
@@ -1040,7 +1038,7 @@ function AuthenticatedLayout({ children, authContext }) {
 									</span>
 								</div>
 							)}
-							{/* Volta Academy text - shown when sidebar is closed on mobile */}
+							{/* Formely text - shown when sidebar is closed on mobile */}
 							{isMobile && !isSidebarExpanded && (
 								<span className="va-topnav-page-title">{brandName}</span>
 							)}
@@ -1336,14 +1334,9 @@ function App() {
 						<GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
 				<Routes>
 					{/* Splash first page - if authenticated, redirect to app */}
-					<Route
-						path="/"
-						element={
-							<SplashEntry />
-						}
-					/>
+					<Route path="/" element={authEntryElement} />
 					{/* Public routes */}
-					<Route path="/login" element={<Suspense fallback={<PageLoader />}><LoginPage /></Suspense>} />
+					<Route path="/login" element={authEntryElement} />
 					<Route path="/register/invite/:token" element={<Suspense fallback={<PageLoader />}><InviteRegisterPage /></Suspense>} />
 					<Route path="/accept-invite" element={<LegacyAcceptInviteRedirect />} />
 					<Route path="/register" element={<Suspense fallback={<PageLoader />}><RegisterPage /></Suspense>} />
@@ -1946,16 +1939,15 @@ function AppWithErrorBoundary() {
 
 export default AppWithErrorBoundary;
 
-// Splash entry - afișează splash-ul în timp ce se încarcă auth, prefetch, etc.
-function SplashEntry() {
+/** „/” și „/login”: același ecran (splash → logo sus → formular), deci același element de rută. */
+function AuthEntry() {
 	const { user, loading } = useAuth();
 	const navigate = useNavigate();
 	const [prefetchDone, setPrefetchDone] = useState(false);
 
-	// Prefetch pagini critice – butonul apare doar după ce totul e încărcat
+	// Prefetch pagini critice – logo-ul urcă și formularul apare doar după ce totul e încărcat
 	useEffect(() => {
 		Promise.all([
-			import('./pages/LoginPage'),
 			import('./pages/CoursesPage'),
 		])
 			.then(() => setPrefetchDone(true))
@@ -1986,9 +1978,11 @@ function SplashEntry() {
 	const appReady = !loading && prefetchDone;
 
 	return (
-		<Suspense fallback={<PageLoader />}><SplashScreen
-			onStart={() => navigate('/login', { replace: true })}
-			appReady={appReady}
-		/></Suspense>
+		<Suspense fallback={null}>
+			<LoginPage splashReady={appReady} />
+		</Suspense>
 	);
 }
+
+// Același element pentru „/” și „/login”: la trecerea splash → login componenta rămâne montată.
+const authEntryElement = <AuthEntry />;

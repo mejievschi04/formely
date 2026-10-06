@@ -161,7 +161,7 @@ html body .test-stats__filters input {
 	box-shadow: none !important;
 }
 
-/* ---------- Surface actions (same shape as tabs; primary stays yellow) ---------- */
+/* ---------- Surface actions (same shape as tabs; primary stays brand blue) ---------- */
 
 html body .qb-overview-refresh.qb-overview-refresh,
 html body .admin-exams-section-refresh-btn.admin-exams-section-refresh-btn,
@@ -256,7 +256,7 @@ html body .qb-overview-item.qb-overview-item > svg {
 	height: 18px;
 	padding: 11px;
 	border-radius: var(--ds-radius-sm);
-	background: var(--ds-ink);
+	background: var(--color-brand-primary-soft);
 	color: var(--ds-accent) !important;
 }
 
@@ -330,7 +330,7 @@ html body .qb-catalog-tile.qb-catalog-tile .qb-catalog-tile-icon {
 	width: 44px;
 	height: 44px;
 	border-radius: 12px;
-	background: var(--ds-ink);
+	background: var(--color-brand-primary-soft);
 	color: var(--ds-accent);
 }
 
@@ -426,19 +426,3 @@ html body .qb-search-field input[type='search']:focus {
 	outline-offset: 1px;
 }
 
-/* ---------- Dark theme ---------- */
-
-html[data-theme='dark'] body .qb-hero-actions.qb-hero-actions,
-html[data-theme='dark'] body .admin-users-view-tabs.admin-users-view-tabs,
-html[data-theme='dark'] body .admin-statistics-tests-tabs.admin-statistics-tests-tabs,
-html[data-theme='dark'] body .qb-overview-item.qb-overview-item,
-html[data-theme='dark'] body .qb-workspace.qb-workspace,
-html[data-theme='dark'] body .qb-catalog-tile.qb-catalog-tile {
-	border-color: #374151;
-	background: var(--ds-ink-2);
-}
-
-html[data-theme='dark'] body .qb-overview-item.qb-overview-item strong,
-html[data-theme='dark'] body .qb-catalog-tile.qb-catalog-tile .qb-catalog-tile-copy strong {
-	color: #ffffff;
-}

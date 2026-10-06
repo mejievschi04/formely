@@ -517,7 +517,7 @@
 .exam-picker-folder-card.is-active .exam-picker-folder-check {
 	background: var(--color-primary);
 	border-color: var(--color-primary);
-	color: #111;
+	color: var(--btn-primary-text);
 }
 
 .exam-picker-error {
@@ -529,9 +529,9 @@
 .exam-picker-warning {
 	margin: 0 16px 8px;
 	padding: 10px 12px;
-	border: 1px solid color-mix(in srgb, var(--color-warning, #f59e0b) 40%, var(--border-primary));
+	border: 1px solid color-mix(in srgb, var(--color-warning, #ea580c) 40%, var(--border-primary));
 	border-radius: 8px;
-	background: color-mix(in srgb, var(--color-warning, #f59e0b) 12%, var(--bg-elevated));
+	background: color-mix(in srgb, var(--color-warning, #ea580c) 12%, var(--bg-elevated));
 	color: var(--text-primary);
 	font-size: 0.84rem;
 	font-weight: 700;

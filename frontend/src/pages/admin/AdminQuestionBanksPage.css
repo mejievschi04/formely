@@ -265,7 +265,7 @@
 .qb-question-row.is-active {
 	transform: scale(1.02);
 	border-color: var(--color-primary);
-	box-shadow: 0 14px 28px rgba(230, 216, 0, 0.25);
+	box-shadow: 0 14px 28px rgba(var(--color-primary-rgb), 0.25);
 	z-index: 1;
 }
 
@@ -333,13 +333,13 @@
 .qb-star-btn.is-starred {
 	background: rgba(var(--color-primary-rgb), 0.16);
 	border-color: rgba(0, 0, 0, 0.12);
-	color: #a16207;
+	color: #6c2df0;
 }
 
 .qb-star-btn.is-starred svg {
 	fill: currentColor;
 	stroke: currentColor;
-	color: #ca8a04;
+	color: #6c2df0;
 }
 
 .qb-question-main {
@@ -517,8 +517,8 @@
 
 .qb-modal-question-editor .admin-course-builder-test-type-card.is-active {
 	border-color: var(--builder-accent, var(--color-primary));
-	background: rgba(var(--color-primary-rgb, 255, 238, 0), 0.2);
-	box-shadow: 0 8px 20px rgba(var(--color-primary-rgb, 255, 238, 0), 0.22);
+	background: rgba(var(--color-primary-rgb, 25, 112, 240), 0.2);
+	box-shadow: 0 8px 20px rgba(var(--color-primary-rgb, 25, 112, 240), 0.22);
 }
 
 .qb-modal-question-editor .admin-course-builder-test-sidepanel {
@@ -1398,20 +1398,6 @@ button.qb-crumb:hover {
 	border-color: rgba(220, 38, 38, 0.55) !important;
 }
 
-html[data-theme='dark'] .qb-page .qb-action-button.va-btn-danger,
-html[data-theme='dark'] .qb-page .qb-detail-actions .va-btn-danger {
-	color: #fecaca !important;
-	background: rgba(239, 68, 68, 0.14) !important;
-	border-color: rgba(248, 113, 113, 0.45) !important;
-}
-
-html[data-theme='dark'] .qb-page .qb-action-button.va-btn-danger:hover:not(:disabled),
-html[data-theme='dark'] .qb-page .qb-detail-actions .va-btn-danger:hover:not(:disabled) {
-	color: #fee2e2 !important;
-	background: rgba(239, 68, 68, 0.22) !important;
-	border-color: rgba(248, 113, 113, 0.55) !important;
-}
-
 .qb-page .qb-star-btn.is-starred {
 	background: rgba(var(--color-primary-rgb), 0.18) !important;
 	border-color: rgba(0, 0, 0, 0.14) !important;
@@ -1419,17 +1405,8 @@ html[data-theme='dark'] .qb-page .qb-detail-actions .va-btn-danger:hover:not(:di
 
 .qb-page .qb-star-btn.is-starred svg {
 	fill: currentColor !important;
-	color: #ca8a04 !important;
-	stroke: #ca8a04 !important;
-}
-
-html[data-theme='dark'] .qb-page .qb-star-btn.is-starred svg {
-	color: rgb(255, 238, 0) !important;
-	stroke: rgb(255, 238, 0) !important;
-}
-
-html[data-theme='dark'] .qb-page .qb-star-btn.is-starred {
-	color: #000000 !important;
+	color: #6c2df0 !important;
+	stroke: #6c2df0 !important;
 }
 
 .qb-folder-detail-page .qb-modal-question-editor {
@@ -1606,7 +1583,7 @@ html[data-theme='dark'] .qb-page .qb-star-btn.is-starred {
 .qb-catalog-tile:hover .qb-catalog-tile-go {
 	background: var(--color-primary);
 	border-color: var(--color-primary);
-	color: #111;
+	color: var(--btn-primary-text);
 }
 
 .qb-catalog-tile-foot {

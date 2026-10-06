@@ -406,7 +406,8 @@ export default function LiquidEther({
  vec2 vel = texture2D(velocity, uv).xy;
  float lenv = clamp(length(vel), 0.0, 1.0);
  vec3 c = texture2D(palette, vec2(lenv, 0.5)).rgb;
- vec3 outRGB = mix(bgColor.rgb, c, lenv);
+ // fundal transparent: culoarea rămâne curată, doar opacitatea urmează viteza (altfel marginile ies gri pe fundal deschis)
+ vec3 outRGB = bgColor.a > 0.0 ? mix(bgColor.rgb, c, lenv) : c;
  float outA = mix(bgColor.a, 1.0, lenv);
  gl_FragColor = vec4(outRGB, outA);
 }

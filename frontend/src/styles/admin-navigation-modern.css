@@ -317,7 +317,7 @@
 .va-nav-btn.active,
 .va-nav-btn.is-active {
 	background-color: var(--color-primary);
-	color: var(--text-primary);
+	color: var(--btn-primary-text);
 	font-weight: var(--font-weight-semibold);
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
@@ -331,13 +331,13 @@
 	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
 }
 
-/* Light theme - yellow background with dark gray text */
+/* Element activ - fundal albastru Formely, text alb */
 [data-theme="light"] .modern-nav-item.active,
 [data-theme="light"] .modern-nav-item.is-active,
 [data-theme="light"] .va-nav-btn.active,
 [data-theme="light"] .va-nav-btn.is-active {
 	background-color: var(--color-primary);
-	color: var(--text-primary);
+	color: var(--btn-primary-text);
 	font-weight: var(--font-weight-semibold);
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
@@ -571,7 +571,7 @@
 	color: inherit;
 }
 
-/* Părintele (Cursuri, Teste & Bănci) nu e niciodată activ – doar subitem-ul curent e galben */
+/* Părintele (Cursuri, Teste & Bănci) nu e niciodată activ – doar subitem-ul curent e evidențiat */
 .modern-nav-group .modern-nav-group-label,
 .modern-nav-group button.va-nav-btn {
 	background-color: transparent;
@@ -588,7 +588,7 @@
 	color: var(--text-primary) !important;
 }
 
-/* Buton parent (toggle submeniu) – aspect ca un nav item, fără galben */
+/* Buton parent (toggle submeniu) – aspect ca un nav item, fără accent */
 .modern-nav-group .modern-nav-group-label.va-nav-btn[type="button"],
 .modern-nav-group button.modern-nav-group-label {
 	width: 100%;
@@ -631,11 +631,11 @@
 	justify-content: space-between;
 }
 
-/* Doar subitem-ul activ primește galben */
+/* Doar subitem-ul activ primește accentul */
 .modern-nav-subitem.active,
 .modern-nav-subitem.is-active {
 	background-color: var(--color-primary) !important;
-	color: var(--text-primary) !important;
+	color: var(--btn-primary-text) !important;
 	font-weight: var(--font-weight-semibold);
 }
 .modern-nav-subitem .modern-nav-item-label {
@@ -804,7 +804,7 @@
 	box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.3);
 }
 
-/* Light theme - yellow background with black text */
+/* Fundal albastru Formely, text alb */
 [data-theme="light"] .modern-topnav-item.active,
 [data-theme="light"] .modern-topnav-item.is-active,
 [data-theme="light"] .va-topnav-btn.active,
@@ -1055,7 +1055,7 @@
 	height: 36px;
 	border-radius: var(--radius-full);
 	background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
-	color: var(--text-inverse); /* Negru pe fundal galben (brand rule) */
+	color: var(--text-inverse); /* Alb pe fundal albastru Formely */
 	display: flex;
 	align-items: center;
 	justify-content: center;

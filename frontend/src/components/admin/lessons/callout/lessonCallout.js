@@ -22,7 +22,7 @@ const CALLOUT_TYPE_IDS = new Set(LESSON_CALLOUT_TYPES.map((type) => type.id));
 export const LESSON_CALLOUT_VARIANTS = [
 	{ id: 'info', label: 'Informație', color: '#2563eb' },
 	{ id: 'tip', label: 'Sfat', color: '#16a34a' },
-	{ id: 'warning', label: 'Atenție', color: '#d97706' },
+	{ id: 'warning', label: 'Atenție', color: '#ea580c' },
 	{ id: 'danger', label: 'Important', color: '#dc2626' },
 	{ id: 'success', label: 'Reține', color: '#0d9488' },
 	{ id: 'note', label: 'Notă', color: '#7c3aed' },
@@ -47,7 +47,7 @@ export function cleanLessonCalloutFill(value) {
 
 export function cleanLessonCalloutAccent(value) {
 	const color = String(value || '').trim();
-	return /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(color) ? color : '#ffee00';
+	return /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(color) ? color : '#1970f0';
 }
 
 export function cleanLessonCalloutType(value) {
@@ -89,7 +89,7 @@ export const LessonCallout = Node.create({
 				}),
 			},
 			accent: {
-				default: '#ffee00',
+				default: '#1970f0',
 				parseHTML: (element) => cleanLessonCalloutAccent(
 					element.style.getPropertyValue('--rte-callout-accent'),
 				),

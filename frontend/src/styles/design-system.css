@@ -1,238 +1,382 @@
 /* ============================================
-   VOLTA ACADEMY - MODERN DARK MODE DESIGN SYSTEM
-   Premium, Calm, Enterprise-Grade LMS Styling
+   FORMELY - LIGHT DESIGN SYSTEM
+   Paleta din logo: violet -> albastru -> cyan. Doar temă luminoasă.
    ============================================ */
 
 /* ============================================
-   1. CSS VARIABLES - COLOR PALETTE
+   1. CSS VARIABLES - BRAND COLOR PALETTE
    ============================================ */
+
 :root {
-	/* Brand Colors */
-	--color-brand-primary: rgb(255, 238, 0);
-	--color-brand-hover: rgb(230, 216, 0);
-	--color-brand-soft: rgb(255, 240, 102);
-	--color-primary-rgb: 255, 238, 0;
+    color-scheme: light;
 
-	/* Neutrals */
-	--color-black: rgb(0, 0, 0);
-	--color-near-black: rgb(17, 17, 17);
-	--color-gray-dark: rgb(51, 51, 51);
-	--color-gray-medium: rgb(119, 119, 119);
-	--color-gray-light: rgb(230, 230, 230);
-	--color-gray-extra-light: rgb(229, 229, 229);
-	--color-white: rgb(255, 255, 255);
+    --color-brand-violet: rgb(108, 45, 240);
+    --color-brand-purple: rgb(92, 64, 240);
+    --color-brand-blue: rgb(25, 112, 240);
+    --color-brand-cyan: rgb(25, 210, 235);
 
-	/* Functional Colors */
-	--color-success: rgb(34, 197, 94);
-	--color-warning: rgb(245, 158, 11);
-	--color-error: rgb(239, 68, 68);
-	--color-info: rgb(59, 130, 246);
-	--color-success-rgb: 34, 197, 94;
-	--color-warning-rgb: 245, 158, 11;
-	--color-error-rgb: 239, 68, 68;
-	--color-info-rgb: 59, 130, 246;
+    --color-brand-primary: rgb(25, 112, 240);
+    --color-brand-primary-hover: rgb(20, 92, 210);
+    --color-brand-primary-soft: rgb(225, 240, 255);
+    --color-brand-hover: var(--color-brand-primary-hover);
+    --color-brand-soft: var(--color-brand-primary-soft);
+    --color-brand-contrast: var(--color-white);
 
-	/* Background Colors - aligned with palette */
-	--bg-primary: rgb(248, 250, 252);
-	--bg-sidebar-toggle: rgb(17, 24, 39);
-	--bg-sidebar-toggle-hover: rgb(15, 23, 42);
-	--bg-secondary: rgb(241, 245, 249);
-	--bg-tertiary: rgb(226, 232, 240);
-	--bg-elevated: rgb(255, 255, 255);
-	--bg-overlay: rgba(15, 23, 42, 0.45);
+    --color-primary-rgb: 25, 112, 240;
 
-	/* Primary Accent - Volta Yellow */
-	--color-primary: var(--color-brand-primary);
-	--color-primary-hover: var(--color-brand-hover);
-	--color-primary-light: var(--color-brand-soft);
-	--color-primary-dark: var(--color-brand-hover);
+    /* Main brand gradient */
+    --gradient-brand: linear-gradient(
+        135deg,
+        rgb(108, 45, 240) 0%,
+        rgb(55, 85, 240) 42%,
+        rgb(25, 150, 240) 72%,
+        rgb(25, 210, 235) 100%
+    );
 
-	/* Text Colors - aligned with palette */
-	--text-primary: rgb(15, 23, 42);
-	--text-secondary: rgb(71, 85, 105);
-	--text-tertiary: rgb(100, 116, 139);
-	--text-disabled: rgb(156, 163, 175);
+    /* Secondary gradient */
+    --gradient-brand-soft: linear-gradient(
+        135deg,
+        rgb(235, 225, 255) 0%,
+        rgb(220, 240, 255) 50%,
+        rgb(220, 250, 250) 100%
+    );
 
-	/* Border Colors - aligned with palette */
-	--border-primary: rgb(226, 232, 240);
-	--border-secondary: rgb(148, 163, 184);
-	--border-accent: var(--color-brand-primary);
-	--border-focus: var(--color-brand-primary);
 
-	/* Button Colors */
-	--btn-primary-bg: var(--color-brand-primary);
-	--btn-primary-text: var(--color-black);
-	--btn-primary-hover: var(--color-brand-hover);
-	--btn-primary-border: var(--color-brand-primary);
+    /* ============================================
+       NEUTRALS
+       ============================================ */
 
-	--btn-secondary-bg: transparent;
-	--btn-secondary-text: var(--color-brand-primary);
-	--btn-secondary-border: var(--color-brand-primary);
-	--btn-secondary-hover: var(--color-primary-alpha-10);
+    --color-black: rgb(0, 0, 0);
+    --color-near-black: rgb(15, 23, 42);
 
-	/* Marginea butoanelor cu contur: cel puțin 3:1 față de fundal (WCAG 1.4.11) */
-	--btn-outline-border: rgb(100, 116, 139);
-	--btn-outline-border-hover: var(--text-primary);
+    --color-gray-dark: rgb(30, 41, 59);
+    --color-gray-medium: rgb(71, 85, 105);
+    --color-gray-light: rgb(203, 213, 225);
+    --color-gray-extra-light: rgb(226, 232, 240);
 
-	/* Text de accent (linkuri-acțiune, file active, iconițe de evidențiere): galben doar unde se citește.
-	   Pe fundal deschis galbenul are ~1,2:1; aici galben-maro închis, ≥ 4,7:1 pe toate fundalurile deschise. */
-	--text-accent: rgb(122, 98, 0);
-	/* Text de succes (ex. „Publicat”): verdele de fundal are doar ~2,3:1 ca text pe alb */
-	--text-success: rgb(21, 128, 61);
+    --color-white: rgb(255, 255, 255);
 
-	/* Button Dimensions - compacte, rotunjite */
-	--btn-desktop-padding-y: var(--space-3);
-	--btn-desktop-padding-x: var(--space-5);
-	--btn-desktop-min-height: 40px;
-	--btn-desktop-font-size: var(--font-size-sm);
-	--btn-desktop-gap: var(--space-2);
-	--btn-desktop-radius: var(--radius-2xl);
 
-	--btn-mobile-padding-y: var(--space-3);
-	--btn-mobile-padding-x: var(--space-4);
-	--btn-mobile-min-height: 40px;
-	--btn-mobile-min-width: 40px;
-	--btn-mobile-font-size: var(--font-size-base);
-	--btn-mobile-gap: var(--space-3);
+    /* ============================================
+       FUNCTIONAL COLORS
+       ============================================ */
 
-	/* Volt tutor - uses brand colors */
-	--accent-ai: var(--color-primary);
-	--accent-neural: var(--color-primary-hover);
-	--accent-ai-rgb: 255, 238, 0;
-	--accent-warning: var(--color-warning);
-	--text-inverse: rgb(15, 23, 42);
-	--bg-surface: var(--bg-primary);
+    --color-success: rgb(22, 163, 74);
+    /* Avertizare: portocaliu, nu galben (paleta Formely nu are galben) */
+    --color-warning: rgb(234, 88, 12);
+    --color-error: rgb(220, 38, 38);
+    --color-danger: var(--color-error);
+    --color-info: rgb(37, 99, 235);
 
-	/* Shadows - Subtle Elevation */
-	--shadow-xs: 0 1px 1px rgba(0, 0, 0, 0.2);
-	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-	--shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
-	--shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
-	--shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
-	--shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.7);
-	--shadow-focus: 0 0 0 3px var(--color-primary-alpha-30);
-	
-	/* Extended Shadow System - State-specific */
-	--shadow-hover: var(--shadow-md);
-	--shadow-active: var(--shadow-sm);
-	--shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    --color-success-rgb: 22, 163, 74;
+    --color-warning-rgb: 234, 88, 12;
+    --color-error-rgb: 220, 38, 38;
+    --color-danger-rgb: var(--color-error-rgb);
+    --color-info-rgb: 37, 99, 235;
 
-	/* Border Radius - Consistent */
-	--radius-sm: 6px;
-	--radius-md: 8px;
-	--radius-lg: 12px;
-	--radius-xl: 16px;
-	--radius-2xl: 20px;
-	--radius-3xl: 24px;
-	--radius-full: 9999px;
 
-	/* Spacing - 8px Base System */
-	--space-1: 4px;
-	--space-2: 8px;
-	--space-2-5: 10px;
-	--space-3: 12px;
-	--space-4: 16px;
-	--space-5: 20px;
-	--space-6: 24px;
-	--space-8: 32px;
-	--space-10: 40px;
-	--space-12: 48px;
-	--space-16: 64px;
+    /* ============================================
+       BACKGROUND COLORS
+       ============================================ */
 
-	/* Primary Color Alpha - for overlays, highlights, focus rings */
-	--color-primary-alpha-10: rgba(var(--color-primary-rgb), 0.1);
-	--color-primary-alpha-15: rgba(var(--color-primary-rgb), 0.15);
-	--color-primary-alpha-20: rgba(var(--color-primary-rgb), 0.2);
-	--color-primary-alpha-30: rgba(var(--color-primary-rgb), 0.3);
-	
-	/* Extended Spacing - Component-specific */
-	--space-card: var(--space-6);      /* 24px - Card padding */
-	--space-section: var(--space-8);   /* 32px - Section spacing */
-	--space-page: var(--space-10);     /* 40px - Page padding */
-	--space-container: var(--space-12); /* 48px - Container padding */
+    --bg-primary: rgb(248, 250, 252);
+    --bg-secondary: rgb(241, 245, 249);
+    --bg-tertiary: rgb(226, 232, 240);
 
-	/* Typography */
-	--font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-	--font-size-xs: 0.75rem;    /* 12px */
-	--font-size-sm: 0.875rem;   /* 14px */
-	--font-size-base: 1rem;     /* 16px */
-	--font-size-lg: 1.125rem;    /* 18px */
-	--font-size-xl: 1.25rem;    /* 20px */
-	--font-size-2xl: 1.5rem;    /* 24px */
-	--font-size-3xl: 1.875rem;  /* 30px */
-	--font-size-4xl: 2.25rem;   /* 36px */
-	--font-size-5xl: 2.5rem;    /* 40px */
-	--font-size-6xl: 3rem;      /* 48px */
-	--font-size-display: 3rem;  /* 48px - Hero headings */
-	--font-size-caption: 0.75rem; /* 12px */
+    --bg-elevated: rgb(255, 255, 255);
+    --bg-surface: var(--bg-primary);
+    --bg-hover: var(--color-primary-alpha-05);
+    --color-surface: var(--bg-elevated);
 
-	--font-weight-normal: 400;
-	--font-weight-medium: 500;
-	--font-weight-semibold: 600;
-	--font-weight-bold: 700;
+    --bg-sidebar: rgb(10, 25, 55);
+    --bg-sidebar-toggle: rgb(15, 35, 75);
+    --bg-sidebar-toggle-hover: rgb(20, 45, 95);
 
-	--line-height-tight: 1.2;
-	--line-height-normal: 1.5;
-	--line-height-relaxed: 1.75;
+    --bg-overlay: rgba(15, 23, 42, 0.45);
 
-	/* Transitions - Smooth (150-200ms) */
-	--transition-fast: 150ms ease;
-	--transition-base: 200ms ease;
-	--transition-smooth: 200ms cubic-bezier(0.4, 0, 0.2, 1);
 
-	/* Z-Index */
-	--z-base: 1;
-	--z-dropdown: 100;
-	--z-sticky: 200;
-	--z-fixed: 300;
-	--z-modal-backdrop: 400;
-	--z-modal: 500;
-	--z-tooltip: 600;
-	
-	/* Breakpoints - Responsive Design */
-	--breakpoint-sm: 640px;
-	--breakpoint-md: 768px;
-	--breakpoint-lg: 1024px;
-	--breakpoint-xl: 1280px;
-	--breakpoint-2xl: 1536px;
+    /* ============================================
+       PRIMARY ACCENT
+       ============================================ */
+
+    --color-primary: var(--color-brand-primary);
+    --color-primary-hover: var(--color-brand-primary-hover);
+    --color-primary-light: var(--color-brand-primary-soft);
+    --color-primary-dark: rgb(15, 75, 180);
+
+
+    /* ============================================
+       TEXT COLORS
+       ============================================ */
+
+    --text-primary: rgb(15, 23, 42);
+    --text-secondary: rgb(71, 85, 105);
+    --text-tertiary: rgb(100, 116, 139);
+    --text-disabled: rgb(148, 163, 184);
+    --text-muted: var(--text-tertiary);
+    --color-text: var(--text-primary);
+    --color-text-muted: var(--text-tertiary);
+
+    --text-inverse: rgb(255, 255, 255);
+
+    /* Text de accent (linkuri-acțiune, file active): albastru închis, ≥ 4,5:1 pe fundal deschis */
+    --text-accent: rgb(37, 82, 190);
+    --accent-primary: var(--color-primary);
+    /* Text de succes (ex. „Publicat”): verdele de fundal are doar ~3:1 ca text pe alb */
+    --text-success: rgb(21, 128, 61);
+
+
+    /* ============================================
+       BORDER COLORS
+       ============================================ */
+
+    --border-primary: rgb(226, 232, 240);
+    --border-secondary: rgb(148, 163, 184);
+
+    --border-accent: var(--color-brand-primary);
+    --border-focus: var(--color-brand-primary);
+
+
+    /* ============================================
+       BUTTON COLORS
+       ============================================ */
+
+    --btn-primary-bg: var(--color-brand-primary);
+    --btn-primary-text: var(--color-white);
+    --btn-primary-hover: var(--color-brand-primary-hover);
+    --btn-primary-border: var(--color-brand-primary);
+
+    --btn-secondary-bg: transparent;
+    --btn-secondary-text: var(--color-brand-primary);
+    --btn-secondary-border: var(--color-brand-primary);
+
+    --btn-secondary-hover: rgba(25, 112, 240, 0.08);
+
+    --btn-outline-border: rgb(100, 116, 139);
+    --btn-outline-border-hover: var(--text-primary);
+
+    /* Dimensiuni butoane - compacte, rotunjite */
+    --btn-desktop-padding-y: var(--space-3);
+    --btn-desktop-padding-x: var(--space-5);
+    --btn-desktop-min-height: 40px;
+    --btn-desktop-font-size: var(--font-size-sm);
+    --btn-desktop-gap: var(--space-2);
+    --btn-desktop-radius: var(--radius-2xl);
+
+    --btn-mobile-padding-y: var(--space-3);
+    --btn-mobile-padding-x: var(--space-4);
+    --btn-mobile-min-height: 40px;
+    --btn-mobile-min-width: 40px;
+    --btn-mobile-font-size: var(--font-size-base);
+    --btn-mobile-gap: var(--space-3);
+
+
+    /* ============================================
+       AI / NEURAL ACCENTS
+       ============================================ */
+
+    --accent-ai: var(--color-brand-blue);
+    --accent-neural: var(--color-brand-violet);
+    --accent-ai-rgb: 25, 112, 240;
+
+    --accent-cyan: var(--color-brand-cyan);
+    --accent-purple: var(--color-brand-violet);
+
+    --accent-warning: var(--color-warning);
+
+
+    /* ============================================
+       ALPHA COLORS
+       ============================================ */
+
+    --color-primary-alpha-05: rgba(
+        var(--color-primary-rgb),
+        0.05
+    );
+
+    --color-primary-alpha-10: rgba(
+        var(--color-primary-rgb),
+        0.10
+    );
+
+    --color-primary-alpha-15: rgba(
+        var(--color-primary-rgb),
+        0.15
+    );
+
+    --color-primary-alpha-20: rgba(
+        var(--color-primary-rgb),
+        0.20
+    );
+
+    --color-primary-alpha-30: rgba(
+        var(--color-primary-rgb),
+        0.30
+    );
+
+    --color-primary-alpha-50: rgba(
+        var(--color-primary-rgb),
+        0.50
+    );
+
+
+    /* ============================================
+       SHADOWS
+       ============================================ */
+
+    --shadow-xs:
+        0 1px 2px rgba(15, 23, 42, 0.04);
+
+    --shadow-sm:
+        0 1px 3px rgba(15, 23, 42, 0.08);
+
+    --shadow-md:
+        0 4px 10px rgba(15, 23, 42, 0.10);
+
+    --shadow-lg:
+        0 10px 25px rgba(15, 23, 42, 0.12);
+
+    --shadow-xl:
+        0 20px 40px rgba(15, 23, 42, 0.14);
+
+    --shadow-2xl:
+        0 25px 50px rgba(15, 23, 42, 0.18);
+
+    --shadow-focus:
+        0 0 0 3px var(--color-primary-alpha-20);
+
+    --shadow-brand:
+        0 8px 25px rgba(25, 112, 240, 0.22);
+
+    --shadow-brand-lg:
+        0 15px 40px rgba(25, 112, 240, 0.25);
+
+
+    /* ============================================
+       EXTENDED SHADOW SYSTEM
+       ============================================ */
+
+    --shadow-hover: var(--shadow-md);
+    --shadow-active: var(--shadow-sm);
+
+    --shadow-inset:
+        inset 0 2px 4px rgba(15, 23, 42, 0.08);
+
+
+    /* ============================================
+       BORDER RADIUS
+       ============================================ */
+
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-2xl: 20px;
+    --radius-3xl: 24px;
+    --radius-full: 9999px;
+
+
+    /* ============================================
+       SPACING
+       ============================================ */
+
+    --space-1: 4px;
+    --space-1-5: 6px;
+    --space-2: 8px;
+    --space-2-5: 10px;
+    --space-3: 12px;
+    --space-3-5: 14px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 28px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+    --space-16: 64px;
+
+    --space-card: var(--space-6);
+    --space-section: var(--space-8);
+    --space-page: var(--space-10);
+    --space-container: var(--space-12);
+
+
+    /* ============================================
+       TYPOGRAPHY
+       ============================================ */
+
+    --font-family:
+        'Noto Sans',
+        -apple-system,
+        BlinkMacSystemFont,
+        'Segoe UI',
+        'Roboto',
+        'Oxygen',
+        'Ubuntu',
+        'Cantarell',
+        sans-serif;
+
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-md: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 1.875rem;
+    --font-size-4xl: 2.25rem;
+    --font-size-5xl: 2.5rem;
+    --font-size-6xl: 3rem;
+
+    --font-size-display: 3rem;
+    --font-size-caption: 0.75rem;
+
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+    --line-height-tight: 1.2;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.75;
+
+
+    /* ============================================
+       TRANSITIONS
+       ============================================ */
+
+    --transition-fast: 150ms ease;
+
+    --transition-base: 200ms ease;
+
+    --transition-smooth:
+        200ms cubic-bezier(0.4, 0, 0.2, 1);
+
+
+    /* ============================================
+       Z-INDEX
+       ============================================ */
+
+    --z-base: 1;
+    --z-dropdown: 100;
+    --z-sticky: 200;
+    --z-fixed: 300;
+    --z-modal-backdrop: 400;
+    --z-modal: 500;
+    --z-tooltip: 600;
+
+
+    /* ============================================
+       BREAKPOINTS
+       ============================================ */
+
+    --breakpoint-sm: 640px;
+    --breakpoint-md: 768px;
+    --breakpoint-lg: 1024px;
+    --breakpoint-xl: 1280px;
+    --breakpoint-2xl: 1536px;
 }
 
-/* Light Theme Override - Modern & Professional */
-[data-theme="light"] {
-	/* Keep light theme aligned to shared palette */
-	--bg-primary: rgb(248, 250, 252);
-	--bg-secondary: rgb(241, 245, 249);
-	--bg-tertiary: rgb(226, 232, 240);
-	--bg-elevated: rgb(255, 255, 255);
-	--bg-overlay: rgba(15, 23, 42, 0.45);
-
-	--text-primary: rgb(15, 23, 42);
-	--text-secondary: rgb(71, 85, 105);
-	--text-tertiary: rgb(100, 116, 139);
-	--text-disabled: rgb(156, 163, 175);
-
-	--border-primary: rgb(226, 232, 240);
-	--border-secondary: rgb(148, 163, 184);
-
-	/* Primary Alpha - slightly stronger on light backgrounds for visibility */
-	--color-primary-alpha-10: rgba(var(--color-primary-rgb), 0.12);
-	--color-primary-alpha-15: rgba(var(--color-primary-rgb), 0.18);
-	--color-primary-alpha-20: rgba(var(--color-primary-rgb), 0.25);
-	--color-primary-alpha-30: rgba(var(--color-primary-rgb), 0.35);
-
-	/* Shadows - Soft, Layered, Modern */
-	--shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-	--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-	--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-	--shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-	--shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-	--shadow-focus: 0 0 0 3px var(--color-primary-alpha-30);
-	
-	/* Extended Shadow System - State-specific */
-	--shadow-hover: var(--shadow-md);
-	--shadow-active: var(--shadow-sm);
-	--shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-}
 
 /* ============================================
    2. GLOBAL RESET & BASE STYLES

@@ -164,7 +164,7 @@ const AdminDashboardPage = () => {
 		{ key: 'enrolled', label: 'Înscrieri active', short: 'Înscrieri', count: readMetricValue(learningFunnel.enrolled), fill: '#64748b' },
 		{ key: 'started', label: 'Cu început înregistrat', short: 'Început', count: readMetricValue(learningFunnel.started), fill: '#3b82f6' },
 		{ key: 'p25', label: 'Progres ≥ 25%', short: '≥25%', count: readMetricValue(learningFunnel.progress_25), fill: '#8b5cf6' },
-		{ key: 'p50', label: 'Progres ≥ 50%', short: '≥50%', count: readMetricValue(learningFunnel.progress_50), fill: '#ca8a04' },
+		{ key: 'p50', label: 'Progres ≥ 50%', short: '≥50%', count: readMetricValue(learningFunnel.progress_50), fill: '#06b6d4' },
 		{ key: 'p75', label: 'Progres ≥ 75%', short: '≥75%', count: readMetricValue(learningFunnel.progress_75), fill: '#f97316' },
 		{ key: 'completed', label: 'Finalizat curs', short: 'Finalizat', count: readMetricValue(learningFunnel.completed), fill: '#22c55e' },
 	]), [learningFunnel]);

@@ -142,7 +142,7 @@ body.admin-view .va-main {
 	color: var(--color-primary-hover);
 }
 
-/* Light theme - yellow background with black text */
+/* Fundal albastru Formely, text alb */
 [data-theme="light"] .admin-btn-secondary {
 	color: var(--text-inverse);
 	border-color: var(--color-primary);
@@ -680,15 +680,6 @@ body.admin-view .va-main {
 .admin-team-card-compact__avatar svg {
 	display: block;
 	flex-shrink: 0;
-}
-
-/* pe fundalul galben iconița rămâne închisă și în tema întunecată (albă nu se vedea) */
-html[data-theme="dark"] .admin-team-card-compact__avatar {
-	color: var(--btn-primary-text);
-}
-
-html[data-theme="dark"] .admin-team-card-compact__avatar svg {
-	color: var(--btn-primary-text);
 }
 
 .admin-team-card-compact__stats {
@@ -2360,25 +2351,6 @@ body.admin-view .admin-lesson-creator-page {
 	}
 }
 
-/* ============================================
-   LIGHT THEME - BADGE IMPROVEMENTS
-   ============================================ */
-
-/* Admin card badges with yellow background need dark text in light theme */
-
-/* Generic badge styles for light theme */
-[data-theme="light"] span[class*="badge"][style*="rgba(255, 238, 0"] {
-	background: rgba(31, 41, 55, 0.1) !important;
-	color: var(--text-primary) !important;
-	border: 1px solid rgba(31, 41, 55, 0.2) !important;
-}
-
-[data-theme="light"] span[class*="badge"][style*="rgb(255, 238, 0)"] {
-	background: rgba(31, 41, 55, 0.1) !important;
-	color: var(--text-primary) !important;
-	border: 1px solid rgba(31, 41, 55, 0.2) !important;
-}
-
 html body .admin-back-btn.admin-back-btn {
 	display: inline-flex !important;
 	align-items: center;
@@ -2452,12 +2424,6 @@ html body .admin-excel-export-btn.admin-excel-export-btn:disabled {
 	opacity: 0.5;
 	cursor: not-allowed;
 	box-shadow: none !important;
-}
-
-html[data-theme='dark'] body .admin-back-btn.admin-back-btn {
-	border-color: var(--border-secondary) !important;
-	background: var(--bg-elevated) !important;
-	color: var(--text-primary) !important;
 }
 
 /*

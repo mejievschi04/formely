@@ -112,7 +112,7 @@
 	transform: none;
 }
 
-/* Light theme - yellow background with black text */
+/* Fundal albastru Formely, text alb */
 [data-theme="light"] .lms-btn-primary {
 	background-color: var(--color-primary);
 	color: var(--text-inverse);

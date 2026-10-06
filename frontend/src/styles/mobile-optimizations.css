@@ -777,7 +777,7 @@
 		overflow: hidden !important;
 	}
 
-	/* Hide Volta Academy text from topnav on desktop (both) */
+	/* Hide Formely text from topnav on desktop (both) */
 	.modern-topnav .va-topnav-page-title,
 	.admin-topnav .va-topnav-page-title,
 	.va-topnav .va-topnav-page-title {
@@ -3290,8 +3290,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: flex-start;
-		background: var(--bg-sidebar-toggle);
-		background-color: var(--bg-sidebar-toggle);
+		background: var(--gradient-brand-soft);
+		background-color: var(--bg-primary);
 		overflow-y: auto;
 		overflow-x: hidden;
 		-webkit-overflow-scrolling: touch;
@@ -3302,7 +3302,7 @@
 		position: fixed;
 		inset: 0;
 		z-index: 0;
-		background: var(--bg-sidebar-toggle);
+		background: var(--gradient-brand-soft);
 	}
 
 	.modern-auth-gradient {
@@ -3310,7 +3310,7 @@
 	}
 
 	.modern-auth-pattern {
-		background: var(--bg-sidebar-toggle);
+		background: var(--gradient-brand-soft);
 	}
 
 	.modern-auth-content {
@@ -3727,161 +3727,10 @@
 }
 
 /* ============================================
-   14. LOADING PAGE (SPLASH SCREEN) - Mobile
-   ============================================ */
-
-/* Forțează text typewriter alb pe splash, indiferent de temă (loads last) */
-.splash-page .splash-typewriter .splash-typewriter-text,
-.splash-page .splash-typewriter .splash-typewriter-cursor {
-	color: var(--color-white) !important;
-}
-
-@media (max-width: 768px) {
-	.splash-page {
-		position: fixed !important;
-		inset: 0 !important;
-		padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left) !important;
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: center !important;
-		justify-content: center !important;
-		background: var(--bg-sidebar-toggle) !important;
-		z-index: 10000 !important;
-		overflow: hidden !important;
-	}
-
-	.splash-light-overlay,
-	.splash-login-like-background,
-	.splash-login-liquid-ether,
-	.splash-login-gradient,
-	.splash-login-pattern,
-	.splash-logo-center-mask,
-	.splash-bulb-container,
-	.splash-typewriter {
-		display: none !important;
-	}
-
-	.splash-content {
-		position: absolute !important;
-		inset: 0 !important;
-		gap: 0 !important;
-		padding: 0 !important;
-		max-height: none !important;
-		overflow: visible !important;
-	}
-
-	.splash-center-area {
-		position: absolute !important;
-		left: 50% !important;
-		top: auto !important;
-		bottom: calc(50% + 44px) !important;
-		transform: translateX(-50%) !important;
-		min-width: 0 !important;
-		min-height: 0 !important;
-		gap: 0 !important;
-	}
-
-	.splash-logo-container {
-		flex-shrink: 0;
-		opacity: 1 !important;
-		transform: none !important;
-		animation: none !important;
-	}
-
-	.splash-logo-img {
-		width: 120px !important;
-		height: 120px !important;
-	}
-
-	.splash-page .splash-brand-title,
-	.splash-brand-title {
-		position: absolute !important;
-		top: 50% !important;
-		left: 50% !important;
-		z-index: 10 !important;
-		margin: 0 !important;
-		transform: translate(-50%, -50%) !important;
-		font-size: 2.15rem !important;
-		font-weight: var(--font-weight-semibold) !important;
-		letter-spacing: 3px !important;
-		text-transform: uppercase !important;
-		color: #ffffff !important;
-		white-space: nowrap !important;
-	}
-
-	[data-theme="light"] .splash-page .splash-brand-title {
-		color: #ffffff !important;
-	}
-
-	.splash-page .splash-start-btn,
-	.splash-start-btn,
-	.splash-loading-dots {
-		position: absolute !important;
-		top: 75% !important;
-		left: 50% !important;
-		right: auto !important;
-		bottom: auto !important;
-		transform: translate(-50%, -50%) !important;
-		animation: none !important;
-	}
-
-	.splash-page .splash-start-btn:hover,
-	.splash-start-btn:hover,
-	.splash-page .splash-start-btn:active,
-	.splash-start-btn:active {
-		transform: translate(-50%, -50%) !important;
-	}
-
-	.splash-powered-by {
-		left: 50% !important;
-		bottom: max(var(--space-5), env(safe-area-inset-bottom)) !important;
-		transform: translateX(-50%) !important;
-		z-index: 10 !important;
-	}
-}
-
-@media (max-width: 480px) {
-	.splash-center-area {
-		bottom: calc(50% + 40px) !important;
-	}
-
-	.splash-logo-img {
-		width: 104px !important;
-		height: 104px !important;
-	}
-
-	.splash-page .splash-brand-title,
-	.splash-brand-title {
-		font-size: 1.7rem !important;
-		letter-spacing: 2px !important;
-	}
-
-	.splash-powered-by {
-		bottom: max(var(--space-4), env(safe-area-inset-bottom)) !important;
-		font-size: 0.62rem !important;
-	}
-}
-
-/* ============================================
    15. LANDSCAPE ORIENTATION
    ============================================ */
 
 @media (max-width: 768px) and (orientation: landscape) {
-
-	/* Splash - spațiu redus în landscape */
-	.splash-center-area {
-		bottom: calc(50% + 28px) !important;
-	}
-
-	.splash-logo-img {
-		width: 72px !important;
-		height: 72px !important;
-	}
-
-	.splash-brand-title {
-		font-size: 1.4rem !important;
-		letter-spacing: 2px !important;
-	}
 
 	.modern-auth-container {
 		padding-top: max(var(--space-2), env(safe-area-inset-top)) !important;
@@ -4333,18 +4182,7 @@
 	}
 }
 
-/* Black foreground on yellow active mobile navigation, including dark mode. */
-@media (max-width: 768px) {
-	html[data-theme='dark'] .va-shell .student-mobile-tab.active,
-	html[data-theme='dark'] .va-shell .student-mobile-tab.active > span,
-	html[data-theme='dark'] .va-shell .student-mobile-tab.active svg,
-	html[data-theme='dark'] .courses-page-student-filter.is-active,
-	html[data-theme='dark'] .courses-page-student-filter.is-active .courses-page-student-filter-label,
-	html[data-theme='dark'] .courses-page-student-filter.is-active .courses-page-student-filter-count {
-		color: var(--btn-primary-text) !important;
-	}
-}
-
+/* Active mobile navigation uses the primary button text color. */
 /* Match active drawer items to the high-contrast mobile navigation. */
 html .va-shell .modern-sidebar .modern-nav-item:is(.active, .is-active) {
 	background: var(--btn-primary-bg);

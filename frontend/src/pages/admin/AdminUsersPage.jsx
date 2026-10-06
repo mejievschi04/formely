@@ -171,7 +171,7 @@ const AdminUsersPage = () => {
 				delete dataToSend.team_id;
 				await adminService.updateUser(editingUser.id, dataToSend);
 			} else {
-				// Parola nu este obligatorie - va fi setată automat la "volta2026" în backend
+				// Parola nu este obligatorie - va fi setată automat la "formely2025" în backend
 				await adminService.createUser(dataToSend);
 			}
 
@@ -770,12 +770,12 @@ const AdminUsersPage = () => {
 									className="admin-form-input"
 									value={formData.password}
 									onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-									placeholder={!editingUser ? 'Implicit: volta2026' : 'Neschimbată'}
+									placeholder={!editingUser ? 'Implicit: formely2025' : 'Neschimbată'}
 									minLength={formData.password ? 6 : undefined}
 								/>
 								{!editingUser ? (
 									<p className="va-field__hint">
-										Dacă rămâne goală, utilizatorul primește parola <strong>volta2026</strong> și o schimbă la prima autentificare.
+										Dacă rămâne goală, utilizatorul primește parola <strong>formely2025</strong> și o schimbă la prima autentificare.
 									</p>
 								) : null}
 							</div>

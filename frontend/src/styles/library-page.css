@@ -206,7 +206,7 @@ body.admin-view .va-main.library-page {
 	font-weight: 800;
 	letter-spacing: 0.14em;
 	text-transform: uppercase;
-	color: var(--lib-cover-accent, #fde68a);
+	color: var(--lib-cover-accent, #67e8f9);
 	text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
 	padding: 0.28rem 0.55rem;
 	border-radius: 6px;

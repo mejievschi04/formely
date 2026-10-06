@@ -412,11 +412,11 @@
 
 .admin-statistics-row-clickable:hover td,
 .admin-statistics-row-clickable:focus-visible td {
-	background: color-mix(in srgb, var(--btn-primary-bg, #f5c518) 10%, transparent);
+	background: color-mix(in srgb, var(--btn-primary-bg) 10%, transparent);
 }
 
 .admin-statistics-row-clickable:focus-visible {
-	outline: 2px solid var(--btn-primary-bg, #f5c518);
+	outline: 2px solid var(--btn-primary-bg);
 	outline-offset: -2px;
 }
 

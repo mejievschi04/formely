@@ -223,12 +223,6 @@
 	background-color: transparent;
 }
 
-html[data-theme='dark'] .courses-page-student-filter.is-active,
-html[data-theme='dark'] .courses-page-student-filter.is-active .courses-page-student-filter-label,
-html[data-theme='dark'] .courses-page-student-filter.is-active .courses-page-student-filter-count {
-	color: #000000;
-}
-
 .courses-page-filtered-section {
 	margin-bottom: var(--space-6);
 }
@@ -654,7 +648,7 @@ html[data-theme='dark'] .courses-page-student-filter.is-active .courses-page-stu
 /* List View - Inline (horizontal) */
 
 /* ============================================
-   COURSE CARD - exact ca în imagine: dosar galben, tab care iese în afară, dreptunghi gri, plus colț
+   COURSE CARD - exact ca în imagine: dosar albastru, tab care iese în afară, dreptunghi gri, plus colț
    ============================================ */
 
 /* Tab dosar – iese în afară deasupra cardului */
@@ -665,7 +659,7 @@ html[data-theme='dark'] .courses-page-student-filter.is-active .courses-page-stu
 
 /* Pătrat negru cu plus în colțul dreapta jos – colțuri ascuțite */
 
-/* Conținut text pe galben – spațiu lăsat pentru butonul plus */
+/* Conținut text pe albastru – spațiu lăsat pentru butonul plus */
 
 /* ============================================
    EMPTY STATE

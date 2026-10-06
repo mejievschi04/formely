@@ -3,10 +3,8 @@ import {
 	EnvelopeSimple,
 	FloppyDisk,
 	IdentificationBadge,
-	PaintBrush,
 	ShieldCheck,
 } from '@phosphor-icons/react';
-import ThemePreferenceControl from '../components/ThemePreferenceControl';
 import { profileService } from '../services/api';
 import { useAuth } from '../contexts/AuthContextShared.js';
 import { useToast } from '../contexts/ToastContextShared.js';
@@ -106,25 +104,6 @@ const StudentSettingsPage = () => {
 						</div>
 					</aside>
 
-					<section
-						className="student-settings-section student-settings-appearance-card"
-						aria-labelledby="student-settings-appearance"
-					>
-						<div className="student-settings-section-header">
-							<span className="student-settings-section-icon">
-								<PaintBrush size={18} weight="duotone" aria-hidden />
-							</span>
-							<div>
-								<h2 id="student-settings-appearance" className="student-settings-section-title">
-									Aspect
-								</h2>
-								<p className="student-settings-section-hint">Alege modul luminos sau întunecat.</p>
-							</div>
-						</div>
-						<div className="student-settings-theme">
-							<ThemePreferenceControl className="student-settings-theme-control" />
-						</div>
-					</section>
 				</div>
 
 				<section

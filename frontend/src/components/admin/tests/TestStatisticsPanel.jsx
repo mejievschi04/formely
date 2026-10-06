@@ -286,7 +286,7 @@ export default function TestStatisticsPanel({ testId, testTitle = 'Test' }) {
 							<KpiCard icon={ChartBar} label="Medie" value={summary.average_percentage != null ? `${summary.average_percentage}%` : '—'} hint={`Scor mediu ${summary.average_score ?? '—'}`} accent="#8b5cf6" />
 							<KpiCard icon={ChartPieSlice} label="Interval" value={`${summary.low_percentage ?? '—'}–${summary.high_percentage ?? '—'}%`} hint={`Prag ${summary.passing_score ?? 70}%`} accent="#0ea5e9" />
 							{summary.pending_review_count > 0 ? (
-								<KpiCard icon={WarningCircle} label="Verificare" value={summary.pending_review_count} hint="Încercări în așteptare" accent="#f59e0b" />
+								<KpiCard icon={WarningCircle} label="Verificare" value={summary.pending_review_count} hint="Încercări în așteptare" accent="#ea580c" />
 							) : null}
 						</div>
 

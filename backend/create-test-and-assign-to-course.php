@@ -35,7 +35,7 @@ $admin = User::where('role', 'admin')->first();
 if (!$admin) {
     $admin = User::factory()->create([
         'role' => 'admin',
-        'email' => 'admin@volta.academy',
+        'email' => 'admin@formely.local',
         'name' => 'Admin',
     ]);
     echo "✅ Utilizator admin creat: {$admin->email}\n\n";

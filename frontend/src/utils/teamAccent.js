@@ -6,7 +6,7 @@ export const TEAM_ACCENT_COLORS = [
 	'#6366f1',
 	'#ec4899',
 	'#14b8a6',
-	'#f59e0b',
+	'#ea580c',
 	'#8b5cf6',
 	'#06b6d4',
 	'#84cc16',
