@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { setTrialDays } from './lib';
 
 const api = axios.create({
   baseURL: '/api',
@@ -16,6 +17,18 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Sesiune expirată / cont blocat: AuthProvider trimite operatorul la login.
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const url = String(error.config?.url || '');
+    if (error.response?.status === 401 && !url.startsWith('/auth/')) {
+      window.dispatchEvent(new CustomEvent('bo:unauthorized'));
+    }
+    return Promise.reject(error);
+  },
+);
 
 export async function csrf() {
   await api.get('/csrf-cookie');
@@ -36,7 +49,11 @@ export const platform = {
     await api.post('/auth/logout');
   },
   overview: async () => (await api.get('/platform/overview')).data,
-  plans: async () => (await api.get('/platform/plans')).data,
+  plans: async () => {
+    const { data } = await api.get('/platform/plans');
+    setTrialDays(data?.trial_days);
+    return data;
+  },
   companies: async (params) => (await api.get('/platform/companies', { params })).data,
   company: async (id) => (await api.get(`/platform/companies/${id}`)).data,
   createCompany: async (payload) => (await api.post('/platform/companies', payload)).data,

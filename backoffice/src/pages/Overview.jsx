@@ -6,6 +6,8 @@ import { SeatMeter } from '../ui';
 import { useToast } from '../toast';
 import { usePoll } from '../usePoll';
 
+const ATTENTION_LIMIT = 6;
+
 export default function OverviewPage() {
   const { push } = useToast();
   const [data, setData] = useState(null);
@@ -78,7 +80,7 @@ export default function OverviewPage() {
         <article>
           <span>Staff</span>
           <strong>{seats(kpis.staff?.used, kpis.staff?.max)}</strong>
-          <small>Owneri, admini, instructori</small>
+          <small>Admini, instructori, analiști</small>
         </article>
         <article className={(kpis.needs_attention || 0) > 0 ? 'is-alert' : ''}>
           <span>De rezolvat</span>
@@ -119,7 +121,7 @@ export default function OverviewPage() {
             <p className="bo-muted">Nimic urgent. Toate academiile sunt în parametrii planului.</p>
           ) : (
             <ul className="bo-attention">
-              {uniqueAttention.map((item) => (
+              {uniqueAttention.slice(0, ATTENTION_LIMIT).map((item) => (
                 <li key={item.id} data-severity={item.health?.severity || 'watch'}>
                   <div>
                     <strong>{item.name}</strong>
@@ -139,6 +141,11 @@ export default function OverviewPage() {
                 </li>
               ))}
             </ul>
+          )}
+          {uniqueAttention.length > ATTENTION_LIMIT && (
+            <Link to="/clients" className="bo-attention__more">
+              + încă {(kpis.needs_attention ?? uniqueAttention.length) - ATTENTION_LIMIT} academii de verificat
+            </Link>
           )}
         </section>
 

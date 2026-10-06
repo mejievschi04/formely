@@ -4,7 +4,7 @@ import { platform } from '../api';
 import {
   PLAN_LABELS,
   STATUS_LABELS,
-  TRIAL_DAYS,
+  getTrialDays,
   errMessage,
   featureSummary,
   planSeatLabel,
@@ -181,11 +181,6 @@ export default function ClientsPage() {
         owner_name: form.owner_name.trim() || undefined,
         notes: form.notes.trim() || undefined,
       };
-      if (form.status === 'trial') {
-        const ends = new Date();
-        ends.setDate(ends.getDate() + TRIAL_DAYS);
-        payload.trial_ends_at = ends.toISOString();
-      }
       const created = await platform.createCompany(payload);
       setInviteUrl(created?.invite_url || '');
       setCreatedId(created?.company?.id || null);
@@ -427,7 +422,7 @@ export default function ClientsPage() {
             <label>
               Start
               <select value={form.status} onChange={update('status')}>
-                <option value="trial">Trial {TRIAL_DAYS} zile</option>
+                <option value="trial">Trial {getTrialDays()} zile</option>
                 <option value="active">Activ (contract)</option>
               </select>
             </label>

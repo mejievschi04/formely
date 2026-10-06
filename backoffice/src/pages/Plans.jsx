@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { platform } from '../api';
-import { errMessage, featureSummary, hasUpcomingAi, planSeatLabel } from '../lib';
+import { aiFeatures, errMessage, featureSummary, planSeatLabel } from '../lib';
 import { useToast } from '../toast';
 
 export default function PlansPage() {
@@ -36,9 +36,9 @@ export default function PlansPage() {
                 {plan.max_staff != null ? ` · până la ${plan.max_staff} staff` : ''}
               </p>
               <p>{featureSummary(plan.features)}</p>
-              {hasUpcomingAi(plan.features) ? (
+              {aiFeatures(plan.features).length ? (
                 <p className="bo-muted">
-                  Formely AI nu e live. Flag-urile din catalog rămân pentru activare ulterioară, nu se vând acum.
+                  Funcțiile Formely AI pornesc în LMS doar dacă serverul are o cheie AI configurată.
                 </p>
               ) : null}
               <Link className="bo-btn bo-btn--sm" to={`/clients?plan=${plan.id}`}>

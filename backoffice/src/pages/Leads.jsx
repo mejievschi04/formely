@@ -1,21 +1,22 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { platform } from '../api';
 import {
   LEAD_STATUS,
   PLAN_LABELS,
-  TRIAL_DAYS,
+  getTrialDays,
   errMessage,
   formatDate,
   leadReason,
   leadSource,
   slugify,
 } from '../lib';
-import { Overlay, copyText } from '../ui';
+import { Overlay, Pagination, copyText } from '../ui';
 import { useToast } from '../toast';
 import { usePoll } from '../usePoll';
 
 const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://formely.org';
+const PER_PAGE = 50;
 
 function LeadDrawer({ lead, open, onClose, onConvert, onStatus }) {
   if (!open || !lead) return null;
@@ -136,6 +137,9 @@ export default function LeadsPage() {
   const [status, setStatus] = useState('');
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [meta, setMeta] = useState({ current_page: 1, last_page: 1, total: 0 });
+  const [serverCounts, setServerCounts] = useState({});
+  const [page, setPage] = useState(1);
   const [selected, setSelected] = useState(null);
   const [converting, setConverting] = useState(null);
   const [convertForm, setConvertForm] = useState(null);
@@ -146,20 +150,29 @@ export default function LeadsPage() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const statusRef = useRef(status);
   const queryRef = useRef(query);
+  const pageRef = useRef(page);
   statusRef.current = status;
   queryRef.current = query;
+  pageRef.current = page;
 
   const load = useCallback(async (filters = {}, opts = {}) => {
     const silent = opts.silent === true;
     try {
       if (!silent) setLoading(true);
       const res = await platform.leads({
-        per_page: 100,
+        per_page: PER_PAGE,
+        page: filters.page ?? pageRef.current,
         status: (filters.status ?? statusRef.current) || undefined,
         q: (filters.q ?? queryRef.current) || undefined,
       });
       const rows = res?.data || [];
       setLeads(rows);
+      setMeta({
+        current_page: res?.current_page || 1,
+        last_page: res?.last_page || 1,
+        total: res?.total || 0,
+      });
+      setServerCounts(res?.counts || {});
       setChecked((prev) => {
         const ids = new Set(rows.map((l) => l.id));
         const next = new Set();
@@ -181,6 +194,7 @@ export default function LeadsPage() {
 
   useEffect(() => {
     load();
+    platform.plans().catch(() => {});
   }, [load]);
 
   usePoll(() => load({}, { silent: true }), 8000);
@@ -224,13 +238,12 @@ export default function LeadsPage() {
     return () => document.removeEventListener('keydown', onKey);
   }, [selected, converting]);
 
-  const counts = useMemo(() => {
-    const all = { all: leads.length };
-    Object.keys(LEAD_STATUS).forEach((key) => {
-      all[key] = leads.filter((l) => l.status === key).length;
-    });
-    return all;
-  }, [leads]);
+  // Contoarele vin de la server și acoperă toate cererile, nu doar pagina curentă.
+  const counts = serverCounts;
+  const goToPage = (p) => {
+    setPage(p);
+    load({ page: p });
+  };
 
   const setLeadStatus = async (lead, next) => {
     try {
@@ -324,7 +337,10 @@ export default function LeadsPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') load({ q: e.currentTarget.value });
+            if (e.key === 'Enter') {
+              setPage(1);
+              load({ q: e.currentTarget.value, page: 1 });
+            }
           }}
         />
         <select
@@ -332,7 +348,8 @@ export default function LeadsPage() {
           value={status}
           onChange={(e) => {
             setStatus(e.target.value);
-            load({ status: e.target.value });
+            setPage(1);
+            load({ status: e.target.value, page: 1 });
           }}
         >
           <option value="">Toate</option>
@@ -340,7 +357,7 @@ export default function LeadsPage() {
             <option key={value} value={value}>{label}</option>
           ))}
         </select>
-        <button type="button" className="bo-btn bo-btn--sm" onClick={() => load()}>
+        <button type="button" className="bo-btn bo-btn--sm" onClick={() => { setPage(1); load({ page: 1 }); }}>
           Caută
         </button>
       </div>
@@ -365,12 +382,13 @@ export default function LeadsPage() {
 
       <section className="bo-card">
         <div className="bo-card__head">
-          <h2>{loading ? '…' : `${leads.length} cereri`}</h2>
+          <h2>{loading ? '…' : `${meta.total} cereri`}</h2>
           {!status && (
             <span className="bo-muted">
               {counts.new || 0} noi · {counts.contacted || 0} contactate · {counts.qualified || 0} calificate
             </span>
           )}
+          <Pagination page={meta.current_page} lastPage={meta.last_page} onPage={goToPage} />
         </div>
         <div className="bo-table-wrap">
           {loading && leads.length === 0 ? (
@@ -556,7 +574,7 @@ export default function LeadsPage() {
                 value={convertForm?.status || 'trial'}
                 onChange={(e) => setConvertForm((p) => ({ ...p, status: e.target.value }))}
               >
-                <option value="trial">Trial {TRIAL_DAYS} zile</option>
+                <option value="trial">Trial {getTrialDays()} zile</option>
                 <option value="active">Activ (contract)</option>
               </select>
             </label>

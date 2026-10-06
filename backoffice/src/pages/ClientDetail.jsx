@@ -5,7 +5,7 @@ import {
   PLAN_LABELS,
   REASON_LABELS,
   STATUS_LABELS,
-  TRIAL_DAYS,
+  getTrialDays,
   dateInputToIso,
   emptyFeatures,
   errMessage,
@@ -306,7 +306,7 @@ export default function ClientDetailPage() {
                     ...p,
                     status,
                     trial_ends_at: status === 'trial' && !p.trial_ends_at
-                      ? toDateInput(new Date(Date.now() + TRIAL_DAYS * 86400000).toISOString())
+                      ? toDateInput(new Date(Date.now() + getTrialDays() * 86400000).toISOString())
                       : p.trial_ends_at,
                   }));
                 }}

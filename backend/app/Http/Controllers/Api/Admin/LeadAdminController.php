@@ -42,7 +42,13 @@ class LeadAdminController extends Controller
         $paginator = $query->paginate(min(100, max(1, (int) $request->get('per_page', 25))));
         $paginator->getCollection()->transform(fn (Lead $lead) => $lead->toPlatformArray());
 
-        return response()->json($paginator);
+        // Contoarele pe status sunt pentru toate cererile, nu doar pentru pagina curentă.
+        $counts = Lead::query()->selectRaw('status, count(*) as c')->groupBy('status')->pluck('c', 'status')
+            ->map(fn ($c) => (int) $c);
+
+        return response()->json(array_merge($paginator->toArray(), [
+            'counts' => array_merge(['all' => (int) $counts->sum()], $counts->all()),
+        ]));
     }
 
     public function update(Request $request, int $id)

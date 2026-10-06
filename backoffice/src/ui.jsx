@@ -32,12 +32,16 @@ export function Overlay({ open, onClose, title, children, wide }) {
   const titleId = useId();
   const panelRef = useRef(null);
   const previousFocus = useRef(null);
+  // onClose e de obicei o funcție nouă la fiecare render; în ref, ca efectul de focus
+  // să ruleze doar la deschidere / închidere, nu la fiecare tastă sau refresh automat.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) return undefined;
     previousFocus.current = document.activeElement;
     const onKey = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onCloseRef.current();
     };
     document.addEventListener('keydown', onKey);
     const t = window.setTimeout(() => {
@@ -53,7 +57,7 @@ export function Overlay({ open, onClose, title, children, wide }) {
         previousFocus.current.focus();
       }
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

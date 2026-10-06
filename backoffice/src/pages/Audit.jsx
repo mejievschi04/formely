@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { platform } from '../api';
 import { errMessage, formatDateTime } from '../lib';
 import { Pagination } from '../ui';
@@ -22,15 +22,22 @@ export default function AuditPage() {
   const [action, setAction] = useState('');
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  // Filtrele în ref: căutarea pornește la Enter / „Caută”, nu la fiecare tastă.
+  const queryRef = useRef(query);
+  const actionRef = useRef(action);
+  const pageRef = useRef(page);
+  queryRef.current = query;
+  actionRef.current = action;
+  pageRef.current = page;
 
   const load = useCallback(async (opts = {}) => {
     try {
       setLoading(true);
       const res = await platform.activityLogs({
         per_page: 40,
-        page: opts.page ?? page,
-        q: (opts.q ?? query) || undefined,
-        action: (opts.action ?? action) || undefined,
+        page: opts.page ?? pageRef.current,
+        q: (opts.q ?? queryRef.current) || undefined,
+        action: (opts.action ?? actionRef.current) || undefined,
       });
       setLogs(res?.data || []);
       setMeta({
@@ -44,7 +51,7 @@ export default function AuditPage() {
     } finally {
       setLoading(false);
     }
-  }, [action, page, push, query]);
+  }, [push]);
 
   useEffect(() => {
     load();

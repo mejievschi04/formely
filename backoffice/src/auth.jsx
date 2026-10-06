@@ -8,6 +8,19 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const onUnauthorized = () => {
+      try {
+        sessionStorage.setItem('bo_login_notice', 'Sesiunea a expirat. Autentifică-te din nou.');
+      } catch {
+        /* ignore */
+      }
+      setUser(null);
+    };
+    window.addEventListener('bo:unauthorized', onUnauthorized);
+    return () => window.removeEventListener('bo:unauthorized', onUnauthorized);
+  }, []);
+
+  useEffect(() => {
     platform
       .me()
       .then((data) => {

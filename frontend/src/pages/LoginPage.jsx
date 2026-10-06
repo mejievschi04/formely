@@ -23,15 +23,20 @@ const LoginPage = () => {
 	const [password, setPassword] = useState('');
 	const [showPassword, setShowPassword] = useState(false);
 	const [error, setError] = useState(() => {
-		// Formely: mesaj lăsat de interceptor când academia nu mai e activă.
+		// Mesaj lăsat la sesiune expirată / academie inactivă; se șterge în efect (StrictMode rulează inițializatorul de două ori).
 		try {
-			const notice = sessionStorage.getItem('formely_login_notice');
-			if (notice) sessionStorage.removeItem('formely_login_notice');
-			return notice || '';
+			return sessionStorage.getItem('formely_login_notice') || '';
 		} catch {
 			return '';
 		}
 	});
+	useEffect(() => {
+		try {
+			sessionStorage.removeItem('formely_login_notice');
+		} catch {
+			/* ignore */
+		}
+	}, []);
 	const [loading, setLoading] = useState(false);
 	// Formely e sales-led: linkul de înregistrare apare doar dacă register-ul public e pornit.
 	const [publicRegisterEnabled, setPublicRegisterEnabled] = useState(false);

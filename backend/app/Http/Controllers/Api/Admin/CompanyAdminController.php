@@ -8,6 +8,7 @@ use App\Models\Lead;
 use App\Models\User;
 use App\Models\RegistrationInvitation;
 use App\Models\Scopes\CompanyScope;
+use App\Models\Scopes\CompanyThroughScope;
 use App\Models\ActivityLog;
 use App\Services\CompanyDeletionService;
 use App\Services\PlanEntitlementService;
@@ -43,13 +44,15 @@ class CompanyAdminController extends Controller
         }
 
         if ($status = $request->get('status')) {
-            $query->where('status', $status);
+            // Acceptă și o listă: status=active,trial (ex. „De facturat”).
+            $query->whereIn('status', array_filter(array_map('trim', explode(',', (string) $status))));
         }
 
         $companies = $query->paginate(min(100, max(1, (int) $request->get('per_page', 25))));
 
-        $companies->getCollection()->transform(function (Company $company) {
-            return $this->serializeCompany($company);
+        $usage = $this->entitlements->seatUsage($companies->getCollection()->pluck('id'));
+        $companies->getCollection()->transform(function (Company $company) use ($usage) {
+            return $this->serializeCompany($company, false, $usage[(int) $company->id] ?? null);
         });
 
         return response()->json($companies);
@@ -290,7 +293,9 @@ class CompanyAdminController extends Controller
         $search = trim((string) $request->get('q', ''));
         $action = $request->get('action');
 
-        $query = ActivityLog::with('user:id,name,email')
+        // Jurnalul platformei nu aparține unei academii: fără scope-ul de tenant (operatorul are denyTenantData).
+        $query = ActivityLog::withoutGlobalScope(CompanyThroughScope::class)
+            ->with(['user' => fn ($q) => $q->withoutGlobalScopes()->select('id', 'name', 'email')])
             ->where('action', 'like', 'platform.%')
             ->orderByDesc('created_at')
             ->orderByDesc('id');
@@ -300,7 +305,7 @@ class CompanyAdminController extends Controller
                 $q->where('description', 'like', "%{$search}%")
                     ->orWhere('action', 'like', "%{$search}%")
                     ->orWhereHas('user', function ($uq) use ($search) {
-                        $uq->where('name', 'like', "%{$search}%")
+                        $uq->withoutGlobalScopes()->where('name', 'like', "%{$search}%")
                             ->orWhere('email', 'like', "%{$search}%");
                     });
             });
@@ -312,7 +317,7 @@ class CompanyAdminController extends Controller
 
         $logs = $query->paginate($perPage);
 
-        $actions = ActivityLog::query()
+        $actions = ActivityLog::withoutGlobalScope(CompanyThroughScope::class)
             ->where('action', 'like', 'platform.%')
             ->select('action')
             ->distinct()
@@ -335,6 +340,7 @@ class CompanyAdminController extends Controller
     public function overview()
     {
         $companies = Company::query()->orderBy('name')->get();
+        $usage = $this->entitlements->seatUsage($companies->pluck('id'));
 
         $byPlan = ['instructor' => 0, 'academie' => 0, 'business' => 0];
         $byStatus = ['active' => 0, 'trial' => 0, 'suspended' => 0];
@@ -356,7 +362,7 @@ class CompanyAdminController extends Controller
                 $byStatus[$status]++;
             }
 
-            $row = $this->serializeCompany($company);
+            $row = $this->serializeCompany($company, false, $usage[(int) $company->id] ?? null);
             $serialized[] = $row;
 
             $learnerUsed = (int) ($row['entitlements']['seats']['learners']['used'] ?? 0);
@@ -457,6 +463,7 @@ class CompanyAdminController extends Controller
                     'features' => $plan['features'] ?? [],
                 ];
             })->values(),
+            'trial_days' => (int) config('formely.trial_days', 15),
         ]);
     }
 
@@ -481,8 +488,8 @@ class CompanyAdminController extends Controller
             'trial_ends_at' => 'nullable|date',
             'contract_ends_at' => 'nullable|date',
             'notes' => 'nullable|string|max:5000',
-            'primary_color' => 'nullable|string|max:32',
-            'secondary_color' => 'nullable|string|max:32',
+            'primary_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'secondary_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'owner_email' => ($creating ? 'required' : 'sometimes').'|email|max:255',
             'owner_name' => 'nullable|string|max:255',
         ];
@@ -522,9 +529,9 @@ class CompanyAdminController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function serializeCompany(Company $company, bool $detailed = false): array
+    private function serializeCompany(Company $company, bool $detailed = false, ?array $usage = null): array
     {
-        $entitlements = $this->entitlements->entitlementsPayload($company);
+        $entitlements = $this->entitlements->entitlementsPayload($company, $usage);
         $payload = [
             'id' => $company->id,
             'name' => $company->name,

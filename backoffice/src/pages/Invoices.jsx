@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { platform } from '../api';
 import { PLAN_LABELS, STATUS_LABELS, errMessage, formatDate } from '../lib';
-import { SeatMeter } from '../ui';
+import { Pagination, SeatMeter } from '../ui';
 import { useToast } from '../toast';
 
 /** Pipeline comercial — nu există încă modul de facturi PDF. */
@@ -10,19 +10,26 @@ export default function InvoicesPage() {
   const { push } = useToast();
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [meta, setMeta] = useState({ current_page: 1, last_page: 1, total: 0 });
 
-  useEffect(() => {
+  // Filtrul active / trial se face pe server, cu paginare (nu doar primele 100 de academii).
+  const load = useCallback((page = 1) => {
+    setLoading(true);
     platform
-      .companies({ per_page: 100 })
-      .then((res) => setCompanies(res?.data || res || []))
+      .companies({ per_page: 50, page, status: 'active,trial' })
+      .then((res) => {
+        setCompanies(res?.data || []);
+        setMeta({ current_page: res?.current_page || 1, last_page: res?.last_page || 1, total: res?.total || 0 });
+      })
       .catch((err) => push(errMessage(err, 'Nu am putut încărca clienții.'), 'error'))
       .finally(() => setLoading(false));
   }, [push]);
 
-  const billable = useMemo(
-    () => companies.filter((c) => c.status === 'active' || c.status === 'trial'),
-    [companies],
-  );
+  useEffect(() => {
+    load(1);
+  }, [load]);
+
+  const billable = companies;
 
   return (
     <>
@@ -39,7 +46,8 @@ export default function InvoicesPage() {
       <section className="bo-card">
         <div className="bo-card__head">
           <h2>Pipeline</h2>
-          <span className="bo-muted">{billable.length} academii</span>
+          <span className="bo-muted">{meta.total} academii</span>
+          <Pagination page={meta.current_page} lastPage={meta.last_page} onPage={load} />
         </div>
         <div className="bo-table-wrap">
           {loading ? (

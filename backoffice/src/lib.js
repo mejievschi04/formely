@@ -41,7 +41,14 @@ export function leadReason(lead) {
   return CONTACT_REASON_LABELS[lead?.reason] || lead?.reason || '';
 }
 
-export const TRIAL_DAYS = 15;
+/** Zilele de trial vin din config-ul serverului (/platform/plans); 15 până la primul răspuns. */
+let trialDays = 15;
+export function setTrialDays(days) {
+  if (Number.isFinite(Number(days)) && Number(days) > 0) trialDays = Number(days);
+}
+export function getTrialDays() {
+  return trialDays;
+}
 
 export const REASON_LABELS = {
   trial_expired: 'Trial expirat',
@@ -53,11 +60,19 @@ export const REASON_LABELS = {
   watch: 'De urmărit',
 };
 
-/** Module live pe plan. Formely AI e în dezvoltare — nu se vinde aici. */
+/** Modulele din plan, așa cum apar în LMS (AI-ul cere și cheie AI configurată pe server). */
 export const FEATURE_LABELS = {
   library: 'Bibliotecă',
   events: 'Evenimente',
   analyst_role: 'Rol analist',
+};
+
+export const AI_FEATURE_LABELS = {
+  ai_creator: 'creare cursuri',
+  ai_builder: 'asistent în builder',
+  ai_test_generation: 'generare teste',
+  ai_tutor: 'instrumente de studiu',
+  ai_stats: 'rapoarte',
 };
 
 export function slugify(value) {
@@ -92,13 +107,16 @@ export function liveFeatures(features) {
     .map(([, label]) => label);
 }
 
-export function hasUpcomingAi(features) {
-  return Object.keys(features || {}).some((key) => key.startsWith('ai_') && features[key]);
+export function aiFeatures(features) {
+  return Object.entries(AI_FEATURE_LABELS)
+    .filter(([key]) => features?.[key])
+    .map(([, label]) => label);
 }
 
 export function featureSummary(features) {
   const live = liveFeatures(features);
-  if (hasUpcomingAi(features)) live.push('Formely AI — în curând');
+  const ai = aiFeatures(features);
+  if (ai.length) live.push(`Formely AI: ${ai.join(', ')}`);
   return live.length ? live.join(' · ') : 'Cursuri, teste, progres și certificări.';
 }
 

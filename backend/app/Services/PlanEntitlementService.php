@@ -238,16 +238,69 @@ class PlanEntitlementService
     }
 
     /**
-     * Payload for frontend /auth/me.
+     * Locurile folosite de mai multe academii, cu două query-uri grupate (nu câte ~10 pe academie).
      *
+     * @param  iterable<int|string>  $companyIds
+     * @return array<int, array{learners: int, staff: int, pending_learners: int, pending_staff: int}>
+     */
+    public function seatUsage(iterable $companyIds): array
+    {
+        $ids = collect($companyIds)->map(fn ($id) => (int) $id)->filter()->unique()->values();
+        $usage = $ids->mapWithKeys(fn (int $id) => [$id => ['learners' => 0, 'staff' => 0, 'pending_learners' => 0, 'pending_staff' => 0]])->all();
+        if ($ids->isEmpty()) {
+            return $usage;
+        }
+
+        $learnerRoles = UserRoles::learnerRoles();
+        $staffRoles = UserRoles::staffRoles();
+
+        User::withoutGlobalScope(CompanyScope::class)
+            ->whereIn('company_id', $ids)
+            ->whereIn('role', array_merge($learnerRoles, $staffRoles))
+            ->when(
+                Schema::hasColumn('users', 'status'),
+                fn ($q) => $q->where(function ($q2) {
+                    $q2->whereNull('status')->orWhereNotIn('status', ['inactive', 'suspended', 'deleted']);
+                })
+            )
+            ->toBase()
+            ->selectRaw('company_id, role, count(*) as c')
+            ->groupBy('company_id', 'role')
+            ->get()
+            ->each(function ($row) use (&$usage, $learnerRoles) {
+                $key = in_array($row->role, $learnerRoles, true) ? 'learners' : 'staff';
+                $usage[(int) $row->company_id][$key] += (int) $row->c;
+            });
+
+        RegistrationInvitation::withoutGlobalScope(CompanyScope::class)
+            ->whereIn('company_id', $ids)
+            ->whereNull('accepted_at')
+            ->where('expires_at', '>', now())
+            ->whereIn('role', array_merge($learnerRoles, $staffRoles))
+            ->toBase()
+            ->selectRaw('company_id, role, count(*) as c')
+            ->groupBy('company_id', 'role')
+            ->get()
+            ->each(function ($row) use (&$usage, $learnerRoles) {
+                $key = in_array($row->role, $learnerRoles, true) ? 'pending_learners' : 'pending_staff';
+                $usage[(int) $row->company_id][$key] += (int) $row->c;
+            });
+
+        return $usage;
+    }
+
+    /**
+     * Payload for frontend /auth/me (și backoffice). `$usage` vine din seatUsage() la liste.
+     *
+     * @param  array{learners: int, staff: int, pending_learners: int, pending_staff: int}|null  $usage
      * @return array<string, mixed>
      */
-    public function entitlementsPayload(Company $company): array
+    public function entitlementsPayload(Company $company, ?array $usage = null): array
     {
+        $usage ??= $this->seatUsage([$company->id])[(int) $company->id];
         $maxLearners = $this->maxActiveLearners($company);
         $maxStaff = $this->maxStaff($company);
-        $learnersUsed = $this->countActiveLearners($company);
-        $staffUsed = $this->countStaff($company);
+        $fits = fn (?int $max, int $used) => $max === null || ($used + 1) <= $max;
 
         return [
             'plan' => $company->plan ?: 'instructor',
@@ -256,16 +309,16 @@ class PlanEntitlementService
             'features' => $this->featuresFor($company),
             'seats' => [
                 'learners' => [
-                    'used' => $learnersUsed,
+                    'used' => $usage['learners'],
                     'max' => $maxLearners,
-                    'pending_invites' => $this->pendingInvitationCount($company, false),
-                    'available' => $this->learnerSeatAvailable($company, 1),
+                    'pending_invites' => $usage['pending_learners'],
+                    'available' => $fits($maxLearners, $usage['learners'] + $usage['pending_learners']),
                 ],
                 'staff' => [
-                    'used' => $staffUsed,
+                    'used' => $usage['staff'],
                     'max' => $maxStaff,
-                    'pending_invites' => $this->pendingInvitationCount($company, true),
-                    'available' => $this->staffSeatAvailable($company, 1),
+                    'pending_invites' => $usage['pending_staff'],
+                    'available' => $fits($maxStaff, $usage['staff'] + $usage['pending_staff']),
                 ],
             ],
             'trial_ends_at' => $company->trial_ends_at?->toIso8601String(),
