@@ -2,18 +2,19 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model; // <--- trebuie adăugat
 use App\Models\User; // pentru relația teacher
 use App\Models\Module; // pentru relația modules
-use App\Models\Concerns\BelongsToCompany;
 use App\Models\Concerns\InvalidatesTutorKnowledgeCache;
-use App\Jobs\SyncAiKnowledgeJob;
+use App\Support\CourseUserPivot;
 use Illuminate\Support\Facades\Storage;
 
 class Course extends Model
 {
-    use BelongsToCompany, HasFactory, InvalidatesTutorKnowledgeCache;
+    use BelongsToCompany, HasFactory;
+    use InvalidatesTutorKnowledgeCache;
 
     protected $fillable = [
         'company_id',
@@ -164,36 +165,6 @@ class Course extends Model
     }
 
     /**
-     * Per-course Formely AI tutor preferences (stored under settings.ai_tutor).
-     *
-     * @return array{enabled: bool, tone: string, depth: string, allowed_topics: array<int, string>, restricted_topics: array<int, string>}
-     */
-    public function aiTutorSettings(): array
-    {
-        $settings = $this->settings;
-        $ai = is_array($settings['ai_tutor'] ?? null) ? $settings['ai_tutor'] : [];
-        $normalizeTopics = static function ($value): array {
-            if (! is_array($value)) {
-                return [];
-            }
-
-            return array_values(array_filter(array_map(static fn ($topic) => trim((string) $topic), $value)));
-        };
-
-        return [
-            'enabled' => ($ai['enabled'] ?? true) !== false,
-            'tone' => in_array($ai['tone'] ?? 'friendly', ['friendly', 'professional', 'encouraging', 'casual'], true)
-                ? ($ai['tone'] ?? 'friendly')
-                : 'friendly',
-            'depth' => in_array($ai['depth'] ?? 'medium', ['basic', 'medium', 'advanced'], true)
-                ? ($ai['depth'] ?? 'medium')
-                : 'medium',
-            'allowed_topics' => $normalizeTopics($ai['allowed_topics'] ?? []),
-            'restricted_topics' => $normalizeTopics($ai['restricted_topics'] ?? []),
-        ];
-    }
-
-    /**
      * Set course settings
      */
     public function setSettingsAttribute($value)
@@ -216,7 +187,7 @@ class Course extends Model
 
     public function assignedUsers() {
         return $this->belongsToMany(User::class, 'course_user')
-                    ->withPivot('is_mandatory', 'assigned_at', 'enrolled', 'enrolled_at', 'started_at', 'completed_at', 'progress_percentage')
+                    ->withPivot(CourseUserPivot::columns())
                     ->withTimestamps();
     }
 
@@ -236,12 +207,12 @@ class Course extends Model
 
         static::saved(function (self $course) {
             self::clearTutorKnowledgeCache((int) $course->id);
-            SyncAiKnowledgeJob::dispatch(null, (int) $course->id, 'sync')->onConnection('background');
+            self::queueKnowledgeSync(null, (int) $course->id, 'sync');
         });
 
         static::deleted(function (self $course) {
             self::clearTutorKnowledgeCache((int) $course->id);
-            SyncAiKnowledgeJob::dispatch(null, (int) $course->id, 'sync')->onConnection('background');
+            self::queueKnowledgeSync(null, (int) $course->id, 'sync');
         });
     }
 }

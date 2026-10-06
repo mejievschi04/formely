@@ -5,13 +5,12 @@ namespace App\Support;
 use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
 
 class AuthActivityLogger
 {
     public static function logLoggedIn(User $user, Request $request): void
     {
-        if (! Schema::hasTable('activity_logs')) {
+        if (! SchemaCache::hasTable('activity_logs')) {
             return;
         }
 
@@ -32,7 +31,7 @@ class AuthActivityLogger
 
     public static function logLoggedOut(User $user, Request $request): void
     {
-        if (! Schema::hasTable('activity_logs')) {
+        if (! SchemaCache::hasTable('activity_logs')) {
             return;
         }
 

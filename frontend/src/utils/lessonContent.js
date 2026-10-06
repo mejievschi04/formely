@@ -37,14 +37,6 @@ export function contentBlockHasBody(block) {
 	return Boolean(resolveContentBlockSource(block));
 }
 
-export function lessonHasDisplayableContent(lesson) {
-	if (!lesson) return false;
-	const blocks = lesson.content_blocks ?? lesson.contentBlocks ?? [];
-	if (Array.isArray(blocks) && blocks.some(contentBlockHasBody)) return true;
-	const legacy = typeof lesson.content === 'string' ? lesson.content.trim() : '';
-	return legacy.length > 0;
-}
-
 export function lessonLegacyHtml(lesson) {
 	return typeof lesson?.content === 'string' ? lesson.content : '';
 }

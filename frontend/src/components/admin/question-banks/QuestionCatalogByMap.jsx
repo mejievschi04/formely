@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ArrowRight, ClipboardList, FolderOpen, ListChecks, Map as MapIcon, Search } from 'lucide-react';
 import { adminService } from '../../../services/api';
-import { useToast } from '../../../contexts/ToastContext';
+import { useToast } from '../../../contexts/ToastContextShared.js';
 import Drawer from './Drawer';
 import QuestionRow from './QuestionRow';
 
@@ -24,16 +24,14 @@ export function CatalogGroupCard({ title, description, stats, onOpen, icon, acti
 				<span className="qb-catalog-tile-copy">
 					<strong>{title}</strong>
 					{description ? <small>{description}</small> : null}
-					{Array.isArray(stats) && stats.length > 0 ? (
-						<span className="qb-catalog-tile-stats">
-							{stats.map((stat) => (
-								<span key={stat}>{stat}</span>
-							))}
-						</span>
-					) : null}
+				</span>
+				<span className="qb-catalog-tile-stats">
+					{stats.map((stat) => (
+						<span key={stat}>{stat}</span>
+					))}
 				</span>
 				<span className="qb-catalog-tile-go" aria-hidden>
-					<ArrowRight size={16} />
+					<ArrowRight size={18} />
 				</span>
 			</button>
 			{action ? <div className="qb-catalog-tile-foot">{action}</div> : null}
@@ -46,6 +44,7 @@ export default function QuestionCatalogByMap({
 	selectedIds = [],
 	onToggleSelect,
 	onAddMany,
+	showStar = true,
 }) {
 	const { error, success } = useToast();
 	const selectedSet = useMemo(() => new Set((selectedIds || []).map((id) => Number(id))), [selectedIds]);
@@ -128,6 +127,10 @@ export default function QuestionCatalogByMap({
 		[questions, query]
 	);
 
+	const attachTest = (question, test) => (
+		question?.test_id || !test?.id ? question : { ...question, test_id: test.id }
+	);
+
 	const addAllFromTest = async (test) => {
 		setAddingId(test.id);
 		try {
@@ -138,10 +141,10 @@ export default function QuestionCatalogByMap({
 				return;
 			}
 			if (onAddMany) {
-				onAddMany(list, test.title || 'Catalog');
+				onAddMany(list.map((question) => attachTest(question, test)), test.title || 'Catalog');
 			} else {
 				list.forEach((question) => {
-					if (!selectedSet.has(Number(question.id))) onToggleSelect?.(question, test.title || 'Catalog');
+					if (!selectedSet.has(Number(question.id))) onToggleSelect?.(attachTest(question, test), test.title || 'Catalog');
 				});
 			}
 			success(`Întrebările din „${test.title}” au fost adăugate.`);
@@ -152,21 +155,6 @@ export default function QuestionCatalogByMap({
 		}
 	};
 
-	const toggleQuestionStar = async (questionId) => {
-		try {
-			const response = await adminService.toggleQuestionStar(questionId);
-			const starred = Boolean(response?.question?.is_starred);
-			setQuestions((prev) =>
-				prev.map((q) => (Number(q.id) === Number(questionId) ? { ...q, is_starred: starred } : q))
-			);
-			setDrawerQuestion((prev) =>
-				prev && Number(prev.id) === Number(questionId) ? { ...prev, is_starred: starred } : prev
-			);
-		} catch {
-			error('Nu am putut modifica steaua.');
-		}
-	};
-
 	const searchPlaceholder =
 		level === 'maps' ? 'Caută mapă' : level === 'tests' ? 'Caută test' : 'Caută întrebare';
 
@@ -174,7 +162,7 @@ export default function QuestionCatalogByMap({
 		<>
 			<div className="qb-catalog-topbar">
 				<div className="qb-search-field">
-					<Search size={14} aria-hidden />
+					<Search size={18} aria-hidden />
 					<label className="qb-sr-only" htmlFor="qb-map-catalog-search">
 						{searchPlaceholder}
 					</label>
@@ -192,7 +180,7 @@ export default function QuestionCatalogByMap({
 				{level !== 'maps' ? (
 					<button
 						type="button"
-						className="lms-btn-secondary"
+						className="va-btn-back admin-back-btn"
 						onClick={() => {
 							if (level === 'questions') {
 								setLevel('tests');
@@ -261,7 +249,7 @@ export default function QuestionCatalogByMap({
 								key={map.id}
 								title={map.name}
 								description={map.description}
-								icon={<MapIcon size={16} />}
+								icon={<MapIcon size={22} />}
 								stats={[
 									`${map.courses_count || 0} cursuri`,
 									`${map.tests_count || 0} teste`,
@@ -286,7 +274,7 @@ export default function QuestionCatalogByMap({
 								key={test.id}
 								title={test.title}
 								description={test.courses_label || 'Fără curs atașat'}
-								icon={<ClipboardList size={16} />}
+								icon={<ClipboardList size={22} />}
 								stats={[`${test.questions_count || 0} întrebări`]}
 								onOpen={() => openTest(test)}
 								action={selectable && Number(test.questions_count || 0) > 0 ? (
@@ -319,15 +307,15 @@ export default function QuestionCatalogByMap({
 								onClick={() => {
 									const allSelected = filteredQuestions.every((question) => selectedSet.has(Number(question.id)));
 									if (allSelected) {
-										filteredQuestions.forEach((question) => onToggleSelect?.(question, selectedTest?.title || 'Catalog'));
+										filteredQuestions.forEach((question) => onToggleSelect?.(attachTest(question, selectedTest), selectedTest?.title || 'Catalog'));
 										return;
 									}
 									if (onAddMany) {
-										onAddMany(filteredQuestions, selectedTest?.title || 'Catalog');
+										onAddMany(filteredQuestions.map((question) => attachTest(question, selectedTest)), selectedTest?.title || 'Catalog');
 										return;
 									}
 									filteredQuestions.forEach((question) => {
-										if (!selectedSet.has(Number(question.id))) onToggleSelect?.(question, selectedTest?.title || 'Catalog');
+										if (!selectedSet.has(Number(question.id))) onToggleSelect?.(attachTest(question, selectedTest), selectedTest?.title || 'Catalog');
 									});
 								}}
 							>
@@ -347,8 +335,9 @@ export default function QuestionCatalogByMap({
 							selected={selectedSet.has(Number(question.id))}
 							readOnly
 							selectable={selectable}
-							onToggleSelect={() => onToggleSelect?.(question, selectedTest?.title || 'Catalog')}
-							onToggleStar={selectable ? toggleQuestionStar : undefined}
+							showStar={showStar}
+							onToggleSelect={() => onToggleSelect?.(attachTest(question, selectedTest), selectedTest?.title || 'Catalog')}
+							onToggleStar={() => {}}
 							onOpenDrawer={setDrawerQuestion}
 						/>
 					))}

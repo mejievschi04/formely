@@ -48,6 +48,7 @@ const AdminActivityLogsPage = () => {
 		last_page: 1,
 		per_page: 50,
 		total: 0,
+		total_capped: false,
 	});
 	const [filters, setFilters] = useState({
 		search: '',
@@ -62,12 +63,17 @@ const AdminActivityLogsPage = () => {
 	const [searchInput, setSearchInput] = useState('');
 	const searchDebounceRef = useRef(null);
 	const searchEffectBoot = useRef(true);
+	const fetchAbortRef = useRef(null);
 
 	const [availableFilters, setAvailableFilters] = useState({
 		action_scopes: [],
 	});
 
 	const fetchLogs = useCallback(async () => {
+		// A newer filter/page request supersedes the one in flight.
+		fetchAbortRef.current?.abort();
+		const controller = new AbortController();
+		fetchAbortRef.current = controller;
 		try {
 			setLoading(true);
 			setError(null);
@@ -91,7 +97,7 @@ const AdminActivityLogsPage = () => {
 				}
 			});
 
-			const data = await adminService.getActivityLogs(params);
+			const data = await adminService.getActivityLogs(params, { signal: controller.signal });
 			setLogs(data.data || []);
 			setPagination((prev) => ({
 				...prev,
@@ -99,6 +105,7 @@ const AdminActivityLogsPage = () => {
 				last_page: data.pagination?.last_page || prev.last_page,
 				per_page: data.pagination?.per_page || prev.per_page,
 				total: data.pagination?.total ?? 0,
+				total_capped: Boolean(data.pagination?.total_capped),
 			}));
 			if (data.filters?.action_scopes?.length) {
 				setAvailableFilters(() => ({
@@ -106,17 +113,20 @@ const AdminActivityLogsPage = () => {
 				}));
 			}
 		} catch (err) {
+			if (controller.signal.aborted) return;
 			console.error('Error fetching activity logs:', err);
 			setError('Nu s-a putut încărca jurnalul.');
 			setLogs([]);
 		} finally {
-			setLoading(false);
+			if (fetchAbortRef.current === controller) setLoading(false);
 		}
 	}, [pagination.current_page, pagination.per_page, filters, showMyActions]);
 
 	useEffect(() => {
 		fetchLogs();
 	}, [fetchLogs]);
+
+	useEffect(() => () => fetchAbortRef.current?.abort(), []);
 
 	useEffect(() => {
 		if (searchEffectBoot.current) {
@@ -156,9 +166,9 @@ const AdminActivityLogsPage = () => {
 	const scopeOptions = useMemo(() => {
 		if (availableFilters.action_scopes?.length) return availableFilters.action_scopes;
 		return [
-			{ id: 'elev_progres', label: 'Progres elevi (cursuri și teste)' },
+			{ id: 'elev_progres', label: 'Progres utilizatori (cursuri și teste)' },
 			{ id: 'all', label: 'Toată activitatea' },
-			{ id: 'learner', label: 'Activitate elevi' },
+			{ id: 'learner', label: 'Activitate utilizatori' },
 		];
 	}, [availableFilters.action_scopes]);
 
@@ -177,9 +187,9 @@ const AdminActivityLogsPage = () => {
 		<div className="admin-container admin-activity-logs-page">
 			<div className="admin-page-header">
 				<div>
-					<h1 className="admin-page-title">Activitate elevi</h1>
+					<h1 className="admin-page-title">Activitate utilizatori</h1>
 					<p className="admin-page-subtitle">
-						Jurnalul activității elevilor în Formely. Implicit vezi tot (poți restrânge din filtre). Acțiunile tale ca administrator nu apar, decât dacă bifezi opțiunea de mai jos.
+						Implicit vezi tot jurnalul (poți restrânge din „Ce vrei să vezi” și „Tip eveniment”). Acțiunile tale ca administrator nu apar, decât dacă bifezi opțiunea de mai jos.
 					</p>
 				</div>
 			</div>
@@ -345,7 +355,7 @@ const AdminActivityLogsPage = () => {
 						<div className="admin-activity-logs-empty-icon">📋</div>
 						<div className="admin-activity-logs-empty-title">Nicio înregistrare</div>
 						<div className="admin-activity-logs-empty-text">
-							Schimbă filtrele sau așteaptă ca elevii să finalizeze cursuri sau teste.
+							Schimbă filtrele sau așteaptă ca utilizatorii să finalizeze cursuri sau teste.
 						</div>
 						<button
 							type="button"
@@ -385,7 +395,7 @@ const AdminActivityLogsPage = () => {
 							← Anterior
 						</button>
 						<span className="admin-activity-logs-pagination-info">
-							Pagina {pagination.current_page} din {pagination.last_page} ({pagination.total} înregistrări)
+							Pagina {pagination.current_page} din {pagination.last_page} ({pagination.total_capped ? `${pagination.total.toLocaleString('ro-RO')}+` : pagination.total} înregistrări)
 						</span>
 						<button
 							type="button"

@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { adminService, coursesService } from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+
+import { useToast } from '../../contexts/ToastContextShared.js';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import CourseOverview from '../../components/admin/courses/CourseOverview';
+import CourseDistributionPanel from '../../components/admin/courses/CourseDistributionPanel';
 import CourseSettingsEditModal from '../../components/admin/courses/CourseSettingsEditModal';
 import PublishCourseModal from '../../components/admin/courses/PublishCourseModal';
-import { useAuth } from '../../contexts/AuthContext';
+
+import { useAuth } from '../../contexts/AuthContextShared.js';
 import '../../styles/admin-course-detail-modern.css';
 
 const AdminCourseDetailPage = () => {
@@ -21,6 +25,8 @@ const AdminCourseDetailPage = () => {
 	const [error, setError] = useState(null);
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 	const [deleteLoading, setDeleteLoading] = useState(false);
+	const [showDuplicateConfirm, setShowDuplicateConfirm] = useState(false);
+	const [duplicateLoading, setDuplicateLoading] = useState(false);
 	const [showCourseSettingsModal, setShowCourseSettingsModal] = useState(false);
 	const [publishModalOpen, setPublishModalOpen] = useState(false);
 	const [publishValidationReport, setPublishValidationReport] = useState(null);
@@ -135,6 +141,21 @@ const AdminCourseDetailPage = () => {
 		}
 	};
 
+	const handleConfirmDuplicateCourse = async () => {
+		if (!course) return;
+		setDuplicateLoading(true);
+		try {
+			const data = await adminService.duplicateCourse(course.id);
+			showToast('Copia cursului a fost creată ca ciornă.', 'success');
+			setShowDuplicateConfirm(false);
+			navigate(`/admin/courses/${data.course.id}/builder`);
+		} catch (err) {
+			showToast(err?.response?.data?.message || 'Nu am putut duplica cursul.', 'error');
+		} finally {
+			setDuplicateLoading(false);
+		}
+	};
+
 	if (loading) {
 		return (
 			<div style={{ 
@@ -180,15 +201,23 @@ const AdminCourseDetailPage = () => {
 				<div className="admin-course-detail-header-start">
 					<button
 						type="button"
-						className="admin-course-detail-back-btn"
+						className="admin-course-detail-back-btn va-btn-back admin-back-btn"
 						onClick={() => navigate('/admin/courses')}
 					>
-						← Înapoi
+						<ArrowLeft size={18} aria-hidden />
+						Înapoi
 					</button>
 					<h1 className="admin-course-detail-title">{course.title}</h1>
 				</div>
 				{!readOnly && (
 					<div className="admin-course-detail-header-actions">
+						<button
+							type="button"
+							className="lms-btn-secondary"
+							onClick={() => setShowDuplicateConfirm(true)}
+						>
+							Duplică
+						</button>
 						<button
 							type="button"
 							className="lms-btn-secondary"
@@ -215,30 +244,47 @@ const AdminCourseDetailPage = () => {
 				showStaffCourseEdit={canEditCoursesAsStaff}
 			/>
 
+			<CourseDistributionPanel
+				course={course}
+				readOnly={readOnly}
+				onUpdated={fetchCourseData}
+			/>
+
 			<PublishCourseModal
 				open={publishModalOpen}
 				onClose={() => {
 					setPublishModalOpen(false);
-					setPublishValidationReport(null);
 				}}
 				course={course}
 				validationReport={publishValidationReport}
 				onValidate={handleValidateForPublish}
-				onPublished={(_res, { catalogOutsideMap } = {}) => {
+				onPublished={() => {
 					showToast('Cursul a fost publicat cu succes', 'success');
 					setPublishModalOpen(false);
 					setPublishValidationReport(null);
-					setCourse((prev) => prev ? {
-						...prev,
-						status: 'published',
-						workflow_status: 'published',
-						settings: {
-							...(prev.settings || {}),
-							catalog_outside_map: Boolean(catalogOutsideMap),
-						},
-					} : prev);
 					fetchCourseData();
 				}}
+				onFixIssue={(issue) => {
+					if (!course?.id || !issue?.kind || !issue.id) return;
+					const params = new URLSearchParams({
+						focus: issue.kind === 'test' ? 'test' : issue.kind,
+						id: String(issue.id),
+					});
+					setPublishModalOpen(false);
+					navigate(`/admin/courses/${course.id}/builder?${params.toString()}`);
+				}}
+			/>
+
+			<ConfirmModal
+				open={showDuplicateConfirm}
+				onClose={() => setShowDuplicateConfirm(false)}
+				onConfirm={handleConfirmDuplicateCourse}
+				title="Duplică cursul"
+				message={`Se creează „${course.title} (copie)” ca ciornă, cu aceleași module, lecții și teste. Cursanții și echipele nu se copiază.`}
+				confirmLabel="Duplică"
+				cancelLabel="Anulare"
+				variant="primary"
+				loading={duplicateLoading}
 			/>
 
 			<ConfirmModal

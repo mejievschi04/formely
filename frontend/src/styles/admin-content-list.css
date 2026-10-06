@@ -123,8 +123,7 @@
 	gap: 14px;
 }
 
-.admin-content-list-empty,
-.admin-content-list-loading {
+.admin-content-list-empty {
 	padding: 32px 16px;
 	text-align: center;
 	font-size: 0.9rem;
@@ -163,16 +162,6 @@
 }
 
 .admin-content-list-btn-primary {
-	border: 0;
-	border-radius: 8px;
 	padding: 9px 14px;
 	font-size: 0.85rem;
-	font-weight: 600;
-	color: var(--text-inverse, #fff);
-	background: var(--color-primary);
-	cursor: pointer;
-}
-
-.admin-content-list-btn-primary:hover {
-	opacity: 0.92;
 }

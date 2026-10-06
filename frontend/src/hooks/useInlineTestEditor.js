@@ -15,15 +15,9 @@ export function useInlineTestEditor({
   initialTestId = null,
   initialTab = 'questions',
 } = {}) {
-  const normalizeInlineTab = (tab) => {
-    if (tab === 'settings') return 'settings';
-    if (tab === 'statistics') return 'statistics';
-    return 'questions';
-  };
-
   const [inlineTest, setInlineTest] = useState({ ...TEST_EDITOR_DEFAULT });
   const [inlineQuestions, setInlineQuestions] = useState([]);
-  const [inlineTestTab, setInlineTestTab] = useState(normalizeInlineTab(initialTab));
+  const [inlineTestTab, setInlineTestTab] = useState(initialTab === 'settings' ? 'settings' : 'questions');
   const [inlineTestSaving, setInlineTestSaving] = useState(false);
   const [inlinePublishLoading, setInlinePublishLoading] = useState(false);
   const [creatingTest, setCreatingTest] = useState(false);
@@ -126,7 +120,7 @@ export function useInlineTestEditor({
         status: 'draft',
         passing_score: inlineTest.passing_score ?? TEST_EDITOR_DEFAULT.passing_score,
         time_limit_minutes: inlineTest.time_limit_minutes ?? null,
-        max_attempts: inlineTest.max_attempts ?? null,
+        max_attempts: inlineTest.max_attempts == null ? null : Math.max(1, Number(inlineTest.max_attempts) || 1),
         randomize_questions: Boolean(inlineTest.randomize_questions),
         randomize_answers: Boolean(inlineTest.randomize_answers),
         show_results_immediately: Boolean(inlineTest.show_results_immediately),
@@ -407,7 +401,8 @@ export function useInlineTestEditor({
         ...ans,
         is_correct: singleChoice ? idx === answerIndex : (idx === answerIndex ? !ans.is_correct : ans.is_correct),
       })),
-      'debounced'
+      // acțiune unică (nu tastare): se salvează imediat, altfel o plecare rapidă de pe pagină pierdea alegerea
+      'immediate'
     );
   }, [updateInlineAnswers]);
 
@@ -542,6 +537,12 @@ export function useInlineTestEditor({
     ));
   }, []);
 
+  const expandQuestion = useCallback((questionId) => {
+    const id = Number(questionId);
+    if (!Number.isFinite(id)) return;
+    setExpandedQuestionIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  }, []);
+
   const toggleAllQuestionsExpanded = useCallback(() => {
     setExpandedQuestionIds((prev) => {
       const allIds = inlineQuestions.map((q) => q.id);
@@ -565,6 +566,7 @@ export function useInlineTestEditor({
     expandedQuestionIds,
     isQuestionExpanded,
     toggleQuestionExpanded,
+    expandQuestion,
     toggleAllQuestionsExpanded,
     allQuestionsExpanded,
     openQuestionTypePickerId,

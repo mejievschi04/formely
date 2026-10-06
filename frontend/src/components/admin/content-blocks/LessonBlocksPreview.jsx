@@ -2,6 +2,7 @@ import React from 'react';
 import { toImageUrl } from '../../../utils/imageUrl';
 import { normalizeRichTextMediaHtml } from '../../../utils/richTextContent';
 import { resolveContentBlockSource } from '../../../utils/lessonContent';
+import { isDirectLessonVideoUrl } from '../../../utils/lessonReadCompletion';
 
 const normalizeYouTubeEmbed = (url) => {
 	if (!url) return null;
@@ -73,7 +74,7 @@ const LessonBlocksPreview = ({ blocks, variant = 'admin' }) => {
 					return (
 						<BlockCard key={b.id || idx} title={label} showLabel={showLabels}>
 							<div
-								className="lesson-preview-content rte-content"
+								className="lesson-preview-content"
 								dangerouslySetInnerHTML={{ __html: html }}
 							/>
 						</BlockCard>
@@ -85,6 +86,7 @@ const LessonBlocksPreview = ({ blocks, variant = 'admin' }) => {
 					const yt = normalizeYouTubeEmbed(videoSrc);
 					const vimeo = normalizeVimeoEmbed(videoSrc);
 					const embed = yt || vimeo;
+					const directVideo = !embed && isDirectLessonVideoUrl(videoSrc);
 					return (
 						<BlockCard key={b.id || idx} title={label} showLabel={showLabels}>
 							{embed ? (
@@ -92,12 +94,22 @@ const LessonBlocksPreview = ({ blocks, variant = 'admin' }) => {
 									<iframe
 										src={embed}
 										title={`video-${b.id || idx}`}
+										data-lesson-embed="video"
 										style={{ width: '100%', aspectRatio: '16 / 9', border: 'none', display: 'block' }}
 										loading="lazy"
 										allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
 										allowFullScreen
 									/>
 								</div>
+							) : directVideo ? (
+								<video
+									data-lesson-media="video"
+									src={videoSrc}
+									controls
+									playsInline
+									preload="metadata"
+									style={{ width: '100%', borderRadius: 12, display: 'block', background: '#000' }}
+								/>
 							) : (
 								<a href={videoSrc || '#'} target="_blank" rel="noreferrer" className="lms-btn-secondary">
 									Deschide video
@@ -163,6 +175,7 @@ const LessonBlocksPreview = ({ blocks, variant = 'admin' }) => {
 										<iframe
 											src={pdfUrl}
 											title={showLabels ? `PDF ${idx + 1}` : 'Document PDF'}
+											data-lesson-embed="pdf"
 											style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
 											loading="lazy"
 										/>
@@ -185,9 +198,18 @@ const LessonBlocksPreview = ({ blocks, variant = 'admin' }) => {
 					return (
 						<BlockCard key={b.id || idx} title={label} showLabel={showLabels}>
 							{imgUrl ? (
-								<a href={imgUrl} target="_blank" rel="noreferrer" className="lms-btn-secondary">
-									Deschide imagine
-								</a>
+								showLabels ? (
+									<a href={imgUrl} target="_blank" rel="noreferrer" className="lms-btn-secondary">
+										Deschide imagine
+									</a>
+								) : (
+									<img
+										src={imgUrl}
+										alt=""
+										data-lesson-media="image"
+										style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 12 }}
+									/>
+								)
 							) : (
 								<div style={{ color: 'var(--text-tertiary)' }}>Fără imagine</div>
 							)}
@@ -209,7 +231,19 @@ const LessonBlocksPreview = ({ blocks, variant = 'admin' }) => {
 								>
 									{imgs.map((img, i) => {
 										const imgUrl = toImageUrl(img.url) || img.url;
-										return imgUrl ? (
+										if (!imgUrl) return null;
+										if (!showLabels) {
+											return (
+												<img
+													key={img.id || i}
+													src={imgUrl}
+													alt={img.alt || ''}
+													data-lesson-media="image"
+													style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 12 }}
+												/>
+											);
+										}
+										return (
 											<a
 												key={img.id || i}
 												href={imgUrl}
@@ -220,7 +254,7 @@ const LessonBlocksPreview = ({ blocks, variant = 'admin' }) => {
 											>
 												{img.alt || `Imagine ${i + 1}`}
 											</a>
-										) : null;
+										);
 									})}
 								</div>
 							) : (
@@ -266,6 +300,7 @@ const LessonBlocksPreview = ({ blocks, variant = 'admin' }) => {
 										<iframe
 											src={fileUrl}
 											title={showLabels ? `PDF ${idx + 1}` : 'Document PDF'}
+											data-lesson-embed="pdf"
 											style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
 											loading="lazy"
 										/>

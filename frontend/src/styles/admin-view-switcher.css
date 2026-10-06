@@ -38,7 +38,7 @@
 
 .admin-view-mode-btn:hover {
 	border-color: var(--color-primary);
-	box-shadow: 0 4px 14px rgba(var(--formely-white-rgb), 0.18);
+	box-shadow: 0 4px 14px rgba(var(--color-primary-rgb), 0.18);
 	transform: translateY(-1px);
 }
 
@@ -60,7 +60,7 @@
 }
 
 .admin-view-mode-btn.is-admin-view .admin-view-mode-btn__icon {
-	color: var(--color-primary);
+	color: var(--text-accent);
 }
 
 .admin-view-mode-btn.is-student-view .admin-view-mode-btn__icon {
@@ -86,7 +86,7 @@
 }
 
 .admin-view-mode-btn:hover .admin-view-mode-btn__swap {
-	color: var(--color-primary);
+	color: var(--text-accent);
 	opacity: 1;
 }
 
@@ -117,7 +117,7 @@
 }
 
 .sidebar-mobile-control-item--view-switch .admin-view-mode-btn--sidebar:hover {
-	box-shadow: 0 2px 8px rgba(var(--formely-white-rgb), 0.12);
+	box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.12);
 }
 
 @media (max-width: 1023px) {

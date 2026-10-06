@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use App\Models\Course;
 use App\Models\Lesson;
-use App\Models\Category;
 
 class DatabaseSeeder extends Seeder
 {
@@ -25,15 +24,11 @@ class DatabaseSeeder extends Seeder
                 'role' => 'platform_operator',
                 'company_id' => null,
                 'status' => 'active',
-                'avatar' => null,
                 'bio' => 'Operator platformă Formely (backoffice)',
             ]
         );
-        User::withoutGlobalScopes()
-            ->where('email', 'platform@formely.local')
-            ->update(['company_id' => null, 'role' => 'platform_operator']);
 
-        // --- Admin User (tenant default) ---
+        // --- Admin User (academia implicită) ---
         $admin = User::firstOrCreate(
             ['email' => 'admin@formely.local'],
             [
@@ -47,43 +42,10 @@ class DatabaseSeeder extends Seeder
         );
         
         // Update password if admin already exists
-        if ($admin->wasRecentlyCreated === false) {
-            $admin->update(['password' => Hash::make('formely2025')]);
-        }
-
-        $this->call(TestUsersSeeder::class);
-
-        // --- Categories (Compartimente) ---
-            $categories = [
-                [
-                    'name' => 'Produse Noi',
-                    'description' => 'Cursuri despre produsele noi lansate',
-                    'icon' => '🆕',
-                    'color' => '#667eea',
-                    'order' => 1,
-                ],
-                [
-                    'name' => 'Formare Generală',
-                    'description' => 'Cursuri de formare generală',
-                    'icon' => '📚',
-                    'color' => '#43e97b',
-                    'order' => 2,
-                ],
-                [
-                    'name' => 'Tehnologie',
-                    'description' => 'Cursuri despre tehnologie și inovații',
-                    'icon' => '💻',
-                    'color' => '#4facfe',
-                    'order' => 3,
-                ],
-            ];
-
-            foreach ($categories as $categoryData) {
-                Category::firstOrCreate(
-                    ['name' => $categoryData['name']],
-                    $categoryData
-                );
+            if ($admin->wasRecentlyCreated === false) {
+                $admin->update(['password' => Hash::make('formely2025')]);
             }
+
 
         // --- Users ---
         $teachers = collect([

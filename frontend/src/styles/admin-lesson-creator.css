@@ -48,8 +48,8 @@
 
 .admin-lesson-creator-page .admin-btn-secondary:hover {
 	border-color: var(--color-primary);
-	background: rgba(var(--formely-white-rgb), 0.08);
-	box-shadow: 0 2px 8px rgba(var(--formely-white-rgb), 0.15);
+	background: rgba(var(--color-primary-rgb), 0.08);
+	box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.15);
 }
 
 /* Split Layout */
@@ -101,7 +101,7 @@
 .admin-lesson-creator-page .admin-form-progress-value {
 	font-size: var(--font-size-lg);
 	font-weight: var(--font-weight-bold);
-	color: var(--color-primary);
+	color: var(--text-accent);
 }
 
 .admin-lesson-creator-page .admin-form-progress-bar {
@@ -142,7 +142,7 @@
 .admin-lesson-creator-page .admin-form-input:focus,
 .admin-lesson-creator-page .admin-form-select:focus {
 	border-color: var(--color-primary);
-	box-shadow: 0 0 0 3px rgba(var(--formely-white-rgb), 0.15);
+	box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.15);
 }
 
 .admin-lesson-creator-page .admin-form-input.has-value,
@@ -189,8 +189,8 @@
 
 .admin-lesson-creator-page .admin-block-card:hover {
 	border-color: var(--color-primary);
-	background: rgba(var(--formely-white-rgb), 0.06);
-	box-shadow: 0 4px 12px rgba(var(--formely-white-rgb), 0.15);
+	background: rgba(var(--color-primary-rgb), 0.06);
+	box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.15);
 	transform: translateY(-2px);
 }
 
@@ -207,10 +207,9 @@
 }
 
 /* Add Block Button */
-.admin-lesson-creator-page .admin-btn-sm.admin-btn-primary {
+.admin-lesson-creator-page .admin-btn-sm.lms-btn-primary {
 	padding: var(--space-2) var(--space-4);
 	font-weight: var(--font-weight-semibold);
-	border-radius: var(--radius-lg);
 }
 
 /* Editor Wrapper */
@@ -234,15 +233,9 @@
 	gap: var(--space-4);
 }
 
-.admin-lesson-creator-page .admin-form-actions .admin-btn-primary {
+.admin-lesson-creator-page .admin-form-actions .admin-btn.lms-btn-primary {
 	padding: var(--space-3) var(--space-6);
 	font-weight: var(--font-weight-semibold);
-	border-radius: var(--radius-lg);
-	box-shadow: var(--shadow-md);
-}
-
-.admin-lesson-creator-page .admin-form-actions .admin-btn-primary:not(.disabled):hover {
-	box-shadow: 0 4px 16px rgba(var(--formely-white-rgb), 0.3);
 }
 
 /* Preview Panel */
@@ -415,5 +408,5 @@
 }
 
 [data-theme="light"] .admin-lesson-creator-page .admin-block-card:hover {
-	background: rgba(var(--formely-white-rgb), 0.08);
+	background: rgba(var(--color-primary-rgb), 0.08);
 }

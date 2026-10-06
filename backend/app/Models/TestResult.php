@@ -2,10 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Builder;
+use App\Models\Concerns\BelongsToCompanyThrough;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * TestResult Model
@@ -14,30 +13,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class TestResult extends Model
 {
-    use HasFactory;
-
-    protected static ?bool $hasAttemptNumberColumn = null;
-
-    public static function tracksAttemptNumber(): bool
-    {
-        if (static::$hasAttemptNumberColumn === null) {
-            static::$hasAttemptNumberColumn = Schema::hasColumn(
-                (new static)->getTable(),
-                'attempt_number'
-            );
-        }
-
-        return static::$hasAttemptNumberColumn;
-    }
-
-    public function scopeOrderedByAttempt(Builder $query): Builder
-    {
-        if (static::tracksAttemptNumber()) {
-            return $query->orderByDesc('attempt_number');
-        }
-
-        return $query->orderByDesc('id');
-    }
+    use BelongsToCompanyThrough, HasFactory;
 
     protected $table = 'test_results';
 
@@ -102,11 +78,4 @@ class TestResult extends Model
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Check if result is passing
-     */
-    public function isPassing(): bool
-    {
-        return $this->passed;
-    }
 }

@@ -1,46 +1,31 @@
-/* Command palette — căutare globală Formely */
+/*
+ * Căutare globală (⌘K / Ctrl+K): fereastră peste aplicație.
+ * Ajustările pentru telefon sunt în styles/mobile-optimizations.css (12i3).
+ */
+
 .global-search-overlay {
 	position: fixed;
 	inset: 0;
-	z-index: 10050;
+	z-index: var(--z-modal);
 	display: flex;
 	align-items: flex-start;
 	justify-content: center;
-	padding: max(12vh, 72px) var(--space-4) var(--space-4);
-	background: rgba(15, 23, 42, 0.45);
-	backdrop-filter: blur(6px);
-	animation: global-search-fade-in 0.16s ease-out;
-}
-
-@keyframes global-search-fade-in {
-	from { opacity: 0; }
-	to { opacity: 1; }
+	padding: 12vh var(--space-4) var(--space-4);
+	background: var(--bg-overlay);
 }
 
 .global-search-modal {
-	width: min(100%, 640px);
-	max-height: min(70vh, 560px);
 	display: flex;
 	flex-direction: column;
+	width: 100%;
+	max-width: 640px;
+	max-height: 70vh;
 	overflow: hidden;
-	border-radius: 16px;
-	border: 1px solid var(--border-primary);
 	background: var(--bg-elevated);
-	box-shadow:
-		0 24px 48px -24px rgba(15, 23, 42, 0.45),
-		0 0 0 1px rgba(var(--formely-primary-rgb, 8, 145, 178), 0.08);
-	animation: global-search-rise 0.2s ease-out;
-}
-
-@keyframes global-search-rise {
-	from {
-		opacity: 0;
-		transform: translateY(-8px) scale(0.98);
-	}
-	to {
-		opacity: 1;
-		transform: translateY(0) scale(1);
-	}
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-xl);
+	box-shadow: var(--shadow-xl);
+	color: var(--text-primary);
 }
 
 .global-search-input-wrapper {
@@ -49,7 +34,6 @@
 	gap: var(--space-2);
 	padding: var(--space-3) var(--space-4);
 	border-bottom: 1px solid var(--border-primary);
-	flex-shrink: 0;
 }
 
 .global-search-icon {
@@ -60,11 +44,13 @@
 .global-search-input {
 	flex: 1;
 	min-width: 0;
+	padding: var(--space-2) 0;
 	border: none;
+	outline: none;
 	background: transparent;
 	color: var(--text-primary);
+	font: inherit;
 	font-size: var(--font-size-base);
-	outline: none;
 }
 
 .global-search-input::placeholder {
@@ -76,159 +62,140 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	flex-shrink: 0;
 	width: 36px;
 	height: 36px;
-	border: 1px solid transparent;
-	border-radius: 10px;
+	flex-shrink: 0;
+	border: none;
+	border-radius: var(--radius-md);
 	background: transparent;
 	color: var(--text-secondary);
 	cursor: pointer;
-	transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .global-search-clear:hover,
 .global-search-close:hover {
-	background: var(--bg-secondary);
-	border-color: var(--border-primary);
+	background: var(--bg-tertiary);
 	color: var(--text-primary);
 }
 
-.global-search-close:focus-visible,
-.global-search-clear:focus-visible {
-	outline: none;
-	box-shadow: 0 0 0 3px color-mix(in srgb, var(--formely-primary, #0891b2) 25%, transparent);
-}
-
 .global-search-shortcut {
-	display: none;
-	align-items: center;
-	gap: 4px;
-	flex-shrink: 0;
+	display: inline-flex;
+	gap: var(--space-1);
 }
 
-.global-search-shortcut kbd {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
+.global-search-modal kbd {
+	display: inline-grid;
+	place-items: center;
 	min-width: 22px;
 	height: 22px;
-	padding: 0 6px;
+	padding: 0 var(--space-1);
+	border: 1px solid var(--border-secondary);
 	border-radius: 6px;
-	border: 1px solid var(--border-primary);
 	background: var(--bg-secondary);
-	color: var(--text-tertiary);
-	font-size: 11px;
+	color: var(--text-secondary);
 	font-family: inherit;
+	font-size: var(--font-size-xs);
 	line-height: 1;
 }
 
-@media (min-width: 769px) {
-	.global-search-shortcut {
-		display: inline-flex;
-	}
+.global-search-results {
+	overflow-y: auto;
+	padding: var(--space-2);
 }
 
-.global-search-results {
-	flex: 1;
-	overflow-y: auto;
+.global-search-loading {
 	padding: var(--space-2);
 }
 
 .global-search-category {
 	padding: var(--space-2) var(--space-3) var(--space-1);
-	font-size: 11px;
-	font-weight: 700;
-	letter-spacing: 0.06em;
+	font-size: var(--font-size-xs);
+	font-weight: 600;
+	letter-spacing: 0.04em;
 	text-transform: uppercase;
 	color: var(--text-tertiary);
 }
 
 .global-search-result {
 	display: flex;
-	align-items: flex-start;
+	align-items: center;
 	gap: var(--space-3);
-	padding: var(--space-3);
-	border-radius: 12px;
+	padding: var(--space-2) var(--space-3);
+	border-radius: var(--radius-md);
 	cursor: pointer;
-	transition: background 0.12s ease;
 }
 
-.global-search-result:hover,
 .global-search-result.selected {
-	background: color-mix(in srgb, var(--formely-primary, #0891b2) 10%, var(--bg-secondary));
+	background: rgba(var(--color-primary-rgb), 0.12);
 }
 
 .global-search-result-icon {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 32px;
-	height: 32px;
+	display: inline-grid;
+	place-items: center;
+	width: 36px;
+	height: 36px;
 	flex-shrink: 0;
-	border-radius: 8px;
+	border-radius: var(--radius-md);
 	background: var(--bg-secondary);
-	color: var(--formely-primary, #0891b2);
+	color: var(--text-secondary);
 }
 
 .global-search-result-content {
+	flex: 1;
 	min-width: 0;
 }
 
 .global-search-result-title {
-	font-size: var(--font-size-sm);
+	overflow: hidden;
 	font-weight: 600;
-	color: var(--text-primary);
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .global-search-result-description {
-	margin-top: 2px;
-	font-size: var(--font-size-xs);
-	color: var(--text-tertiary);
-	line-height: 1.4;
 	display: -webkit-box;
-	-webkit-line-clamp: 2;
-	-webkit-box-orient: vertical;
 	overflow: hidden;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 1;
+	font-size: var(--font-size-sm);
+	color: var(--text-tertiary);
 }
 
-.global-search-loading,
 .global-search-empty,
 .global-search-empty-state {
 	padding: var(--space-6) var(--space-4);
 	text-align: center;
-	color: var(--text-secondary);
+	color: var(--text-tertiary);
 }
 
+.global-search-empty p,
 .global-search-empty-state p {
-	margin: 0 0 var(--space-4);
+	margin: 0;
 }
 
 .global-search-hints {
 	display: flex;
 	flex-wrap: wrap;
 	justify-content: center;
-	gap: var(--space-3);
+	gap: var(--space-4);
+	margin-top: var(--space-4);
 }
 
 .global-search-hint {
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
-	font-size: var(--font-size-xs);
-	color: var(--text-tertiary);
+	gap: var(--space-1);
+	font-size: var(--font-size-sm);
 }
 
-.global-search-hint kbd {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	min-width: 22px;
-	height: 22px;
-	padding: 0 6px;
-	border-radius: 6px;
-	border: 1px solid var(--border-primary);
-	background: var(--bg-secondary);
-	font-size: 11px;
-	font-family: inherit;
+@media (max-width: 768px) {
+	.global-search-overlay {
+		padding-top: var(--space-4);
+	}
+
+	/* Pe telefon nu există tastatură fizică: fără scurtături afișate */
+	.global-search-shortcut,
+	.global-search-hints {
+		display: none;
+	}
 }

@@ -2,8 +2,11 @@
 
 namespace App\Providers;
 
+use App\Support\SchemaCache;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Events\MigrationsEnded;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -15,7 +18,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Formely: validările exists/unique respectă academia curentă.
+        $this->app->extend('validation.presence', fn ($verifier, $app) => new \App\Support\TenantPresenceVerifier($app['db']));
     }
 
     /**
@@ -27,6 +31,9 @@ class AppServiceProvider extends ServiceProvider
         if (str_starts_with($appUrl, 'https://')) {
             URL::forceScheme('https');
         }
+
+        // Structura tabelelor e ținută în cache (SchemaCache); orice migrare o invalidează.
+        Event::listen(MigrationsEnded::class, fn () => SchemaCache::flush());
 
         // SPA autentificat: polling notificări, progres lecții, telemetrie — buget mai mare decât 60/min.
         RateLimiter::for('api-app', function (Request $request) {

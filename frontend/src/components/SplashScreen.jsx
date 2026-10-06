@@ -1,65 +1,134 @@
-import React, { useEffect, useState } from 'react';
-import LiquidEther from './backgrounds/LiquidEther';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
+import { LightbulbFilament } from '@phosphor-icons/react';
+import logoShort from '../assets/Formely logo.png';
 import './SplashScreen.css';
 
-const SPLASH_LIQUID_COLORS = ['#030712', '#0891b2', '#22d3ee'];
+const LiquidEther = lazy(() => import('./backgrounds/LiquidEther'));
+
+const TYPEWRITER_TEXT = 'VOLTA ACADEMY';
+const SPLASH_LIQUID_COLORS = ['#7a7000', '#ffee00', '#ffee00'];
+const MOBILE_SPLASH_QUERY = '(max-width: 768px)';
+
+const getIsMobileSplash = () =>
+	typeof window !== 'undefined' && window.matchMedia(MOBILE_SPLASH_QUERY).matches;
 
 const SplashScreen = ({ onStart, appReady = true }) => {
-	const [booted, setBooted] = useState(false);
-	const [progress, setProgress] = useState(0);
+	const [isMobile, setIsMobile] = useState(getIsMobileSplash);
+	const [displayedText, setDisplayedText] = useState('');
+	const [showButton, setShowButton] = useState(getIsMobileSplash);
+	const [phase, setPhase] = useState(getIsMobileSplash() ? 'static' : 'overlay'); // overlay -> bulb -> bulb-on -> logo -> typewriter
 
 	useEffect(() => {
-		const id = requestAnimationFrame(() => setBooted(true));
-		return () => cancelAnimationFrame(id);
+		const mq = window.matchMedia(MOBILE_SPLASH_QUERY);
+		const onChange = () => setIsMobile(mq.matches);
+		mq.addEventListener('change', onChange);
+		return () => mq.removeEventListener('change', onChange);
 	}, []);
 
+	// Faze desktop: overlay dispare -> bec stins -> bec aprins #FFEE00 -> doar becul dispare, logo rămâne -> typewriter sub logo
+	// Pe mobile: ecran static, fără efecte
 	useEffect(() => {
-		if (appReady) {
-			setProgress(100);
+		if (isMobile) {
+			setPhase('static');
+			setShowButton(true);
+			setDisplayedText('');
 			return undefined;
 		}
-		const id = setInterval(() => {
-			setProgress((p) => (p >= 94 ? p : Math.min(94, p + (p < 60 ? 2.5 : 0.8))));
-		}, 45);
-		return () => clearInterval(id);
-	}, [appReady]);
 
-	const canStart = booted && appReady && progress >= 100;
+		setPhase('overlay');
+		setShowButton(false);
+		setDisplayedText('');
+		const t1 = setTimeout(() => setPhase('bulb'), 1200);
+		const t2 = setTimeout(() => setPhase('bulb-on'), 2400);
+		const t3 = setTimeout(() => setPhase('logo'), 3800);
+		const t4 = setTimeout(() => setPhase('typewriter'), 4500);
+		return () => {
+			clearTimeout(t1);
+			clearTimeout(t2);
+			clearTimeout(t3);
+			clearTimeout(t4);
+		};
+	}, [isMobile]);
+
+	// Typewriter când phase = typewriter
+	useEffect(() => {
+		if (phase !== 'typewriter') return;
+		let index = 0;
+		const intervalMs = 220;
+		const typeInterval = setInterval(() => {
+			if (index <= TYPEWRITER_TEXT.length) {
+				setDisplayedText(TYPEWRITER_TEXT.slice(0, index));
+				index++;
+			} else {
+				clearInterval(typeInterval);
+				setTimeout(() => setShowButton(true), 400);
+			}
+		}, intervalMs);
+		return () => clearInterval(typeInterval);
+	}, [phase]);
+
+	// Butonul Începe apare doar după ce s-a încărcat totul (auth + prefetch)
+	const canShowButtons = showButton && appReady;
 
 	return (
-		<div className={`splash-ultra ${booted ? 'is-booted' : ''} ${canStart ? 'is-ready' : ''}`}>
-			<div className="splash-ultra-smoke" aria-hidden="true">
-				<LiquidEther
-					className="splash-ultra-smoke-canvas"
-					resolution={0.46}
-					autoDemo
-					autoSpeed={0.4}
-					autoIntensity={1.75}
-					colors={SPLASH_LIQUID_COLORS}
-				/>
-				<div className="splash-ultra-smoke-depth" />
-			</div>
+		<div className={`splash-page ${isMobile ? 'splash-page--static' : `splash-phase-${phase}`}`}>
+			{!isMobile && (
+				<>
+					<div className="splash-light-overlay" aria-hidden="true" />
 
-			<div className="splash-ultra-grain" aria-hidden="true" />
-
-			<main className="splash-ultra-stage">
-				<div className="splash-ultra-wordmark" aria-label="Formely">
-					<img className="splash-ultra-logo" src="/logo.png" alt="Formely" />
-					<span className="splash-ultra-wordmark-shine" aria-hidden="true" />
-				</div>
-			</main>
-
-			{canStart ? (
-				<button type="button" className="splash-ultra-start" onClick={() => onStart?.()}>
-					Începe
-				</button>
-			) : (
-				<div className="splash-ultra-wait" aria-live="polite" aria-busy="true">
-					<span className="splash-ultra-wait-bar" style={{ width: `${progress}%` }} />
-				</div>
+					<div className="splash-login-like-background" aria-hidden="true">
+						<Suspense fallback={null}>
+							<LiquidEther
+								className="splash-login-liquid-ether"
+								resolution={0.4}
+								autoDemo={true}
+								autoSpeed={0.45}
+								autoIntensity={1.55}
+								colors={SPLASH_LIQUID_COLORS}
+							/>
+						</Suspense>
+						<div className="splash-login-gradient" />
+						<div className="splash-login-pattern" />
+						<div className="splash-logo-center-mask" />
+					</div>
+				</>
 			)}
 
-			<p className="splash-ultra-credit">Powered by Mejievski</p>
+			<div className="splash-content">
+				<div className="splash-center-area">
+					{!isMobile && (phase === 'bulb' || phase === 'bulb-on' || phase === 'logo') && (
+						<div className={`splash-bulb-container ${phase}`}>
+							<LightbulbFilament className="splash-bulb-icon" size={44} weight="duotone" aria-hidden="true" />
+						</div>
+					)}
+
+					{(isMobile || phase === 'logo' || phase === 'typewriter') && (
+						<div className={`splash-logo-container ${isMobile ? 'static' : phase}`}>
+							<img src={logoShort} alt="Formely" className="splash-logo-img" />
+						</div>
+					)}
+
+					{!isMobile && phase === 'typewriter' && (
+						<div className="splash-typewriter">
+							<span className="splash-typewriter-text">{displayedText}</span>
+							{!showButton && <span className="splash-typewriter-cursor">|</span>}
+						</div>
+					)}
+				</div>
+			</div>
+
+			{isMobile && <p className="splash-brand-title">Formely</p>}
+
+			{showButton && (
+				<>
+					{canShowButtons ? (
+						<button className="splash-start-btn" onClick={() => onStart?.()} aria-label="Începe">Începe</button>
+					) : (
+						<div className="splash-loading-dots" aria-live="polite">Se încarcă...</div>
+					)}
+				</>
+			)}
+			{(canShowButtons || isMobile) && <p className="splash-powered-by">Powered by Mejievski</p>}
 		</div>
 	);
 };

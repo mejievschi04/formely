@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { libraryService } from '../services/api';
-import { useToast } from '../contexts/ToastContext';
-import { useAuth } from '../contexts/AuthContext';
-import { isStaffAdminRole } from '../constants/staffRoles';
+
+import { useToast } from '../contexts/ToastContextShared.js';
+
+import { useAuth } from '../contexts/AuthContextShared.js';
 import Modal from '../components/common/Modal';
 import { logger } from '../utils/logger';
 import { toImageUrl } from '../utils/imageUrl';
-import { renderPdfFirstPageAsJpegBlob } from '../utils/renderPdfFirstPageCover';
-import { UploadSimple } from '@phosphor-icons/react';
+import { UploadSimple, X } from '@phosphor-icons/react';
 import '../styles/library-page.css';
 
 function formatBytes(n) {
@@ -44,14 +44,14 @@ function getItemTypeLabel(item) {
 
 /** Palete pentru coperte CSS (gradient + accente). */
 const COVER_PALETTES = [
-	{ a: '#0c4a6e', b: '#0891b2', accent: '#22d3ee', glow: 'rgba(34, 211, 238, 0.35)' },
-	{ a: '#0f172a', b: '#155e75', accent: '#67e8f9', glow: 'rgba(103, 232, 249, 0.35)' },
-	{ a: '#083344', b: '#0e7490', accent: '#a5f3fc', glow: 'rgba(8, 145, 178, 0.4)' },
-	{ a: '#164e63', b: '#22d3ee', accent: '#ecfeff', glow: 'rgba(34, 211, 238, 0.3)' },
-	{ a: '#082f49', b: '#0284c7', accent: '#7dd3fc', glow: 'rgba(14, 165, 233, 0.35)' },
-	{ a: '#0f172a', b: '#334155', accent: '#e2e8f0', glow: 'rgba(226, 232, 240, 0.2)' },
-	{ a: '#042f2e', b: '#0e7490', accent: '#99f6e4', glow: 'rgba(8, 145, 178, 0.3)' },
-	{ a: '#020617', b: '#0891b2', accent: '#22d3ee', glow: 'rgba(8, 145, 178, 0.4)' },
+	{ a: '#0c4a6e', b: '#0d9488', accent: '#fcd34d', glow: 'rgba(250, 204, 21, 0.35)' },
+	{ a: '#1e1b4b', b: '#6366f1', accent: '#a5b4fc', glow: 'rgba(129, 140, 248, 0.4)' },
+	{ a: '#134e4a', b: '#047857', accent: '#6ee7b7', glow: 'rgba(52, 211, 153, 0.35)' },
+	{ a: '#4c0519', b: '#be123c', accent: '#fda4af', glow: 'rgba(251, 113, 133, 0.35)' },
+	{ a: '#312e81', b: '#4338ca', accent: '#fde68a', glow: 'rgba(253, 224, 71, 0.3)' },
+	{ a: '#14532d', b: '#15803d', accent: '#bbf7d0', glow: 'rgba(187, 247, 208, 0.35)' },
+	{ a: '#1c1917', b: '#78716c', accent: '#e7e5e4', glow: 'rgba(255, 255, 255, 0.12)' },
+	{ a: '#0f172a', b: '#0ea5e9', accent: '#7dd3fc', glow: 'rgba(14, 165, 233, 0.35)' },
 ];
 
 function coverPaletteForItem(item) {
@@ -78,11 +78,11 @@ const LibraryPage = () => {
 	const dropDepthRef = useRef(0);
 
 	const actualRole = user?.actualRole ?? user?.role ?? 'student';
-	const canUpload = user?.role !== 'student' && isStaffAdminRole(actualRole);
+	const canUpload = actualRole === 'admin' || actualRole === 'instructor';
 
 	const canDeleteItem = useCallback(
 		(item) => {
-			if (!item || !user || user.role === 'student') return false;
+			if (!item || !user) return false;
 			if (actualRole === 'admin') return true;
 			if (actualRole === 'instructor' && item.uploader?.id === user.id) return true;
 			return false;
@@ -191,6 +191,7 @@ const LibraryPage = () => {
 			const looksPdf = f.type === 'application/pdf' || /\.pdf$/i.test(f.name || '');
 			if (looksPdf) {
 				try {
+					const { renderPdfFirstPageAsJpegBlob } = await import('../utils/renderPdfFirstPageCover');
 					coverBlob = await renderPdfFirstPageAsJpegBlob(f);
 				} catch (coverErr) {
 					logger.warn('Copertă PDF (browser):', coverErr);
@@ -271,10 +272,6 @@ const LibraryPage = () => {
 			<header className="library-page-header">
 				<div className="library-page-header-copy">
 					<h1 className="library-page-title">Bibliotecă</h1>
-					<p className="library-page-lead">
-						Biblioteca organizației tale în Formely — cărți, documente și articole partajate.
-						Toți utilizatorii autentificați pot citi; administratorii și instructorii pot încărca sau compune materiale noi.
-					</p>
 				</div>
 				{canUpload && (
 					<div className="library-page-header-actions">
@@ -287,7 +284,7 @@ const LibraryPage = () => {
 						</button>
 						<button
 							type="button"
-							className="library-btn library-btn--primary library-upload-trigger"
+							className="library-btn lms-btn-primary library-btn--primary library-upload-trigger"
 							onClick={() => setShowUploadModal(true)}
 						>
 							Încarcă material
@@ -305,7 +302,7 @@ const LibraryPage = () => {
 				{loading ? (
 					<p className="library-empty">Se încarcă...</p>
 				) : items.length === 0 ? (
-					<p className="library-empty">Biblioteca Formely este goală — revino când apar materiale noi.</p>
+					<p className="library-empty">Nu există încă materiale în bibliotecă.</p>
 				) : (
 					<ul className="library-book-grid">
 						{items.map((item) => {
@@ -365,7 +362,7 @@ const LibraryPage = () => {
 											<div className="library-book-actions">
 												<button
 													type="button"
-													className="library-btn library-btn--primary library-btn--grow"
+													className="library-btn lms-btn-primary library-btn--primary library-btn--grow"
 													onClick={(e) => {
 														e.stopPropagation();
 														if (isTextItem(item)) {
@@ -394,7 +391,7 @@ const LibraryPage = () => {
 												{canDeleteItem(item) && (
 													<button
 														type="button"
-														className="library-btn library-btn--danger library-btn--icon"
+														className="library-btn va-btn-delete library-btn--danger library-btn--icon"
 														disabled={deletingId === item.id}
 														onClick={(e) => {
 															e.stopPropagation();
@@ -456,11 +453,11 @@ const LibraryPage = () => {
 						</div>
 						<button
 							type="button"
-							className="library-upload-modal-close"
+							className="library-upload-modal-close va-close-btn"
 							onClick={() => setShowUploadModal(false)}
 							aria-label="Închide"
 						>
-							×
+							<X size={18} weight="bold" aria-hidden="true" />
 						</button>
 					</header>
 					<form key={uploadFormKey} onSubmit={onSubmitUpload} className="library-upload-modal-form">
@@ -554,7 +551,7 @@ const LibraryPage = () => {
 							<button type="button" className="library-btn library-btn--secondary" onClick={() => setShowUploadModal(false)} disabled={uploading}>
 								Renunță
 							</button>
-							<button type="submit" className="library-btn library-btn--primary" disabled={uploading}>
+							<button type="submit" className="library-btn lms-btn-primary library-btn--primary" disabled={uploading}>
 								{uploading ? 'Se încarcă...' : 'Încarcă în bibliotecă'}
 							</button>
 						</div>

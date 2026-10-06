@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from 'react';
 import { adminService } from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+
+import { useToast } from '../../contexts/ToastContextShared.js';
 import { logger } from '../../utils/logger';
 import AdminEventListCard from '../../components/admin/events/AdminEventListCard';
 import AdminEventFormModal from '../../components/admin/events/AdminEventFormModal';
 import AdminEventDetailModal from '../../components/admin/events/AdminEventDetailModal';
-import { useAuth } from '../../contexts/AuthContext';
+
+import { useAuth } from '../../contexts/AuthContextShared.js';
 import { scrollElementToTop } from '../../utils/scrollToTop';
 
 /** Parse dată/oră din API (YYYY-MM-DD HH:mm sau T) ca timp local, fără UTC shift. */
@@ -38,11 +40,6 @@ const AdminEventsPage = () => {
 	const [viewingEventId, setViewingEventId] = useState(null);
 
 	const [searchQuery, setSearchQuery] = useState('');
-	const [filters, setFilters] = useState({
-		type: 'all',
-	});
-
-	/** Reîmparte viitor/trecut fără refresh manual (actualizare la ~1 min). */
 	const [nowTick, setNowTick] = useState(() => Date.now());
 	useEffect(() => {
 		const id = window.setInterval(() => setNowTick(Date.now()), 60_000);
@@ -50,20 +47,17 @@ const AdminEventsPage = () => {
 	}, []);
 
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
-	/** Meniu: o singură listă vizibilă — viitoare sau trecute */
-	const [timeScope, setTimeScope] = useState('upcoming');
 	const eventsPanelRef = useRef(null);
 
 	useLayoutEffect(() => {
 		scrollElementToTop(eventsPanelRef.current);
-	}, [timeScope]);
+	}, []);
 
 	const fetchEvents = useCallback(async () => {
 		try {
 			setLoading(true);
 			const params = {
 				search: searchQuery,
-				type: filters.type !== 'all' ? filters.type : null,
 				sort_by: 'start_date',
 				sort_direction: 'asc',
 				per_page: 500,
@@ -76,7 +70,7 @@ const AdminEventsPage = () => {
 		} finally {
 			setLoading(false);
 		}
-	}, [searchQuery, filters.type]);
+	}, [searchQuery]);
 
 	useEffect(() => {
 		const timeoutId = setTimeout(() => {
@@ -89,37 +83,18 @@ const AdminEventsPage = () => {
 		const onRefresh = () => {
 			fetchEvents();
 		};
-		window.addEventListener('formely-admin-events-refresh', onRefresh);
-		return () => window.removeEventListener('formely-admin-events-refresh', onRefresh);
+		window.addEventListener('volta-admin-events-refresh', onRefresh);
+		return () => window.removeEventListener('volta-admin-events-refresh', onRefresh);
 	}, [fetchEvents]);
 
-	const { upcomingEvents, pastEvents } = useMemo(() => {
+	const visibleEvents = useMemo(() => {
 		const now = nowTick;
-		const upcoming = [];
-		const past = [];
-		for (const ev of events) {
-			const endMs = parseWallClockToMs(ev.end_date);
-			if (endMs == null) {
-				upcoming.push(ev);
-				continue;
-			}
-			if (endMs >= now) {
-				upcoming.push(ev);
-			} else {
-				past.push(ev);
-			}
-		}
-		upcoming.sort((a, b) => {
-			const ta = parseWallClockToMs(a.start_date) ?? 0;
-			const tb = parseWallClockToMs(b.start_date) ?? 0;
-			return ta - tb;
-		});
-		past.sort((a, b) => {
-			const ta = parseWallClockToMs(a.end_date) ?? 0;
-			const tb = parseWallClockToMs(b.end_date) ?? 0;
-			return tb - ta;
-		});
-		return { upcomingEvents: upcoming, pastEvents: past };
+		return [...events]
+			.filter((ev) => {
+				const endMs = parseWallClockToMs(ev.end_date);
+				return endMs == null || endMs >= now;
+			})
+			.sort((a, b) => (parseWallClockToMs(a.start_date) ?? 0) - (parseWallClockToMs(b.start_date) ?? 0));
 	}, [events, nowTick]);
 
 	const handleView = (event) => {
@@ -226,9 +201,8 @@ const AdminEventsPage = () => {
 		);
 	}
 
-	const hasAny = upcomingEvents.length > 0 || pastEvents.length > 0;
-	const filtersActive = searchQuery || filters.type !== 'all';
-	const activeList = timeScope === 'upcoming' ? upcomingEvents : pastEvents;
+	const hasAny = visibleEvents.length > 0;
+	const filtersActive = Boolean(searchQuery);
 
 	return (
 		<div className="admin-container admin-events-page">
@@ -236,8 +210,7 @@ const AdminEventsPage = () => {
 				<div className="admin-page-header-content">
 					<h1 className="admin-page-title">Gestionare Evenimente</h1>
 					<p className="admin-page-subtitle">
-						Calendarul evenimentelor Formely — viitoare și trecute. Evenimentele noi se publică automat;
-						după data de sfârșit trec singure la trecute. Calendar rapid: iconița din bară.
+						Listă cu evenimentele active. Calendarul din bară rămâne pentru programare rapidă.
 					</p>
 				</div>
 				{canMutateInAdminArea && (
@@ -274,57 +247,13 @@ const AdminEventsPage = () => {
 						</button>
 					)}
 				</div>
-				<div className="admin-courses-actions">
-					<select
-						className="admin-filter-select"
-						value={filters.type}
-						onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-					>
-						<option value="all">Toate</option>
-						<option value="live_online">Online</option>
-						<option value="physical">Fizic</option>
-					</select>
-				</div>
 			</div>
 
 			{error && <div className="lms-error-message">{error}</div>}
 
-			{hasAny && (
-				<nav
-					className="admin-events-view-toggle admin-events-time-menu"
-					role="tablist"
-					aria-label="Afișare evenimente după timp"
-				>
-					<button
-						type="button"
-						role="tab"
-						id="admin-events-tab-upcoming"
-						aria-selected={timeScope === 'upcoming'}
-						aria-controls="admin-events-panel"
-						className={`lms-btn-secondary lms-btn-sm${timeScope === 'upcoming' ? ' active' : ''}`}
-						onClick={() => setTimeScope('upcoming')}
-					>
-						Viitoare și în desfășurare ({upcomingEvents.length})
-					</button>
-					<button
-						type="button"
-						role="tab"
-						id="admin-events-tab-past"
-						aria-selected={timeScope === 'past'}
-						aria-controls="admin-events-panel"
-						className={`lms-btn-secondary lms-btn-sm${timeScope === 'past' ? ' active' : ''}`}
-						onClick={() => setTimeScope('past')}
-					>
-						Trecute ({pastEvents.length})
-					</button>
-				</nav>
-			)}
-
 			<div
 				ref={eventsPanelRef}
 				id="admin-events-panel"
-				role="tabpanel"
-				aria-labelledby={timeScope === 'upcoming' ? 'admin-events-tab-upcoming' : 'admin-events-tab-past'}
 				style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}
 			>
 				{!hasAny ? (
@@ -333,7 +262,7 @@ const AdminEventsPage = () => {
 						<h3 className="lms-empty-title">Nu există evenimente</h3>
 						<p className="lms-empty-description">
 							{filtersActive
-								? 'Încearcă să modifici filtrele sau căutarea'
+								? 'Încearcă să modifici căutarea'
 								: 'Creează primul eveniment pentru a începe'}
 						</p>
 						{!filtersActive && canMutateInAdminArea && (
@@ -350,42 +279,8 @@ const AdminEventsPage = () => {
 							</button>
 						)}
 					</div>
-				) : activeList.length === 0 ? (
-					<div className="lms-empty-state admin-events-tab-empty">
-						<div className="lms-empty-icon">📅</div>
-						<h3 className="lms-empty-title">
-							{timeScope === 'upcoming' ? 'Niciun eveniment viitor' : 'Niciun eveniment trecut'}
-						</h3>
-						<p className="lms-empty-description">
-							{timeScope === 'upcoming'
-								? pastEvents.length > 0
-									? 'Toate evenimentele sunt deja încheiate. Poți vedea istoricul la „Trecute”.'
-									: 'Adaugă un eveniment nou pentru a-l vedea aici.'
-								: upcomingEvents.length > 0
-									? 'Evenimentele încheiate apar aici. Pentru cele viitoare, deschide „Viitoare și în desfășurare”.'
-									: 'Nu există evenimente încheiate încă.'}
-						</p>
-						{timeScope === 'upcoming' && pastEvents.length > 0 && (
-							<button
-								type="button"
-								className="lms-btn-secondary"
-								onClick={() => setTimeScope('past')}
-							>
-								Mergi la evenimente trecute
-							</button>
-						)}
-						{timeScope === 'past' && upcomingEvents.length > 0 && (
-							<button
-								type="button"
-								className="lms-btn-secondary"
-								onClick={() => setTimeScope('upcoming')}
-							>
-								Mergi la evenimente viitoare
-							</button>
-						)}
-					</div>
 				) : (
-					renderEventGrid(activeList)
+					renderEventGrid(visibleEvents)
 				)}
 			</div>
 
@@ -460,7 +355,7 @@ const AdminEventsPage = () => {
 							</button>
 							<button
 								type="button"
-								className="lms-btn-secondary va-btn-danger"
+								className="lms-btn-secondary va-btn-delete va-btn-danger"
 								onClick={() => {
 									if (showDeleteConfirm) {
 										confirmDelete();

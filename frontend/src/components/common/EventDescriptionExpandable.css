@@ -2,10 +2,6 @@
 	margin: 0;
 }
 
-.events-card-desc {
-	margin-bottom: 1rem;
-}
-
 .event-desc-expand__text {
 	margin: 0;
 	font-size: var(--font-size-sm);
@@ -28,7 +24,7 @@
 	background: none;
 	font-size: var(--font-size-sm);
 	font-weight: var(--font-weight-semibold);
-	color: var(--color-primary);
+	color: var(--text-accent);
 	cursor: pointer;
 	text-decoration: underline;
 	text-underline-offset: 3px;

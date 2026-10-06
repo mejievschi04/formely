@@ -1,0 +1,286 @@
+/*
+ * Liste din paginile de analiză admin: top cursuri, cursuri problematice,
+ * activitate recentă și alerte. Aceeași structură de card pentru toate.
+ */
+
+.admin-section-card {
+	padding: var(--space-6);
+	background: var(--bg-elevated);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-sm);
+}
+
+.admin-section-header,
+.admin-widget-header {
+	margin-bottom: var(--space-4);
+}
+
+.admin-section-header h2,
+.admin-widget-header h3 {
+	margin: 0;
+	font-size: var(--font-size-lg);
+	font-weight: 600;
+	color: var(--text-primary);
+}
+
+.admin-section-subtitle,
+.admin-widget-subtitle {
+	margin: var(--space-1) 0 0;
+	font-size: var(--font-size-sm);
+	color: var(--text-tertiary);
+}
+
+.admin-widget-empty {
+	padding: var(--space-6) var(--space-4);
+	text-align: center;
+	color: var(--text-tertiary);
+}
+
+.admin-widget-empty p {
+	margin: 0;
+}
+
+/* Rânduri de listă (cursuri, activitate) */
+.admin-courses-list,
+.admin-activity-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+}
+
+.admin-course-item,
+.admin-activity-item {
+	display: flex;
+	align-items: center;
+	gap: var(--space-4);
+	padding: var(--space-3) var(--space-4);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-md);
+	background: var(--bg-secondary);
+	color: var(--text-primary);
+	text-decoration: none;
+}
+
+a.admin-course-item:hover {
+	border-color: var(--border-secondary);
+	background: var(--bg-tertiary);
+}
+
+.admin-course-rank,
+.admin-activity-avatar {
+	display: inline-grid;
+	place-items: center;
+	width: 36px;
+	height: 36px;
+	flex-shrink: 0;
+	border-radius: var(--radius-full);
+	background: var(--bg-tertiary);
+	color: var(--text-secondary);
+	font-size: var(--font-size-sm);
+	font-weight: 700;
+}
+
+.admin-course-info,
+.admin-activity-content {
+	flex: 1;
+	min-width: 0;
+}
+
+.admin-course-title {
+	overflow: hidden;
+	font-weight: 600;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.admin-course-metrics {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-2) var(--space-4);
+	margin-top: var(--space-1);
+	font-size: var(--font-size-sm);
+	color: var(--text-secondary);
+}
+
+.admin-course-metric {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-1);
+}
+
+.admin-course-metric-value {
+	font-weight: 600;
+	color: var(--text-primary);
+}
+
+.admin-course-progress-bar {
+	flex: 1 1 120px;
+	max-width: 200px;
+	height: 6px;
+	overflow: hidden;
+	border-radius: var(--radius-full);
+	background: var(--bg-tertiary);
+}
+
+.admin-course-progress-fill {
+	height: 100%;
+	border-radius: inherit;
+	background: var(--color-success);
+}
+
+.admin-course-issues {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-1);
+	margin-top: var(--space-1);
+}
+
+.admin-issue-badge {
+	padding: 2px var(--space-2);
+	border-radius: var(--radius-full);
+	background: color-mix(in srgb, var(--color-warning) 16%, transparent);
+	color: var(--text-primary);
+	font-size: var(--font-size-xs);
+	font-weight: 600;
+}
+
+.admin-course-arrow {
+	flex-shrink: 0;
+	color: var(--text-tertiary);
+}
+
+/* Activitate: culoarea pictogramei după tipul evenimentului */
+.admin-activity-avatar.is-success {
+	background: color-mix(in srgb, var(--color-success) 16%, transparent);
+	color: var(--color-success);
+}
+
+.admin-activity-avatar.is-info {
+	background: color-mix(in srgb, var(--color-info) 16%, transparent);
+	color: var(--color-info);
+}
+
+.admin-activity-avatar.is-warning {
+	background: color-mix(in srgb, var(--color-warning) 16%, transparent);
+	color: var(--color-warning);
+}
+
+.admin-activity-description {
+	overflow-wrap: anywhere;
+}
+
+.admin-activity-time {
+	margin-top: 2px;
+	font-size: var(--font-size-xs);
+	color: var(--text-tertiary);
+}
+
+/* Schelet de încărcare */
+.admin-skeleton-line {
+	height: 12px;
+	border-radius: var(--radius-full);
+	background: var(--bg-tertiary);
+	animation: admin-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.admin-skeleton-line + .admin-skeleton-line {
+	width: 60%;
+	margin-top: var(--space-2);
+}
+
+@keyframes admin-skeleton-pulse {
+	50% {
+		opacity: 0.5;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.admin-skeleton-line {
+		animation: none;
+	}
+}
+
+/* Alerte (completează .admin-alert-item din admin-pages.css) */
+.admin-alert-item {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--space-3);
+}
+
+.admin-alert-icon {
+	display: inline-flex;
+	flex-shrink: 0;
+	margin-top: 2px;
+}
+
+.admin-alert-item.critical .admin-alert-icon {
+	color: var(--color-error);
+}
+
+.admin-alert-item.warning .admin-alert-icon {
+	color: var(--color-warning);
+}
+
+.admin-alert-item.info .admin-alert-icon {
+	color: var(--color-info);
+}
+
+.admin-alert-content {
+	flex: 1;
+	min-width: 0;
+}
+
+.admin-alert-title {
+	font-weight: 600;
+	color: var(--text-primary);
+}
+
+.admin-alert-description {
+	margin-top: var(--space-1);
+	font-size: var(--font-size-sm);
+	color: var(--text-secondary);
+}
+
+.admin-alert-action {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-1);
+	margin-top: var(--space-2);
+	font-size: var(--font-size-sm);
+	font-weight: 600;
+	color: var(--text-primary);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+.admin-alert-dismiss {
+	display: inline-grid;
+	place-items: center;
+	width: 32px;
+	height: 32px;
+	flex-shrink: 0;
+	border: none;
+	border-radius: var(--radius-md);
+	background: transparent;
+	color: var(--text-tertiary);
+	cursor: pointer;
+}
+
+.admin-alert-dismiss:hover {
+	background: var(--bg-tertiary);
+	color: var(--text-primary);
+}
+
+@media (max-width: 640px) {
+	.admin-section-card {
+		padding: var(--space-4);
+	}
+
+	.admin-course-item,
+	.admin-activity-item {
+		gap: var(--space-3);
+		padding: var(--space-3);
+	}
+}

@@ -2,58 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Builder;
+use App\Models\Concerns\BelongsToCompanyThrough;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Schema;
 
 class ExamResult extends Model
 {
-    use HasFactory;
-
-    protected static ?bool $hasAttemptNumberColumn = null;
-
-    public static function tracksAttemptNumber(): bool
-    {
-        if (static::$hasAttemptNumberColumn === null) {
-            static::$hasAttemptNumberColumn = Schema::hasColumn(
-                (new static)->getTable(),
-                'attempt_number'
-            );
-        }
-
-        return static::$hasAttemptNumberColumn;
-    }
-
-    public function scopeOrderedByAttempt(Builder $query): Builder
-    {
-        if (static::tracksAttemptNumber()) {
-            return $query->orderByDesc('attempt_number');
-        }
-
-        return $query->orderByDesc('id');
-    }
-
-    public function resolvedAttemptNumber(): int
-    {
-        if (! static::tracksAttemptNumber()) {
-            return 1;
-        }
-
-        return max(1, (int) ($this->attempt_number ?? 1));
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public static function attemptAttributesForCreate(int $attemptNumber): array
-    {
-        if (! static::tracksAttemptNumber()) {
-            return [];
-        }
-
-        return ['attempt_number' => max(1, $attemptNumber)];
-    }
+    use BelongsToCompanyThrough, HasFactory;
 
     protected $fillable = [
         'exam_id',

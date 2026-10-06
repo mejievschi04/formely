@@ -1,31 +1,45 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   CheckSquare,
   Edit3,
+  FolderInput,
   ListChecks,
   Plus,
   RefreshCcw,
   Search,
   Sparkles,
   Star,
-  Tags,
+  Layers,
   Trash2,
 } from 'lucide-react';
+import { X } from '@phosphor-icons/react';
 import Modal from '../../components/common/Modal';
 import ConfirmModal from '../../components/common/ConfirmModal';
-import { useToast } from '../../contexts/ToastContext';
+
+import { useToast } from '../../contexts/ToastContextShared.js';
 import { adminService } from '../../services/api';
 import Drawer from '../../components/admin/question-banks/Drawer';
 import QuestionRow from '../../components/admin/question-banks/QuestionRow';
-import Tag from '../../components/admin/question-banks/Tag';
 import QuestionBuilderEditor from '../../components/admin/question-banks/QuestionBuilderEditor';
 import AIGenerateQuestionsModal from '../../components/admin/question-banks/QuestionBankBuilderSteps/AIGenerateQuestionsModal';
-import { isAiEnabled, notifyAiComingSoon, canUseAiFeature, notifyAiPlanLocked } from '../../utils/aiAvailability';
-import { useAuth } from '../../contexts/AuthContext';
+import { DEFAULT_AI_QUESTION_TYPES } from '../../components/admin/question-banks/QuestionBankBuilderSteps/AIGenerateQuestionsModalShared.js';
+import { isVoltEnabled, notifyVoltComingSoon } from '../../utils/voltAvailability';
+
+import { useAuth } from '../../contexts/AuthContextShared.js';
 import './AdminQuestionBanksPage.css';
-import { getQuestionTypeLabel } from '../../utils/questionTypeLabels';
+
+const QUESTION_TYPE_LABELS = {
+  single_choice: 'Răspuns unic',
+  multiple_choice: 'Răspuns multiplu',
+  true_false: 'Adevărat/Fals',
+  yes_no: 'Da / Nu',
+  matching: 'Potrivire',
+  ordering: 'Ordonare',
+  fill_in_blank: 'Completare spații',
+  open: 'Deschis',
+};
 
 const stripHtml = (value = '') => String(value).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
@@ -33,9 +47,10 @@ const normalizeSearch = (value = '') => stripHtml(value).toLowerCase();
 
 const AdminQuestionBankFolderDetailsPage = () => {
   const { id } = useParams();
-  const { canMutateInAdminArea, user } = useAuth();
+  const navigate = useNavigate();
+  const { canMutateInAdminArea } = useAuth();
   const readOnly = !canMutateInAdminArea;
-  const { success, error } = useToast();
+  const { success, error, showToast } = useToast();
   const [folder, setFolder] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -44,7 +59,7 @@ const AdminQuestionBankFolderDetailsPage = () => {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [editOpen, setEditOpen] = useState(false);
-  const [editForm, setEditForm] = useState({ title: '', description: '', tagsText: '' });
+  const [editForm, setEditForm] = useState({ title: '', description: '' });
   const [questionEditorOpen, setQuestionEditorOpen] = useState(false);
   const [questionEditorSaving, setQuestionEditorSaving] = useState(false);
   const [questionEditorNumber, setQuestionEditorNumber] = useState(1);
@@ -59,10 +74,17 @@ const AdminQuestionBankFolderDetailsPage = () => {
   const [aiOptions, setAiOptions] = useState({
     numberOfQuestions: 10,
     difficulty: 'medium',
-    questionTypes: ['multiple_choice'],
+    questionTypes: [...DEFAULT_AI_QUESTION_TYPES],
   });
   const [deleteConfirmQuestionId, setDeleteConfirmQuestionId] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteFolderOpen, setDeleteFolderOpen] = useState(false);
+  const [deleteFolderLoading, setDeleteFolderLoading] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [moveFolders, setMoveFolders] = useState([]);
+  const [moveFoldersLoading, setMoveFoldersLoading] = useState(false);
+  const [moveTargetId, setMoveTargetId] = useState('');
+  const [moveLoading, setMoveLoading] = useState(false);
   const [questionDraft, setQuestionDraft] = useState({
     id: null,
     type: 'single_choice',
@@ -84,11 +106,9 @@ const AdminQuestionBankFolderDetailsPage = () => {
       ]);
       setFolder(folderData);
       setQuestions(Array.isArray(questionData) ? questionData : []);
-      const tags = (folderData?.tags || []).map((t) => t.name).join(', ');
       setEditForm({
         title: folderData?.title || '',
         description: folderData?.description || '',
-        tagsText: tags,
       });
     } catch {
       error('Nu am putut încărca folderul.');
@@ -111,7 +131,7 @@ const AdminQuestionBankFolderDetailsPage = () => {
         const list = Array.isArray(res) ? res : (res?.data || []);
         if (!cancelled) setAiCourses(list);
       } catch (err) {
-        console.error('Error fetching courses for AI generation:', err);
+        console.error('Error fetching courses for Formely AI generation:', err);
         if (!cancelled) setAiCourses([]);
       } finally {
         if (!cancelled) setAiCoursesLoading(false);
@@ -147,34 +167,15 @@ const AdminQuestionBankFolderDetailsPage = () => {
       const matchesType = typeFilter === 'all' || question?.type === typeFilter;
       if (!matchesType) return false;
       if (!query) return true;
-      const tags = question?.tags || question?.metadata?.tags || [];
-      const tagText = Array.isArray(tags) ? tags.map((tag) => tag?.name || tag).join(' ') : '';
-      return `${stripHtml(question?.content || '')} ${tagText}`.toLowerCase().includes(query);
+      return stripHtml(question?.content || '').toLowerCase().includes(query);
     });
   }, [questions, search, typeFilter]);
-
-  const normalizedTags = useMemo(
-    () =>
-      editForm.tagsText
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean),
-    [editForm.tagsText]
-  );
 
   const resolveValidCourseId = (candidateId = aiSelectedCourseId) => {
     const parsed = Number.parseInt(String(candidateId), 10);
     if (!Number.isInteger(parsed) || parsed <= 0) return null;
     return parsed;
   };
-
-  const trimQuestionText = (value) => String(value || '').replace(/\s+/g, ' ').trim();
-  const normalizeQuestionText = (value) =>
-    trimQuestionText(value)
-      .toLowerCase()
-      .replace(/[^a-z0-9ăâîșşțţ\s]+/gi, '')
-      .replace(/\s+/g, ' ')
-      .trim();
 
   const toggleSelect = (questionId) => {
     setSelectedIds((prev) => (prev.includes(questionId) ? prev.filter((idv) => idv !== questionId) : [...prev, questionId]));
@@ -245,12 +246,62 @@ const AdminQuestionBankFolderDetailsPage = () => {
     }
   };
 
+  const openMoveModal = async () => {
+    if (!selectedIds.length) return;
+    setMoveOpen(true);
+    setMoveTargetId('');
+    setMoveFoldersLoading(true);
+    try {
+      const banks = await adminService.getQuestionBanks();
+      setMoveFolders(banks.filter((bank) => String(bank.id) !== String(id)));
+    } catch {
+      setMoveFolders([]);
+      error('Nu am putut încărca folderele.');
+    } finally {
+      setMoveFoldersLoading(false);
+    }
+  };
+
+  const runMove = async () => {
+    if (!moveTargetId || !selectedIds.length) return;
+    setMoveLoading(true);
+    try {
+      const result = await adminService.moveQuestionsToBank(selectedIds, Number(moveTargetId));
+      const target = moveFolders.find((bank) => String(bank.id) === String(moveTargetId));
+      success(`${result?.moved ?? selectedIds.length} întrebări mutate în „${target?.title || 'folderul ales'}”.`);
+      if (drawerQuestion && selectedIds.includes(drawerQuestion.id)) {
+        setDrawerQuestion(null);
+      }
+      setSelectedIds([]);
+      setMoveOpen(false);
+      await loadData();
+    } catch (e) {
+      error(e?.response?.data?.error || e?.response?.data?.message || 'Nu am putut muta întrebările.');
+    } finally {
+      setMoveLoading(false);
+    }
+  };
+
+  const confirmDeleteFolder = async () => {
+    setDeleteFolderLoading(true);
+    try {
+      await adminService.deleteQuestionBank(id);
+      success('Folderul a fost șters.');
+      navigate('/admin/question-banks');
+    } catch (e) {
+      // ex. 422: folderul e folosit de un test
+      error(e?.response?.data?.error || 'Nu am putut șterge folderul.');
+      setDeleteFolderOpen(false);
+    } finally {
+      setDeleteFolderLoading(false);
+    }
+  };
+
   const saveFolder = async () => {
     try {
       await adminService.updateQuestionBank(id, {
         title: editForm.title.trim(),
         description: editForm.description.trim() || null,
-        tags: normalizedTags,
       });
       success('Folder actualizat.');
       setEditOpen(false);
@@ -260,39 +311,15 @@ const AdminQuestionBankFolderDetailsPage = () => {
     }
   };
 
-  const fetchAiDraftQuestion = async (approvedQuestions = [], blockedQuestions = [], courseIdOverride = null) => {
-    const validCourseId = resolveValidCourseId(courseIdOverride);
-    if (!validCourseId) {
-      throw new Error('Alege un curs valid înainte de generare.');
-    }
-
-    const result = await adminService.previewQuestionsWithAi(id, {
-      course_id: validCourseId,
-      numberOfQuestions: Math.max(1, Number(aiOptions.numberOfQuestions) || 1),
-      difficulty: aiOptions.difficulty,
-      questionTypes: aiOptions.questionTypes,
-      instructions: '',
-      approvedQuestions: approvedQuestions.map((q) => q.content || q.text || '').filter(Boolean),
-      blockedQuestions: blockedQuestions.map((q) => q.content || q.text || '').filter(Boolean),
-      autoGenerate: false,
-    });
-
-    return Array.isArray(result?.draft) ? result.draft : [];
-  };
-
   const handleOpenAIModal = () => {
-    if (!isAiEnabled()) {
-      notifyAiComingSoon(showToast);
-      return;
-    }
-    if (!canUseAiFeature(user, 'ai_test_generation')) {
-      notifyAiPlanLocked(showToast);
+    if (!isVoltEnabled('ai_test_generation')) {
+      notifyVoltComingSoon(showToast);
       return;
     }
     setAiOptions({
       numberOfQuestions: 10,
       difficulty: 'medium',
-      questionTypes: ['multiple_choice'],
+      questionTypes: [...DEFAULT_AI_QUESTION_TYPES],
     });
     setAiError(null);
     setAiGeneratedCount(0);
@@ -316,40 +343,28 @@ const AdminQuestionBankFolderDetailsPage = () => {
       const targetCount = Math.max(1, Number(requestedCount) || aiTargetCount);
       setAiGeneratedCount(0);
       setAiGeneratedPreviews([]);
-      const generatedQuestions = [];
-      const generatedPreviews = [];
-      const usedNormalized = new Set();
 
-      for (let index = 0; index < targetCount; index += 1) {
-        let candidate = null;
-        let content = '';
-        const maxAttempts = 5;
-        for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-          const draft = await fetchAiDraftQuestion(generatedQuestions, generatedQuestions, effectiveCourseId);
-          candidate = Array.isArray(draft) ? draft[0] : null;
-          content = trimQuestionText(candidate?.content || candidate?.question || '');
-          const normalized = normalizeQuestionText(content);
-          if (!candidate || !content || !normalized || usedNormalized.has(normalized)) {
-            candidate = null;
-            continue;
-          }
-          usedNormalized.add(normalized);
-          break;
-        }
+      const result = await adminService.previewQuestionsWithVolt(id, {
+        course_id: effectiveCourseId,
+        numberOfQuestions: targetCount,
+        difficulty: aiOptions.difficulty,
+        questionTypes: aiOptions.questionTypes,
+        autoGenerate: true,
+      });
 
-        if (!candidate || !content) {
-          throw new Error('AI nu a returnat nicio întrebare.');
-        }
-
-        generatedQuestions.push(candidate);
-        generatedPreviews.push({
-          index: index + 1,
-          content,
-          type: candidate.type || 'multiple_choice',
-        });
-        setAiGeneratedCount(index + 1);
-        setAiGeneratedPreviews([...generatedPreviews]);
+      const generatedQuestions = Array.isArray(result?.draft) ? result.draft : [];
+      if (!generatedQuestions.length) {
+        throw new Error('Formely AI nu a returnat nicio întrebare.');
       }
+
+      setAiGeneratedCount(generatedQuestions.length);
+      setAiGeneratedPreviews(
+        generatedQuestions.map((question, index) => ({
+          index: index + 1,
+          content: question.content || question.question || '',
+          type: question.type || 'multiple_choice',
+        }))
+      );
 
       await adminService.addQuestionsToBankBulk(id, generatedQuestions);
       success(`Au fost generate și salvate ${generatedQuestions.length} întrebări.`);
@@ -360,7 +375,7 @@ const AdminQuestionBankFolderDetailsPage = () => {
       await loadData();
     } catch (err) {
       console.error('Error generating questions:', err);
-      const message = err.response?.data?.error || err.response?.data?.message || err.message || 'Eroare la generarea întrebărilor cu AI';
+      const message = err.response?.data?.error || err.response?.data?.message || err.message || 'Eroare la generarea întrebărilor cu Formely AI';
       setAiError(message);
       error(message);
     } finally {
@@ -446,7 +461,7 @@ const AdminQuestionBankFolderDetailsPage = () => {
     <div className="qb-page qb-page-v2 qb-folder-detail-page">
       <div className="qb-shell qb-shell-detail">
         <header className="qb-detail-hero">
-          <Link to="/admin/question-banks" className="qb-back-btn qb-detail-back">
+          <Link to="/admin/question-banks" className="va-btn-back qb-back-btn qb-detail-back va-btn-back admin-back-btn">
             <ArrowLeft size={18} aria-hidden />
             Înapoi
           </Link>
@@ -454,11 +469,7 @@ const AdminQuestionBankFolderDetailsPage = () => {
           <div className="qb-detail-title-area">
             <p className="qb-page-eyebrow">Folder întrebări</p>
             <h1>{folder?.title || 'Detalii folder'}</h1>
-            <div className="qb-folder-tags">
-              {(folder?.tags || []).map((tag) => (
-                <Tag key={tag.id}>{tag.name}</Tag>
-              ))}
-            </div>
+            {folder?.description ? <p className="qb-detail-description">{folder.description}</p> : null}
           </div>
 
           {!readOnly ? (
@@ -471,12 +482,18 @@ const AdminQuestionBankFolderDetailsPage = () => {
                 <Plus size={17} aria-hidden />
                 Întrebare
               </button>
-              {canUseAiFeature(user, 'ai_test_generation') ? (
               <button type="button" className="lms-btn-primary qb-action-button" onClick={handleOpenAIModal}>
                 <Sparkles size={17} aria-hidden />
-                Generează cu AI
+                Generează cu Formely AI
               </button>
-              ) : null}
+              <button
+                type="button"
+                className="lms-btn-secondary va-btn-delete va-btn-danger qb-action-button"
+                onClick={() => setDeleteFolderOpen(true)}
+              >
+                <Trash2 size={17} aria-hidden />
+                Șterge folderul
+              </button>
             </div>
           ) : null}
         </header>
@@ -497,7 +514,7 @@ const AdminQuestionBankFolderDetailsPage = () => {
             </div>
           </div>
           <div className="qb-overview-item">
-            <Tags size={18} aria-hidden />
+            <Layers size={18} aria-hidden />
             <div>
               <strong>{loading ? '...' : uniqueTypes.length}</strong>
               <span>tipuri de întrebări</span>
@@ -537,7 +554,7 @@ const AdminQuestionBankFolderDetailsPage = () => {
               <option value="all">Toate tipurile</option>
               {uniqueTypes.map((type) => (
                 <option key={type} value={type}>
-                  {getQuestionTypeLabel(type, type)}
+                  {QUESTION_TYPE_LABELS[type] || type}
                 </option>
               ))}
             </select>
@@ -574,7 +591,16 @@ const AdminQuestionBankFolderDetailsPage = () => {
                 </button>
                 <button
                   type="button"
-                  className="lms-btn-secondary va-btn-danger qb-action-button"
+                  className="lms-btn-secondary qb-action-button"
+                  disabled={!selectedIds.length}
+                  onClick={openMoveModal}
+                >
+                  <FolderInput size={16} aria-hidden />
+                  Mută în alt folder
+                </button>
+                <button
+                  type="button"
+                  className="lms-btn-secondary va-btn-delete va-btn-danger qb-action-button"
                   disabled={!selectedIds.length}
                   onClick={runBulkDelete}
                 >
@@ -610,7 +636,7 @@ const AdminQuestionBankFolderDetailsPage = () => {
                 <ListChecks size={30} aria-hidden />
                 <p className="qb-empty-title">{questions.length ? 'Nicio întrebare pentru filtrul curent' : 'Folder gol'}</p>
                 <p className="qb-empty-hint">
-                  {questions.length ? 'Schimbă căutarea sau filtrul de tip.' : 'Adaugă manual o întrebare sau generează cu AI.'}
+                  {questions.length ? 'Schimbă căutarea sau filtrul de tip.' : 'Adaugă manual o întrebare sau generează cu Formely AI.'}
                 </p>
               </div>
             )}
@@ -643,36 +669,43 @@ const AdminQuestionBankFolderDetailsPage = () => {
             value={editForm.description}
             onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
           />
-          <label htmlFor="qb-edit-folder-tags">Tag-uri separate prin virgulă</label>
-          <input
-            id="qb-edit-folder-tags"
-            className="admin-form-input"
-            value={editForm.tagsText}
-            onChange={(e) => setEditForm((prev) => ({ ...prev, tagsText: e.target.value }))}
-          />
           <div className="qb-modal-actions">
             <button type="button" className="lms-btn-secondary" onClick={() => setEditOpen(false)}>
               Anulează
             </button>
-            <button type="button" className="lms-btn-primary" onClick={saveFolder}>
+            <button type="button" className="va-btn-save lms-btn-primary" onClick={saveFolder}>
               Salvează
             </button>
           </div>
         </div>
       </Modal>
 
-      <Modal isOpen={questionEditorOpen && !readOnly} onClose={() => !questionEditorSaving && setQuestionEditorOpen(false)}>
-        <div className="qb-modal qb-modal-question-editor">
-          <h3>{questionDraft.id ? 'Editează întrebare' : 'Întrebare nouă'}</h3>
-          <QuestionBuilderEditor question={questionDraft} onChange={setQuestionDraft} questionNumber={questionEditorNumber} />
-          <div className="qb-modal-actions">
+      <Modal
+        isOpen={questionEditorOpen && !readOnly}
+        onClose={() => !questionEditorSaving && setQuestionEditorOpen(false)}
+        closeOnEscape
+        ariaLabelledby="qb-question-editor-title"
+        className="va-dialog-overlay"
+        unstyledContent
+      >
+        <div className="va-dialog va-qe-dialog">
+          <header className="va-dialog__header">
+            <h2 id="qb-question-editor-title" className="va-dialog__title">{questionDraft.id ? 'Editează întrebarea' : 'Întrebare nouă'}</h2>
+            <button type="button" className="va-close-btn" onClick={() => setQuestionEditorOpen(false)} disabled={questionEditorSaving} aria-label="Închide">
+              <X size={18} weight="bold" aria-hidden="true" />
+            </button>
+          </header>
+          <div className="va-dialog__body">
+            <QuestionBuilderEditor question={questionDraft} onChange={setQuestionDraft} questionNumber={questionEditorNumber} />
+          </div>
+          <footer className="va-dialog__footer">
             <button type="button" className="lms-btn-secondary" onClick={() => setQuestionEditorOpen(false)} disabled={questionEditorSaving}>
               Anulează
             </button>
-            <button type="button" className="lms-btn-primary" onClick={saveQuestionFromEditor} disabled={questionEditorSaving}>
+            <button type="button" className="va-btn-save lms-btn-primary" onClick={saveQuestionFromEditor} disabled={questionEditorSaving}>
               {questionEditorSaving ? 'Se salvează...' : 'Salvează'}
             </button>
-          </div>
+          </footer>
         </div>
       </Modal>
 
@@ -686,6 +719,52 @@ const AdminQuestionBankFolderDetailsPage = () => {
         cancelLabel="Anulare"
         variant="danger"
         loading={deleteLoading}
+      />
+
+      <Modal isOpen={moveOpen && !readOnly} onClose={() => !moveLoading && setMoveOpen(false)}>
+        <div className="qb-modal">
+          <h3>Mută {selectedIds.length} {selectedIds.length === 1 ? 'întrebare' : 'întrebări'}</h3>
+          <label htmlFor="qb-move-target">Folderul în care le muți</label>
+          {moveFoldersLoading ? (
+            <p className="qb-empty-hint">Se încarcă folderele...</p>
+          ) : moveFolders.length ? (
+            <select
+              id="qb-move-target"
+              className="admin-form-input"
+              value={moveTargetId}
+              onChange={(e) => setMoveTargetId(e.target.value)}
+            >
+              <option value="">Alege folderul</option>
+              {moveFolders.map((bank) => (
+                <option key={bank.id} value={bank.id}>
+                  {bank.title || 'Folder fără nume'}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <p className="qb-empty-hint">Nu există alt folder. Creează mai întâi un folder nou.</p>
+          )}
+          <div className="qb-modal-actions">
+            <button type="button" className="lms-btn-secondary" onClick={() => setMoveOpen(false)} disabled={moveLoading}>
+              Anulează
+            </button>
+            <button type="button" className="lms-btn-primary" onClick={runMove} disabled={!moveTargetId || moveLoading}>
+              {moveLoading ? 'Se mută...' : 'Mută'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <ConfirmModal
+        open={deleteFolderOpen}
+        onClose={() => !deleteFolderLoading && setDeleteFolderOpen(false)}
+        onConfirm={confirmDeleteFolder}
+        title="Șterge folderul"
+        message={`Folderul „${folder?.title || ''}” și cele ${questions.length} întrebări din el nu vor mai apărea în aplicație. Un folder folosit într-un test nu poate fi șters.`}
+        confirmLabel="Șterge folderul"
+        cancelLabel="Anulare"
+        variant="danger"
+        loading={deleteFolderLoading}
       />
 
       <AIGenerateQuestionsModal

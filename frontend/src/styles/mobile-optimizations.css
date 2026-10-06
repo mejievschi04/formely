@@ -24,7 +24,7 @@
 
 @media (max-width: 768px) {
 	/* Buttons - PAGES ONLY (nu meniul). Touch target 44px. */
-	.va-shell-main button:not(.admin-settings-toggle-switch):not(.admin-exams-header-switch):not(.admin-action-icon-btn):not(.admin-users-icon-btn):not(.admin-org-icon-btn),
+	.va-shell-main button:not(.admin-settings-toggle-switch):not(.admin-exams-header-switch):not(.admin-courses-showcase-publish__switch):not(.va-publish-switch),
 	.va-shell-main .btn,
 	.va-shell-main .admin-btn,
 	.va-shell-main .va-btn,
@@ -33,7 +33,7 @@
 	.va-shell-main .admin-btn-secondary,
 	.va-shell-main [role="button"],
 	.va-shell-main a[role="button"],
-	.admin-container button:not(.admin-settings-toggle-switch):not(.admin-exams-header-switch):not(.admin-course-card-action-btn):not(.admin-course-table-action-btn):not(.admin-course-map-delete-btn):not(.admin-course-map-edit-btn):not(.admin-course-map-plus-btn):not(.admin-courses-showcase-edit-btn):not(.admin-action-icon-btn):not(.admin-users-icon-btn):not(.admin-org-icon-btn),
+	.admin-container button:not(.admin-settings-toggle-switch):not(.admin-exams-header-switch):not(.admin-courses-showcase-publish__switch):not(.va-publish-switch):not(.admin-course-card-action-btn):not(.admin-course-table-action-btn):not(.admin-course-map-delete-btn):not(.admin-course-map-edit-btn):not(.admin-course-map-plus-btn):not(.admin-courses-showcase-edit-btn),
 	.admin-container .btn,
 	.admin-container .admin-btn,
 	.admin-container .va-btn,
@@ -62,10 +62,8 @@
 	}
 
 	/* Icon buttons - pages only */
-	.va-shell-main button[aria-label]:not(.admin-settings-toggle-switch):not(.admin-exams-header-switch):not(.admin-action-icon-btn):not(.admin-users-icon-btn):not(.admin-org-icon-btn),
-	.va-shell-main .icon-btn,
-	.admin-container button[aria-label]:not(.admin-settings-toggle-switch):not(.admin-exams-header-switch):not(.admin-courses-showcase-edit-btn):not(.admin-action-icon-btn):not(.admin-users-icon-btn):not(.admin-org-icon-btn),
-	.admin-container .icon-btn {
+	.va-shell-main button[aria-label]:not(.admin-settings-toggle-switch):not(.admin-exams-header-switch):not(.admin-courses-showcase-publish__switch):not(.va-publish-switch),
+.admin-container button[aria-label]:not(.admin-settings-toggle-switch):not(.admin-exams-header-switch):not(.admin-courses-showcase-publish__switch):not(.va-publish-switch):not(.admin-courses-showcase-edit-btn) {
 		min-width: var(--btn-mobile-min-width);
 		min-height: var(--btn-mobile-min-height);
 		padding: var(--space-2);
@@ -101,9 +99,8 @@
 	}
 
 	/* Links in navigation */
-	.nav-item,
 	.modern-nav-item,
-	.va-nav-btn {
+.va-nav-btn {
 		min-height: 44px;
 		padding: var(--space-3) var(--space-4);
 		display: flex;
@@ -146,8 +143,7 @@
 
 	/* Grid gaps */
 	.grid,
-	.admin-grid,
-	.courses-grid {
+.admin-grid {
 		gap: var(--space-4);
 	}
 
@@ -259,21 +255,21 @@
 		background: var(--bg-elevated);
 		box-shadow: 2px 0 20px rgba(0, 0, 0, 0.5);
 		pointer-events: auto;
-		backdrop-filter: none !important;
-		-webkit-backdrop-filter: none !important;
+		backdrop-filter: none;
+		-webkit-backdrop-filter: none;
 		display: flex;
 		flex-direction: column;
 	}
-	
+
 	/* Force remove blur from sidebar and all its children on mobile */
 	.sidebar *,
 	.modern-sidebar *,
 	.va-sidebar *,
 	.student-sidebar * {
-		backdrop-filter: none !important;
-		-webkit-backdrop-filter: none !important;
-		filter: none !important;
-		-webkit-filter: none !important;
+		backdrop-filter: none;
+		-webkit-backdrop-filter: none;
+		filter: none;
+		-webkit-filter: none;
 	}
 
 	.sidebar.open,
@@ -283,22 +279,21 @@
 		left: 0 !important;
 	}
 
-
 	/* Mobile sidebar toggle - fundal ca bara de sus, icon alb (students + admins) */
 	.mobile-sidebar-toggle {
-		display: flex !important;
-		align-items: center !important;
-		justify-content: center !important;
-		width: 44px !important;
-		height: 44px !important;
-		min-width: 44px !important;
-		min-height: 44px !important;
-		padding: var(--space-2) !important;
-		background: var(--bg-elevated) !important;
-		border: none !important;
-		border-radius: var(--radius-md) !important;
-		color: var(--text-primary) !important;
-		cursor: pointer !important;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 44px;
+		height: 44px;
+		min-width: 44px;
+		min-height: 44px;
+		padding: var(--space-2);
+		background: var(--bg-elevated);
+		border: none;
+		border-radius: var(--radius-md);
+		color: var(--text-primary);
+		cursor: pointer;
 	}
 	.mobile-sidebar-toggle:hover {
 		background: var(--bg-secondary) !important;
@@ -310,10 +305,10 @@
 	.modern-topnav,
 	.va-topnav,
 	.admin-topnav {
-		display: flex !important;
-		visibility: visible !important;
-		opacity: 1 !important;
-		height: 56px;
+		display: flex;
+		visibility: visible;
+		opacity: 1;
+		height: var(--app-header-height, 56px);
 		padding: 0 var(--space-4);
 		position: fixed;
 		top: 0;
@@ -321,8 +316,8 @@
 		right: 0;
 		z-index: 998;
 		background-color: var(--border-primary);
-		backdrop-filter: none !important;
-		-webkit-backdrop-filter: none !important;
+		backdrop-filter: none;
+		-webkit-backdrop-filter: none;
 	}
 
 	/* Topnav left section - logo centered, hamburger on left */
@@ -330,13 +325,13 @@
 	.va-topnav-brand,
 	.va-shell-topnav .modern-topnav-left,
 	.va-shell-topnav .va-topnav-brand {
-		display: flex !important;
-		align-items: center !important;
-		justify-content: center !important;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		gap: var(--space-3) !important;
 		flex: 1 !important;
-		min-width: 0 !important;
-		position: relative !important;
+		min-width: 0;
+		position: relative;
 	}
 
 	/* Hamburger stays on left when logo is centered */
@@ -344,8 +339,8 @@
 	.modern-topnav .va-topnav-brand .mobile-sidebar-toggle,
 	.va-topnav .modern-topnav-left .mobile-sidebar-toggle,
 	.va-topnav .va-topnav-brand .mobile-sidebar-toggle {
-		position: absolute !important;
-		left: 0 !important;
+		position: absolute;
+		left: 0;
 	}
 
 	/* Logo doar în meniul deschis (drawer), nu în topnav pe mobil */
@@ -358,28 +353,28 @@
 	/* Titlu pagină lângă hamburger când meniul e închis */
 	.modern-topnav-left,
 	.va-topnav-brand {
-		justify-content: flex-start !important;
-		padding-left: 52px !important;
+		justify-content: flex-start;
+		padding-left: 52px;
 	}
 
 	.va-topnav-page-title {
-		text-align: left !important;
-		flex: 1 !important;
-		min-width: 0 !important;
+		text-align: left;
+		flex: 1;
+		min-width: 0;
 	}
 
 	/* Page title next to logo - no flex so logo+title stay centered */
 	.va-topnav-page-title {
-		display: block !important;
-		font-size: var(--font-size-lg) !important;
-		font-weight: var(--font-weight-semibold) !important;
-		color: var(--text-primary) !important;
-		margin: 0 !important;
-		white-space: nowrap !important;
-		overflow: hidden !important;
-		text-overflow: ellipsis !important;
-		flex: none !important;
-		min-width: 0 !important;
+		display: block;
+		font-size: var(--font-size-lg);
+		font-weight: var(--font-weight-semibold);
+		color: var(--text-primary);
+		margin: 0;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		flex: none;
+		min-width: 0;
 	}
 
 	/* Hide title when sidebar is expanded */
@@ -414,12 +409,12 @@
 	.va-sidebar-brand,
 	.student-sidebar .modern-sidebar-brand,
 	.student-sidebar .va-sidebar-brand {
-		display: flex !important;
-		flex-direction: row !important;
-		align-items: center !important;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
 		justify-content: flex-start !important;
-		gap: var(--space-3) !important;
-		flex-shrink: 0 !important;
+		gap: var(--space-3);
+		flex-shrink: 0;
 	}
 
 	/* Nav: container flex; scroll pe .va-sidebar-nav-scroll */
@@ -431,19 +426,19 @@
 	.va-sidebar .va-sidebar-nav,
 	.student-sidebar .modern-nav,
 	.student-sidebar .va-sidebar-nav {
-		flex: 1 1 0 !important;
-		min-height: 0 !important;
-		overflow: hidden !important;
+		flex: 1 1 0;
+		min-height: 0;
+		overflow: hidden;
 	}
 
 	.sidebar .va-sidebar-nav-scroll,
 	.modern-sidebar .va-sidebar-nav-scroll,
 	.va-sidebar .va-sidebar-nav-scroll,
 	.student-sidebar .va-sidebar-nav-scroll {
-		flex: 1 1 0 !important;
-		min-height: 0 !important;
-		overflow-y: auto !important;
-		-webkit-overflow-scrolling: touch !important;
+		flex: 1 1 0;
+		min-height: 0;
+		overflow-y: auto;
+		-webkit-overflow-scrolling: touch;
 	}
 
 	/* Student drawer — header + nav list */
@@ -532,28 +527,28 @@
 
 	/* Student sidebar nav - padding pe zona scroll */
 	.student-sidebar .va-sidebar-nav-scroll {
-		padding: var(--space-3) var(--space-4) var(--space-4) !important;
-		gap: var(--space-2) !important;
-		margin-top: 0 !important;
+		padding: var(--space-3) var(--space-4) var(--space-4);
+		gap: var(--space-2);
+		margin-top: 0;
 	}
 
 	/* Student sidebar nav — listă simplă, lizibilă */
 	.student-sidebar .modern-nav-item,
 	.student-sidebar .va-nav-btn {
-		margin-bottom: 2px !important;
-		padding: var(--space-3) var(--space-3) !important;
-		min-height: 48px !important;
-		border-radius: var(--radius-lg) !important;
-		align-items: center !important;
-		justify-content: flex-start !important;
-		gap: var(--space-3) !important;
-		text-align: left !important;
-		background: transparent !important;
-		border: none !important;
-		box-shadow: none !important;
-		font-weight: var(--font-weight-medium) !important;
-		color: var(--text-secondary) !important;
-		transition: background-color var(--transition-base), color var(--transition-base) !important;
+		margin-bottom: 2px;
+		padding: var(--space-3) var(--space-3);
+		min-height: 48px;
+		border-radius: var(--radius-lg);
+		align-items: center;
+		justify-content: flex-start;
+		gap: var(--space-3);
+		text-align: left;
+		background: transparent;
+		border: none;
+		box-shadow: none;
+		font-weight: var(--font-weight-medium);
+		color: var(--text-secondary);
+		transition: background-color var(--transition-base), color var(--transition-base);
 	}
 
 	.student-sidebar .modern-nav-item:hover,
@@ -566,88 +561,51 @@
 	.student-sidebar .modern-nav-item.is-active,
 	.student-sidebar .va-nav-btn.active,
 	.student-sidebar .va-nav-btn.is-active {
-		background: var(--color-primary-alpha-15) !important;
-		color: var(--color-primary) !important;
-		font-weight: var(--font-weight-semibold) !important;
+		background: var(--color-primary-alpha-15);
+		color: var(--text-accent);
+		font-weight: var(--font-weight-semibold);
 	}
 
 	.student-sidebar .modern-nav-item:last-child,
 	.student-sidebar .va-nav-btn:last-child {
-		margin-bottom: 0 !important;
+		margin-bottom: 0;
 	}
 
 	/* Icon + text combined - aligned, balanced */
 	.student-sidebar .modern-nav-item-icon,
 	.student-sidebar .va-nav-icon {
-		width: 22px !important;
-		height: 22px !important;
-		min-width: 22px !important;
-		min-height: 22px !important;
-		display: flex !important;
-		align-items: center !important;
-		justify-content: center !important;
-		flex-shrink: 0 !important;
-		opacity: 1 !important;
-		color: inherit !important;
+		width: 22px;
+		height: 22px;
+		min-width: 22px;
+		min-height: 22px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		opacity: 1;
+		color: inherit;
 	}
 
 	.student-sidebar .modern-nav-item .modern-nav-item-icon svg,
 	.student-sidebar .va-nav-btn .va-nav-icon svg {
-		width: 22px !important;
-		height: 22px !important;
+		width: 22px;
+		height: 22px;
 	}
 
 	.student-sidebar .modern-nav-item-label,
 	.student-sidebar .va-nav-label {
-		font-size: var(--font-size-base) !important;
-		font-weight: var(--font-weight-medium) !important;
-		line-height: 1.25 !important;
-		white-space: nowrap !important;
+		font-size: var(--font-size-base);
+		font-weight: var(--font-weight-medium);
+		line-height: 1.25;
+		white-space: nowrap;
 	}
 
 	.student-sidebar .modern-nav-item,
 	.student-sidebar .va-nav-btn {
-		gap: 14px !important;
+		gap: 14px;
 	}
 
 	/* Bottom navigation for mobile (if needed for other purposes) */
-	.mobile-bottom-nav {
-		position: fixed;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		height: 64px;
-		background: var(--bg-elevated);
-		border-top: 1px solid var(--border-primary);
-		display: flex;
-		justify-content: space-around;
-		align-items: center;
-		z-index: var(--z-fixed);
-		padding-bottom: var(--safe-area-inset-bottom);
-		box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-	}
-
-	.mobile-bottom-nav-item {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		gap: var(--space-1);
-		min-height: 44px;
-		color: var(--text-secondary);
-		text-decoration: none;
-		font-size: var(--font-size-xs);
-		transition: all var(--transition-base);
-	}
-
-	.mobile-bottom-nav-item.active {
-		color: var(--color-primary);
-	}
-
-	.mobile-bottom-nav-icon {
-		font-size: var(--font-size-xl);
-	}
 
 	/* Main content padding for bottom nav */
 	body:has(.mobile-bottom-nav) .va-main,
@@ -664,20 +622,17 @@
 @media (max-width: 768px) {
 	/* Cards - full width, compact padding on mobile */
 	.card,
-	.va-card,
-	.admin-card,
-	.course-card {
+.va-card,
+.admin-card {
 		width: 100%;
-		padding: var(--space-3) !important;
+		padding: var(--space-3);
 		margin-bottom: var(--space-3);
 		border-radius: var(--radius-lg);
 	}
 
 	/* Grids - single column */
 	.grid,
-	.admin-grid,
-	.courses-grid,
-	.certificates-grid {
+.admin-grid {
 		grid-template-columns: 1fr;
 	}
 
@@ -690,25 +645,11 @@
 	}
 
 	/* Modal - full screen on mobile */
-	.modal,
-	.modal-overlay {
+	.modal {
 		padding: var(--space-4);
 	}
 
-	.modal-content {
-		width: 100%;
-		max-width: 100%;
-		max-height: 90vh;
-		margin: 0;
-		border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-	}
-
 	/* Forms - stacked */
-	.form-grid,
-	.admin-form-grid {
-		grid-template-columns: 1fr;
-		gap: var(--space-4);
-	}
 
 	/* Form groups */
 	.form-group,
@@ -731,8 +672,8 @@
 
 	/* Reduce animations on mobile for better performance */
 	* {
-		animation-duration: 0.2s !important;
-		transition-duration: 0.2s !important;
+		animation-duration: 0.2s;
+		transition-duration: 0.2s;
 	}
 
 	/* Disable hover effects on touch devices */
@@ -767,10 +708,6 @@
 
 @media (max-width: 768px) {
 	/* Swipeable cards */
-	.swipeable {
-		touch-action: pan-y;
-		-webkit-overflow-scrolling: touch;
-	}
 
 	/* Prevent text selection on buttons */
 	button,
@@ -804,20 +741,6 @@
 	}
 
 	/* Skip to content link */
-	.skip-link {
-		position: absolute;
-		top: -40px;
-		left: 0;
-		background: var(--color-primary);
-		color: var(--text-inverse);
-		padding: var(--space-2) var(--space-4);
-		text-decoration: none;
-		z-index: 1000;
-	}
-
-	.skip-link:focus {
-		top: 0;
-	}
 }
 
 /* ============================================
@@ -826,9 +749,8 @@
 
 /* Hide on mobile */
 @media (max-width: 768px) {
-	.hide-mobile,
 	.mobile-hidden {
-		display: none !important;
+		display: none;
 	}
 }
 
@@ -839,12 +761,7 @@
 
 @media (min-width: 769px) {
 	/* Utility classes */
-	.show-mobile-only,
-	.mobile-only {
-		display: none !important;
-	}
 
-	.hide-mobile,
 	.mobile-hidden {
 		display: block !important;
 	}
@@ -860,7 +777,7 @@
 		overflow: hidden !important;
 	}
 
-	/* Hide Formely text from topnav on desktop (both) */
+	/* Hide Volta Academy text from topnav on desktop (both) */
 	.modern-topnav .va-topnav-page-title,
 	.admin-topnav .va-topnav-page-title,
 	.va-topnav .va-topnav-page-title {
@@ -909,15 +826,6 @@
 		left: -9999px !important;
 	}
 
-	.modern-sidebar .sidebar-mobile-control-icon,
-	.sidebar .sidebar-mobile-control-icon,
-	.va-sidebar .sidebar-mobile-control-icon,
-	.student-sidebar .sidebar-mobile-control-icon {
-		display: none !important;
-		visibility: hidden !important;
-		opacity: 0 !important;
-	}
-
 	.modern-sidebar .sidebar-mobile-control-content,
 	.sidebar .sidebar-mobile-control-content,
 	.va-sidebar .sidebar-mobile-control-content,
@@ -964,10 +872,6 @@
 		gap: var(--space-2) !important;
 	}
 
-	.admin-topnav-control-label {
-		display: block !important;
-	}
-
 	.admin-topnav-user {
 		display: flex !important;
 	}
@@ -1011,18 +915,13 @@
 
 	/* Cards - reset to normal grid */
 	.card,
-	.va-card,
-	.admin-card,
-	.course-card {
+.va-card,
+.admin-card {
 		width: auto !important;
 		margin-bottom: var(--space-6) !important;
 	}
 
 	/* Forms - reset to normal grid */
-	.form-grid,
-	.admin-form-grid {
-		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
-	}
 
 	/* Admin pages - reset to normal layout */
 	.admin-page-header {
@@ -1030,26 +929,7 @@
 		align-items: center !important;
 	}
 
-	.admin-page-header-actions {
-		width: auto !important;
-	}
-
-	.admin-page-header-actions .admin-btn {
-		width: auto !important;
-		margin-bottom: 0 !important;
-	}
-
 	/* Certificate wizard - reset to normal layout */
-	.certificate-wizard-content {
-		grid-template-columns: 1fr 1fr !important;
-	}
-
-	.certificate-wizard-preview {
-		position: sticky !important;
-		max-height: calc(100vh - 200px) !important;
-		order: 0 !important;
-		margin-bottom: 0 !important;
-	}
 
 	/* Settings tabs - reset to normal */
 	.admin-settings-tabs {
@@ -1068,9 +948,6 @@
 	}
 
 	/* Dashboard stats - reset to normal grid */
-	.admin-dashboard-stats {
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
-	}
 
 	/* Form actions - reset to normal */
 	.admin-form-actions {
@@ -1083,32 +960,9 @@
 	}
 }
 
-@media (max-width: 768px) {
-	.show-mobile-only,
-	.mobile-only {
-		display: block !important;
-	}
-}
-
 /* Full width on mobile */
-@media (max-width: 768px) {
-	.mobile-full-width {
-		width: 100% !important;
-		max-width: 100% !important;
-	}
-}
 
 /* Stack on mobile */
-@media (max-width: 768px) {
-	.mobile-stack {
-		flex-direction: column !important;
-	}
-
-	.mobile-stack > * {
-		width: 100% !important;
-		margin-bottom: var(--space-4);
-	}
-}
 
 /* ============================================
    11. SPECIFIC COMPONENT OPTIMIZATIONS
@@ -1122,76 +976,69 @@
 		gap: var(--space-4);
 	}
 
-	.admin-page-header-actions {
-		width: 100%;
-	}
-
-	.admin-page-header-actions .admin-btn {
-		width: 100%;
-		margin-bottom: var(--space-2);
-	}
-
 	/* Ensure main content has padding for fixed topnav - match topnav height exactly */
 	.va-main,
 	.va-shell-main {
-		padding-top: 56px !important;
-		margin-top: 0 !important;
+		padding-top: 0 !important;
+		margin-top: 0;
 	}
 
 	/* Viewport dinamic pe mobile - paginile se adaptează la înălțimea ecranului (100dvh) */
 	.va-shell-topnav .va-shell-main,
 	.va-shell-topnav .va-main {
-		min-height: calc(100vh - 56px);
-		min-height: calc(100dvh - 56px);
+		min-height: calc(100vh - var(--app-header-height, 56px) - var(--student-tab-height, 0px));
+		min-height: calc(100dvh - var(--app-header-height, 56px) - var(--student-tab-height, 0px));
 	}
 
 	/* Scroll doar când conținutul depășește ecranul - 100svh evită bara neagră pe iOS */
 	.va-shell-topnav .va-shell-main {
-		height: calc(100svh - 56px) !important;
-		height: calc(100dvh - 56px) !important;
+		margin-top: var(--app-header-height, 56px);
+		padding-top: 0;
+		height: calc(100svh - var(--app-header-height, 56px) - var(--student-tab-height, 0px));
+		height: calc(100dvh - var(--app-header-height, 56px) - var(--student-tab-height, 0px));
 		overflow-y: auto !important;
-		-webkit-overflow-scrolling: touch !important;
-		background-color: var(--bg-primary) !important;
+		-webkit-overflow-scrolling: touch;
+		background-color: var(--bg-primary);
 	}
 
 	/* Elimină bara neagră - fără padding, background consistent */
 	.va-shell-topnav .va-main {
 		padding-bottom: 0 !important;
-		background-color: var(--bg-primary) !important;
+		background-color: var(--bg-primary);
 	}
 
 	body:has(.va-shell-topnav) {
-		padding: 0 !important;
-		margin: 0 !important;
-		min-height: 100svh !important;
-		min-height: 100dvh !important;
-		overflow-x: hidden !important;
-		background-color: var(--bg-primary) !important;
+		padding: 0;
+		margin: 0;
+		min-height: 100svh;
+		min-height: 100dvh;
+		overflow-x: hidden;
+		background-color: var(--bg-primary);
 	}
 
 	html:has(.va-shell-topnav) {
-		padding: 0 !important;
-		margin: 0 !important;
-		height: 100% !important;
+		padding: 0;
+		margin: 0;
+		height: 100%;
 	}
 
 	/* #root și va-shell - fill viewport, același background */
 	#root:has(.va-shell-topnav),
 	.va-shell.va-shell-topnav {
-		min-height: 100% !important;
-		height: 100% !important;
+		min-height: 100%;
+		height: 100%;
 		background-color: var(--bg-primary) !important;
 	}
 
 	/* Admin sidebar - adjust main content when sidebar is open */
 	.va-shell-main-topnav {
-		margin-left: 0 !important;
-		margin-top: 0 !important;
+		margin-left: 0;
+		margin-top: 0;
 	}
 
 	/* Hide toggle controls from topnav on mobile - they're in sidebar */
 	.admin-topnav-control.desktop-only {
-		display: none !important;
+		display: none;
 	}
 
 	.admin-topnav-user {
@@ -1200,20 +1047,10 @@
 
 	/* Hide student topnav navigation on mobile - it's in sidebar */
 	.va-topnav .modern-topnav-nav.desktop-only {
-		display: none !important;
+		display: none;
 	}
 
 	/* Student notifications dropdown - centrat pe mobile */
-	.va-shell-topnav .va-topnav-notifications-dropdown,
-	.va-shell-topnav .admin-topnav-notifications-dropdown {
-		position: fixed !important;
-		left: 50% !important;
-		right: auto !important;
-		top: calc(56px + var(--space-2)) !important;
-		transform: translateX(-50%) !important;
-		width: calc(100vw - var(--space-8)) !important;
-		max-width: 360px !important;
-	}
 
 	/* Sidebar mobile controls - only visible on mobile - fix bottom */
 	.sidebar-mobile-controls {
@@ -1229,7 +1066,7 @@
 
 	/* Show student sidebar on mobile */
 	.student-sidebar {
-		display: flex !important;
+		display: flex;
 	}
 
 	.sidebar-mobile-control-item {
@@ -1248,25 +1085,7 @@
 		background: var(--bg-elevated);
 		transform: scale(0.98);
 		border-color: var(--color-primary);
-		box-shadow: 0 2px 8px rgba(var(--formely-white-rgb), 0.15);
-	}
-
-	.sidebar-mobile-control-icon {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 32px;
-		height: 32px;
-		flex-shrink: 0;
-		color: var(--text-primary);
-		background: var(--bg-elevated);
-		border-radius: var(--radius-sm);
-		border: 1px solid var(--border-primary);
-	}
-
-	.sidebar-mobile-control-icon svg {
-		width: 18px;
-		height: 18px;
+		box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.15);
 	}
 
 	.sidebar-mobile-control-content {
@@ -1276,15 +1095,6 @@
 		flex: 1;
 		gap: var(--space-3);
 		min-width: 0;
-	}
-
-	.sidebar-mobile-control-label {
-		font-size: var(--font-size-sm);
-		color: var(--text-primary);
-		font-weight: var(--font-weight-medium);
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
 	}
 
 	.sidebar-mobile-control-item--view-switch {
@@ -1304,7 +1114,7 @@
 
 	/* Mobile Logout Button - positioned at bottom, fix */
 	.sidebar-mobile-logout {
-		flex-shrink: 0 !important;
+		flex-shrink: 0;
 		margin-top: var(--space-2);
 		padding: var(--space-3);
 		padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0));
@@ -1320,9 +1130,9 @@
 		padding: var(--space-2-5) var(--space-3);
 		border-radius: var(--radius-md);
 		min-height: 44px;
-		background: var(--bg-secondary) !important;
-		border: 1px solid var(--border-primary) !important;
-		color: var(--text-primary) !important;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		color: var(--text-primary);
 		font-size: var(--font-size-sm);
 		font-weight: var(--font-weight-medium);
 		cursor: pointer;
@@ -1333,7 +1143,7 @@
 	.sidebar-mobile-logout-btn:active {
 		background: var(--bg-elevated) !important;
 		border-color: var(--color-primary);
-		box-shadow: 0 2px 8px rgba(var(--formely-white-rgb), 0.15);
+		box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.15);
 		transform: scale(0.98);
 	}
 
@@ -1361,17 +1171,6 @@
 	   Centered, well-arranged, modern design
 	   ============================================ */
 
-	/* Titluri centrate doar pe paginile de overview (nu lecții/mesaje/bibliotecă) */
-	.va-shell-main-topnav .student-dashboard-title,
-	.va-shell-main-topnav .student-dashboard-subtitle,
-	.va-shell-main-topnav .student-dashboard-welcome,
-	.va-shell-main-topnav .courses-header h1,
-	.va-shell-main-topnav .events-header h1,
-	.va-shell-main-topnav .page-title,
-	.va-shell-main-topnav .page-subtitle {
-		text-align: center !important;
-	}
-
 	/* Conținut lizibil: aliniat stânga implicit */
 	.va-shell-main-topnav .va-main,
 	.va-shell-main-topnav main {
@@ -1380,81 +1179,51 @@
 
 	/* Topnav dreapta — iconițe compacte */
 	.va-shell-topnav .modern-topnav-right {
-		gap: var(--space-2) !important;
-		flex-shrink: 0 !important;
+		gap: var(--space-2);
+		flex-shrink: 0;
 	}
 
-	.va-shell-topnav .admin-topnav-calendar-btn,
 	.va-shell-topnav .admin-topnav-notification-btn {
-		width: 40px !important;
-		height: 40px !important;
-		min-width: 40px !important;
-		min-height: 40px !important;
+		width: 40px;
+		height: 40px;
+		min-width: 40px;
+		min-height: 40px;
 	}
 
 	/* Centrare doar pe pagini overview */
 	.student-dashboard-page,
-	.courses-page,
-	.events-page,
-	.va-profile-container {
-		text-align: center !important;
+.events-page,
+.va-profile-container {
+		text-align: center;
 	}
 
-	.messages-page,
-	.library-reader-page,
-	.lessons-page,
-	.lesson-page,
-	.student-exam-page,
-	.exam-results-page {
-		text-align: left !important;
-	}
-
-	/* Center course cards, event cards content (exam results: left-aligned) */
-	.course-card,
-	.event-card {
-		text-align: center !important;
-	}
-
-	.course-card h1,
-	.course-card h2,
-	.course-card h3,
-	.course-card h4,
-	.course-card p,
-	.course-card .course-card-title,
-	.course-card .course-card-description,
-	.event-card h1,
-	.event-card h2,
-	.event-card h3,
-	.event-card h4,
-	.event-card p,
-	.event-card .event-card-title,
-	.event-card .event-card-description {
-		text-align: center !important;
+	.library-page,
+.library-reader-page,
+.lesson-page,
+.student-exam-page,
+.exam-results-page {
+		text-align: left;
 	}
 
 	/* Center widget titles and descriptions */
 	.student-widget h1,
-	.student-widget h2,
-	.student-widget h3,
-	.student-widget h4,
-	.student-widget p,
-	.student-widget .widget-title,
-	.student-widget .widget-description {
+.student-widget h2,
+.student-widget h3,
+.student-widget h4,
+.student-widget p {
 		text-align: center !important;
 	}
 
 	/* Override for input fields and textareas - keep left aligned */
 	.student-dashboard-page input,
-	.student-dashboard-page textarea,
-	.courses-page input,
-	.courses-page textarea,
-	.events-page input,
-	.events-page textarea,
-	.exam-results-page input,
-	.exam-results-page textarea,
-	.va-profile-container input,
-	.va-profile-container textarea {
-		text-align: left !important;
+.student-dashboard-page textarea,
+.events-page input,
+.events-page textarea,
+.exam-results-page input,
+.exam-results-page textarea,
+.va-profile-container input,
+.va-profile-container textarea {
+		text-align: left;
 	}
 
 	/* Student Dashboard - Centered and Clean */
@@ -1463,190 +1232,6 @@
 		padding-top: var(--space-1) !important;
 		max-width: 100% !important;
 		margin: 0 auto !important;
-	}
-
-	.student-dashboard-header {
-		text-align: center !important;
-		margin-top: 0 !important;
-		margin-bottom: var(--space-5) !important;
-		padding-top: 0 !important;
-		padding-bottom: var(--space-3) !important;
-		border-bottom: 1px solid var(--border-primary) !important;
-	}
-
-	.student-dashboard-welcome {
-		justify-content: center !important;
-		margin-bottom: var(--space-3) !important;
-		font-size: var(--font-size-sm) !important;
-	}
-
-	.student-dashboard-title {
-		font-size: var(--font-size-2xl) !important;
-		line-height: 1.3 !important;
-		margin-bottom: var(--space-3) !important;
-		text-align: center !important;
-	}
-
-	.student-dashboard-subtitle {
-		font-size: var(--font-size-sm) !important;
-		line-height: 1.5 !important;
-		text-align: center !important;
-		padding: 0 var(--space-2) !important;
-	}
-
-	/* Hero Section - Centered Cards */
-	.student-dashboard-hero {
-		margin-bottom: var(--space-5) !important;
-	}
-
-	.student-dashboard-hero-content {
-		display: flex !important;
-		flex-direction: column !important;
-		gap: var(--space-4) !important;
-		align-items: stretch !important;
-	}
-
-	.student-dashboard-global-progress {
-		padding: var(--space-5) var(--space-4) !important;
-		border-radius: var(--radius-xl) !important;
-		text-align: center !important;
-		background: var(--bg-elevated) !important;
-		border: 1px solid var(--border-primary) !important;
-		box-shadow: var(--shadow-md) !important;
-	}
-
-	.student-global-progress-header {
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: center !important;
-		gap: var(--space-4) !important;
-		margin-bottom: var(--space-5) !important;
-	}
-
-	.student-global-progress-header h2 {
-		font-size: var(--font-size-xl) !important;
-		margin: 0 !important;
-		text-align: center !important;
-	}
-
-	.student-global-progress-stats {
-		display: flex !important;
-		justify-content: center !important;
-		gap: var(--space-4) !important;
-		width: 100% !important;
-		flex-wrap: wrap !important;
-	}
-
-	.student-global-progress-stat {
-		flex: 1 1 calc(50% - var(--space-2)) !important;
-		min-width: 120px !important;
-		padding: var(--space-3) var(--space-2) !important;
-		text-align: center !important;
-		background: var(--bg-secondary) !important;
-		border-radius: var(--radius-lg) !important;
-		border: 1px solid var(--border-primary) !important;
-	}
-
-	.student-global-progress-stat-value {
-		font-size: var(--font-size-2xl) !important;
-		font-weight: var(--font-weight-bold) !important;
-		display: block !important;
-		margin-bottom: var(--space-1) !important;
-		color: var(--text-primary) !important;
-	}
-
-	.student-global-progress-stat-label {
-		font-size: var(--font-size-xs) !important;
-		color: var(--text-secondary) !important;
-		display: block !important;
-	}
-
-	.student-global-progress-bar-container {
-		margin-top: var(--space-4) !important;
-	}
-
-	.student-global-progress-percentage {
-		text-align: left !important;
-		font-size: var(--font-size-lg) !important;
-		font-weight: var(--font-weight-semibold) !important;
-	}
-
-	/* Quick Stats - Grid 2x2, Centered */
-	.student-dashboard-quick-stats {
-		display: grid !important;
-		grid-template-columns: repeat(2, 1fr) !important;
-		gap: var(--space-3) !important;
-		margin-top: var(--space-4) !important;
-	}
-
-	.student-quick-stat {
-		padding: var(--space-5) var(--space-4) !important;
-		border-radius: var(--radius-xl) !important;
-		text-align: center !important;
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: center !important;
-		justify-content: center !important;
-		gap: var(--space-3) !important;
-		min-height: 110px !important;
-		background: var(--bg-elevated) !important;
-		border: 1px solid var(--border-primary) !important;
-		box-shadow: var(--shadow-sm) !important;
-		transition: all var(--transition-base) !important;
-	}
-
-	.student-quick-stat:active {
-		transform: scale(0.98) !important;
-		box-shadow: var(--shadow-md) !important;
-	}
-
-	.student-quick-stat-icon {
-		font-size: var(--font-size-2xl) !important;
-		line-height: 1 !important;
-		margin-bottom: 0 !important;
-		width: 44px !important;
-		height: 44px !important;
-		display: flex !important;
-		align-items: center !important;
-		justify-content: center !important;
-		background: var(--bg-tertiary) !important;
-		border-radius: var(--radius-lg) !important;
-	}
-
-	.student-quick-stat-content {
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: center !important;
-		gap: var(--space-1) !important;
-	}
-
-	.student-quick-stat-value {
-		font-size: var(--font-size-xl) !important;
-		font-weight: var(--font-weight-bold) !important;
-		color: var(--text-primary) !important;
-		line-height: 1.2 !important;
-	}
-
-	.student-quick-stat-label {
-		font-size: var(--font-size-xs) !important;
-		color: var(--text-secondary) !important;
-		line-height: 1.3 !important;
-		text-align: center !important;
-	}
-
-	/* Dashboard Content - Single Column */
-	.student-dashboard-content {
-		display: flex !important;
-		flex-direction: column !important;
-		gap: var(--space-5) !important;
-	}
-
-	.student-dashboard-left,
-	.student-dashboard-right {
-		display: flex !important;
-		flex-direction: column !important;
-		gap: var(--space-4) !important;
-		width: 100% !important;
 	}
 
 	/* Widgets - Clean and Centered */
@@ -1669,19 +1254,8 @@
 		text-align: center !important;
 	}
 
-	.student-widget-subtitle {
-		font-size: var(--font-size-xs) !important;
-		margin-top: var(--space-2) !important;
-		text-align: center !important;
-		color: var(--text-secondary) !important;
-	}
-
 	/* Dashboard Widgets - Center all content */
-	.student-resume-widget,
-	.student-mandatory-courses-widget,
-	.student-active-courses-widget,
-	.student-incomplete-lessons-widget,
-	.student-pending-exams-widget {
+	.student-resume-widget {
 		text-align: center !important;
 	}
 
@@ -1718,271 +1292,14 @@
 		justify-content: center !important;
 	}
 
-	/* Course Progress Cards - Horizontal layout, left-aligned */
-	.student-course-progress-card {
-		text-align: left !important;
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: stretch !important;
-		padding: var(--space-4) !important;
-		gap: var(--space-4) !important;
-		border-radius: var(--radius-xl) !important;
-		background: var(--bg-elevated) !important;
-		border: 1px solid var(--border-primary) !important;
-		box-shadow: var(--shadow-sm) !important;
-	}
-
-	.student-course-progress-header {
-		display: flex !important;
-		flex-direction: row !important;
-		align-items: flex-start !important;
-		gap: var(--space-4) !important;
-		width: 100% !important;
-		text-align: left !important;
-		margin-bottom: 0 !important;
-	}
-
-	.student-course-progress-thumbnail {
-		width: 100px !important;
-		height: 100px !important;
-		min-width: 100px !important;
-		min-height: 100px !important;
-		border-radius: var(--radius-lg) !important;
-		object-fit: cover !important;
-		flex-shrink: 0 !important;
-		margin: 0 !important;
-	}
-
-	.student-course-progress-info {
-		flex: 1 !important;
-		min-width: 0 !important;
-		text-align: left !important;
-	}
-
-	.student-course-progress-title-row {
-		display: flex !important;
-		flex-direction: row !important;
-		align-items: center !important;
-		flex-wrap: wrap !important;
-		gap: var(--space-2) !important;
-		margin-bottom: var(--space-1) !important;
-	}
-
-	.student-course-progress-title {
-		text-align: left !important;
-		font-size: var(--font-size-base) !important;
-		font-weight: var(--font-weight-semibold) !important;
-		margin: 0 !important;
-		line-height: 1.3 !important;
-		-webkit-line-clamp: 2 !important;
-		display: -webkit-box !important;
-		-webkit-box-orient: vertical !important;
-		overflow: hidden !important;
-	}
-
-	.student-course-mandatory-badge {
-		display: inline-flex !important;
-		margin: 0 !important;
-		flex-shrink: 0 !important;
-	}
-
-	.student-course-progress-teacher {
-		text-align: left !important;
-		margin: 0 !important;
-		font-size: var(--font-size-sm) !important;
-	}
-
-	.student-course-progress-body {
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: stretch !important;
-		gap: var(--space-3) !important;
-		width: 100% !important;
-		margin-bottom: 0 !important;
-	}
-
-	.student-course-progress-next {
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: flex-start !important;
-		gap: var(--space-1) !important;
-		text-align: left !important;
-		width: 100% !important;
-		padding-top: var(--space-3) !important;
-		border-top: 1px solid var(--border-primary) !important;
-		margin-top: var(--space-2) !important;
-	}
-
-	.student-course-progress-next-label,
-	.student-course-progress-next-module {
-		text-align: left !important;
-	}
-
-	.student-course-progress-footer {
-		display: flex !important;
-		justify-content: stretch !important;
-		width: 100% !important;
-		margin-top: var(--space-3) !important;
-	}
-
-	.student-course-progress-footer .student-btn {
-		width: 100% !important;
-		justify-content: center !important;
-		min-height: 44px !important;
-	}
-
-	/* Incomplete Lessons Widget - Centered */
-	.student-incomplete-lessons-list {
-		display: flex !important;
-		flex-direction: column !important;
-		gap: var(--space-3) !important;
-	}
-
-	.student-incomplete-lesson-item {
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: center !important;
-		text-align: center !important;
-		padding: var(--space-4) !important;
-		gap: var(--space-3) !important;
-	}
-
-	.student-incomplete-lesson-icon {
-		font-size: var(--font-size-2xl) !important;
-		margin-bottom: var(--space-2) !important;
-	}
-
-	.student-incomplete-lesson-info {
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: center !important;
-		gap: var(--space-2) !important;
-		width: 100% !important;
-		text-align: center !important;
-	}
-
-	.student-incomplete-lesson-title {
-		text-align: center !important;
-		font-size: var(--font-size-base) !important;
-		font-weight: var(--font-weight-semibold) !important;
-		margin-bottom: var(--space-1) !important;
-	}
-
-	.student-incomplete-lesson-meta {
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: center !important;
-		gap: var(--space-1) !important;
-		text-align: center !important;
-	}
-
-	.student-incomplete-lesson-course,
-	.student-incomplete-lesson-duration {
-		text-align: center !important;
-		font-size: var(--font-size-sm) !important;
-	}
-
-	.student-incomplete-lesson-arrow {
-		display: none !important;
-	}
-
-	/* Pending Exams Widget - Centered */
-	.student-pending-exams-list {
-		display: flex !important;
-		flex-direction: column !important;
-		gap: var(--space-3) !important;
-	}
-
-	.student-pending-exam-item {
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: center !important;
-		text-align: center !important;
-		padding: var(--space-4) !important;
-		gap: var(--space-3) !important;
-	}
-
-	.student-pending-exam-icon {
-		font-size: var(--font-size-2xl) !important;
-		margin-bottom: var(--space-2) !important;
-	}
-
-	.student-pending-exam-info {
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: center !important;
-		gap: var(--space-2) !important;
-		width: 100% !important;
-		text-align: center !important;
-	}
-
-	.student-pending-exam-title {
-		text-align: center !important;
-		font-size: var(--font-size-base) !important;
-		font-weight: var(--font-weight-semibold) !important;
-		margin-bottom: var(--space-1) !important;
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: center !important;
-		gap: var(--space-1) !important;
-	}
-
-	.student-pending-exam-required {
-		display: inline-block !important;
-		margin: 0 auto !important;
-	}
-
-	.student-pending-exam-meta {
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: center !important;
-		gap: var(--space-1) !important;
-		text-align: center !important;
-	}
-
-	.student-pending-exam-course,
-	.student-pending-exam-score {
-		text-align: center !important;
-		font-size: var(--font-size-sm) !important;
-	}
-
-	.student-pending-exam-arrow {
-		display: none !important;
-	}
-
 	/* Widget Empty States - Centered */
-	.student-widget-empty-state {
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: center !important;
-		justify-content: center !important;
-		gap: var(--space-3) !important;
-		padding: var(--space-6) var(--space-4) !important;
-		text-align: center !important;
-	}
-
-	.student-widget-empty-icon {
-		font-size: var(--font-size-4xl) !important;
-		margin-bottom: var(--space-2) !important;
-	}
 
 	.student-widget-empty {
 		text-align: center !important;
 		margin: 0 !important;
 	}
 
-	.student-widget-empty-state .student-btn {
-		width: 100% !important;
-		justify-content: center !important;
-	}
-
 	/* Widget Count Badges - Centered */
-	.student-widget-count {
-		display: flex !important;
-		align-items: center !important;
-		justify-content: center !important;
-		margin: 0 auto !important;
-	}
 
 	/* Widget Headers - Centered */
 	.student-widget-header {
@@ -2002,70 +1319,9 @@
 		width: 100% !important;
 	}
 
-	.student-widget-badge {
-		display: inline-block !important;
-		margin: 0 auto var(--space-2) auto !important;
-	}
-
 	/* Widget Content - Centered */
 	.student-widget-content {
 		text-align: center !important;
-	}
-
-	.student-widget-content .student-btn-link {
-		width: 100% !important;
-		justify-content: center !important;
-		margin-top: var(--space-4) !important;
-	}
-
-	/* Courses Page - Mobile Optimization */
-	.courses-page {
-		padding: 0 var(--space-4) var(--space-6) !important;
-		padding-top: var(--space-1) !important;
-	}
-
-	.courses-header {
-		text-align: center !important;
-		margin-top: 0 !important;
-		margin-bottom: var(--space-5) !important;
-		padding-top: 0 !important;
-		padding-bottom: var(--space-3) !important;
-		border-bottom: 1px solid var(--border-primary) !important;
-	}
-
-	.courses-header h1 {
-		font-size: var(--font-size-2xl) !important;
-		margin-bottom: var(--space-2) !important;
-		text-align: center !important;
-	}
-
-	.courses-grid {
-		display: grid !important;
-		grid-template-columns: 1fr !important;
-		gap: var(--space-3) !important;
-		margin-top: var(--space-3) !important;
-	}
-
-	.course-card {
-		width: 100% !important;
-		margin: 0 !important;
-		border-radius: var(--radius-lg) !important;
-		overflow: hidden !important;
-		box-shadow: var(--shadow-md) !important;
-		transition: all var(--transition-base) !important;
-	}
-
-	.course-card-content {
-		padding: var(--space-3) var(--space-4) !important;
-	}
-
-	.course-card-thumbnail {
-		height: 140px !important;
-	}
-
-	.course-card:active {
-		transform: scale(0.98) !important;
-		box-shadow: var(--shadow-lg) !important;
 	}
 
 	/* Events Page - Mobile Optimization */
@@ -2074,37 +1330,18 @@
 		padding-top: var(--space-2) !important;
 	}
 
-	.events-page-header,
-	.events-header {
+	.events-page-header {
 		margin-bottom: var(--space-4) !important;
-		text-align: left !important;
+		text-align: left;
 	}
 
-	.events-page-title,
-	.events-header h1 {
-		font-size: var(--font-size-xl) !important;
+	.events-page-title {
+		font-size: var(--font-size-xl);
 		margin-bottom: var(--space-2) !important;
-		line-height: 1.3 !important;
-	}
-
-	.events-page-subtitle {
-		font-size: var(--font-size-sm) !important;
-		line-height: 1.5 !important;
+		line-height: 1.3;
 	}
 
 	/* Filters - stack vertical, full width */
-	.va-events-filters {
-		flex-direction: column !important;
-		gap: var(--space-2) !important;
-		margin-bottom: var(--space-4) !important;
-	}
-
-	.events-filter-select {
-		width: 100% !important;
-		min-height: 44px !important;
-		padding: var(--space-2) var(--space-3) !important;
-		font-size: var(--font-size-base) !important;
-	}
 
 	/* Events grid - single column, compact gap */
 	.events-grid {
@@ -2116,8 +1353,7 @@
 
 	/* Event cards - compact, touch-friendly */
 	.events-page .va-card-enhanced,
-	.event-card,
-	.va-card-enhanced {
+.va-card-enhanced {
 		width: 100% !important;
 		margin: 0 !important;
 		padding: 0 !important;
@@ -2135,39 +1371,33 @@
 
 	.events-page .va-card-body,
 	.events-page .va-card-enhanced .va-card-body {
-		padding: var(--space-3) var(--space-4) !important;
+		padding: var(--space-3) var(--space-4);
 	}
 
-	.events-page .va-card-title {
+	.events-page .va-card-title,
+	.events-page .events-card-title {
 		font-size: var(--font-size-base) !important;
-		line-height: 1.35 !important;
-		-webkit-line-clamp: 2 !important;
-		display: -webkit-box !important;
-		-webkit-box-orient: vertical !important;
-		overflow: hidden !important;
+		line-height: 1.4 !important;
+		display: block !important;
+		overflow: visible !important;
+		-webkit-line-clamp: unset !important;
+		line-clamp: unset !important;
+		text-overflow: unset !important;
+		white-space: normal !important;
 	}
 
 	/* Title + badge - wrap pe mobile */
-	.events-page .events-card-header {
-		flex-wrap: wrap !important;
-		gap: var(--space-2) !important;
-		align-items: center !important;
-	}
 
-	.events-page .events-card-status-badge {
-		flex-shrink: 0 !important;
-		font-size: 0.7rem !important;
-		padding: 0.2rem 0.5rem !important;
-	}
-
-	/* Descriere - line-clamp pe mobile */
-	.events-page .va-card-body p {
+	.events-page .va-card-body p,
+	.events-page .events-card-text {
 		font-size: var(--font-size-sm) !important;
-		margin-bottom: var(--space-2) !important;
-		-webkit-line-clamp: 2 !important;
-		display: -webkit-box !important;
-		-webkit-box-orient: vertical !important;
-		overflow: hidden !important;
+		margin: 0 !important;
+		display: block !important;
+		overflow: visible !important;
+		-webkit-line-clamp: unset !important;
+		line-clamp: unset !important;
+		text-overflow: unset !important;
+		white-space: pre-wrap !important;
 	}
 
 	/* Butoane card eveniment - full width, stack vertical */
@@ -2185,7 +1415,6 @@
 		justify-content: center !important;
 	}
 
-	.event-card:active,
 	.va-card-enhanced:active {
 		transform: scale(0.98) !important;
 		box-shadow: var(--shadow-lg) !important;
@@ -2193,105 +1422,42 @@
 
 	/* Exam Results Page - Mobile Optimization (left-aligned) */
 	.exam-results-page {
-		padding: 0 var(--space-4) var(--space-6) !important;
-		padding-top: var(--space-2) !important;
-		text-align: left !important;
+		padding: 0 var(--space-4) var(--space-6);
+		padding-top: var(--space-2);
+		text-align: left;
 	}
 
-	.exam-results-page-header,
-	.exam-results-header {
-		text-align: left !important;
+	.exam-results-page-header {
+		text-align: left;
 		margin-top: 0 !important;
 		margin-bottom: var(--space-5) !important;
-		padding-top: 0 !important;
-		padding-bottom: var(--space-3) !important;
+		padding-top: 0;
+		padding-bottom: var(--space-3);
 	}
 
-	.exam-results-page-title,
-	.exam-results-header h1 {
+	.exam-results-page-title {
 		font-size: var(--font-size-2xl) !important;
 		margin-bottom: var(--space-2) !important;
-		text-align: left !important;
-	}
-
-	.exam-results-page-subtitle {
-		text-align: left !important;
-	}
-
-	.exam-results-section-title {
-		text-align: left !important;
-		font-size: var(--font-size-lg) !important;
-	}
-
-	.exam-results-list {
-		display: flex !important;
-		flex-direction: column !important;
-		gap: var(--space-3) !important;
-		margin-top: var(--space-4) !important;
-	}
-
-	.exam-result-item {
-		width: 100% !important;
-		padding: var(--space-4) !important;
-		border-radius: var(--radius-xl) !important;
-		background: var(--bg-elevated) !important;
-		border: 1px solid var(--border-primary) !important;
-		text-align: left !important;
-		min-height: 44px !important;
-		box-shadow: var(--shadow-sm) !important;
+		text-align: left;
 	}
 
 	/* Profile Page - Already optimized, ensure consistency */
 	.va-profile-container {
-		padding: 0 var(--space-4) calc(var(--space-8) + 56px + env(safe-area-inset-bottom, 0px)) !important;
-		padding-top: var(--space-1) !important;
-		height: auto !important;
-		overflow: visible !important;
+		padding: 0 var(--space-4) var(--space-6);
+		padding-top: var(--space-1);
 	}
 
 	.va-profile-header {
-		margin-top: 0 !important;
-		margin-bottom: var(--space-4) !important;
-	}
-
-	.va-profile-section {
-		margin-bottom: calc(var(--space-4) + 8px);
-		padding-bottom: var(--space-5);
-	}
-
-	.va-profile-section .lms-btn-primary,
-	.va-profile-section .lms-btn-secondary {
-		margin-top: var(--space-3);
+		margin-top: 0;
+		margin-bottom: var(--space-5);
 	}
 
 	.va-profile-stats {
-		display: grid !important;
-		grid-template-columns: repeat(2, 1fr) !important;
-		gap: var(--space-3) !important;
-		margin-top: var(--space-3) !important;
-		margin-bottom: var(--space-4) !important;
-		width: 100% !important;
-	}
-
-	.va-profile-stat {
-		text-align: center !important;
-		padding: var(--space-3) !important;
-		background: var(--bg-elevated) !important;
-		border-radius: var(--radius-lg) !important;
-		border: 1px solid var(--border-primary) !important;
-	}
-
-	.va-profile-stat-value {
-		font-size: var(--font-size-xl) !important;
-		font-weight: var(--font-weight-bold) !important;
-		display: block !important;
-		margin-bottom: var(--space-1) !important;
-	}
-
-	.va-profile-stat-label {
-		font-size: var(--font-size-xs) !important;
-		color: var(--text-secondary) !important;
-		display: block !important;
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: var(--space-3);
+		margin-top: var(--space-4);
+		width: 100%;
 	}
 
 	/* ============================================
@@ -2299,365 +1465,7 @@
 	   100dvh = dynamic viewport - se adaptează la înălțimea ecranului (ex. când bara browser dispare)
 	   ============================================ */
 
-	/* Messages Page - Mobile Split View (2 pages) */
-	.messages-page {
-		height: calc(100vh - 56px);
-		height: calc(100dvh - 56px); /* 100dvh = viewport dinamic, se adaptează la bara browser */
-		width: 100vw;
-		left: 0;
-		padding: 0;
-		min-height: 0;
-	}
-
-	/* messages-container - full height pentru flex children */
-	.messages-container {
-		min-height: 0 !important;
-	}
-
-	/* messages-main: flex column - header fix, mesaje scroll, input fix jos */
-	.messages-main {
-		display: flex !important;
-		flex-direction: column !important;
-		min-height: 0 !important;
-		height: 100% !important;
-	}
-
-	.messages-chat-header {
-		flex-shrink: 0 !important;
-	}
-
-	/* Zona mesaje - flex 1, min-height 0 pentru overflow scroll corect */
-	.messages-chat-messages {
-		flex: 1 1 0 !important;
-		min-height: 0 !important;
-		overflow-y: auto !important;
-		-webkit-overflow-scrolling: touch;
-	}
-
 	/* Bara de scriere - fix jos, safe-area pentru notch/home indicator */
-	.messages-chat-input-form {
-		flex-shrink: 0 !important;
-		padding: var(--space-3) var(--space-4) !important;
-		padding-bottom: max(var(--space-3), env(safe-area-inset-bottom)) !important;
-		gap: var(--space-2) !important;
-		border-top: 1px solid var(--border-primary);
-		background: var(--bg-elevated);
-	}
-
-	.messages-container {
-		position: relative;
-		width: 100%;
-		height: 100%;
-	}
-
-	/* Sidebar - Full screen on mobile when no conversation selected */
-	.messages-sidebar {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		z-index: 1;
-		transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-		transform: translateX(0);
-		display: flex;
-		flex-direction: column;
-		min-height: 0;
-	}
-
-	.messages-sidebar.mobile-hidden {
-		transform: translateX(-100%);
-		z-index: 0;
-	}
-
-	/* Messages Main - Full screen on mobile when conversation selected */
-	.messages-main {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		z-index: 1;
-		transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-		transform: translateX(0);
-	}
-
-	.messages-main.mobile-hidden {
-		transform: translateX(100%);
-		z-index: 0;
-	}
-
-	/* Back button in chat header on mobile */
-	.messages-chat-back-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 44px;
-		height: 44px;
-		min-width: 44px;
-		min-height: 44px;
-		padding: var(--space-2);
-		background: transparent;
-		border: none;
-		border-radius: var(--radius-md);
-		color: var(--text-primary);
-		cursor: pointer;
-		transition: all var(--transition-base);
-		margin-right: var(--space-2);
-		flex-shrink: 0;
-	}
-
-	.messages-chat-back-btn:hover,
-	.messages-chat-back-btn:active {
-		background: var(--bg-secondary);
-	}
-
-	.messages-chat-back-btn svg {
-		width: 24px;
-		height: 24px;
-	}
-
-	.messages-chat-header {
-		display: flex;
-		align-items: center;
-		gap: var(--space-2);
-	}
-
-	.messages-chat-header-info {
-		display: flex;
-		align-items: center;
-		gap: var(--space-3);
-		flex: 1;
-		min-width: 0;
-	}
-
-	/* Optimize messages layout for mobile */
-	.messages-sidebar {
-		display: flex;
-		flex-direction: column;
-		background: var(--bg-elevated);
-	}
-
-	.messages-sidebar-header {
-		padding: var(--space-4) var(--space-3);
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: var(--space-3);
-		flex-shrink: 0;
-		border-bottom: 1px solid var(--border-primary);
-	}
-
-	.messages-title {
-		font-size: var(--font-size-xl);
-		font-weight: var(--font-weight-semibold);
-		margin: 0;
-	}
-
-	.va-shell-topnav .messages-sidebar {
-		display: grid !important;
-		grid-template-columns: minmax(0, 1fr) auto;
-		grid-template-rows: auto minmax(0, 1fr);
-		width: 100% !important;
-		height: 100% !important;
-		border-right: none;
-	}
-
-	.va-shell-topnav .messages-search {
-		grid-column: 1;
-		grid-row: 1;
-		padding: 12px 8px 12px 16px;
-		border-bottom: none;
-		position: relative;
-		top: auto;
-		z-index: 2;
-		flex-shrink: 0;
-	}
-
-	.va-shell-topnav .messages-sidebar-header {
-		grid-column: 2;
-		grid-row: 1;
-		justify-content: flex-end;
-		align-items: center;
-		padding: 12px 16px 12px 0;
-		border-bottom: none;
-		position: relative;
-		top: auto;
-		background: transparent;
-		z-index: 2;
-	}
-
-	.va-shell-topnav .messages-sidebar-header-copy {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		padding: 0;
-		margin: -1px;
-		overflow: hidden;
-		clip: rect(0, 0, 0, 0);
-		white-space: nowrap;
-		border: 0;
-	}
-
-	.va-shell-topnav .messages-conversations-list {
-		grid-column: 1 / -1;
-		grid-row: 2;
-		border-top: 1px solid var(--border-primary);
-		padding: 8px 12px 12px;
-	}
-
-	.messages-search {
-		padding: var(--space-3);
-		flex-shrink: 0;
-	}
-
-	.messages-search-input {
-		width: 100%;
-		min-height: 44px;
-		padding: var(--space-3) var(--space-4);
-		border-radius: var(--radius-lg);
-		font-size: 16px;
-	}
-
-	.messages-conversations-list {
-		flex: 1;
-		overflow-y: auto;
-		-webkit-overflow-scrolling: touch;
-		padding: var(--space-2);
-	}
-
-	.messages-conversation-item {
-		display: flex;
-		align-items: center;
-		gap: var(--space-3);
-		padding: var(--space-3) var(--space-4);
-		min-height: 60px;
-		margin-bottom: var(--space-2);
-		border-radius: var(--radius-lg);
-		background: var(--bg-secondary);
-		transition: all var(--transition-base);
-	}
-
-	.messages-conversation-item:active {
-		transform: scale(0.98);
-	}
-
-	.messages-conversation-item.active {
-		background: var(--color-primary-alpha-15);
-		box-shadow: 0 0 0 1px var(--color-primary);
-	}
-
-	.messages-conversation-item .messages-conversation-avatar {
-		width: 48px;
-		height: 48px;
-		min-width: 48px;
-		min-height: 48px;
-		flex-shrink: 0;
-		color: var(--text-inverse) !important;
-	}
-
-	.messages-conversation-item .messages-conversation-avatar img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		border-radius: var(--radius-full);
-	}
-
-	.messages-conversation-item .messages-conversation-avatar span,
-	.messages-conversation-item .messages-conversation-avatar * {
-		color: var(--text-inverse) !important;
-	}
-
-	.messages-conversation-item .messages-conversation-content {
-		flex: 1;
-		min-width: 0;
-		display: flex;
-		flex-direction: row;
-		align-items: center;
-		justify-content: flex-start;
-		gap: 0;
-	}
-
-	.messages-conversation-item .messages-conversation-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: var(--space-2);
-		flex: 1;
-		min-width: 0;
-		margin-bottom: 0;
-	}
-
-	.messages-conversation-item .messages-conversation-name {
-		font-size: var(--font-size-base);
-		font-weight: var(--font-weight-semibold);
-		color: var(--text-primary);
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		flex: 1;
-		min-width: 0;
-		text-align: left;
-	}
-
-	.messages-conversation-item .messages-conversation-time {
-		font-size: var(--font-size-xs);
-		color: var(--text-tertiary);
-		flex-shrink: 0;
-		margin-left: auto;
-	}
-
-	.messages-conversation-item .messages-conversation-preview {
-		display: none;
-	}
-
-	.messages-chat-header {
-		padding: var(--space-3) var(--space-4);
-		min-height: 56px;
-	}
-
-	.messages-chat-avatar {
-		width: 40px;
-		height: 40px;
-		min-width: 40px;
-		min-height: 40px;
-		color: var(--text-inverse) !important; /* Black text on yellow background */
-	}
-
-	.messages-chat-avatar span,
-	.messages-chat-avatar * {
-		color: var(--text-inverse) !important; /* Ensure all text inside avatar is black */
-	}
-
-	.messages-chat-name {
-		font-size: var(--font-size-base);
-	}
-
-	.messages-chat-role {
-		font-size: var(--font-size-xs);
-	}
-
-	.messages-chat-messages {
-		padding: var(--space-4);
-	}
-
-	.messages-message {
-		margin-bottom: var(--space-3);
-		max-width: 85%;
-	}
-
-	.messages-chat-input {
-		font-size: 16px; /* Prevents zoom on iOS */
-		padding: var(--space-3) var(--space-4);
-		min-height: 44px;
-	}
-
-	.messages-chat-send-btn {
-		width: 44px;
-		height: 44px;
-		min-width: 44px;
-		min-height: 44px;
-	}
 
 	/* ============================================
 	   PROFILE PAGE - Mobile Optimizations
@@ -2666,7 +1474,7 @@
 
 	/* Profile Container - Clean spacing */
 	.va-profile-container {
-		padding: var(--space-4) var(--space-4) calc(var(--space-8) + 56px + env(safe-area-inset-bottom, 0px));
+		padding: var(--space-4) var(--space-4) var(--space-6);
 		min-height: auto;
 		max-width: 100%;
 	}
@@ -2687,10 +1495,10 @@
 
 	/* Profile Header - Clean card design */
 	.va-profile-header {
-		margin-bottom: var(--space-4);
+		margin-bottom: var(--space-6);
 		background: var(--bg-elevated);
 		border-radius: var(--radius-xl);
-		padding: var(--space-4);
+		padding: var(--space-5);
 		border: 1px solid var(--border-primary);
 		box-shadow: var(--shadow-md);
 	}
@@ -2700,13 +1508,13 @@
 	}
 
 	.va-profile-info {
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: center !important;
-		gap: var(--space-4) !important;
-		margin-top: 0 !important;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--space-4);
+		margin-top: 0;
 		padding: 0 !important;
-		min-height: 0 !important;
+		min-height: 0;
 		width: 100%;
 		text-align: center;
 	}
@@ -2717,9 +1525,9 @@
 	}
 
 	.va-profile-avatar {
-		width: 96px !important;
-		height: 96px !important;
-		flex-shrink: 0 !important;
+		width: 96px;
+		height: 96px;
+		flex-shrink: 0;
 	}
 
 	.va-profile-avatar-img {
@@ -2731,8 +1539,8 @@
 		width: 96px !important;
 		height: 96px !important;
 		font-size: var(--font-size-2xl) !important;
-		font-weight: var(--font-weight-bold) !important;
-		color: var(--text-inverse) !important;
+		font-weight: var(--font-weight-bold);
+		color: var(--text-inverse);
 		border: 4px solid var(--bg-primary) !important;
 		box-shadow: var(--shadow-md) !important;
 	}
@@ -2764,9 +1572,9 @@
 
 	.va-profile-name {
 		font-size: var(--font-size-xl) !important;
-		font-weight: var(--font-weight-bold) !important;
-		margin: 0 !important;
-		color: var(--text-primary) !important;
+		font-weight: var(--font-weight-bold);
+		margin: 0;
+		color: var(--text-primary);
 		line-height: 1.25 !important;
 		letter-spacing: -0.02em;
 		width: 100%;
@@ -2789,10 +1597,10 @@
 
 	.va-profile-role {
 		font-size: var(--font-size-sm) !important;
-		margin: 0 !important;
-		color: var(--text-secondary) !important;
+		margin: 0;
+		color: var(--text-secondary);
 		line-height: 1.4 !important;
-		font-weight: var(--font-weight-medium) !important;
+		font-weight: var(--font-weight-medium);
 		padding: var(--space-1) var(--space-2);
 		background: var(--bg-secondary);
 		border-radius: var(--radius-md);
@@ -2819,45 +1627,32 @@
 		display: grid;
 		grid-template-columns: repeat(2, 1fr);
 		gap: var(--space-3);
-		margin-bottom: var(--space-4);
+		margin-bottom: var(--space-6);
 	}
 
 	.va-stat-card {
 		background: var(--bg-elevated);
 		border: 1px solid var(--border-primary);
 		border-radius: var(--radius-lg);
-		padding: var(--space-4) var(--space-3);
-		min-height: 88px;
+		padding: var(--space-5);
+		min-height: 100px;
 		display: flex;
 		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		gap: var(--space-2);
+		align-items: flex-start;
+		gap: var(--space-3);
 		box-shadow: var(--shadow-sm);
-		text-align: center;
-		transition: box-shadow var(--transition-base), border-color var(--transition-base);
+		transition: all var(--transition-base);
 	}
 
 	.va-stat-card:hover {
 		box-shadow: var(--shadow-md);
-		transform: none;
-	}
-
-	.va-profile-activity-cta {
-		display: flex;
-		justify-content: center;
-	}
-
-	.va-profile-badges {
-		justify-content: center;
+		transform: translateY(-2px);
 	}
 
 	.va-stat-content {
 		width: 100%;
 		display: flex;
 		flex-direction: column;
-		align-items: center;
-		text-align: center;
 		gap: var(--space-1);
 	}
 
@@ -2876,46 +1671,22 @@
 		line-height: 1.4;
 	}
 
-	.va-stat-progress-bar {
-		width: 100%;
-		height: 6px;
-		background: var(--bg-secondary);
-		border-radius: var(--radius-full);
-		overflow: hidden;
-		margin-top: var(--space-2);
-	}
-
-	.va-stat-progress-fill {
-		height: 100%;
-		background: linear-gradient(90deg, var(--color-primary) 0%, rgba(var(--formely-white-rgb), 0.8) 100%);
-		border-radius: var(--radius-full);
-		transition: width var(--transition-smooth);
-	}
-
 	/* Profile Grid - Single column, clean spacing */
-	.va-profile-grid {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: var(--space-5);
-		margin-bottom: var(--space-6);
-	}
 
 	/* Profile Section - Modern card design */
 	.va-profile-section {
 		background: var(--bg-elevated);
 		border: 1px solid var(--border-primary);
 		border-radius: var(--radius-lg);
-		padding: var(--space-4);
+		padding: var(--space-5);
 		box-shadow: var(--shadow-sm);
-		margin-bottom: 16px;
 	}
 
 	.va-section-header {
 		display: flex;
 		flex-direction: row;
 		align-items: center;
-		justify-content: center;
-		gap: var(--space-2);
+		justify-content: space-between;
 		margin-bottom: var(--space-4);
 		padding-bottom: var(--space-3);
 		border-bottom: 1px solid var(--border-primary);
@@ -2939,34 +1710,6 @@
 		text-align: center;
 	}
 
-	.va-section-title-group {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		width: 100%;
-		gap: var(--space-2);
-	}
-
-	.va-section-more-btn {
-		font-size: var(--font-size-xl);
-		padding: var(--space-1);
-		min-width: 36px;
-		height: 36px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: var(--radius-md);
-		background: transparent;
-		border: 1px solid var(--border-primary);
-		color: var(--text-secondary);
-		transition: all var(--transition-base);
-	}
-
-	.va-section-more-btn:hover {
-		background: var(--bg-secondary);
-		color: var(--text-primary);
-	}
-
 	/* Courses List - Clean card design */
 	.va-courses-list {
 		display: flex;
@@ -2978,19 +1721,12 @@
 		background: var(--bg-primary);
 		border: 1px solid var(--border-primary);
 		border-radius: var(--radius-md);
-		padding: var(--space-3) !important;
-		transition: box-shadow var(--transition-base), border-color var(--transition-base);
+		padding: var(--space-3);
+		transition: all var(--transition-base);
 		box-shadow: var(--shadow-sm);
-		text-align: center;
 	}
 
 	.va-course-card-header {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		text-align: center;
-		gap: var(--space-2);
 		margin-bottom: var(--space-2) !important;
 	}
 
@@ -3006,14 +1742,6 @@
 		margin-bottom: var(--space-2) !important;
 	}
 
-	.pro-course-card-body {
-		padding: var(--space-3) var(--space-4) !important;
-	}
-
-	.pro-course-card-media {
-		height: 140px !important;
-	}
-
 	.va-completed-course-card {
 		padding: var(--space-3) var(--space-4) !important;
 	}
@@ -3025,7 +1753,16 @@
 	.va-course-card:hover {
 		box-shadow: var(--shadow-md);
 		border-color: var(--border-secondary);
-		transform: none;
+		transform: translateY(-2px);
+	}
+
+	.va-course-card-header {
+		display: flex;
+		flex-direction: row;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: var(--space-3);
+		margin-bottom: var(--space-3);
 	}
 
 	.va-course-card-title {
@@ -3035,14 +1772,6 @@
 		margin: 0;
 		flex: 1;
 		line-height: 1.4;
-	}
-
-	.va-course-card-progress {
-		font-size: var(--font-size-sm);
-		font-weight: var(--font-weight-semibold);
-		color: var(--color-primary);
-		flex-shrink: 0;
-		white-space: nowrap;
 	}
 
 	.va-course-card-description {
@@ -3059,7 +1788,7 @@
 	.va-course-card-progress-bar {
 		width: 100%;
 		height: 6px;
-		background: var(--bg-secondary);
+		background: color-mix(in srgb, var(--text-primary) 14%, transparent);
 		border-radius: var(--radius-full);
 		overflow: hidden;
 		margin-bottom: var(--space-3);
@@ -3067,7 +1796,7 @@
 
 	.va-course-card-progress-fill {
 		height: 100%;
-		background: linear-gradient(90deg, var(--color-primary) 0%, rgba(var(--formely-white-rgb), 0.8) 100%);
+		background: linear-gradient(90deg, var(--color-primary) 0%, rgba(var(--color-primary-rgb), 0.8) 100%);
 		border-radius: var(--radius-full);
 		transition: width var(--transition-smooth);
 	}
@@ -3090,161 +1819,10 @@
 	}
 
 	/* Completed Courses List - Clean design */
-	.va-completed-courses-list {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-2);
-	}
-
-	.va-completed-course-item {
-		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
-		border-radius: var(--radius-md);
-		padding: var(--space-3) var(--space-4);
-		transition: all var(--transition-base);
-	}
-
-	.va-completed-course-item:hover {
-		background: var(--bg-secondary);
-		border-color: var(--border-secondary);
-	}
-
-	.va-completed-course-content {
-		display: flex;
-		flex-direction: row;
-		align-items: center;
-		justify-content: space-between;
-		gap: var(--space-3);
-		margin-bottom: var(--space-2);
-	}
-
-	.va-completed-course-title {
-		font-size: var(--font-size-sm);
-		font-weight: var(--font-weight-medium);
-		color: var(--text-primary);
-		flex: 1;
-		line-height: 1.4;
-	}
-
-	.va-completed-course-badge {
-		font-size: var(--font-size-xs);
-		font-weight: var(--font-weight-medium);
-		padding: var(--space-1) var(--space-2-5);
-		background: rgba(34, 197, 94, 0.15);
-		color: var(--color-success);
-		border-radius: var(--radius-full);
-		flex-shrink: 0;
-		white-space: nowrap;
-	}
-
-	.va-completed-course-meta {
-		font-size: var(--font-size-xs);
-		color: var(--text-tertiary);
-	}
 
 	/* Profile Badges Container - Clean section */
-	.va-profile-badges-container {
-		background: var(--bg-elevated);
-		border: 1px solid var(--border-primary);
-		border-radius: var(--radius-lg);
-		padding: var(--space-5);
-		margin-top: var(--space-6);
-		box-shadow: var(--shadow-sm);
-	}
-
-	.va-profile-badges-title {
-		font-size: var(--font-size-lg);
-		font-weight: var(--font-weight-semibold);
-		color: var(--text-primary);
-		margin: 0 0 var(--space-4) 0;
-		padding-bottom: var(--space-3);
-		border-bottom: 1px solid var(--border-primary);
-	}
-
-	.va-profile-badges-list {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-3);
-	}
-
-	.va-profile-badge-item {
-		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
-		border-radius: var(--radius-md);
-		padding: var(--space-4);
-		display: flex;
-		flex-direction: row;
-		align-items: center;
-		gap: var(--space-4);
-		transition: all var(--transition-base);
-	}
-
-	.va-profile-badge-item:hover {
-		background: var(--bg-secondary);
-		border-color: var(--border-secondary);
-		transform: translateX(4px);
-	}
-
-	.va-profile-badge-icon {
-		font-size: var(--font-size-2xl);
-		width: 56px;
-		height: 56px;
-		min-width: 56px;
-		min-height: 56px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: var(--bg-secondary);
-		border-radius: var(--radius-lg);
-		flex-shrink: 0;
-	}
-
-	.va-profile-badge-content {
-		flex: 1;
-		min-width: 0;
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-1);
-	}
-
-	.va-profile-badge-name {
-		font-size: var(--font-size-base);
-		font-weight: var(--font-weight-semibold);
-		color: var(--text-primary);
-		margin: 0;
-		line-height: 1.3;
-	}
-
-	.va-profile-badge-description {
-		font-size: var(--font-size-sm);
-		color: var(--text-secondary);
-		margin: 0;
-		line-height: 1.4;
-	}
-
-	.va-profile-badges-empty {
-		padding: var(--space-6) var(--space-4);
-		text-align: center;
-	}
-
-	.va-profile-badges-empty p {
-		font-size: var(--font-size-sm);
-		color: var(--text-secondary);
-		margin: 0;
-		line-height: 1.5;
-	}
 
 	/* Certificate wizard */
-	.certificate-wizard-content {
-		grid-template-columns: 1fr;
-	}
-
-	.certificate-wizard-preview {
-		position: static;
-		max-height: none;
-		order: -1;
-		margin-bottom: var(--space-4);
-	}
 
 	/* Settings tabs */
 	.admin-settings-tabs {
@@ -3263,16 +1841,7 @@
 		white-space: nowrap;
 	}
 
-	/* Course cards */
-	.course-card {
-		width: 100%;
-	}
-
 	/* Dashboard stats */
-	.admin-dashboard-stats {
-		grid-template-columns: 1fr;
-		gap: var(--space-4);
-	}
 
 	/* Forms */
 	.admin-form-actions {
@@ -3304,32 +1873,22 @@
 
 	/* Cards - smaller padding on small phones */
 	.card,
-	.va-card,
-	.admin-card,
-	.course-card,
-	.event-card,
-	.va-card-enhanced {
-		padding: var(--space-2) var(--space-3) !important;
+.va-card,
+.admin-card,
+.va-card-enhanced {
+		padding: var(--space-2) var(--space-3);
 		margin-bottom: var(--space-3);
 	}
 
-	.course-card-content,
-	.pro-course-card-body,
 	.va-card-body {
-		padding: var(--space-2) var(--space-3) !important;
+		padding: var(--space-2) var(--space-3);
 	}
 
 	.va-course-card,
 	.va-completed-course-card {
-		padding: var(--space-2) var(--space-3) !important;
+		padding: var(--space-2) var(--space-3);
 	}
 
-	.course-card-thumbnail,
-	.pro-course-card-media {
-		height: 120px !important;
-	}
-
-	.courses-grid,
 	.events-grid {
 		gap: var(--space-2) !important;
 	}
@@ -3346,7 +1905,7 @@
 
 	.events-page .va-card-body,
 	.events-page .va-card-enhanced .va-card-body {
-		padding: var(--space-2) var(--space-3) !important;
+		padding: var(--space-2) var(--space-3);
 	}
 
 	.events-page .va-card-title {
@@ -3420,58 +1979,6 @@
 		min-height: 44px;
 	}
 
-	.admin-courses-toolbar-actions {
-		display: flex;
-		align-items: center;
-		gap: var(--space-2);
-		width: 100%;
-		justify-content: space-between;
-	}
-
-	.admin-view-mode-toggle {
-		display: flex;
-		gap: var(--space-1);
-	}
-
-	.admin-btn-filter {
-		flex: 1;
-		justify-content: center;
-		min-height: 44px;
-	}
-
-	.admin-courses-filters-panel {
-		padding: var(--space-3);
-		margin-top: var(--space-2);
-	}
-
-	.admin-filter-buttons {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-2);
-	}
-
-	.admin-filter-btn {
-		flex: 1 1 calc(50% - var(--space-1));
-		min-width: 0;
-	}
-
-	.admin-bulk-actions-bar {
-		flex-direction: column;
-		gap: var(--space-3);
-		padding: var(--space-3);
-	}
-
-	.admin-bulk-actions-buttons {
-		flex-wrap: wrap;
-		gap: var(--space-2);
-	}
-
-	.admin-bulk-actions-buttons .lms-btn-secondary,
-	.admin-bulk-actions-buttons .va-btn-danger {
-		flex: 1 1 auto;
-		min-width: 120px;
-	}
-
 	/* Course cards - grid view */
 	.admin-course-card {
 		padding: var(--space-3);
@@ -3542,9 +2049,6 @@
 	}
 
 	/* Hide table header on mobile - rows become card-like */
-	.admin-courses-table .admin-courses-table-header {
-		display: none;
-	}
 
 	/* Admin Tests/Events - search wrapper with filters */
 	.admin-courses-search-wrapper {
@@ -3557,32 +2061,6 @@
 	.admin-courses-search {
 		width: 100%;
 		min-width: 0;
-	}
-
-	.admin-courses-filters {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-3);
-		width: 100%;
-	}
-
-	.admin-courses-filter-select {
-		width: 100%;
-		min-height: 44px;
-		font-size: 16px; /* Prevent iOS zoom */
-		padding: var(--space-2) var(--space-3);
-		min-width: 0;
-	}
-
-	.admin-courses-view-toggle {
-		display: flex;
-		gap: var(--space-2);
-		align-self: flex-start;
-	}
-
-	.admin-courses-view-toggle button {
-		min-height: 44px;
-		min-width: 44px;
 	}
 
 	.admin-course-card-actions {
@@ -3610,10 +2088,6 @@
 		font-size: var(--font-size-xl);
 	}
 
-	.admin-courses-toolbar-actions {
-		flex-wrap: wrap;
-	}
-
 	.admin-course-card-thumbnail {
 		height: 120px;
 	}
@@ -3628,11 +2102,6 @@
 
 	.admin-course-table-metrics {
 		grid-template-columns: 1fr;
-	}
-
-	.admin-bulk-actions-buttons .lms-btn-secondary,
-	.admin-bulk-actions-buttons .va-btn-danger {
-		min-width: 100%;
 	}
 }
 
@@ -3830,8 +2299,8 @@
 @media (max-width: 768px) {
 	/* Layout: fără suprapunere - flow normal, gap între secțiuni */
 	.courses-page-modern {
-		display: flex !important;
-		flex-direction: column !important;
+		display: flex;
+		flex-direction: column;
 		min-height: 0;
 	}
 
@@ -3839,46 +2308,12 @@
 		flex-shrink: 0;
 	}
 
-	.courses-page-toolbar {
-		flex-shrink: 0;
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: stretch !important;
-		gap: var(--space-4) !important;
-		position: relative;
-		z-index: 1;
-	}
-
 	.courses-page-search-wrapper {
 		flex-shrink: 0;
 		order: 1;
 		width: 100% !important;
-		min-width: 0 !important;
+		min-width: 0;
 		max-width: 100% !important;
-	}
-
-	.courses-page-toolbar-right {
-		order: 2;
-		display: flex !important;
-		flex-wrap: wrap !important;
-		gap: var(--space-3) !important;
-		align-items: center !important;
-	}
-
-	.courses-page-filters {
-		order: 1;
-		width: 100%;
-	}
-
-	.courses-page-view-toggle {
-		order: 2;
-		flex-shrink: 0;
-	}
-
-	.courses-page-sort-select {
-		order: 3;
-		flex: 1;
-		min-width: 120px;
 	}
 
 	.courses-page-content {
@@ -3887,24 +2322,24 @@
 		overflow-y: auto;
 	}
 
+	.courses-page-modern.courses-page-student,
+	.courses-page-modern.courses-page-student .courses-page-student-main {
+		display: block;
+		height: auto !important;
+		min-height: 0;
+		overflow: visible;
+	}
+
+	.courses-page-modern.courses-page-student .courses-page-content {
+		flex: none;
+		min-height: 0;
+		height: auto;
+		overflow: visible;
+	}
+
 	.courses-page-search-input {
 		font-size: 16px; /* Prevent iOS zoom on focus */
 		min-height: 44px;
-	}
-
-	.courses-page-filter-chip {
-		min-height: 44px;
-		padding: var(--space-2) var(--space-4);
-	}
-
-	.courses-page-view-btn {
-		min-width: 44px;
-		min-height: 44px;
-	}
-
-	.courses-page-sort-select {
-		min-height: 44px;
-		font-size: 16px;
 	}
 
 	.courses-page-create-btn {
@@ -3913,43 +2348,25 @@
 	}
 
 	/* Student courses page cards - left-aligned, clean layout on mobile */
-	.courses-page-modern .courses-page-card {
-		text-align: left !important;
-	}
-
-	.courses-page-modern .courses-page-card-content {
-		text-align: left !important;
-	}
-
-	.courses-page-modern .courses-page-card-title,
-	.courses-page-modern .courses-page-card-description,
-	.courses-page-modern .courses-page-card-meta,
-	.courses-page-modern .courses-page-card-meta-item {
-		text-align: left !important;
-	}
-
-	.courses-page-modern .courses-page-card-thumbnail {
-		height: 200px !important;
-	}
 
 	/* Student /courses — mape folder (nu carduri admin vechi) */
 	.courses-page-modern.courses-page-student {
-		text-align: left !important;
+		text-align: left;
 	}
 
 	.courses-page-modern.courses-page-student .courses-page-hero-title {
-		text-align: center !important;
+		text-align: center;
 	}
 
 	.courses-page-modern.courses-page-student .course-map-folder-tile__title,
 	.courses-page-modern.courses-page-student .course-map-folder-tile__subtitle,
 	.courses-page-modern.courses-page-student .course-map-folder-tile__meta {
-		text-align: left !important;
+		text-align: center !important;
 	}
 
 	.courses-page-modern.courses-page-student .courses-page-empty-title,
 	.courses-page-modern.courses-page-student .courses-page-empty-text {
-		text-align: center !important;
+		text-align: center;
 	}
 
 	/* Mapă curs — /courses/map/:mapId */
@@ -3978,72 +2395,11 @@
 		padding: var(--space-4) var(--space-3) var(--space-4);
 	}
 
-	.courses-page-toolbar {
-		padding: var(--space-3);
-	}
-
 	.courses-page-content {
 		padding: 0 var(--space-3) var(--space-4);
 	}
 
 	/* Student courses page cards - improved mobile layout */
-	.courses-page-modern .courses-page-card {
-		text-align: left !important;
-		display: flex !important;
-		flex-direction: column !important;
-		align-items: stretch !important;
-		border-radius: var(--radius-xl) !important;
-		overflow: hidden !important;
-		box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
-		border: 1px solid var(--border-primary) !important;
-	}
-
-	.courses-page-modern .courses-page-card-thumbnail {
-		height: 180px !important;
-		width: 100% !important;
-		flex-shrink: 0 !important;
-	}
-
-	.courses-page-modern .courses-page-card-content {
-		padding: var(--space-4) !important;
-		text-align: left !important;
-		gap: var(--space-3) !important;
-	}
-
-	.courses-page-modern .courses-page-card-title {
-		text-align: left !important;
-		font-size: var(--font-size-lg) !important;
-		font-weight: var(--font-weight-bold) !important;
-		line-height: 1.35 !important;
-		-webkit-line-clamp: 2 !important;
-	}
-
-	.courses-page-modern .courses-page-card-description {
-		text-align: left !important;
-		font-size: var(--font-size-sm) !important;
-		-webkit-line-clamp: 2 !important;
-	}
-
-	.courses-page-modern .courses-page-card-status {
-		justify-content: flex-start !important;
-	}
-
-	.courses-page-modern .courses-page-card-meta {
-		text-align: left !important;
-		justify-content: flex-start !important;
-		border-top: 1px solid var(--border-primary) !important;
-		padding-top: var(--space-3) !important;
-		margin-top: var(--space-2) !important;
-	}
-
-	.courses-page-modern .courses-page-card-meta-item {
-		text-align: left !important;
-	}
-
-	.courses-page-modern .courses-page-card:active {
-		transform: scale(0.98) !important;
-		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
-	}
 }
 
 /* ============================================
@@ -4053,19 +2409,19 @@
 @media (max-width: 768px) {
 	/* Sidebar sub meniu - nu sub topnav */
 	.va-shell-topnav .lessons-page-sidebar {
-		top: 56px !important;
-		height: calc(100vh - 56px) !important;
-		height: calc(100dvh - 56px) !important;
+		top: var(--app-header-height, 56px);
+		bottom: var(--student-tab-height, 0px);
+		height: auto !important;
+		max-height: none;
 	}
 
+	/* Butonul „Lecții” stă în bara de context (în flux), nu mai plutește peste conținut */
 	.lessons-page-main-content {
-		padding-top: 2px !important;
+		padding-top: 0 !important;
 	}
 
 	.lessons-page-sidebar-toggle {
-		position: relative !important;
-		top: auto !important;
-		left: auto !important;
+		top: calc(var(--app-header-height, 56px) + var(--space-2));
 		padding: var(--space-2) var(--space-4) !important;
 		font-size: var(--font-size-sm) !important;
 		min-height: 44px !important;
@@ -4073,13 +2429,13 @@
 	}
 
 	.lessons-page-sidebar-toggle svg {
-		width: 18px !important;
-		height: 18px !important;
+		width: 18px;
+		height: 18px;
 	}
 
 	.lessons-page-sidebar-back-btn {
-		min-height: 44px !important;
-		padding: var(--space-2) var(--space-4) !important;
+		min-height: 44px;
+		padding: var(--space-2) var(--space-4);
 		font-size: var(--font-size-sm) !important;
 	}
 
@@ -4114,7 +2470,7 @@
 	}
 
 	.lessons-page-sidebar-lesson-title {
-		font-size: 0.75rem !important;
+		font-size: 0.75rem;
 		line-height: 1.3 !important;
 	}
 
@@ -4130,7 +2486,7 @@
 
 	.lessons-page-sidebar-lessons {
 		padding: var(--space-2) var(--space-2-5) var(--space-2) !important;
-		gap: var(--space-1) !important;
+		gap: var(--space-1);
 	}
 
 	/* Secțiunea Teste - aceleași dimensiuni ca lecțiile */
@@ -4140,7 +2496,7 @@
 		padding-top: var(--space-2) !important;
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-1) !important;
+		gap: var(--space-1);
 	}
 
 	.lessons-page-sidebar-tests-section .lessons-page-sidebar-lesson,
@@ -4152,17 +2508,12 @@
 
 	.lessons-page-sidebar-tests-header {
 		font-size: 0.65rem !important;
-		margin-bottom: var(--space-2) !important;
+		margin-bottom: var(--space-2);
 		padding: 0 var(--space-3) !important;
 	}
 
 	.lessons-page-sidebar-content {
 		padding: var(--space-3) !important;
-	}
-
-	.lessons-page-lesson-item {
-		min-height: 44px;
-		padding: var(--space-3);
 	}
 
 	.lessons-page-lesson-viewer .lessons-page-lesson-cta,
@@ -4190,19 +2541,19 @@
 
 @media (max-width: 480px) {
 	.lessons-page-main-content {
-		padding-top: 2px !important;
+		padding-top: 0 !important;
 	}
 
 	.lessons-page-sidebar-toggle {
 		padding: var(--space-2) var(--space-3) !important;
 		font-size: var(--font-size-sm) !important;
-		min-height: 40px !important;
-		margin-left: var(--space-3) !important;
+		min-height: 44px !important;
+		left: var(--space-3) !important;
 	}
 
 	.lessons-page-sidebar-toggle svg {
-		width: 16px !important;
-		height: 16px !important;
+		width: 16px;
+		height: 16px;
 	}
 
 	.lessons-page-sidebar-header {
@@ -4210,8 +2561,8 @@
 	}
 
 	.lessons-page-sidebar-back-btn {
-		min-height: 34px !important;
-		padding: var(--space-1) var(--space-2) !important;
+		min-height: 34px;
+		padding: var(--space-1) var(--space-2);
 		font-size: 0.75rem !important;
 	}
 
@@ -4245,7 +2596,7 @@
 	}
 
 	.lessons-page-sidebar-lesson-title {
-		font-size: 0.7rem !important;
+		font-size: 0.7rem;
 		line-height: 1.3 !important;
 	}
 
@@ -4261,7 +2612,7 @@
 
 	.lessons-page-sidebar-lessons {
 		padding: var(--space-2) !important;
-		gap: var(--space-1) !important;
+		gap: var(--space-1);
 	}
 
 	/* Secțiunea Teste - și mai mică pe ecrane foarte mici */
@@ -4280,7 +2631,7 @@
 
 	.lessons-page-sidebar-tests-header {
 		font-size: 0.6rem !important;
-		margin-bottom: var(--space-1) !important;
+		margin-bottom: var(--space-1);
 		padding: 0 var(--space-2) !important;
 	}
 
@@ -4341,7 +2692,7 @@
 		min-height: 44px;
 	}
 
-	.admin-course-builder-actions .admin-btn-primary,
+	.admin-course-builder-actions .admin-btn.lms-btn-primary,
 	.admin-course-builder-actions .admin-btn-secondary {
 		min-height: 44px;
 	}
@@ -4352,12 +2703,6 @@
 
 	.admin-course-builder-input {
 		font-size: 16px;
-	}
-
-	.admin-creator-outline-item,
-	.admin-creator-lesson-item {
-		min-height: 44px;
-		padding: var(--space-3);
 	}
 }
 
@@ -4424,20 +2769,18 @@
 	}
 
 	.admin-users-table-wrapper {
-		overflow-x: auto;
+		overflow-x: visible;
 		-webkit-overflow-scrolling: touch;
 	}
 
 	.admin-users-table {
-		min-width: 600px;
+		min-width: 0;
+		width: 100%;
 	}
 
-	.admin-action-icon-btn,
-	.admin-users-icon-btn {
-		width: 2.75rem;
-		height: 2.75rem;
-		min-width: 2.75rem;
-		min-height: 2.75rem;
+	.admin-users-actions .lms-btn-secondary {
+		min-height: 44px;
+		min-width: 44px;
 	}
 
 	.admin-users-modal {
@@ -4475,69 +2818,14 @@
    ============================================ */
 
 @media (max-width: 768px) {
-	.admin-page-header-actions {
-		flex-wrap: wrap;
-		gap: var(--space-2);
-	}
 
-	.admin-page-header-actions .admin-btn {
-		flex: 1 1 calc(50% - var(--space-1));
-		min-height: 44px;
-	}
-
-	.admin-test-creator-split {
-		margin-top: var(--space-4);
-	}
-
-	.admin-settings-input,
-	.admin-settings-select,
-	.admin-settings-textarea {
+	.admin-settings-select {
 		font-size: 16px;
 	}
 
 	.admin-settings-tab {
 		min-height: 44px;
 		padding: var(--space-2) var(--space-3);
-	}
-
-	.admin-settings-form-row {
-		flex-direction: column;
-	}
-
-	.admin-test-review-card {
-		padding: var(--space-4);
-	}
-
-	.admin-test-review-header {
-		flex-direction: column;
-		align-items: flex-start;
-		gap: var(--space-3);
-	}
-
-	.admin-test-review-body {
-		padding: var(--space-3);
-	}
-
-	.admin-test-review-body input,
-	.admin-test-review-body textarea {
-		font-size: 16px;
-		min-height: 44px;
-	}
-
-	.admin-test-review-body .admin-btn-create-course,
-	.admin-test-review-body .lms-btn-primary {
-		min-height: 44px;
-		width: 100%;
-	}
-}
-
-@media (max-width: 480px) {
-	.admin-page-header-actions .admin-btn {
-		flex: 1 1 100%;
-	}
-
-	.admin-test-review-card {
-		padding: var(--space-3);
 	}
 }
 
@@ -4546,56 +2834,6 @@
    ============================================ */
 
 @media (max-width: 768px) {
-	.course-creation-wizard-page {
-		padding: var(--space-4);
-	}
-
-	.course-creation-wizard {
-		padding: var(--space-4);
-	}
-
-	.course-creation-wizard-header {
-		flex-direction: column;
-		align-items: stretch;
-		gap: var(--space-3);
-	}
-
-	.course-creation-wizard-close {
-		min-width: 44px;
-		min-height: 44px;
-	}
-
-	.course-creation-wizard-steps-indicator {
-		overflow-x: auto;
-		-webkit-overflow-scrolling: touch;
-		padding-bottom: var(--space-2);
-	}
-
-	.course-creation-wizard-content {
-		flex-direction: column;
-	}
-
-	.course-creation-wizard-form-panel,
-	.course-creation-wizard-preview-panel {
-		width: 100%;
-	}
-
-	.course-creation-wizard-form-panel input,
-	.course-creation-wizard-form-panel select,
-	.course-creation-wizard-form-panel textarea {
-		font-size: 16px;
-		min-height: 44px;
-	}
-
-	.course-creation-wizard-footer {
-		flex-direction: column;
-		gap: var(--space-3);
-	}
-
-	.course-creation-wizard-btn {
-		min-height: 44px;
-		width: 100%;
-	}
 
 	.admin-lesson-creator-page,
 	.admin-module-creator-page {
@@ -4620,56 +2858,19 @@
 	}
 }
 
-@media (max-width: 480px) {
-	.course-creation-wizard-page,
-	.course-creation-wizard {
-		padding: var(--space-3);
-	}
-}
-
 /* ============================================
    12h. USER COURSE DETAIL, EXAM, PROFILE - Mobile
    ============================================ */
 
 @media (max-width: 768px) {
-	.course-detail-back-btn,
-	.course-detail-action-btn {
-		min-height: 44px;
-	}
-
-	.course-detail-sidebar-back {
-		min-height: 44px;
-		align-items: center;
-	}
-
-	.course-detail-lesson,
-	.course-detail-module-header {
-		min-height: 44px;
-		padding: var(--space-3);
-	}
-
-	.course-detail-quiz-answer-option {
-		min-height: 44px;
-		padding: var(--space-3);
-	}
-
-	.course-detail-quiz-question-flag {
-		min-width: 44px;
-		min-height: 44px;
-	}
-
-	.course-detail-navigation .lms-btn-primary,
-	.course-detail-navigation .lms-btn-secondary {
-		min-height: 44px;
-	}
 
 	.student-exam-page {
-		padding: var(--space-4) !important;
-		overflow-x: clip !important;
+		padding: 0;
+		overflow: hidden;
 	}
 
 	.student-exam-page .student-exam-title {
-		text-align: left !important;
+		text-align: left;
 	}
 
 	.student-exam-page .student-exam-nav-item,
@@ -4679,11 +2880,6 @@
 	.student-exam-page .lms-btn-secondary,
 	.student-exam-page button {
 		min-height: 44px;
-	}
-
-	.student-exam-page .student-exam-btn-primary {
-		min-height: 48px !important;
-		width: 100% !important;
 	}
 
 	.va-profile-back-button .lms-btn-secondary {
@@ -4703,20 +2899,9 @@
 }
 
 @media (max-width: 480px) {
-	.course-detail-hero {
-		padding: var(--space-4) var(--space-3);
-	}
-
-	.course-detail-content {
-		padding: var(--space-4) var(--space-3);
-	}
-
-	.course-detail-quiz-questions-body {
-		padding: var(--space-3);
-	}
 
 	.student-exam-page {
-		padding: var(--space-3);
+		padding: 0;
 	}
 
 	.va-profile-stats {
@@ -4733,194 +2918,17 @@
    ============================================ */
 
 /* Event Detail Page - base + mobile */
-.event-detail-page {
-	padding: var(--space-4);
-}
-.event-detail-card {
-	padding: 0;
-	overflow: hidden;
-}
-.event-detail-body {
-	padding: 2rem;
-}
-.event-detail-header {
-	display: flex;
-	justify-content: space-between;
-	align-items: flex-start;
-	gap: var(--space-4);
-}
-.event-detail-header .va-page-title {
-	flex: 1;
-	min-width: 0;
-}
-.event-detail-meta-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-	gap: 1rem;
-	margin-bottom: 2rem;
-	padding: 1.5rem;
-	background: var(--va-surface-2);
-	border-radius: 12px;
-}
-.event-detail-actions {
-	display: flex;
-	gap: 1rem;
-	flex-wrap: wrap;
-	padding: 1.5rem;
-	background: var(--va-surface-2);
-	border-radius: 12px;
-}
-.event-detail-stats {
-	margin-top: 2rem;
-	padding: 1.5rem;
-	background: var(--va-surface-2);
-	border-radius: 12px;
-}
-.event-detail-stats-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-	gap: 1rem;
-}
-.event-detail-short-desc {
-	font-size: 1.1rem;
-	color: var(--va-muted);
-	margin-bottom: 1.5rem;
-	line-height: 1.6;
-	word-wrap: break-word;
-}
-.event-detail-description {
-	margin-bottom: 2rem;
-}
-.event-detail-description h2 {
-	margin-bottom: 1rem;
-	color: var(--va-text);
-}
-.event-detail-description-text {
-	color: var(--va-text);
-	line-height: 1.8;
-	white-space: pre-wrap;
-	word-wrap: break-word;
-	overflow-wrap: break-word;
-}
 
 @media (max-width: 768px) {
-	.event-detail-page {
-		padding: var(--space-3);
-	}
-	.event-detail-back {
-		min-height: 44px;
-		width: 100%;
-	}
-	.event-detail-thumbnail {
-		height: 180px !important;
-	}
-	.event-detail-body {
-		padding: var(--space-4) !important;
-	}
-	.event-detail-header {
-		flex-direction: column;
-		align-items: stretch;
-		gap: var(--space-3);
-	}
-	.event-detail-header .va-page-title {
-		font-size: var(--font-size-xl);
-		line-height: 1.3;
-		word-break: break-word;
-	}
-	.event-detail-status-badge {
-		align-self: flex-start;
-		text-align: center;
-	}
-	.event-detail-meta-grid {
-		grid-template-columns: 1fr;
-		gap: var(--space-3);
-		padding: var(--space-4);
-		margin-bottom: var(--space-6);
-	}
-	.event-detail-meta-grid > div {
-		padding-bottom: var(--space-2);
-		border-bottom: 1px solid var(--border-primary);
-	}
-	.event-detail-meta-grid > div:last-child {
-		border-bottom: none;
-		padding-bottom: 0;
-	}
-	.event-detail-actions {
-		flex-direction: column;
-		padding: var(--space-4);
-		gap: var(--space-3);
-	}
-	.event-detail-actions .lms-btn-primary,
-	.event-detail-actions .lms-btn-secondary,
-	.event-detail-action-btn {
-		width: 100% !important;
-		min-width: unset !important;
-		min-height: 44px;
-	}
-	.event-detail-stats {
-		margin-top: var(--space-6);
-		padding: var(--space-4);
-	}
-	.event-detail-stats-grid {
-		grid-template-columns: repeat(2, 1fr);
-		gap: var(--space-3);
-	}
-	.event-detail-short-desc {
-		font-size: 1rem;
-		margin-bottom: var(--space-4);
-	}
-	.event-detail-description {
-		margin-bottom: var(--space-6);
-	}
-	.event-detail-description h2 {
-		font-size: var(--font-size-lg);
-	}
 
 	.va-main .va-card-enhanced .va-card-body {
 		padding: var(--space-4) !important;
-	}
-
-	.va-main .page-header {
-		flex-direction: column;
-		align-items: stretch;
-		gap: var(--space-4);
 	}
 
 	.va-main .lms-btn-primary,
 	.va-main .lms-btn-secondary {
 		min-height: 44px;
 		width: 100%;
-	}
-
-	.messages-page {
-		height: 100vh;
-		height: 100dvh;
-	}
-
-	.messages-search-input {
-		font-size: 16px;
-		min-height: 44px;
-	}
-
-	.messages-new-conversation-btn {
-		min-height: 44px;
-		min-width: 44px;
-	}
-
-	.messages-chat-back-btn {
-		min-width: 44px;
-		min-height: 44px;
-	}
-
-	.messages-chat-input-form input,
-	.messages-chat-input-form textarea {
-		font-size: 16px;
-		min-height: 44px;
-	}
-
-	.messages-chat-send-btn {
-		min-width: 44px;
-		min-height: 44px;
 	}
 
 	.student-achievements-page {
@@ -4952,30 +2960,9 @@
 }
 
 @media (max-width: 480px) {
-	.event-detail-page {
-		padding: var(--space-2);
-	}
-	.event-detail-thumbnail {
-		height: 140px !important;
-	}
-	.event-detail-body {
-		padding: var(--space-3) !important;
-	}
-	.event-detail-meta-grid {
-		padding: var(--space-3);
-	}
-	.event-detail-actions {
-		padding: var(--space-3);
-	}
-	.event-detail-stats {
-		padding: var(--space-3);
-	}
-	.event-detail-stats-grid {
-		grid-template-columns: 1fr;
-	}
 
 	.va-main .va-card-body {
-		padding: var(--space-3) !important;
+		padding: var(--space-3);
 	}
 
 	.student-achievements-stats {
@@ -4997,20 +2984,6 @@
 
 @media (max-width: 768px) {
 	/* Course Progress Widget */
-	.student-course-progress-card {
-		padding: var(--space-4);
-	}
-
-	.student-course-progress-thumbnail {
-		height: 100px;
-		border-radius: var(--radius-md);
-	}
-
-	.student-course-progress-footer .student-btn {
-		min-height: 44px;
-		width: 100%;
-		justify-content: center;
-	}
 
 	/* Resume Learning */
 	.student-btn-resume {
@@ -5018,144 +2991,13 @@
 		width: 100%;
 	}
 
-	/* Incomplete Lessons & Pending Exams */
-	.student-incomplete-lesson-item,
-	.student-pending-exam-item {
-		min-height: 44px;
-		padding: var(--space-3);
-	}
-
-	.student-btn-link {
-		min-height: 44px;
-		padding: var(--space-2) var(--space-3);
-	}
-
-	/* Badges Widget */
-	.student-badges-grid {
-		grid-template-columns: repeat(2, 1fr);
-		gap: var(--space-3);
-	}
-
-	.student-badge-item {
-		padding: var(--space-3);
-	}
-
-	/* Lesson Notes */
-	.student-lesson-notes-textarea {
-		font-size: 16px;
-		min-height: 120px;
-	}
-
-	/* Note Taking System */
-	.note-taking-toggle {
-		min-height: 44px;
-		min-width: 44px;
-	}
-
-	.note-taking-panel {
-		width: 100%;
-		max-width: 100%;
-	}
-
-	.note-taking-search-input {
-		font-size: 16px;
-		min-height: 44px;
-	}
-
-	.note-taking-action-btn,
-	.note-taking-add-btn,
-	.note-taking-item-action {
-		min-height: 44px;
-		min-width: 44px;
-	}
-
-	.note-taking-textarea {
-		font-size: 16px;
-	}
-
-	/* Enhanced Video Player */
-	.enhanced-video-player {
-		border-radius: 0;
-	}
-
-	.enhanced-video-control-btn {
-		min-width: 44px;
-		min-height: 44px;
-	}
-
-	.enhanced-video-progress-container {
-		height: 8px;
-	}
-
-	.enhanced-video-progress-handle {
-		width: 20px;
-		height: 20px;
-	}
-
-	.enhanced-video-controls-bar {
-		padding: var(--space-2);
-		gap: var(--space-2);
-	}
-
-	.enhanced-video-shortcuts-hint {
-		display: none;
-	}
-
-	/* Progress Indicator */
-	.student-progress-indicator {
-		min-height: 8px;
-	}
-
-	/* Active Courses Grid */
-	.student-active-courses-grid {
-		grid-template-columns: 1fr;
-		gap: var(--space-3);
-	}
-
 	/* Course Structure (CourseDetailPage) */
-	.student-course-structure {
-		padding: var(--space-4);
-	}
-
-	.student-course-structure-module,
-	.student-course-structure-lesson,
-	.student-course-structure-exam {
-		min-height: 44px;
-		padding: var(--space-3);
-	}
-
-	.student-course-structure-module-toggle {
-		min-width: 44px;
-		min-height: 44px;
-	}
 
 	/* Calendar-like / list pages (calendar, notificări) */
-	.va-calendar-like {
-		padding: var(--space-4);
-	}
-}
-
-@media (max-width: 480px) {
-	.student-badges-grid {
-		grid-template-columns: 1fr;
-	}
-
-	.student-course-progress-thumbnail {
-		height: 80px;
-	}
-
-	.enhanced-video-controls-bar {
-		flex-wrap: wrap;
-	}
-
-	.enhanced-video-controls-left,
-	.enhanced-video-controls-right {
-		gap: var(--space-2);
-	}
 }
 
 /* ============================================
-   12i3. GLOBAL SEARCH, AI TUTOR, SHARED COMPONENTS - Mobile
+   12i3. GLOBAL SEARCH, VOLT TUTOR, SHARED COMPONENTS - Mobile
    ============================================ */
 
 @media (max-width: 768px) {
@@ -5183,89 +3025,21 @@
 	}
 
 	/* Course Header (student) */
-	.student-course-header {
-		padding: var(--space-4);
-		flex-direction: column;
-		gap: var(--space-4);
-	}
-
-	.student-course-header-title {
-		font-size: var(--font-size-xl);
-	}
-
-	.student-course-header-progress {
-		width: 100%;
-	}
 
 	/* Milestone Notification */
-	.student-milestone-notification {
-		width: 95%;
-		max-width: 100%;
-		padding: var(--space-4);
-		bottom: max(var(--space-4), env(safe-area-inset-bottom));
-	}
-
-	.student-milestone-notification-close {
-		min-width: 44px;
-		min-height: 44px;
-	}
 
 	/* Progress Visualization */
-	.progress-vis-card {
-		padding: var(--space-4);
-	}
-
-	.progress-vis-milestones-grid {
-		grid-template-columns: 1fr;
-		gap: var(--space-3);
-	}
-
-	.progress-vis-milestone-card {
-		padding: var(--space-3);
-	}
-
-	.progress-vis-milestone-marker {
-		min-width: 36px;
-		min-height: 36px;
-	}
 
 	/* Lesson Progress Indicator */
-	.student-lesson-progress-indicator {
-		padding: var(--space-3);
-	}
-
-	.student-lesson-progress-bar {
-		height: 8px;
-	}
 
 	/* Pro Course Card (UI) */
-	.pro-course-card {
-		padding: 0;
-	}
 
-	.pro-course-start {
-		min-height: 44px;
-		min-width: 44px;
-	}
-
-	.pro-course-card-body {
-		padding: var(--space-4);
-	}
 }
 
 @media (max-width: 480px) {
 	.global-search-modal {
 		width: 100%;
 		margin: var(--space-2);
-	}
-
-	.student-milestone-notification {
-		width: 100%;
-		margin: var(--space-2);
-	}
-
-	.progress-vis-stats {
-		grid-template-columns: 1fr;
 	}
 }
 
@@ -5274,25 +3048,6 @@
    ============================================ */
 
 @media (max-width: 768px) {
-	.va-calendar-header {
-		flex-direction: column;
-		align-items: stretch;
-		gap: var(--space-4);
-	}
-
-	.va-calendar-header .lms-btn-primary {
-		min-height: 44px;
-		width: 100%;
-	}
-
-	.va-events-grid {
-		grid-template-columns: 1fr;
-		gap: var(--space-3);
-	}
-
-	.va-event-card {
-		padding: var(--space-4);
-	}
 
 	.va-completed-courses-cards {
 		grid-template-columns: 1fr;
@@ -5322,72 +3077,8 @@
 		text-align: left;
 	}
 
-	.exam-results-page-subtitle {
-		text-align: left;
-	}
-
-	.exam-results-grid {
-		display: grid !important;
-		grid-template-columns: 1fr !important;
-		gap: var(--space-4);
-	}
-
-	.exam-result-item {
-		padding: var(--space-4);
-		min-height: 44px;
-		text-align: left;
-	}
-
-	.exam-result-item:active {
-		transform: scale(0.98);
-		box-shadow: var(--shadow-md);
-	}
-
-	.exam-result-header,
-	.exam-result-meta,
-	.exam-result-score {
-		text-align: left;
-	}
-
-	.exam-result-details {
-		position: static !important;
-		max-height: none !important;
-		padding: var(--space-4);
-		border-radius: var(--radius-xl);
-	}
-
-	.exam-result-details-header {
-		flex-wrap: wrap;
-		gap: var(--space-3);
-	}
-
-	.exam-result-details-header .lms-btn-secondary {
-		min-height: 44px;
-		width: 100%;
-		justify-content: center;
-	}
-
-	.exam-result-summary {
-		padding: var(--space-4);
-	}
-
-	.exam-result-score-display {
-		grid-template-columns: 1fr;
-		gap: var(--space-3);
-	}
-
-	.exam-result-score-display-item-right {
-		text-align: left;
-	}
-
 	.exam-result-question {
 		padding: var(--space-4);
-	}
-
-	.exam-result-question-header {
-		flex-direction: column;
-		align-items: flex-start;
-		gap: var(--space-2);
 	}
 
 	.exam-result-answer {
@@ -5402,37 +3093,17 @@
 
 	/* Pas 5 — restul paginilor student */
 	.library-page {
-		text-align: center !important;
-	}
-
-	.library-page-header,
-	.library-page-header-copy,
-	.library-page-title,
-	.library-page-lead,
-	.library-section-title {
-		text-align: center !important;
-	}
-
-	.library-page-header-actions {
-		justify-content: center !important;
-		margin-inline: auto;
-	}
-
-	.library-book-grid {
-		justify-content: center !important;
-		margin-inline: auto;
-		padding-left: 0 !important;
-		padding-right: 0 !important;
+		text-align: left;
 	}
 
 	.student-settings-page,
 	.student-achievements-page,
 	.va-student-activity-page {
-		text-align: left !important;
+		text-align: left;
 	}
 
 	.va-completed-courses-cards {
-		text-align: left !important;
+		text-align: left;
 	}
 
 	.va-completed-course-card-actions .lms-btn-secondary,
@@ -5454,17 +3125,9 @@
 		min-height: 44px;
 		font-size: 16px;
 	}
-
-	.messages-conversation-item {
-		min-height: 56px;
-		padding: var(--space-3) var(--space-4);
-	}
 }
 
 @media (max-width: 480px) {
-	.va-event-card {
-		padding: var(--space-3);
-	}
 
 	.va-completed-course-card {
 		padding: var(--space-3);
@@ -5476,14 +3139,6 @@
 
 	.exam-results-page-title {
 		font-size: var(--font-size-xl);
-	}
-
-	.exam-result-item {
-		padding: var(--space-3);
-	}
-
-	.exam-result-details {
-		padding: var(--space-3);
 	}
 
 	.exam-result-question {
@@ -5498,91 +3153,6 @@
 /* ============================================
    12k. PRO COURSES & PRO DASHBOARD - Mobile
    ============================================ */
-
-@media (max-width: 768px) {
-	.pro-page {
-		flex-direction: column;
-	}
-
-	.pro-sidebar {
-		position: relative;
-		width: 100%;
-		flex-direction: row;
-		overflow-x: auto;
-		-webkit-overflow-scrolling: touch;
-		padding: var(--space-2);
-		gap: var(--space-2);
-	}
-
-	.pro-nav {
-		flex-direction: row;
-		flex-wrap: nowrap;
-		gap: var(--space-2);
-	}
-
-	.pro-nav-item {
-		min-height: 44px;
-		padding: var(--space-2) var(--space-3);
-		white-space: nowrap;
-	}
-
-	.pro-main {
-		width: 100%;
-		padding: var(--space-4);
-	}
-
-	.pro-hero {
-		padding: var(--space-4);
-	}
-
-	.pro-title {
-		font-size: var(--font-size-2xl);
-	}
-
-	.pro-filters {
-		flex-direction: column;
-		gap: var(--space-3);
-	}
-
-	.pro-input,
-	.pro-select {
-		width: 100%;
-		min-height: 44px;
-		font-size: 16px;
-	}
-
-	.pro-course-grid {
-		grid-template-columns: 1fr;
-		gap: var(--space-3);
-	}
-
-	.pro-card {
-		padding: var(--space-4);
-	}
-
-	.pro-hero-stats {
-		grid-template-columns: repeat(2, 1fr);
-		gap: var(--space-3);
-	}
-
-	.pro-section-row {
-		flex-direction: column;
-	}
-}
-
-@media (max-width: 480px) {
-	.pro-main {
-		padding: var(--space-3);
-	}
-
-	.pro-hero {
-		padding: var(--space-3);
-	}
-
-	.pro-hero-stats {
-		grid-template-columns: 1fr;
-	}
-}
 
 /* ============================================
    12l. ADMIN SETTINGS, TEAMS, ACTIVITY - Mobile
@@ -5606,8 +3176,7 @@
 		min-height: 44px;
 	}
 
-	.admin-team-modal,
-	.admin-activity-modal {
+	.admin-team-modal {
 		width: 95%;
 		max-width: 100%;
 		margin: var(--space-4);
@@ -5615,7 +3184,6 @@
 		overflow-y: auto;
 	}
 
-	.admin-activity-logs-table,
 	.admin-alerts-list {
 		overflow-x: auto;
 		-webkit-overflow-scrolling: touch;
@@ -5668,7 +3236,6 @@
 		min-height: 44px;
 	}
 
-	.admin-activity-logs-table,
 	.admin-activity-logs-list {
 		font-size: var(--font-size-sm);
 	}
@@ -5706,121 +3273,6 @@
    12m. CALENDAR VIEW, QUIZ, REWARDS - Mobile
    ============================================ */
 
-@media (max-width: 768px) {
-	.va-calendar-view {
-		padding: var(--space-4);
-	}
-
-	.va-calendar-header-view {
-		flex-direction: column;
-		gap: var(--space-3);
-	}
-
-	.va-calendar-nav {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		width: 100%;
-	}
-
-	.va-calendar-nav .lms-btn-secondary {
-		min-height: 44px;
-		min-width: 44px;
-		padding: var(--space-2);
-	}
-
-	.va-calendar-month-title {
-		font-size: var(--font-size-xl);
-	}
-
-	.va-calendar-header-view .lms-btn-primary {
-		min-height: 44px;
-		width: 100%;
-	}
-
-	.va-calendar-weekday {
-		font-size: var(--font-size-xs);
-	}
-
-	.va-calendar-day {
-		min-height: 60px;
-		padding: var(--space-1);
-	}
-
-	.va-calendar-day-number {
-		font-size: var(--font-size-sm);
-	}
-
-	.va-course-detail-layout {
-		flex-direction: column;
-	}
-
-	.va-course-sidebar {
-		width: 100%;
-		max-height: 40vh;
-		overflow-y: auto;
-		border-right: none;
-		border-bottom: 1px solid var(--border-primary);
-	}
-
-	.va-course-sidebar-back {
-		min-height: 44px;
-	}
-
-	.va-course-sidebar-module {
-		min-height: 44px;
-		padding: var(--space-3);
-	}
-
-	.va-course-content-main {
-		margin-left: 0;
-		padding: var(--space-4);
-	}
-
-	.va-quiz-answer-option,
-	.va-quiz-question-option,
-	.va-answer-option {
-		min-height: 44px;
-		padding: var(--space-3);
-	}
-
-	.va-quiz-overview {
-		flex-direction: column;
-		gap: var(--space-3);
-	}
-
-	.va-rewards-header {
-		margin-bottom: var(--space-4);
-	}
-
-	.va-certificates-grid {
-		grid-template-columns: 1fr;
-		gap: var(--space-4);
-	}
-
-	.va-certificate {
-		padding: var(--space-4);
-	}
-}
-
-@media (max-width: 480px) {
-	.va-calendar-view {
-		padding: var(--space-3);
-	}
-
-	.va-calendar-day {
-		min-height: 50px;
-	}
-
-	.va-course-content-main {
-		padding: var(--space-3);
-	}
-
-	.va-certificate {
-		padding: var(--space-3);
-	}
-}
-
 /* ============================================
    13. AUTH PAGES (LOGIN/REGISTER) - Mobile
    ============================================ */
@@ -5828,224 +3280,226 @@
 @media (max-width: 768px) {
 	/* Auth Container - Full screen, safe area, scrollable for keyboard */
 	.modern-auth-container {
-		padding: 0 !important;
-		padding-left: max(var(--space-4), env(safe-area-inset-left)) !important;
-		padding-right: max(var(--space-4), env(safe-area-inset-right)) !important;
-		padding-top: max(var(--space-4), env(safe-area-inset-top)) !important;
-		padding-bottom: max(var(--space-4), env(safe-area-inset-bottom)) !important;
-		min-height: 100vh !important;
-		min-height: 100dvh !important;
-		display: flex !important;
-		align-items: center !important;
-		justify-content: flex-start !important;
-		background-color: #030712 !important;
-		overflow-y: auto !important;
-		overflow-x: hidden !important;
-		-webkit-overflow-scrolling: touch !important;
-		overscroll-behavior-y: contain !important;
+		padding: 0;
+		padding-left: max(var(--space-4), env(safe-area-inset-left));
+		padding-right: max(var(--space-4), env(safe-area-inset-right));
+		padding-top: max(var(--space-4), env(safe-area-inset-top));
+		padding-bottom: max(var(--space-4), env(safe-area-inset-bottom));
+		min-height: 100vh;
+		min-height: 100dvh;
+		display: flex;
+		align-items: center;
+		justify-content: flex-start;
+		background: var(--bg-sidebar-toggle);
+		background-color: var(--bg-sidebar-toggle);
+		overflow-y: auto;
+		overflow-x: hidden;
+		-webkit-overflow-scrolling: touch;
+		overscroll-behavior-y: contain;
 	}
 
 	.modern-auth-background {
-		position: fixed !important;
-		inset: 0 !important;
-		z-index: 0 !important;
+		position: fixed;
+		inset: 0;
+		z-index: 0;
+		background: var(--bg-sidebar-toggle);
+	}
+
+	.modern-auth-gradient {
+		display: none;
+	}
+
+	.modern-auth-pattern {
+		background: var(--bg-sidebar-toggle);
 	}
 
 	.modern-auth-content {
-		position: relative !important;
-		z-index: 1 !important;
-		width: 100% !important;
-		max-width: 100% !important;
-		padding: var(--space-2) 0 var(--space-6) 0 !important;
-		display: flex !important;
-		align-items: center !important;
-		justify-content: center !important;
-		min-height: min(100vh, 100dvh) !important;
-		flex: 1 !important;
+		position: relative;
+		z-index: 1;
+		width: 100%;
+		max-width: 100%;
+		padding: var(--space-2) 0 var(--space-6) 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: min(100vh, 100dvh);
+		flex: 1;
 	}
 
-	.auth-x-splash-actions {
-		right: max(var(--space-4), env(safe-area-inset-right)) !important;
-		bottom: max(var(--space-4), env(safe-area-inset-bottom)) !important;
-	}
-
-	.modern-auth-container:not(.auth-x) .modern-auth-card {
-		width: 100% !important;
-		max-width: 360px !important;
-		padding: var(--space-5) var(--space-4) !important;
-		border-radius: var(--radius-lg) !important;
-		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45) !important;
-		background-color: #ffffff !important;
-		border: 1px solid #e2e8f0 !important;
-		margin: auto 0 !important;
-		flex-shrink: 0 !important;
+	.modern-auth-card {
+		width: 100%;
+		max-width: 360px;
+		padding: var(--space-5) var(--space-4);
+		border-radius: var(--radius-lg);
+		box-shadow: var(--shadow-xl);
+		backdrop-filter: blur(20px);
+		background-color: var(--bg-elevated);
+		border: 1px solid var(--border-primary);
+		margin: auto 0;
+		flex-shrink: 0;
 	}
 
 	/* Auth Header - Centered, compact on mobile */
 	.modern-auth-header {
-		text-align: center !important;
-		margin-bottom: var(--space-4) !important;
-		padding: 0 !important;
+		text-align: center;
+		margin-bottom: var(--space-4);
+		padding: 0;
 	}
 
 	.modern-auth-logo {
-		display: flex !important;
-		justify-content: center !important;
-		align-items: center !important;
-		margin-bottom: var(--space-3) !important;
-		padding: 0 !important;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		margin-bottom: var(--space-3);
+		padding: 0;
 	}
 
 	.modern-auth-logo-img {
-		height: 40px !important;
-		width: auto !important;
-		object-fit: contain !important;
-		display: block !important;
-	}
-
-	.modern-auth-logo-text {
-		color: #0f172a !important;
+		height: 40px;
+		width: auto;
+		object-fit: contain;
+		display: block;
 	}
 
 	.modern-auth-title {
-		font-size: var(--font-size-xl) !important;
-		font-weight: var(--font-weight-bold) !important;
-		color: #0f172a !important;
-		margin: 0 0 var(--space-2) 0 !important;
-		line-height: 1.3 !important;
-		letter-spacing: -0.01em !important;
-		padding: 0 !important;
+		font-size: var(--font-size-xl);
+		font-weight: var(--font-weight-bold);
+		color: var(--text-primary);
+		margin: 0 0 var(--space-2) 0;
+		line-height: 1.3;
+		letter-spacing: -0.01em;
+		padding: 0;
 	}
 
 	.modern-auth-subtitle {
-		font-size: var(--font-size-xs) !important;
-		color: #0f172a !important;
-		margin: 0 !important;
-		line-height: 1.4 !important;
-		padding: 0 var(--space-1) !important;
-		opacity: 0.8 !important;
+		font-size: var(--font-size-xs);
+		color: var(--text-tertiary);
+		margin: 0;
+		line-height: 1.4;
+		padding: 0 var(--space-1);
+		opacity: 0.8;
 	}
 
 	/* Auth Form - Compact on mobile */
 	.modern-auth-form {
-		display: flex !important;
-		flex-direction: column !important;
-		gap: var(--space-4) !important;
-		width: 100% !important;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+		width: 100%;
 	}
 
 	.modern-form-group {
-		display: flex !important;
-		flex-direction: column !important;
-		gap: var(--space-2) !important;
-		width: 100% !important;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+		width: 100%;
 	}
 
 	.modern-form-label {
-		font-size: var(--font-size-sm) !important;
-		font-weight: var(--font-weight-medium) !important;
-		color: #0f172a !important;
-		margin: 0 !important;
-		padding: 0 !important;
-		line-height: 1.4 !important;
+		font-size: var(--font-size-sm);
+		font-weight: var(--font-weight-medium);
+		color: var(--text-primary);
+		margin: 0;
+		padding: 0;
+		line-height: 1.4;
 	}
 
 	.modern-form-input-wrapper {
-		position: relative !important;
-		width: 100% !important;
-		min-width: 0 !important;
-		display: block !important;
-		isolation: isolate !important;
+		position: relative;
+		width: 100%;
+		min-width: 0;
+		display: block;
+		isolation: isolate;
 	}
 
 	.modern-form-icon {
-		position: absolute !important;
-		left: 14px !important;
-		top: 50% !important;
-		transform: translateY(-50%) !important;
-		width: 20px !important;
-		height: 20px !important;
-		color: #94a3b8 !important;
-		z-index: 2 !important;
-		pointer-events: none !important;
+		position: absolute;
+		left: 14px;
+		top: 50%;
+		transform: translateY(-50%);
+		width: 20px;
+		height: 20px;
+		color: var(--text-tertiary);
+		z-index: 2;
+		pointer-events: none;
 	}
 
 	.modern-form-input {
-		position: relative !important;
-		z-index: 1 !important;
-		width: 100% !important;
-		min-width: 0 !important;
-		box-sizing: border-box !important;
-		padding: 14px 14px 14px 48px !important;
-		background-color: #ffffff !important;
-		border: 1px solid #e2e8f0 !important;
-		border-radius: var(--radius-lg) !important;
-		color: #0f172a !important;
-		font-size: 16px !important; /* Prevents iOS zoom on focus */
-		font-family: var(--font-family) !important;
-		min-height: 48px !important;
-		box-sizing: border-box !important;
-		transition: all var(--transition-base) !important;
-		-webkit-appearance: none !important;
-		appearance: none !important;
-		touch-action: manipulation !important;
+		position: relative;
+		z-index: 1;
+		width: 100%;
+		min-width: 0;
+		box-sizing: border-box;
+		padding: 14px 14px 14px 48px;
+		background-color: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-lg);
+		color: var(--text-primary);
+		font-size: 16px; /* Prevents iOS zoom on focus */
+		font-family: var(--font-family);
+		min-height: 48px;
+		box-sizing: border-box;
+		transition: all var(--transition-base);
+		-webkit-appearance: none;
+		appearance: none;
+		touch-action: manipulation;
 	}
 
 	.modern-form-input:focus {
 		outline: none !important;
-		border-color: #0891b2 !important;
-		box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.35) !important;
-		background-color: #ffffff !important;
+		border-color: var(--border-focus) !important;
+		box-shadow: var(--shadow-focus) !important;
+		background-color: var(--bg-elevated) !important;
 	}
 
 	/* Password field - extra right padding for toggle button */
 	.modern-form-input-wrapper:has(.modern-password-toggle) .modern-form-input {
-		padding-right: 52px !important;
+		padding-right: 52px;
 	}
 
 	.modern-password-toggle {
-		position: absolute !important;
-		right: 6px !important;
-		top: 50% !important;
-		transform: translateY(-50%) !important;
-		width: 44px !important;
-		height: 44px !important;
-		min-width: 44px !important;
-		min-height: 44px !important;
-		display: flex !important;
-		align-items: center !important;
-		justify-content: center !important;
-		background: transparent !important;
-		border: none !important;
-		color: #94a3b8 !important;
-		cursor: pointer !important;
-		border-radius: var(--radius-md) !important;
-		z-index: 2 !important;
-		padding: 0 !important;
-		transition: all var(--transition-base) !important;
+		position: absolute;
+		right: 6px;
+		top: 50%;
+		transform: translateY(-50%);
+		width: 44px;
+		height: 44px;
+		min-width: 44px;
+		min-height: 44px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: transparent;
+		border: none;
+		color: var(--text-tertiary);
+		cursor: pointer;
+		border-radius: var(--radius-md);
+		z-index: 2;
+		padding: 0;
+		transition: all var(--transition-base);
 	}
 
-	.modern-auth-container .modern-password-toggle:hover {
-		background-color: rgba(8, 145, 178, 0.08) !important;
-		color: #0891b2 !important;
+	.modern-password-toggle:hover {
+		background-color: var(--bg-elevated) !important;
+		color: var(--text-primary) !important;
 	}
 
 	.modern-password-toggle svg {
-		width: 20px !important;
-		height: 20px !important;
+		width: 20px;
+		height: 20px;
 	}
 
 	/* Auth Error - Well positioned */
-	.modern-auth-container .modern-auth-error {
+	.modern-auth-error {
 		display: flex !important;
 		align-items: center !important;
 		gap: var(--space-3) !important;
 		padding: var(--space-4) !important;
-		background-color: #fef2f2 !important;
-		border: 1px solid #fecaca !important;
+		background-color: rgba(239, 68, 68, 0.1) !important;
+		border: 1px solid rgba(239, 68, 68, 0.3) !important;
 		border-radius: var(--radius-lg) !important;
 		font-size: var(--font-size-sm) !important;
-		color: #b91c1c !important;
+		color: var(--color-error) !important;
 		width: 100% !important;
 		box-sizing: border-box !important;
 	}
@@ -6063,28 +3517,28 @@
 	.modern-auth-form .modern-auth-submit,
 	button[type="submit"].modern-auth-submit,
 	.modern-auth-form button[type="submit"].modern-auth-submit {
-		width: 100% !important;
-		padding: var(--space-4) var(--space-6) !important;
-		background-color: #0891b2 !important;
-		color: #ffffff !important;
-		border: 1px solid #0891b2 !important;
-		border-radius: var(--radius-lg) !important;
-		font-size: var(--font-size-base) !important;
-		font-weight: var(--font-weight-semibold) !important;
-		font-family: var(--font-family) !important;
-		cursor: pointer !important;
-		transition: all var(--transition-base) !important;
-		display: flex !important;
-		align-items: center !important;
-		justify-content: center !important;
-		gap: var(--space-2) !important;
-		margin-top: var(--space-3) !important;
-		min-height: 48px !important;
-		box-shadow: var(--shadow-md) !important;
-		box-sizing: border-box !important;
-		-webkit-tap-highlight-color: rgba(var(--formely-white-rgb), 0.3) !important;
-		touch-action: manipulation !important;
-		user-select: none !important;
+		width: 100%;
+		padding: var(--space-4) var(--space-6);
+		background-color: var(--color-primary);
+		color: var(--text-inverse);
+		border: 1px solid var(--color-primary);
+		border-radius: var(--radius-lg);
+		font-size: var(--font-size-base);
+		font-weight: var(--font-weight-semibold);
+		font-family: var(--font-family);
+		cursor: pointer;
+		transition: all var(--transition-base);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-2);
+		margin-top: var(--space-3);
+		min-height: 48px;
+		box-shadow: var(--shadow-md);
+		box-sizing: border-box;
+		-webkit-tap-highlight-color: rgba(var(--color-primary-rgb), 0.3);
+		touch-action: manipulation;
+		user-select: none;
 	}
 
 	/* Span color inside submit button - Must override button color */
@@ -6094,16 +3548,15 @@
 	.modern-auth-form .modern-auth-submit span,
 	button[type="submit"].modern-auth-submit span,
 	.modern-auth-form button[type="submit"].modern-auth-submit span {
-		color: #ffffff !important;
+		color: var(--btn-primary-text);
 	}
 
-	.modern-auth-container .modern-auth-submit:hover:not(:disabled),
-	.modern-auth-container button.modern-auth-submit:hover:not(:disabled),
-	.modern-auth-container .modern-auth-form button.modern-auth-submit:hover:not(:disabled),
-	.modern-auth-container button[type="submit"].modern-auth-submit:hover:not(:disabled) {
-		background-color: #0e7490 !important;
-		border-color: #0e7490 !important;
-		box-shadow: 0 12px 28px rgba(34, 211, 238, 0.3) !important;
+	.modern-auth-submit:hover:not(:disabled),
+	button.modern-auth-submit:hover:not(:disabled),
+	.modern-auth-form button.modern-auth-submit:hover:not(:disabled),
+	button[type="submit"].modern-auth-submit:hover:not(:disabled) {
+		background-color: var(--color-primary-hover) !important;
+		box-shadow: var(--shadow-lg) !important;
 		transform: translateY(-1px) !important;
 	}
 
@@ -6111,7 +3564,7 @@
 	button.modern-auth-submit:hover:not(:disabled) span,
 	.modern-auth-form button.modern-auth-submit:hover:not(:disabled) span,
 	button[type="submit"].modern-auth-submit:hover:not(:disabled) span {
-		color: #ffffff !important;
+		color: var(--btn-primary-text) !important;
 	}
 
 	.modern-auth-submit:active:not(:disabled) {
@@ -6126,151 +3579,150 @@
 
 	.modern-auth-submit svg,
 	.modern-auth-form button.modern-auth-submit svg {
-		width: 20px !important;
-		height: 20px !important;
-		flex-shrink: 0 !important;
-		color: #ffffff !important;
+		width: 20px;
+		height: 20px;
+		flex-shrink: 0;
 	}
 
 	/* Auth Footer - Clean separation */
 	.modern-auth-footer {
-		margin-top: var(--space-8) !important;
-		padding-top: var(--space-6) !important;
-		border-top: 1px solid rgba(184, 184, 184, 0.35) !important;
-		text-align: center !important;
-		width: 100% !important;
+		margin-top: var(--space-8);
+		padding-top: var(--space-6);
+		border-top: 1px solid var(--border-primary);
+		text-align: center;
+		width: 100%;
 	}
 
 	.modern-auth-footer-text {
-		font-size: var(--font-size-sm) !important;
-		color: #0f172a !important;
-		margin: 0 !important;
-		line-height: 1.5 !important;
+		font-size: var(--font-size-sm);
+		color: var(--text-tertiary);
+		margin: 0;
+		line-height: 1.5;
 	}
 
 	.modern-auth-link {
-		color: #0f172a !important;
-		text-decoration: none !important;
-		font-weight: var(--font-weight-semibold) !important;
-		transition: all var(--transition-base) !important;
-		display: inline-block !important;
-		margin-left: var(--space-1) !important;
+		color: var(--text-accent);
+		text-decoration: none;
+		font-weight: var(--font-weight-semibold);
+		transition: all var(--transition-base);
+		display: inline-block;
+		margin-left: var(--space-1);
 	}
 
 	.modern-auth-link:hover {
-		color: #ffffff !important;
+		color: var(--color-primary-hover) !important;
 		text-decoration: underline !important;
 	}
 
 	/* Form Hint */
 	.modern-form-hint {
-		font-size: var(--font-size-xs) !important;
-		color: #94a3b8 !important;
-		margin-top: var(--space-1) !important;
-		padding-left: var(--space-1) !important;
-		line-height: 1.4 !important;
+		font-size: var(--font-size-xs);
+		color: var(--text-tertiary);
+		margin-top: var(--space-1);
+		padding-left: var(--space-1);
+		line-height: 1.4;
 	}
 }
 
 @media (max-width: 480px) {
 	.modern-auth-container {
-		padding-left: max(var(--space-3), env(safe-area-inset-left)) !important;
-		padding-right: max(var(--space-3), env(safe-area-inset-right)) !important;
+		padding-left: max(var(--space-3), env(safe-area-inset-left));
+		padding-right: max(var(--space-3), env(safe-area-inset-right));
 	}
 
 	.modern-auth-content {
-		padding: var(--space-2) 0 var(--space-4) 0 !important;
+		padding: var(--space-2) 0 var(--space-4) 0;
 	}
 
 	.modern-auth-card {
-		max-width: 340px !important;
-		padding: var(--space-4) var(--space-3) !important;
-		border-radius: var(--radius-lg) !important;
+		max-width: 340px;
+		padding: var(--space-4) var(--space-3);
+		border-radius: var(--radius-lg);
 	}
 
 	.modern-auth-header {
-		margin-bottom: var(--space-3) !important;
+		margin-bottom: var(--space-3);
 	}
 
 	.modern-auth-logo {
-		margin-bottom: var(--space-2) !important;
+		margin-bottom: var(--space-2);
 	}
 
 	.modern-auth-logo-img {
-		height: 36px !important;
+		height: 36px;
 	}
 
 	.modern-auth-title {
-		font-size: var(--font-size-xl) !important;
-		margin-bottom: var(--space-2) !important;
+		font-size: var(--font-size-xl);
+		margin-bottom: var(--space-2);
 	}
 
 	.modern-auth-subtitle {
-		font-size: var(--font-size-xs) !important;
+		font-size: var(--font-size-xs);
 	}
 
 	.modern-auth-form {
-		gap: var(--space-4) !important;
+		gap: var(--space-4);
 	}
 
 	.modern-form-input {
-		padding: 12px 12px 12px 44px !important; /* 44px left = icon(18) + left(12) + gap(14) */
-		font-size: 16px !important; /* Keep 16px to prevent iOS zoom */
-		min-height: 48px !important;
+		padding: 12px 12px 12px 44px; /* 44px left = icon(18) + left(12) + gap(14) */
+		font-size: 16px; /* Keep 16px to prevent iOS zoom */
+		min-height: 48px;
 	}
 
 	.modern-form-input-wrapper:has(.modern-password-toggle) .modern-form-input {
-		padding-right: 48px !important;
+		padding-right: 48px;
 	}
 
 	.modern-form-icon {
-		left: 12px !important;
-		width: 18px !important;
-		height: 18px !important;
+		left: 12px;
+		width: 18px;
+		height: 18px;
 	}
 
 	.modern-password-toggle {
-		right: var(--space-2) !important;
-		width: 44px !important;
-		height: 44px !important;
-		min-width: 44px !important;
-		min-height: 44px !important;
+		right: var(--space-2);
+		width: 44px;
+		height: 44px;
+		min-width: 44px;
+		min-height: 44px;
 	}
 
 	.modern-password-toggle svg {
-		width: 18px !important;
-		height: 18px !important;
+		width: 18px;
+		height: 18px;
 	}
 
 	.modern-auth-submit {
-		padding: var(--space-3-5) var(--space-5) !important;
-		font-size: var(--font-size-base) !important;
-		min-height: 48px !important;
+		padding: var(--space-3-5) var(--space-5);
+		font-size: var(--font-size-base);
+		min-height: 48px;
 	}
 
 	.modern-auth-footer {
-		margin-top: var(--space-4) !important;
-		padding-top: var(--space-3) !important;
+		margin-top: var(--space-4);
+		padding-top: var(--space-3);
 	}
 }
 
 /* Extra small phones (320px) */
 @media (max-width: 360px) {
 	.modern-auth-card {
-		max-width: 100% !important;
-		padding: var(--space-3) var(--space-2) !important;
+		max-width: 100%;
+		padding: var(--space-3) var(--space-2);
 	}
 
 	.modern-auth-title {
-		font-size: var(--font-size-lg) !important;
+		font-size: var(--font-size-lg);
 	}
 
 	.modern-auth-subtitle {
-		font-size: 0.75rem !important;
+		font-size: 0.75rem;
 	}
 
 	.modern-auth-form {
-		gap: var(--space-4) !important;
+		gap: var(--space-4);
 	}
 }
 
@@ -6293,86 +3745,120 @@
 		flex-direction: column !important;
 		align-items: center !important;
 		justify-content: center !important;
-		background: linear-gradient(135deg, var(--bg-sidebar-toggle) 0%, var(--bg-sidebar-toggle-hover) 50%, var(--bg-sidebar-toggle) 100%) !important;
+		background: var(--bg-sidebar-toggle) !important;
 		z-index: 10000 !important;
 		overflow: hidden !important;
 	}
 
+	.splash-light-overlay,
+	.splash-login-like-background,
+	.splash-login-liquid-ether,
+	.splash-login-gradient,
+	.splash-login-pattern,
+	.splash-logo-center-mask,
+	.splash-bulb-container,
+	.splash-typewriter {
+		display: none !important;
+	}
+
 	.splash-content {
-		gap: var(--space-6) !important;
-		padding: var(--space-6) var(--space-4) !important;
-		max-height: 100%;
-		overflow: hidden;
+		position: absolute !important;
+		inset: 0 !important;
+		gap: 0 !important;
+		padding: 0 !important;
+		max-height: none !important;
+		overflow: visible !important;
 	}
 
 	.splash-center-area {
-		min-width: 100px !important;
-		min-height: 100px !important;
-		gap: var(--space-4) !important;
-	}
-
-	.splash-bulb-icon {
-		width: 70px !important;
-		height: 70px !important;
+		position: absolute !important;
+		left: 50% !important;
+		top: auto !important;
+		bottom: calc(50% + 44px) !important;
+		transform: translateX(-50%) !important;
+		min-width: 0 !important;
+		min-height: 0 !important;
+		gap: 0 !important;
 	}
 
 	.splash-logo-container {
 		flex-shrink: 0;
+		opacity: 1 !important;
+		transform: none !important;
+		animation: none !important;
 	}
 
 	.splash-logo-img {
-		width: 100px !important;
-		height: 100px !important;
+		width: 120px !important;
+		height: 120px !important;
 	}
 
-	.splash-typewriter {
-		min-height: 2em;
-		overflow: hidden;
+	.splash-page .splash-brand-title,
+	.splash-brand-title {
+		position: absolute !important;
+		top: 50% !important;
+		left: 50% !important;
+		z-index: 10 !important;
+		margin: 0 !important;
+		transform: translate(-50%, -50%) !important;
+		font-size: 2.15rem !important;
+		font-weight: var(--font-weight-semibold) !important;
+		letter-spacing: 3px !important;
+		text-transform: uppercase !important;
+		color: #ffffff !important;
+		white-space: nowrap !important;
 	}
 
-	.splash-typewriter-text,
-	.splash-typewriter-cursor {
-		font-size: 1.75rem !important;
-		letter-spacing: 2px !important;
+	[data-theme="light"] .splash-page .splash-brand-title {
+		color: #ffffff !important;
 	}
 
-	.splash-review-btn,
-	.splash-start-btn {
-		bottom: max(var(--space-6), env(safe-area-inset-bottom)) !important;
+	.splash-page .splash-start-btn,
+	.splash-start-btn,
+	.splash-loading-dots {
+		position: absolute !important;
+		top: 75% !important;
+		left: 50% !important;
+		right: auto !important;
+		bottom: auto !important;
+		transform: translate(-50%, -50%) !important;
+		animation: none !important;
+	}
+
+	.splash-page .splash-start-btn:hover,
+	.splash-start-btn:hover,
+	.splash-page .splash-start-btn:active,
+	.splash-start-btn:active {
+		transform: translate(-50%, -50%) !important;
+	}
+
+	.splash-powered-by {
+		left: 50% !important;
+		bottom: max(var(--space-5), env(safe-area-inset-bottom)) !important;
+		transform: translateX(-50%) !important;
+		z-index: 10 !important;
 	}
 }
 
 @media (max-width: 480px) {
-	.splash-content {
-		gap: var(--space-4) !important;
-		padding: var(--space-4) var(--space-3) !important;
-	}
-
 	.splash-center-area {
-		min-width: 90px !important;
-		min-height: 90px !important;
-		gap: var(--space-3) !important;
-	}
-
-	.splash-bulb-icon {
-		width: 60px !important;
-		height: 60px !important;
+		bottom: calc(50% + 40px) !important;
 	}
 
 	.splash-logo-img {
-		width: 80px !important;
-		height: 80px !important;
+		width: 104px !important;
+		height: 104px !important;
 	}
 
-	.splash-typewriter-text,
-	.splash-typewriter-cursor {
-		font-size: 1.25rem !important;
-		letter-spacing: 1px !important;
+	.splash-page .splash-brand-title,
+	.splash-brand-title {
+		font-size: 1.7rem !important;
+		letter-spacing: 2px !important;
 	}
 
-	.splash-review-btn,
-	.splash-start-btn {
-		bottom: max(var(--space-6), env(safe-area-inset-bottom)) !important;
+	.splash-powered-by {
+		bottom: max(var(--space-4), env(safe-area-inset-bottom)) !important;
+		font-size: 0.62rem !important;
 	}
 }
 
@@ -6381,37 +3867,20 @@
    ============================================ */
 
 @media (max-width: 768px) and (orientation: landscape) {
-	.modal-content {
-		max-height: 85vh;
-	}
-
-	.mobile-bottom-nav {
-		height: 56px;
-	}
 
 	/* Splash - spațiu redus în landscape */
-	.splash-content {
-		padding: var(--space-4) var(--space-4) !important;
-	}
-
 	.splash-center-area {
-		min-height: 70px !important;
-		gap: var(--space-2) !important;
-	}
-
-	.splash-bulb-icon {
-		width: 55px !important;
-		height: 55px !important;
+		bottom: calc(50% + 28px) !important;
 	}
 
 	.splash-logo-img {
-		width: 70px !important;
-		height: 70px !important;
+		width: 72px !important;
+		height: 72px !important;
 	}
 
-	.splash-typewriter-text,
-	.splash-typewriter-cursor {
-		font-size: 1.25rem !important;
+	.splash-brand-title {
+		font-size: 1.4rem !important;
+		letter-spacing: 2px !important;
 	}
 
 	.modern-auth-container {
@@ -6465,112 +3934,484 @@
 		margin-top: var(--space-4) !important;
 		padding-top: var(--space-3) !important;
 	}
+}
+
+/* Phone layout: reserve the fixed header once, then use the available width. */
+@media (max-width: 768px) {
+	.va-shell .va-shell-main {
+		margin-top: var(--app-header-height, 56px);
+		padding-top: 0;
+		margin-left: 0;
+		width: 100%;
+		min-width: 0;
+	}
+
+	.va-shell.va-shell-topnav .va-shell-main {
+		height: calc(100dvh - var(--app-header-height, 56px) - var(--student-tab-height, 0px));
+		min-height: 0;
+	}
+
+	.va-shell .va-shell-main > .va-main {
+		padding: 20px 16px max(24px, env(safe-area-inset-bottom)) !important;
+		min-height: 0;
+		min-width: 0;
+	}
+
+	.va-shell .va-shell-main > .va-main > .va-main {
+		padding: 0;
+		margin: 0;
+		width: 100%;
+		min-width: 0;
+	}
+
+	.va-shell .modern-sidebar.expanded {
+		width: min(320px, calc(100vw - 48px)) !important;
+		max-width: calc(100vw - 48px) !important;
+		height: 100dvh !important;
+		padding-bottom: env(safe-area-inset-bottom) !important;
+		overscroll-behavior: contain;
+	}
+
+	.va-shell .modern-topnav-left {
+		min-width: 0;
+	}
+
+	.va-shell .va-topnav-page-title {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.va-shell .courses-page-modern.courses-page-student,
+	.va-shell .courses-page-student-main {
+		padding: 0 !important;
+		margin: 0;
+		width: 100% !important;
+		min-width: 0;
+	}
+
+	.va-shell .courses-page-student .courses-page-hero,
+	.va-shell .courses-page-student .courses-page-content {
+		padding: 0;
+		margin: 0 0 20px;
+	}
+
+	.va-shell .courses-page-student .courses-page-hero-title {
+		font-size: 24px;
+		text-align: left;
+		margin-bottom: 16px !important;
+	}
+
+	.va-shell .courses-page-student .courses-page-student-filters {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 4px;
+		width: 100%;
+		max-width: 100%;
+		padding: 6px;
+	}
+
+	.va-shell .courses-page-student button.courses-page-student-filter {
+		min-width: 0;
+		min-height: 64px;
+		padding: 10px 6px !important;
+		font-size: 11px !important;
+	}
+
+	.va-shell .courses-page-student .courses-page-student-filter-label {
+		font-size: 10px;
+		white-space: normal;
+		text-wrap: balance;
+	}
+
+	.va-shell .courses-page-student .courses-page-empty {
+		padding: 28px 20px;
+		min-height: 0;
+	}
+
+	.va-shell .courses-page-student .courses-page-empty-icon {
+		width: 64px;
+		height: 64px;
+		margin-bottom: 16px;
+	}
+
+	.va-shell .courses-page-student .courses-page-empty-title {
+		font-size: 20px;
+		line-height: 1.4;
+	}
+
+	.va-shell .courses-page-student .courses-page-empty-text {
+		font-size: 16px;
+		line-height: 1.6;
+	}
+
+	.va-shell .admin-users-filters input,
+	.va-shell .admin-users-filters select,
+	.va-shell .admin-users-modal input,
+	.va-shell .admin-users-modal select {
+		font-size: 16px;
+		min-height: 44px;
+	}
+}
+
+/* Thumb-friendly primary navigation with space reserved for the home indicator. */
+@media (max-width: 768px) {
+	html:has(.student-mobile-tabs) {
+		--student-tab-height: calc(68px + env(safe-area-inset-bottom, 0px));
+	}
+	.va-shell-topnav:has(.student-mobile-tabs) { --student-tab-height: calc(68px + env(safe-area-inset-bottom, 0px)); }
+	.va-shell.va-shell-topnav:has(.student-mobile-tabs):not(:has(.student-exam-page)) .va-shell-main {
+		margin-top: var(--app-header-height, 56px);
+		padding-top: 0;
+		height: calc(100dvh - var(--app-header-height, 56px) - var(--student-tab-height));
+		max-height: calc(100dvh - var(--app-header-height, 56px) - var(--student-tab-height));
+		overflow-x: hidden !important;
+		overflow-y: auto !important;
+		-webkit-overflow-scrolling: touch;
+	}
+	/* Lecția: bara de context stă lipită sub antet, pe toată lățimea; cardul are marginile lui */
+	.va-shell.va-shell-topnav:has(.student-mobile-tabs) .va-shell-main > .va-main:has(.lessons-page-player-layout) {
+		padding: 0 !important;
+	}
+
+	.va-shell-topnav:has(.student-mobile-tabs) .courses-page-student .courses-page-hero-title,
+	.va-shell-topnav:has(.student-mobile-tabs) .events-page-title,
+	.va-shell-topnav:has(.student-mobile-tabs) .monthly-tests-title,
+	.va-shell-topnav:has(.student-mobile-tabs) .library-page-title,
+	.va-shell-topnav:has(.student-mobile-tabs) .student-settings-title,
+	.va-shell-topnav:has(.student-mobile-tabs) .exam-results-page-title,
+	.va-shell-topnav:has(.student-mobile-tabs) .student-achievements-title {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+
+	.va-shell-topnav:has(.student-mobile-tabs) .student-settings-header {
+		display: none;
+	}
+
+	/* Shell-ul dă deja 16px pe lateral: paginile nu mai adaugă padding propriu, ca totul să fie aliniat */
+	.va-shell-topnav:has(.student-mobile-tabs) .courses-page-student .courses-page-filtered-section,
+	.va-shell-topnav:has(.student-mobile-tabs) .courses-page-resume-wrap,
+	.va-shell-topnav:has(.student-mobile-tabs) .exam-results-page,
+	.va-shell-topnav:has(.student-mobile-tabs) .va-profile-container,
+	.va-shell-topnav:has(.student-mobile-tabs) .student-achievements-page,
+	.va-shell-topnav:has(.student-mobile-tabs) .va-main > .admin-container,
+	.va-shell-topnav:has(.student-mobile-tabs) .events-page,
+	.va-shell-topnav:has(.student-mobile-tabs) .monthly-tests-page {
+		padding-left: 0 !important;
+		padding-right: 0 !important;
+	}
+
+	.va-shell-topnav:has(.student-mobile-tabs) .courses-page-student .courses-page-hero {
+		border-bottom: 0;
+	}
+
+	/* Antetul cu titlu ascuns (Rezultate teste) nu mai lasă spațiu gol deasupra filtrelor */
+	.va-shell-topnav:has(.student-mobile-tabs) .exam-results-page-header--simple {
+		margin: 0;
+		padding: 0;
+	}
+
+	/* Titlul e în bara de sus; fără acțiuni, antetul ar rămâne o cutie albă goală */
+	.va-shell-topnav:has(.student-mobile-tabs) .library-page-header:not(:has(.library-page-header-actions)) {
+		margin: 0;
+		padding: 0;
+		min-height: 0;
+		background: none;
+		border: 0;
+		box-shadow: none;
+	}
+
+	.va-shell-topnav:has(.student-mobile-tabs) .events-page-header {
+		margin-bottom: var(--space-3);
+	}
+
+	.student-mobile-tabs {
+		position: fixed;
+		inset: auto 0 0;
+		z-index: 990;
+		display: grid;
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+		height: var(--student-tab-height);
+		box-sizing: border-box;
+		padding: 6px max(8px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+		background: var(--bg-elevated);
+		border-top: 1px solid var(--border-primary);
+	}
+	.student-mobile-tab {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 3px;
+		width: 100%;
+		min-width: 0;
+		max-width: 100%;
+		min-height: 48px;
+		padding: 4px 2px;
+		overflow: hidden;
+		border: 0;
+		border-radius: 12px;
+		background: transparent;
+		color: var(--text-secondary);
+		font: inherit;
+		font-size: 11px;
+		font-weight: 600;
+		line-height: 1.15;
+		text-decoration: none;
+		cursor: pointer;
+		touch-action: manipulation;
+	}
+	.student-mobile-tab-label {
+		display: block;
+		width: 100%;
+		min-width: 0;
+		max-width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		text-align: center;
+		font-size: 10px;
+		line-height: 1.15;
+	}
+	html:has(.student-mobile-tabs):has(.student-exam-page),
+	.va-shell-topnav:has(.student-exam-page) {
+		--student-tab-height: 0px;
+	}
+	html:has(.student-exam-page) .student-mobile-tabs {
+		display: none;
+	}
+
+	.student-mobile-tab.active,
+	.student-mobile-tab.active .student-mobile-tab-label,
+	.student-mobile-tab.active .student-mobile-tab-icon,
+	.student-mobile-tab.active svg {
+		background: var(--btn-primary-bg);
+		color: var(--btn-primary-text);
+	}
+	.student-mobile-tab.active .student-mobile-tab-label,
+	.student-mobile-tab.active .student-mobile-tab-icon,
+	.student-mobile-tab.active svg {
+		background: transparent;
+	}
+
+	.student-mobile-tabs .student-more-menu-wrap {
+		display: flex;
+		min-width: 0;
+	}
+
+	.student-mobile-tabs .student-more-menu-wrap .student-mobile-tab {
+		flex: 1;
+		width: 100%;
+	}
+
+	.student-mobile-tabs .student-more-menu {
+		position: fixed;
+		top: auto;
+		right: max(8px, env(safe-area-inset-right));
+		bottom: calc(var(--student-tab-height) + 8px);
+		left: max(8px, env(safe-area-inset-left));
+		width: auto;
+		min-width: 0;
+		max-height: min(60dvh, 420px);
+		overflow-y: auto;
+	}
+	.student-mobile-tab:focus-visible { outline: 2px solid var(--text-primary); outline-offset: -2px; }
+	.student-mobile-tab-icon { position: relative; display: flex; }
+	.student-mobile-tab-icon .messages-menu-badge { position: absolute; top: -5px; left: 16px; margin: 0; min-width: 16px; font-size: 10px; }
+	.va-shell-topnav:has(.student-mobile-tabs) .volt-widget-root,
+	.va-shell-topnav:has(.student-mobile-tabs) .student-preview-back-to-admin { bottom: calc(var(--student-tab-height) + 12px); }
+	.va-shell .mobile-sidebar-toggle,
+	.va-shell .sidebar-mobile-close { min-width: 44px; min-height: 44px; }
+}
+
+/* Keep lesson controls on the screen, aligned to the A4 lesson sheet. */
+.va-shell {
+	--lesson-nav-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+	--lesson-sheet-width: 900px;
+	--lesson-sidebar-width: 0px;
+}
+.va-shell .lessons-page-player-layout {
+	--lesson-sidebar-width: 320px;
+}
+.va-shell .lesson-page-main .lesson-page-actions {
+	--lesson-sheet-width: 1200px;
+}
+.va-shell .lessons-page-lesson-viewer .lessons-page-lesson-actions,
+.va-shell .lesson-page-main .lesson-page-actions {
+	position: fixed;
+	left: calc(var(--lesson-sidebar-width) + (100vw - var(--lesson-sidebar-width)) / 2);
+	right: auto;
+	bottom: var(--lesson-nav-bottom);
+	z-index: 80;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	width: min(var(--lesson-sheet-width), calc(100vw - var(--lesson-sidebar-width)));
+	max-width: var(--lesson-sheet-width);
+	transform: translateX(-50%);
+	padding: 16px;
+	background: var(--bg-elevated);
+	border: 1px solid var(--border-primary);
+	border-radius: 16px;
+	box-shadow: 0 -4px 20px rgb(0 0 0 / 12%);
+	box-sizing: border-box;
+}
+.va-shell .lessons-page-lesson-viewer,
+.va-shell .lesson-page-main {
+	padding-bottom: 128px;
+}
+.va-shell .lessons-page-lesson-viewer .lessons-page-nav-btn,
+.va-shell .lesson-page-actions .lesson-page-btn,
+.va-shell .lessons-page-lesson-actions .lessons-page-lesson-cta {
+	width: auto;
+	min-width: 0;
+	min-height: 52px;
+	flex: 1;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 12px 16px;
+	border-radius: 12px;
+	font-size: 15px;
+	font-weight: 700;
+}
+.va-shell .lessons-page-lesson-viewer .lessons-page-nav-btn--prev,
+.va-shell .lesson-page-actions .lesson-page-btn-secondary {
+	background: var(--bg-elevated);
+	color: var(--text-primary);
+	border: 1px solid var(--border-secondary);
+}
+.va-shell .lessons-page-lesson-viewer .lessons-page-nav-btn svg { color: inherit; }
+.va-shell .lesson-page-actions .lesson-page-btn:disabled,
+.va-shell .lessons-page-lesson-actions .lessons-page-nav-btn:disabled { opacity: .45; cursor: not-allowed; }
+.va-shell .lesson-page-actions button:focus-visible,
+.va-shell .lessons-page-lesson-actions button:focus-visible { outline: 3px solid var(--text-primary); outline-offset: 3px; }
+@media (max-width: 1024px) {
+	.va-shell .lessons-page-player-layout {
+		--lesson-sidebar-width: 280px;
+	}
+}
+@media (max-width: 768px) {
+	.va-shell .lessons-page-player-layout,
+	.va-shell {
+		--lesson-sidebar-width: 0px;
+	}
+	.va-shell .lessons-page-lesson-viewer .lessons-page-lesson-actions,
+	.va-shell .lesson-page-main .lesson-page-actions {
+		--lesson-nav-bottom: var(--student-tab-height, 0px);
+		left: 0;
+		right: 0;
+		width: 100%;
+		max-width: none;
+		transform: none;
+		padding: 12px 16px;
+		border-radius: 0;
+		flex-wrap: nowrap;
+		bottom: var(--student-tab-height, 0px);
+	}
+	.va-shell .lesson-page-actions .lesson-page-completed-badge { display: none; }
+	.va-shell .lesson-page-main,
+	.va-shell .lessons-page-lesson-viewer {
+		padding-bottom: 72px;
+	}
+	.va-shell .lesson-page-actions .lesson-page-btn { padding: 10px 8px; font-size: 14px; }
+
+	.lesson-block-pdf-embed {
+		height: min(360px, 50dvh) !important;
+	}
+}
+
+/* Black foreground on yellow active mobile navigation, including dark mode. */
+@media (max-width: 768px) {
+	html[data-theme='dark'] .va-shell .student-mobile-tab.active,
+	html[data-theme='dark'] .va-shell .student-mobile-tab.active > span,
+	html[data-theme='dark'] .va-shell .student-mobile-tab.active svg,
+	html[data-theme='dark'] .courses-page-student-filter.is-active,
+	html[data-theme='dark'] .courses-page-student-filter.is-active .courses-page-student-filter-label,
+	html[data-theme='dark'] .courses-page-student-filter.is-active .courses-page-student-filter-count {
+		color: var(--btn-primary-text) !important;
+	}
+}
+
+/* Match active drawer items to the high-contrast mobile navigation. */
+html .va-shell .modern-sidebar .modern-nav-item:is(.active, .is-active) {
+	background: var(--btn-primary-bg);
+	color: var(--btn-primary-text);
+	border-color: var(--btn-primary-border);
+}
+html .va-shell .modern-sidebar .modern-nav-item:is(.active, .is-active) .modern-nav-item-label,
+html .va-shell .modern-sidebar .modern-nav-item:is(.active, .is-active) .modern-nav-item-icon,
+html .va-shell .modern-sidebar .modern-nav-item:is(.active, .is-active) svg {
+	color: var(--btn-primary-text) !important;
 }
 
 @media (max-width: 768px) {
-	.va-shell-topnav .student-sidebar,
-	.va-shell-topnav .modern-sidebar.student-sidebar {
-		position: fixed !important;
-		left: -100% !important;
-		top: 0 !important;
-		width: 280px !important;
-		max-width: 85vw !important;
-		height: 100dvh !important;
-		z-index: 1000 !important;
+	.va-shell.va-shell-topnav:has(.student-exam-page) .va-shell-main {
+		display: flex;
+		flex-direction: column;
+		height: 100dvh;
+		max-height: 100dvh;
+		min-height: 0;
+		margin-top: 0;
+		padding-top: var(--app-header-height, 56px);
+		padding-right: 0;
+		padding-bottom: 0;
+		padding-left: 0;
+		box-sizing: border-box;
+		overflow: hidden;
 	}
 
-	.va-shell-topnav .student-sidebar.open,
-	.va-shell-topnav .modern-sidebar.student-sidebar.open {
-		left: 0 !important;
+	.va-shell.va-shell-topnav:has(.student-exam-page) .va-shell-main > .va-main {
+		display: flex;
+		flex-direction: column;
+		flex: 1 1 auto;
+		width: 100%;
+		height: auto;
+		max-height: none;
+		min-height: 0;
+		margin: 0;
+		padding: 0 !important;
+		overflow: hidden;
 	}
 
-	.va-shell-topnav .messages-page {
-		left: 0 !important;
-		right: 0 !important;
+	.va-shell.va-shell-topnav:has(.student-exam-page) .student-exam-page {
+		display: flex;
+		flex-direction: column;
+		flex: 1 1 auto;
 		width: 100% !important;
-		max-width: none !important;
+		height: 100% !important;
+		max-height: 100%;
+		min-height: 0;
+		margin: 0;
+		padding: 0;
+		overflow: hidden;
 	}
 
-	.va-shell-topnav .messages-container,
-	.va-shell-topnav .messages-sidebar,
-	.va-shell-topnav .messages-main {
+	.va-shell.va-shell-topnav:has(.student-exam-page) .student-exam-body {
+		flex: 1 1 0;
+		min-height: 0;
+		overflow-x: hidden;
+		overflow-y: auto;
+		padding: 12px 16px 16px;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.va-shell.va-shell-topnav:has(.student-exam-page) .test-attempt-footer {
+		position: relative;
+		inset: auto;
+		flex-shrink: 0;
 		width: 100% !important;
-		max-width: none !important;
-		min-width: 0 !important;
-	}
-
-	.va-shell-topnav .messages-sidebar {
-		display: flex !important;
-		flex-direction: column !important;
-	}
-
-	.va-shell-topnav .messages-search,
-	.va-shell-topnav .messages-sidebar-header,
-	.va-shell-topnav .messages-conversations-list {
-		grid-column: auto;
-		grid-row: auto;
-	}
-
-	.va-shell-topnav .messages-sidebar-header-copy {
-		position: static !important;
-		width: auto !important;
-		height: auto !important;
-		margin: 0 !important;
-		overflow: visible !important;
-		clip: auto !important;
-		white-space: normal !important;
-	}
-}
-
-	.modern-auth-container {
-		padding-top: max(var(--space-2), env(safe-area-inset-top)) !important;
-		padding-bottom: max(var(--space-2), env(safe-area-inset-bottom)) !important;
-		align-items: flex-start !important;
-		justify-content: center !important;
-	}
-
-	.modern-auth-content {
-		min-height: auto !important;
-		padding: var(--space-2) 0 !important;
-	}
-
-	.modern-auth-card {
-		padding: var(--space-4) var(--space-5) !important;
-		margin: var(--space-2) auto !important;
-	}
-
-	.modern-auth-header {
-		margin-bottom: var(--space-4) !important;
-	}
-
-	.modern-auth-logo {
-		margin-bottom: var(--space-2) !important;
-	}
-
-	.modern-auth-logo-img {
-		height: 36px !important;
-	}
-
-	.modern-auth-title {
-		font-size: var(--font-size-xl) !important;
-		margin-bottom: var(--space-1) !important;
-	}
-
-	.modern-auth-subtitle {
-		font-size: var(--font-size-xs) !important;
-		display: none !important; /* Save space in landscape */
-	}
-
-	.modern-auth-form {
-		gap: var(--space-4) !important;
-	}
-
-	.modern-form-input {
-		min-height: 44px !important;
-	}
-
-	.modern-auth-footer {
-		margin-top: var(--space-4) !important;
-		padding-top: var(--space-3) !important;
 	}
 }

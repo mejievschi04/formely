@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\LibraryItem;
 use App\Services\LibraryPdfCoverGenerator;
+use App\Support\HtmlSanitizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -12,8 +13,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LibraryController extends Controller
 {
-    use \App\Http\Controllers\Concerns\AssertsPlanEntitlements;
-
     private const ALLOWED_EXTENSIONS = ['pdf', 'epub', 'mobi', 'doc', 'docx', 'txt', 'zip'];
 
     private function isTextItem(LibraryItem $item): bool
@@ -46,7 +45,7 @@ class LibraryController extends Controller
         ];
 
         if ($includeBody && $isText) {
-            $payload['body'] = $item->body;
+            $payload['body'] = HtmlSanitizer::clean($item->body);
         }
 
         return $payload;
@@ -71,7 +70,6 @@ class LibraryController extends Controller
 
     public function index(Request $request)
     {
-        $this->assertCompanyFeature('library');
         $perPage = min(max((int) $request->get('per_page', 24), 1), 100);
 
         $paginator = LibraryItem::query()
@@ -119,11 +117,11 @@ class LibraryController extends Controller
             'title' => trim($validated['title']),
             'description' => $validated['description'] ?? null,
             'content_type' => 'text',
-            'body' => $validated['body'],
+            'body' => HtmlSanitizer::clean($validated['body']),
             'original_filename' => null,
             'stored_path' => null,
             'mime_type' => 'text/html',
-            'size_bytes' => strlen($validated['body']),
+            'size_bytes' => strlen(HtmlSanitizer::clean($validated['body'])),
         ]);
 
         $this->persistCoverUpload($request, $item);
@@ -139,7 +137,7 @@ class LibraryController extends Controller
     private function storeFileItem(Request $request)
     {
         $user = $request->user();
-        $maxUploadKb = max(1024, (int) config('formely.library_upload_max_kb', 524288));
+        $maxUploadKb = max(1024, (int) config('volta.library_upload_max_kb', 524288));
 
         $validated = $request->validate([
             'title' => 'nullable|string|max:255',
@@ -200,6 +198,25 @@ class LibraryController extends Controller
         ], 201);
     }
 
+    /**
+     * Imagine inserată în conținutul unui material scris (editorul de lecții). Conținutul o referă prin URL;
+     * imaginile base64 nu trec de HtmlSanitizer.
+     */
+    public function uploadImage(Request $request)
+    {
+        $this->assertCanMutate($request);
+        $validated = $request->validate([
+            'file' => 'required|file|mimes:jpeg,jpg,png,webp,gif|max:10240',
+        ]);
+
+        $path = $validated['file']->store('library/images', 'public');
+
+        return response()->json([
+            'url' => '/storage/' . ltrim($path, '/'),
+            'path' => $path,
+        ], 201);
+    }
+
     public function show(Request $request, int $id)
     {
         $item = LibraryItem::with('uploader:id,name')->findOrFail($id);
@@ -229,8 +246,8 @@ class LibraryController extends Controller
         $item->update([
             'title' => trim($validated['title']),
             'description' => $validated['description'] ?? null,
-            'body' => $validated['body'],
-            'size_bytes' => strlen($validated['body']),
+            'body' => HtmlSanitizer::clean($validated['body']),
+            'size_bytes' => strlen(HtmlSanitizer::clean($validated['body'])),
         ]);
 
         if ($request->boolean('remove_cover')) {
@@ -297,7 +314,7 @@ class LibraryController extends Controller
     private function wrapTextItemHtml(LibraryItem $item): string
     {
         $title = e($item->title ?: 'Material bibliotecă');
-        $body = $item->body ?? '';
+        $body = HtmlSanitizer::clean($item->body ?? '');
 
         return '<!DOCTYPE html><html lang="ro"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
             . '<title>' . $title . '</title>'

@@ -1,4 +1,4 @@
-/* Sertar calendar — lățime mărită, înălțime/celule mai generoase, culori AIa (tokeni temă) */
+/* Sertar calendar — lățime mărită, înălțime/celule mai generoase, culori Volta (tokeni temă) */
 .va-cal-drawer-backdrop {
 	position: fixed;
 	inset: 0;
@@ -110,34 +110,13 @@
 	flex: 1;
 	min-width: 160px;
 	padding: 0.7rem 1.1rem;
-	border: 1px solid transparent;
-	border-radius: var(--radius-lg, 12px);
-	background: linear-gradient(
-		135deg,
-		var(--color-primary) 0%,
-		var(--color-primary-hover) 100%
-	);
-	color: var(--text-inverse);
-	font-weight: 700;
 	font-size: 0.9rem;
-	cursor: pointer;
-	box-shadow: 0 4px 16px var(--color-primary-alpha-30);
-	transition:
-		transform 0.12s ease,
-		box-shadow 0.12s ease,
-		filter 0.12s ease;
-}
-
-.va-cal-drawer-btn-primary:hover {
-	transform: translateY(-1px);
-	box-shadow: 0 6px 22px var(--color-primary-alpha-30);
-	filter: brightness(1.03);
 }
 
 .va-cal-drawer-link-all {
 	font-size: 0.875rem;
 	font-weight: 600;
-	color: var(--color-primary);
+	color: var(--text-accent);
 	text-decoration: none;
 	white-space: nowrap;
 }
@@ -152,12 +131,6 @@
 	min-height: 0;
 	overflow-y: auto;
 	padding: var(--space-2, 0.5rem) var(--space-5, 1.25rem) var(--space-6, 1.5rem);
-}
-
-.va-cal-drawer-loading {
-	margin: var(--space-2, 0.5rem) 0;
-	font-size: 0.875rem;
-	color: var(--text-secondary);
 }
 
 .va-cal-drawer-month-nav {

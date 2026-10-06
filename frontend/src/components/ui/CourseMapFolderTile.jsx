@@ -2,12 +2,13 @@ import React from 'react';
 import Folder from './Folder';
 import { toImageUrl } from '../../utils/imageUrl';
 import './CourseMapFolderTile.css';
+import { courseProgressLabel } from '../../utils/courseProgressLabel.js';
 
 const CourseMapFolderTile = ({
 	title,
 	subtitle,
 	count,
-	color = 'var(--formely-shadow)',
+	color = '#e6d800',
 	imageUrl = null,
 	coverFocus = null,
 	progress = null,
@@ -18,8 +19,7 @@ const CourseMapFolderTile = ({
 	className = '',
 	style,
 }) => {
-	const hasProgress = progress != null && progress !== '';
-	const normalizedProgress = hasProgress && Number.isFinite(Number(progress))
+	const normalizedProgress = Number.isFinite(Number(progress))
 		? Math.min(100, Math.max(0, Number(progress)))
 		: null;
 	const courseCount = Number.isFinite(Number(count)) ? Number(count) : 0;
@@ -27,14 +27,15 @@ const CourseMapFolderTile = ({
 	const classes = ['course-map-folder-tile', className].filter(Boolean).join(' ');
 	const tileStyle = { '--color-primary': color, ...style };
 	const itemNodes = [
-		<span className="course-map-folder-tile__paper-value">{courseCount}</span>,
 		normalizedProgress !== null ? (
-			<span className="course-map-folder-tile__paper-value">{normalizedProgress}%</span>
+			<span className="course-map-folder-tile__paper-value">{courseProgressLabel(normalizedProgress)}</span>
 		) : null,
 		<span className="course-map-folder-tile__paper-label">Mapa</span>,
 	];
 
 	const handleKeyDown = (event) => {
+		// doar când mapa are focusul: tastele de pe butoanele din card (ex. mutare) nu o deschid
+		if (event.target !== event.currentTarget) return;
 		if (event.key === 'Enter' || event.key === ' ') {
 			event.preventDefault();
 			onOpen?.();
@@ -54,7 +55,7 @@ const CourseMapFolderTile = ({
 				<div className="course-map-folder-tile__stage">
 					{topLeftSlot ? <span className="course-map-folder-tile__tl">{topLeftSlot}</span> : null}
 					{topRightSlot ? <span className="course-map-folder-tile__tr">{topRightSlot}</span> : null}
-					<span className="course-map-folder-tile__count" aria-hidden>
+					<span className="course-map-folder-tile__count" hidden aria-hidden>
 						{courseCount} {courseCount === 1 ? 'curs' : 'cursuri'}
 					</span>
 					<div className="course-map-folder-tile__visual" aria-hidden>
@@ -65,11 +66,12 @@ const CourseMapFolderTile = ({
 				<div className="course-map-folder-tile__meta">
 					<h3 className="course-map-folder-tile__title">{title || 'Mapa'}</h3>
 					{subtitle ? <p className="course-map-folder-tile__subtitle">{subtitle}</p> : null}
-					{normalizedProgress !== null ? (
-						<div className="course-map-folder-tile__progress">
-							<span style={{ width: `${normalizedProgress}%` }} />
-						</div>
-					) : null}
+					<div
+						className={`course-map-folder-tile__progress${normalizedProgress === null ? ' course-map-folder-tile__progress--empty' : ''}`}
+						aria-hidden
+					>
+						<span style={{ width: normalizedProgress !== null ? `${normalizedProgress}%` : '0%' }} />
+					</div>
 					<div className="course-map-folder-tile__footer" aria-hidden>
 						<span>{ctaLabel}</span>
 						<span>-&gt;</span>

@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
+import { X } from '@phosphor-icons/react';
 import './BuildCourseModal.css';
 
 /**
@@ -40,23 +41,11 @@ const BuildCourseModal = ({
 		setStep(2);
 	};
 
-	const handleBackdropKeyDown = useCallback(
-		(e) => {
-			if (e.key === 'Escape') {
-				e.preventDefault();
-				onClose();
-			}
-		},
-		[onClose]
-	);
-
 	const isEdit = mode === 'edit';
 
 	return (
 		<div
 			className="build-course-modal-backdrop"
-			onClick={onClose}
-			onKeyDown={handleBackdropKeyDown}
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="build-course-modal-title"
@@ -67,6 +56,11 @@ const BuildCourseModal = ({
 						<h2 id="build-course-modal-title" className="build-course-modal-title">
 							{isEdit ? 'Editează curs' : 'Creează curs nou'}
 						</h2>
+						<p className="build-course-modal-subtitle">
+							{isEdit
+								? 'Modifică informațiile de bază ale cursului.'
+								: 'Creare în pași: pornești cu titlul, apoi completezi opțional restul.'}
+						</p>
 						<div className="build-course-modal-stepper" aria-label="Pașii de creare">
 							<span className={step === 1 ? 'active' : ''}>Pas 1: Titlu</span>
 							<span className={step === 2 ? 'active' : ''}>Pas 2: Opțional</span>
@@ -74,11 +68,11 @@ const BuildCourseModal = ({
 					</div>
 					<button
 						type="button"
-						className="build-course-modal-close"
+						className="build-course-modal-close va-close-btn"
 						onClick={onClose}
 						aria-label="Închide"
 					>
-						×
+						<X size={18} weight="bold" aria-hidden="true" />
 					</button>
 				</header>
 
@@ -191,7 +185,7 @@ const BuildCourseModal = ({
 								</button>
 								<button
 									type="submit"
-									className="build-course-modal-btn build-course-modal-btn-submit"
+									className="build-course-modal-btn lms-btn-primary build-course-modal-btn-submit"
 									disabled={loading}
 								>
 									{loading ? 'Se salvează...' : 'Creează acum'}
@@ -211,7 +205,7 @@ const BuildCourseModal = ({
 								)}
 								<button
 									type="submit"
-									className="build-course-modal-btn build-course-modal-btn-submit"
+									className="build-course-modal-btn lms-btn-primary build-course-modal-btn-submit"
 									disabled={loading}
 								>
 									{loading ? 'Se salvează...' : isEdit ? 'Salvează' : 'Creează și deschide în Builder'}

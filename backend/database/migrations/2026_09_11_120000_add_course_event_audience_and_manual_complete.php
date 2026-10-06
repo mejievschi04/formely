@@ -10,13 +10,13 @@ return new class extends Migration
     {
         if (Schema::hasTable('course_user') && ! Schema::hasColumn('course_user', 'manually_completed')) {
             Schema::table('course_user', function (Blueprint $table) {
-            $table->boolean('manually_completed')->default(false);
+                $table->boolean('manually_completed')->default(false)->after('completed_at');
             });
         }
 
         if (Schema::hasTable('events') && ! Schema::hasColumn('events', 'audience_type')) {
             Schema::table('events', function (Blueprint $table) {
-                $table->string('audience_type', 16)->default('all');
+                $table->string('audience_type', 16)->default('all')->after('access_type');
             });
         }
 

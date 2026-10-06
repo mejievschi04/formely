@@ -1,8 +1,9 @@
-import React, { createContext, useCallback, useContext, useLayoutEffect, useMemo, useState } from 'react';
+import { ThemeContext, THEME_STORAGE_KEY } from './ThemeContextShared.js';
+import React, {  useCallback, useLayoutEffect, useMemo, useState } from 'react';
 
-export const THEME_STORAGE_KEY = 'formely-ui-theme';
 
-const ThemeContext = createContext(null);
+
+
 
 function readStoredTheme() {
 	try {
@@ -14,13 +15,7 @@ function readStoredTheme() {
 	return 'light';
 }
 
-export const useTheme = () => {
-	const context = useContext(ThemeContext);
-	if (!context) {
-		throw new Error('useTheme must be used within ThemeProvider');
-	}
-	return context;
-};
+
 
 export const ThemeProvider = ({ children }) => {
 	const [theme, setThemeState] = useState(readStoredTheme);

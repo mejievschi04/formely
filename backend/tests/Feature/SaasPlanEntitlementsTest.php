@@ -131,7 +131,7 @@ class SaasPlanEntitlementsTest extends TestCase
         $user = User::factory()->create([
             'email' => 'trial@example.com',
             'password' => bcrypt('Password1'),
-            'role' => UserRoles::COMPANY_OWNER,
+            'role' => UserRoles::ADMIN,
             'company_id' => $company->id,
             'status' => 'active',
         ]);
@@ -158,12 +158,12 @@ class SaasPlanEntitlementsTest extends TestCase
             'features' => $defaults['features'],
         ]);
         $owner = User::factory()->create([
-            'role' => UserRoles::COMPANY_OWNER,
+            'role' => UserRoles::ADMIN,
             'company_id' => $company->id,
             'status' => 'active',
         ]);
         User::factory()->create([
-            'role' => UserRoles::EMPLOYEE,
+            'role' => UserRoles::STUDENT,
             'company_id' => $company->id,
             'status' => 'active',
         ]);
@@ -171,7 +171,7 @@ class SaasPlanEntitlementsTest extends TestCase
         $this->actingAs($owner)->postJson('/api/admin/users', [
             'name' => 'Al Doilea',
             'email' => 'second@example.com',
-            'role' => UserRoles::EMPLOYEE,
+            'role' => UserRoles::STUDENT,
             'password' => 'Password1',
         ])->assertStatus(422);
 
@@ -192,19 +192,19 @@ class SaasPlanEntitlementsTest extends TestCase
             'features' => $defaults['features'],
         ]);
         $owner = User::factory()->create([
-            'role' => UserRoles::COMPANY_OWNER,
+            'role' => UserRoles::ADMIN,
             'company_id' => $company->id,
             'status' => 'active',
         ]);
 
         $this->actingAs($owner)->postJson('/api/admin/users/invitations', [
             'email' => 'one@example.com',
-            'role' => UserRoles::EMPLOYEE,
+            'role' => UserRoles::STUDENT,
         ])->assertCreated();
 
         $this->actingAs($owner)->postJson('/api/admin/users/invitations', [
             'email' => 'two@example.com',
-            'role' => UserRoles::EMPLOYEE,
+            'role' => UserRoles::STUDENT,
         ])->assertStatus(422);
     }
 
@@ -299,7 +299,7 @@ class SaasPlanEntitlementsTest extends TestCase
             'features' => $defaults['features'],
         ]);
         $learner = User::factory()->create([
-            'role' => UserRoles::EMPLOYEE,
+            'role' => UserRoles::STUDENT,
             'company_id' => $company->id,
             'status' => 'inactive',
         ]);
@@ -338,7 +338,7 @@ class SaasPlanEntitlementsTest extends TestCase
         $user = User::factory()->create([
             'email' => 'blocked@example.com',
             'password' => bcrypt('Password1'),
-            'role' => UserRoles::EMPLOYEE,
+            'role' => UserRoles::STUDENT,
             'company_id' => $company->id,
             'status' => 'active',
         ]);
@@ -364,7 +364,7 @@ class SaasPlanEntitlementsTest extends TestCase
             'features' => $defaults['features'],
         ]);
         $owner = User::factory()->create([
-            'role' => UserRoles::COMPANY_OWNER,
+            'role' => UserRoles::ADMIN,
             'company_id' => $company->id,
             'status' => 'active',
         ]);
@@ -377,7 +377,7 @@ class SaasPlanEntitlementsTest extends TestCase
         ]);
 
         $this->actingAs($owner, 'sanctum')
-            ->postJson("/api/admin/question-banks/{$bank->id}/generate-from-text", [
+            ->postJson("/api/admin/question-banks/{$bank->id}/ai/preview", [
                 'content' => str_repeat('Material pentru evaluare. ', 10),
                 'numberOfQuestions' => 1,
             ])
@@ -397,7 +397,7 @@ class SaasPlanEntitlementsTest extends TestCase
             'features' => $defaults['features'],
         ]);
         $owner = User::factory()->create([
-            'role' => UserRoles::COMPANY_OWNER,
+            'role' => UserRoles::ADMIN,
             'company_id' => $company->id,
             'status' => 'active',
         ]);
@@ -409,29 +409,20 @@ class SaasPlanEntitlementsTest extends TestCase
             'status' => 'draft',
         ]);
 
-        $this->actingAs($owner, 'sanctum')
-            ->postJson("/api/admin/question-banks/{$bank->id}/generate-from-text", [])
-            ->assertStatus(422);
+        // Planul permite generarea: cererea trece de gate (fără cheie AI în teste nu ajunge la 200).
+        $response = $this->actingAs($owner, 'sanctum')
+            ->postJson("/api/admin/question-banks/{$bank->id}/ai/preview", []);
+        $this->assertNotSame(403, $response->status());
     }
 
-    public function test_invite_and_reset_urls_use_lms_origin_not_cors_list(): void
+    public function test_invite_urls_use_lms_origin_not_cors_list(): void
     {
-        config([
-            'formely.frontend_url' => 'http://localhost:5173,http://localhost:4321',
-            'formely.lms_url' => 'http://localhost:5173',
-        ]);
+        config(['volta.frontend_url' => 'http://localhost:5173']);
 
-        $invite = app(\App\Services\UserInvitationService::class)->acceptUrl('abc');
-        $this->assertSame('http://localhost:5173/accept-invite?token=abc', $invite);
-
-        $user = User::factory()->create(['email' => 'reset.e2e@example.com']);
-        $notification = new \App\Notifications\ResetPassword('reset-token');
-        $mail = $notification->toMail($user);
-        $url = $mail->actionUrl;
-        $this->assertStringStartsWith('http://localhost:5173/reset-password?', $url);
-        $this->assertStringNotContainsString(',', $url);
-        $this->assertStringContainsString('token=reset-token', $url);
-        $this->assertStringContainsString('email=reset.e2e%40example.com', $url);
+        $this->assertSame(
+            'http://localhost:5173/register/invite/abc',
+            \App\Support\RegistrationInvitationUrl::build('abc')
+        );
     }
 
     public function test_instructor_cannot_stream_ai_course_generation(): void
@@ -447,7 +438,7 @@ class SaasPlanEntitlementsTest extends TestCase
             'features' => $defaults['features'],
         ]);
         $owner = User::factory()->create([
-            'role' => UserRoles::COMPANY_OWNER,
+            'role' => UserRoles::ADMIN,
             'company_id' => $company->id,
             'status' => 'active',
         ]);

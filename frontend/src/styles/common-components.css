@@ -88,13 +88,7 @@
 }
 
 .error-boundary-btn-primary {
-	background: var(--accent-primary, var(--color-primary));
-	color: var(--text-inverse);
 	margin-right: var(--space-4);
-}
-
-.error-boundary-btn-primary:hover {
-	opacity: 0.95;
 }
 
 .error-boundary-btn-secondary {
@@ -105,6 +99,20 @@
 
 .error-boundary-btn-secondary:hover {
 	opacity: 0.9;
+}
+
+/* Mesaj de eroare comun (admin și cursant) */
+.lms-error-message {
+	margin-bottom: var(--space-4);
+	padding: var(--space-3) var(--space-4);
+	border: 1px solid var(--color-error);
+	border-radius: var(--radius-md);
+	background: color-mix(in srgb, var(--color-error) 10%, transparent);
+	color: var(--text-primary);
+}
+
+.lms-error-message p {
+	margin: 0;
 }
 
 /* ============================================
@@ -123,174 +131,33 @@
 	transition: all var(--transition-base);
 }
 
-.admin-auto-save-indicator.saving {
-	color: var(--color-warning);
+/*
+ * Culoarea stării amestecată cu culoarea textului: mai închisă în tema luminoasă,
+ * mai deschisă în cea întunecată, deci lizibilă în ambele.
+ */
+.admin-auto-save-indicator.is-pending,
+.admin-auto-save-indicator.is-saving {
+	color: color-mix(in srgb, var(--color-warning) 55%, var(--text-primary));
 	border-color: var(--color-warning);
 }
 
-.admin-auto-save-indicator.saved {
-	color: var(--color-success);
+.admin-auto-save-indicator.is-saved {
+	color: color-mix(in srgb, var(--color-success) 55%, var(--text-primary));
 	border-color: var(--color-success);
 }
 
-.admin-auto-save-indicator.error {
-	color: var(--color-error);
+.admin-auto-save-indicator.is-error {
+	color: color-mix(in srgb, var(--color-error) 70%, var(--text-primary));
 	border-color: var(--color-error);
 }
 
 /* ============================================
    3. NO DEAD END FALLBACK
    ============================================ */
-.no-dead-end-fallback {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	min-height: 40vh;
-	padding: var(--space-8);
-	text-align: center;
-}
-
-.no-dead-end-fallback-icon {
-	font-size: 4rem;
-	margin-bottom: var(--space-4);
-	opacity: 0.5;
-}
-
-.no-dead-end-fallback-title {
-	font-size: var(--font-size-xl);
-	font-weight: var(--font-weight-semibold);
-	color: var(--text-primary);
-	margin: 0 0 var(--space-2) 0;
-}
-
-.no-dead-end-fallback-description {
-	font-size: var(--font-size-base);
-	color: var(--text-tertiary);
-	margin: 0 0 var(--space-6) 0;
-	max-width: 500px;
-}
-
-.no-dead-end-fallback-actions {
-	display: flex;
-	gap: var(--space-3);
-	flex-wrap: wrap;
-	justify-content: center;
-}
 
 /* ============================================
-   4. INLINE AI SUGGESTION
+   4. INLINE VOLT SUGGESTION
    ============================================ */
-.inline-ai-suggestion {
-	background-color: var(--bg-elevated);
-	border-radius: var(--radius-lg);
-	padding: var(--space-4);
-	border: 1px solid var(--border-primary);
-	box-shadow: var(--shadow-sm);
-	margin: var(--space-4) 0;
-	transition: all var(--transition-base);
-}
-
-.inline-ai-suggestion:hover {
-	box-shadow: var(--shadow-md);
-	border-color: var(--border-secondary);
-}
-
-.inline-ai-suggestion-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	margin-bottom: var(--space-3);
-}
-
-.inline-ai-suggestion-icon {
-	font-size: var(--font-size-lg);
-	margin-right: var(--space-2);
-}
-
-.inline-ai-suggestion-label {
-	font-size: var(--font-size-sm);
-	font-weight: var(--font-weight-semibold);
-	color: var(--text-primary);
-	flex: 1;
-}
-
-.inline-ai-suggestion-expand {
-	background: transparent;
-	border: none;
-	color: var(--text-tertiary);
-	cursor: pointer;
-	padding: var(--space-1);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	border-radius: var(--radius-sm);
-	transition: all var(--transition-base);
-}
-
-.inline-ai-suggestion-expand:hover {
-	background-color: var(--bg-secondary);
-	color: var(--text-primary);
-}
-
-.inline-ai-suggestion-content {
-	font-size: var(--font-size-sm);
-	color: var(--text-secondary);
-	line-height: var(--line-height-relaxed);
-	margin-bottom: var(--space-3);
-}
-
-.inline-ai-suggestion-actions {
-	display: flex;
-	gap: var(--space-2);
-	flex-wrap: wrap;
-}
-
-.inline-ai-suggestion-btn {
-	padding: var(--space-2) var(--space-4);
-	border-radius: var(--radius-lg);
-	font-size: var(--font-size-xs);
-	font-weight: var(--font-weight-medium);
-	cursor: pointer;
-	transition: all var(--transition-base);
-	border: none;
-	display: inline-flex;
-	align-items: center;
-	gap: var(--space-2);
-}
-
-.inline-ai-suggestion-btn.accept {
-	background-color: var(--btn-primary-bg);
-	color: var(--btn-primary-text);
-	border: 1px solid var(--btn-primary-border);
-}
-
-.inline-ai-suggestion-btn.accept:hover {
-	background-color: var(--btn-primary-hover);
-	box-shadow: var(--shadow-md);
-}
-
-.inline-ai-suggestion-btn.edit {
-	background-color: var(--btn-secondary-bg);
-	color: var(--btn-secondary-text);
-	border: 1px solid var(--btn-secondary-border);
-}
-
-.inline-ai-suggestion-btn.edit:hover {
-	background-color: var(--btn-secondary-hover);
-}
-
-.inline-ai-suggestion-btn.dismiss {
-	background-color: transparent;
-	color: var(--text-tertiary);
-	border: 1px solid var(--border-primary);
-}
-
-.inline-ai-suggestion-btn.dismiss:hover {
-	background-color: var(--bg-secondary);
-	border-color: var(--border-secondary);
-	color: var(--text-primary);
-}
 
 /* ============================================
    5. SKELETON LOADING
@@ -369,22 +236,8 @@
    8. RESPONSIVE
    ============================================ */
 @media (max-width: 768px) {
-	.error-boundary,
-	.no-dead-end-fallback {
+	.error-boundary {
 		padding: var(--space-4);
-	}
-
-	.inline-ai-suggestion {
-		padding: var(--space-3);
-	}
-
-	.inline-ai-suggestion-actions {
-		flex-direction: column;
-	}
-
-	.inline-ai-suggestion-btn {
-		width: 100%;
-		justify-content: center;
 	}
 }
 
@@ -409,65 +262,4 @@
 	background-color: var(--bg-secondary);
 	border-color: var(--border-primary);
 	color: var(--text-secondary); /* WCAG AA: 4.8:1 contrast */
-}
-
-[data-theme="light"] .admin-auto-save-indicator.saving {
-	color: var(--color-warning);
-	border-color: var(--color-warning);
-}
-
-[data-theme="light"] .admin-auto-save-indicator.saved {
-	color: var(--color-success);
-	border-color: var(--color-success);
-}
-
-[data-theme="light"] .admin-auto-save-indicator.error {
-	color: var(--color-error);
-	border-color: var(--color-error);
-}
-
-[data-theme="light"] .no-dead-end-fallback-title {
-	color: var(--text-primary);
-}
-
-[data-theme="light"] .no-dead-end-fallback-message {
-	color: var(--text-secondary);
-}
-
-[data-theme="light"] .no-dead-end-fallback-icon {
-	opacity: 0.7;
-	color: var(--text-secondary);
-}
-
-[data-theme="light"] .loading-overlay {
-	background-color: rgba(249, 250, 251, 0.95);
-}
-
-[data-theme="light"] .loading-overlay-content {
-	color: var(--text-primary);
-}
-
-[data-theme="light"] .inline-ai-suggestion {
-	background-color: var(--bg-secondary);
-	border-color: var(--border-primary);
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-[data-theme="light"] .inline-ai-suggestion-title {
-	color: var(--text-primary);
-}
-
-[data-theme="light"] .inline-ai-suggestion-text {
-	color: var(--text-secondary);
-}
-
-[data-theme="light"] .inline-ai-suggestion-btn {
-	color: var(--text-primary);
-	border-color: var(--text-primary);
-}
-
-[data-theme="light"] .inline-ai-suggestion-btn:hover {
-	background-color: rgba(31, 41, 55, 0.1);
-	border-color: var(--text-primary);
-	color: var(--text-primary);
 }

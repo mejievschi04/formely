@@ -44,7 +44,7 @@ const QuestionBankBuilderStep1 = ({ data, onUpdate, errors }) => {
 						rows={4}
 					/>
 					<p className="admin-form-hint">
-						O descriere clară ajută la identificarea băncii și poate fi folosită de AI pentru generarea întrebărilor
+						O descriere clară ajută la identificarea băncii și poate fi folosită de Formely AI pentru generarea întrebărilor
 					</p>
 				</div>
 
@@ -66,7 +66,7 @@ const QuestionBankBuilderStep1 = ({ data, onUpdate, errors }) => {
 					<h4>💡 Ce urmează</h4>
 					<ul>
 						<li>După ce apeși „Următorul Pas”, banca va fi creată automat</li>
-						<li>În pasul 2 vei adăuga întrebări manual sau cu ajutorul AI</li>
+						<li>În pasul 2 vei adăuga întrebări manual sau cu ajutorul Formely AI</li>
 						<li>Întrebările pot fi reutilizate în multiple teste și cursuri</li>
 					</ul>
 				</div>

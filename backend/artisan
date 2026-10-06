@@ -6,6 +6,9 @@ use Symfony\Component\Console\Input\ArgvInput;
 
 define('LARAVEL_START', microtime(true));
 
+// PHP 8.5 deprecates PDO::MYSQL_ATTR_SSL_CA; Laravel's vendor config still references it.
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
+
 // Register the Composer autoloader...
 require __DIR__.'/vendor/autoload.php';
 

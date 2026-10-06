@@ -65,35 +65,5 @@ class Question extends Model
         });
     }
 
-    /**
-     * Check if answer is correct
-     */
-    public function isAnswerCorrect($userAnswer): bool
-    {
-        $correctAnswers = $this->getCorrectAnswers();
-        
-        if (empty($correctAnswers)) {
-            return false;
-        }
-
-        // For multiple choice, check if user answer matches any correct answer
-        if (in_array($this->type, ['multiple_choice', 'single_choice', 'true_false'], true)) {
-            foreach ($correctAnswers as $correct) {
-                if (is_array($correct) && ($correct['text'] ?? $correct) === $userAnswer) {
-                    return true;
-                }
-            }
-        }
-
-        // For other types, implement specific logic
-        return false;
-    }
-
-    public function requiresManualGrading(): bool
-    {
-        $auto = ['multiple_choice', 'single_choice', 'true_false', 'matching', 'ordering'];
-
-        return ! in_array((string) ($this->type ?? 'multiple_choice'), $auto, true);
-    }
 }
 

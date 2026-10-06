@@ -6,11 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\Lead;
 use App\Models\User;
-use App\Models\UserInvitation;
+use App\Models\RegistrationInvitation;
+use App\Models\Scopes\CompanyScope;
 use App\Services\PlanEntitlementService;
-use App\Services\UserInvitationService;
+use App\Services\RegistrationInvitationService;
 use App\Support\PlatformActivityLogger;
-use App\Support\TenantContext;
 use App\Support\UserRoles;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +20,7 @@ class LeadAdminController extends Controller
 {
     public function __construct(
         private PlanEntitlementService $entitlements,
-        private UserInvitationService $invitations,
+        private RegistrationInvitationService $invitations,
     ) {}
 
     public function index(Request $request)
@@ -193,7 +193,7 @@ class LeadAdminController extends Controller
             return ['invite_url' => null, 'invitation' => null];
         }
 
-        $pendingInvite = UserInvitation::withoutGlobalScopes()
+        $pendingInvite = RegistrationInvitation::withoutGlobalScope(CompanyScope::class)
             ->where('company_id', $company->id)
             ->where('email', $email)
             ->whereNull('accepted_at')
@@ -203,27 +203,15 @@ class LeadAdminController extends Controller
             abort(422, 'Ai atins limita de conturi staff pentru planul curent.');
         }
 
-        $previousCompanyId = TenantContext::companyId();
-        TenantContext::setCompanyId($company->id);
-
-        try {
-            return $this->invitations->createAndSend(
-                $email,
-                $inviter,
-                $name,
-                UserRoles::COMPANY_OWNER,
-                null,
-                $request
-            );
-        } finally {
-            if ($previousCompanyId) {
-                TenantContext::setCompanyId($previousCompanyId);
-            } else {
-                TenantContext::clear();
-                if ($inviter && $inviter->isPlatformAdmin()) {
-                    TenantContext::setFromUser($inviter);
-                }
-            }
-        }
+        return $this->invitations->createAndSend(
+            $email,
+            $inviter,
+            $name,
+            UserRoles::ADMIN,
+            null,
+            (int) config('formely.invitation_expire_days', 7),
+            null,
+            (int) $company->id
+        );
     }
 }

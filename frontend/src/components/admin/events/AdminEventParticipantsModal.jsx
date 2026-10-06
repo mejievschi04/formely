@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { X } from '@phosphor-icons/react';
 import { createPortal } from 'react-dom';
 import { adminService } from '../../../services/api';
-import { useToast } from '../../../contexts/ToastContext';
+
+import { useToast } from '../../../contexts/ToastContextShared.js';
 import { useScrollResetOnOpen } from '../../../hooks/useScrollResetOnOpen';
 import { pickRegisteredUsers, formatPivotDate } from './adminEventParticipantsUtils';
 import './AdminEventParticipantsModal.css';
@@ -54,15 +56,6 @@ const AdminEventParticipantsModal = ({
 			setSavingUserId(null);
 		}
 	}, [open]);
-
-	useEffect(() => {
-		if (!open) return;
-		const onKey = (e) => {
-			if (e.key === 'Escape') onClose();
-		};
-		document.addEventListener('keydown', onKey);
-		return () => document.removeEventListener('keydown', onKey);
-	}, [open, onClose]);
 
 	const handleAttendanceToggle = async (user, checked) => {
 		if (readOnly || savingUserId != null) return;
@@ -132,9 +125,6 @@ const AdminEventParticipantsModal = ({
 		<div
 			className="admin-event-modal-overlay aev-participants-overlay"
 			role="presentation"
-			onClick={(e) => {
-				if (e.target === e.currentTarget) onClose();
-			}}
 		>
 			<div
 				className="admin-event-modal aev-participants-modal"
@@ -151,8 +141,8 @@ const AdminEventParticipantsModal = ({
 						</h2>
 						<p className="aev-participants-subtitle">{title}</p>
 					</div>
-					<button type="button" className="admin-event-modal-close" onClick={onClose} title="Închide">
-						×
+					<button type="button" className="admin-event-modal-close va-close-btn" onClick={onClose} title="Închide" aria-label="Închide">
+						<X size={18} weight="bold" aria-hidden="true" />
 					</button>
 				</div>
 

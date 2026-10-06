@@ -19,18 +19,15 @@ function normalizeHexInput(raw) {
 }
 
 function normalizeRgbInput(raw) {
-	const match = /^rgba?\(\s*([+\-]?\d{1,3})\s*,\s*([+\-]?\d{1,3})\s*,\s*([+\-]?\d{1,3})(?:\s*,\s*(?:\d*\.?\d+))?\s*\)$/i.exec(String(raw || '').trim());
+	const match = /^rgba?\(\s*([+-]?\d{1,3})\s*,\s*([+-]?\d{1,3})\s*,\s*([+-]?\d{1,3})(?:\s*,\s*(?:\d*\.?\d+))?\s*\)$/i.exec(String(raw || '').trim());
 	if (!match) return null;
 	return `#${byteToHex(match[1])}${byteToHex(match[2])}${byteToHex(match[3])}`;
 }
 
-export function normalizeColorInputToHex(value, fallback = '#0891b2') {
+export function normalizeColorInputToHex(value, fallback = '#6366f1') {
 	const normalized = normalizeHexInput(value) || normalizeRgbInput(value);
 	if (normalized) return normalized;
 	if (fallback == null) return null;
-	return normalizeHexInput(fallback) || '#0891b2';
+	return normalizeHexInput(fallback) || '#6366f1';
 }
 
-export function isValidColorInput(value) {
-	return Boolean(normalizeHexInput(value) || normalizeRgbInput(value));
-}

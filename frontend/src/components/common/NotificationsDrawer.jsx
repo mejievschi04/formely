@@ -12,10 +12,6 @@ import {
 } from '../../utils/notificationInboxStorage';
 import './NotificationsDrawer.css';
 
-const CloseIcon = () => (
-	<X size={22} weight="bold" aria-hidden />
-);
-
 function StudentRowIcon({ type }) {
 	if (type === 'pending_exam') {
 		return (
@@ -50,9 +46,11 @@ const NotificationsDrawer = ({ open, onClose, variant, apiItems, loading, onLoca
 		onLocalStateChange?.();
 	}, [onLocalStateChange]);
 
-	useEffect(() => {
+	const [previousOpen, setPreviousOpen] = useState(open);
+	if (previousOpen !== open) {
+		setPreviousOpen(open);
 		if (open) setTab('primite');
-	}, [open]);
+	}
 
 	useEffect(() => {
 		if (!open) return;
@@ -131,6 +129,8 @@ const NotificationsDrawer = ({ open, onClose, variant, apiItems, loading, onLoca
 	if (!portalTarget) return null;
 
 	const title = 'Notificări';
+	const subtitle = isStudent ? 'Primite și istoric' : 'Alerte și mesaje pentru echipă';
+
 	const content = (
 		<>
 			<button type="button" className="va-notif-drawer-backdrop" aria-label="Închide" onClick={onClose} />
@@ -145,9 +145,10 @@ const NotificationsDrawer = ({ open, onClose, variant, apiItems, loading, onLoca
 						<h2 id="va-notif-drawer-title" className="va-notif-drawer-title">
 							{title}
 						</h2>
+						<p className="va-notif-drawer-sub">{subtitle}</p>
 					</div>
-					<button type="button" className="va-notif-drawer-close" onClick={onClose} aria-label="Închide">
-						<CloseIcon />
+					<button type="button" className="va-notif-drawer-close va-close-btn" onClick={onClose} aria-label="Închide">
+						<X size={18} weight="bold" aria-hidden="true" />
 					</button>
 				</header>
 

@@ -78,3 +78,27 @@ export function getPreviousLessonIdBefore(modules, currentLessonId, rootLessons 
 	if (result !== undefined) return result;
 	return undefined;
 }
+
+/**
+ * Poziția lecției în curs, în aceeași ordine ca butoanele Anterioară / Următoarea.
+ * @returns {{ index: number, total: number, module: object|null }|null} index pornește de la 1
+ */
+export function getLessonPosition(modules, currentLessonId, rootLessons = []) {
+	if (currentLessonId == null) return null;
+	const cid = Number(currentLessonId);
+	const sortedRootLessons = [...(rootLessons || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
+	const sortedModules = Array.isArray(modules) ? modules : [];
+	const moduleByLessonId = new Map();
+	for (const mod of sortedModules) {
+		for (const lesson of mod.lessons || []) moduleByLessonId.set(Number(lesson.id), mod);
+	}
+
+	let total = 0;
+	let index = 0;
+	iterateLessonsInOrder(sortedModules, sortedRootLessons, (lesson) => {
+		total += 1;
+		if (Number(lesson.id) === cid) index = total;
+	});
+	if (index === 0) return null;
+	return { index, total, module: moduleByLessonId.get(cid) || null };
+}

@@ -1,0 +1,51 @@
+/* Editorul unei întrebări din bănci și examene: aceleași piese ca în builder-ul de test (va-tq / va-qa) */
+html body .va-qe {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	min-width: 0;
+}
+
+html body .va-qe__type {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+html body .va-qe__type-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 12px;
+}
+
+html body .va-qe .va-tq-type.va-tq-type {
+	gap: 6px;
+}
+
+html body .va-qe .va-tq-option.va-tq-option {
+	min-height: 64px !important;
+}
+
+html body .va-qe__points {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	width: 140px;
+}
+
+html body .va-qe .admin-course-builder-test-question-fields {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+/* fereastra în care se editează: lată cât să încapă opțiunile pe două coloane */
+html body .va-dialog.va-qe-dialog {
+	width: min(760px, calc(100vw - 32px));
+	max-height: calc(100vh - 48px);
+}
+
+html body .va-dialog.va-qe-dialog .va-dialog__body {
+	overflow-y: auto;
+}

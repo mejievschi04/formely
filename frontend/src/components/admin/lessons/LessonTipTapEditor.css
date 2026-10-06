@@ -1,0 +1,212 @@
+.lesson-tiptap {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 420px;
+	height: 100%;
+	border: 0;
+	background: transparent;
+	color: var(--text-primary);
+}
+
+.lesson-tiptap-toolbar {
+	position: sticky;
+	top: 0;
+	z-index: 4;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px 16px;
+	margin: 0 0 18px;
+	padding: 8px 0 10px;
+	border: 0;
+	border-bottom: 1px solid var(--border-primary);
+	border-radius: 0;
+	background: var(--bg-elevated);
+}
+
+.lesson-tiptap-toolbar-tools,
+.lesson-tiptap-toolbar-end {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px;
+}
+
+.lesson-tiptap-toolbar-end {
+	margin-left: auto;
+	gap: 10px;
+}
+
+.lesson-tiptap-sep {
+	width: 1px;
+	height: 16px;
+	margin: 0 4px;
+	background: var(--border-primary);
+	flex-shrink: 0;
+}
+
+.admin-course-builder-page .lesson-tiptap-btn,
+.lesson-tiptap-btn {
+	all: unset;
+	box-sizing: border-box;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px !important;
+	min-width: 32px !important;
+	height: 32px;
+	padding: 0 !important;
+	border: 0;
+	border-radius: 8px !important;
+	background: transparent;
+	background-color: transparent;
+	color: var(--text-primary);
+	cursor: pointer;
+	line-height: 0;
+	box-shadow: none;
+}
+
+.lesson-tiptap-btn svg {
+	width: 18px !important;
+	height: 18px;
+	display: block;
+	color: var(--text-primary);
+	fill: var(--text-primary);
+	stroke: none;
+	background: transparent;
+	border-radius: 0;
+}
+
+.lesson-tiptap-btn svg * {
+	fill: var(--text-primary);
+	stroke: none;
+}
+
+.lesson-tiptap-btn:hover:not(:disabled) {
+	background: var(--bg-secondary) !important;
+	background-color: var(--bg-secondary) !important;
+}
+
+.lesson-tiptap-btn.is-active {
+	background: var(--btn-primary-bg);
+	background-color: var(--btn-primary-bg);
+	color: var(--btn-primary-text);
+}
+
+.lesson-tiptap-btn.is-active svg,
+.lesson-tiptap-btn.is-active svg * {
+	color: var(--btn-primary-text);
+	fill: var(--btn-primary-text);
+}
+
+.lesson-tiptap-btn:disabled {
+	opacity: 0.35;
+	cursor: not-allowed;
+}
+
+.lesson-tiptap-toolbar-end .admin-btn {
+	min-height: 32px;
+	padding: 6px 14px;
+	border: 1px solid var(--btn-primary-border);
+	border-radius: var(--btn-desktop-radius);
+	background: var(--btn-primary-bg);
+	color: var(--btn-primary-text);
+	font-size: 0.82rem;
+	font-weight: 800;
+	cursor: pointer;
+}
+
+.lesson-tiptap-toolbar-end .admin-btn:disabled {
+	opacity: 0.65;
+	cursor: wait;
+}
+
+.lesson-tiptap-toolbar-end .admin-auto-save-indicator {
+	color: var(--text-tertiary);
+	font-size: 0.78rem;
+	font-weight: 700;
+	white-space: nowrap;
+}
+
+.lesson-tiptap-toolbar-end .admin-auto-save-indicator.is-saved {
+	padding: 6px 14px;
+	border: 0;
+	border-radius: 999px;
+	background: var(--color-success);
+	color: var(--color-white) !important;
+}
+
+.lesson-tiptap-header .admin-course-builder-lesson-heading-row {
+	margin: 8px 0 4px;
+}
+
+.lesson-tiptap-body {
+	flex: 1;
+	min-height: 360px;
+}
+
+.lesson-tiptap-body > div,
+.lesson-tiptap .ProseMirror {
+	min-height: 360px;
+	height: 100%;
+}
+
+.lesson-tiptap .ProseMirror {
+	padding: 12px 2px 64px;
+	outline: none;
+	border: 0;
+	box-shadow: none;
+	background: transparent;
+	color: var(--text-primary);
+	caret-color: var(--text-primary);
+	font-size: 17px;
+	line-height: 1.7;
+}
+
+.admin-course-builder-page .lesson-tiptap .ProseMirror:focus,
+.admin-course-builder-page .lesson-tiptap .ProseMirror:focus-visible,
+.lesson-tiptap .ProseMirror:focus,
+.lesson-tiptap .ProseMirror:focus-visible {
+	outline: none !important;
+	border: 0 !important;
+	box-shadow: none !important;
+}
+
+.lesson-tiptap .ProseMirror p.is-editor-empty:first-child::before {
+	content: attr(data-placeholder);
+	float: left;
+	height: 0;
+	color: #94a3b8;
+	pointer-events: none;
+}
+
+.lesson-tiptap .ProseMirror h2,
+.lesson-tiptap .ProseMirror h3 {
+	margin: 1.1em 0 0.4em;
+	line-height: 1.25;
+	color: var(--text-primary);
+}
+
+.lesson-tiptap .ProseMirror p,
+.lesson-tiptap .ProseMirror ul,
+.lesson-tiptap .ProseMirror ol {
+	margin: 0.55em 0;
+}
+
+.lesson-tiptap .ProseMirror ul,
+.lesson-tiptap .ProseMirror ol {
+	padding-left: 1.3em;
+}
+
+.lesson-tiptap .ProseMirror img {
+	max-width: 100%;
+	height: auto;
+	border-radius: 8px;
+}
+
+.lesson-tiptap .ProseMirror a {
+	color: var(--text-primary);
+	text-decoration: underline;
+}

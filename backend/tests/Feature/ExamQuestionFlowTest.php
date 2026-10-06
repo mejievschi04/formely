@@ -18,7 +18,7 @@ class ExamQuestionFlowTest extends TestCase
 
     public function test_bank_sync_respects_question_count_and_includes_starred_inside_that_count(): void
     {
-        $admin = User::factory()->create(['role' => 'instructor']);
+        $admin = User::factory()->create(['role' => 'admin']);
         $bank = QuestionBank::create([
             'title' => 'Bancă examen',
             'status' => 'draft',
@@ -76,7 +76,7 @@ class ExamQuestionFlowTest extends TestCase
 
     public function test_exam_can_pick_specific_questions_from_tests_not_just_folders(): void
     {
-        $admin = User::factory()->create(['role' => 'instructor']);
+        $admin = User::factory()->create(['role' => 'admin']);
         $bank = QuestionBank::create([
             'title' => 'Bancă ignorată',
             'status' => 'draft',
@@ -124,7 +124,7 @@ class ExamQuestionFlowTest extends TestCase
 
     public function test_selected_questions_form_a_pool_with_starred_priority(): void
     {
-        $admin = User::factory()->create(['role' => 'instructor']);
+        $admin = User::factory()->create(['role' => 'admin']);
         $test = Test::factory()->create([
             'title' => 'Test pool',
             'created_by' => $admin->id,
@@ -270,5 +270,46 @@ class ExamQuestionFlowTest extends TestCase
         $response = $this->actingAs($student, 'sanctum')->getJson("/api/exams/{$exam->id}");
         $response->assertOk();
         $this->assertSame(['Una', 'Doua', 'Trei'], array_column($response->json('questions'), 'text'));
+    }
+
+    public function test_team_access_includes_current_members_and_skips_exclusions(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $member = User::factory()->create(['role' => 'student']);
+        $excluded = User::factory()->create(['role' => 'student']);
+        $outsider = User::factory()->create(['role' => 'student']);
+        $team = \App\Models\Team::create([
+            'name' => 'Echipa acces',
+            'owner_id' => $admin->id,
+        ]);
+        $team->users()->attach([$member->id, $excluded->id]);
+
+        $exam = Exam::create([
+            'title' => 'Examen pe echipă',
+            'status' => 'published',
+            'course_id' => null,
+            'passing_score' => 50,
+            'max_attempts' => 1,
+            'settings' => [
+                'access_mode' => 'teams',
+                'team_ids' => [$team->id],
+                'excluded_student_ids' => [$excluded->id],
+            ],
+        ]);
+
+        $memberIds = collect($this->actingAs($member, 'sanctum')->getJson('/api/exams')->assertOk()->json('data'))->pluck('id')->all();
+        $this->assertContains($exam->id, $memberIds);
+
+        $excludedIds = collect($this->actingAs($excluded, 'sanctum')->getJson('/api/exams')->assertOk()->json('data'))->pluck('id')->all();
+        $this->assertNotContains($exam->id, $excludedIds);
+        $this->actingAs($excluded, 'sanctum')->getJson("/api/exams/{$exam->id}")->assertForbidden();
+
+        $outsiderIds = collect($this->actingAs($outsider, 'sanctum')->getJson('/api/exams')->assertOk()->json('data'))->pluck('id')->all();
+        $this->assertNotContains($exam->id, $outsiderIds);
+
+        $newcomer = User::factory()->create(['role' => 'student']);
+        $team->users()->attach($newcomer->id);
+        $newcomerIds = collect($this->actingAs($newcomer, 'sanctum')->getJson('/api/exams')->assertOk()->json('data'))->pluck('id')->all();
+        $this->assertContains($exam->id, $newcomerIds);
     }
 }

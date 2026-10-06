@@ -5,17 +5,17 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\Lesson;
-use App\Models\Module;
-use App\Models\Exam;
-use App\Models\Test;
-use App\Models\User;
-use App\Models\ActivityLog;
 use App\Services\CourseProgressService;
+use App\Services\PublishedCourseView;
 use App\Support\LearningVisibility;
 use App\Support\StudentActivityLogger;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Support\SchemaCache;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class CourseProgressController extends Controller
 {
@@ -24,15 +24,6 @@ class CourseProgressController extends Controller
     public function __construct(CourseProgressService $progressService)
     {
         $this->progressService = $progressService;
-    }
-
-    private function isEnrolled(User $user, Course $course): bool
-    {
-        return DB::table('course_user')
-            ->where('user_id', $user->id)
-            ->where('course_id', $course->id)
-            ->where('enrolled', true)
-            ->exists();
     }
 
     /**
@@ -58,68 +49,6 @@ class CourseProgressController extends Controller
     }
 
     /**
-     * @param  array<string, mixed>  $accessStatus
-     * @return array<string, mixed>
-     */
-    private function withProgressNavigation(User $user, Course $course, array $accessStatus): array
-    {
-        if ($user->isLearningActivityExempt()) {
-            $accessStatus['next_lesson'] = null;
-            $accessStatus['next_exam'] = null;
-            $accessStatus['can_progress'] = true;
-            $accessStatus['course_complete'] = false;
-
-            return $accessStatus;
-        }
-
-        try {
-            $nextLesson = $this->progressService->getNextIncompleteLesson($user, $course);
-            $accessStatus['next_lesson'] = $nextLesson ? [
-                'id' => $nextLesson->id,
-                'title' => $nextLesson->title ?? '',
-                'module_id' => $nextLesson->module_id ?? null,
-            ] : null;
-        } catch (\Exception $e) {
-            \Log::warning('Error getting next lesson', [
-                'course_id' => $course->id,
-                'user_id' => $user->id,
-                'error' => $e->getMessage(),
-            ]);
-            $accessStatus['next_lesson'] = null;
-        }
-
-        try {
-            $nextTest = $this->progressService->getNextIncompleteTest($user, $course);
-            $accessStatus['next_exam'] = $nextTest ? [
-                'id' => $nextTest->id,
-                'title' => $nextTest->title ?? '',
-                'module_id' => null,
-            ] : null;
-        } catch (\Exception $e) {
-            \Log::warning('Error getting next test', [
-                'course_id' => $course->id,
-                'user_id' => $user->id,
-                'error' => $e->getMessage(),
-            ]);
-            $accessStatus['next_exam'] = null;
-        }
-
-        try {
-            $accessStatus['can_progress'] = $this->progressService->canUserProgress($user, $course);
-        } catch (\Exception $e) {
-            $accessStatus['can_progress'] = false;
-        }
-
-        try {
-            $accessStatus['course_complete'] = $this->progressService->isCourseComplete($user, $course);
-        } catch (\Exception $e) {
-            $accessStatus['course_complete'] = false;
-        }
-
-        return $accessStatus;
-    }
-
-    /**
      * Get user's progress for a course
      */
     public function getCourseProgress($courseId)
@@ -137,6 +66,21 @@ class CourseProgressController extends Controller
                 abort(404, 'Curs negăsit.');
             }
             $isLearningExempt = $user->isLearningActivityExempt();
+
+            // Check if user is enrolled
+            $enrollment = \DB::table('course_user')
+                ->where('user_id', $user->id)
+                ->where('course_id', $courseId)
+                ->where('enrolled', true)
+                ->first();
+
+            // Cursantul primește cursuri doar prin atribuire (ca la GET /courses/{id}); fără înscriere
+            // automată, altfel deschiderea adresei unui curs neatribuit îl înscria pe loc.
+            if (! $enrollment && ! $isLearningExempt && ! LearningVisibility::isStaff($user)) {
+                return response()->json([
+                    'error' => 'Cursul nu îți este atribuit.',
+                ], 403);
+            }
 
             // Recalculate progress in real-time
             try {
@@ -164,7 +108,7 @@ class CourseProgressController extends Controller
                 ]);
                 // Return minimal access status if service fails
                 $accessStatus = [
-                    'enrolled' => $this->isEnrolled($user, $course),
+                    'enrolled' => true,
                     'progress_percentage' => 0,
                     'can_progress' => false,
                     'course_complete' => false,
@@ -194,10 +138,68 @@ class CourseProgressController extends Controller
                 return response()->json($accessStatus);
             }
 
-            $accessStatus = $this->withProgressNavigation($user, $course, $accessStatus);
-            $accessStatus['enrolled'] = $this->isEnrolled($user, $course);
+            // Get next incomplete lesson (for resume functionality)
+            try {
+                $nextLesson = $this->progressService->getNextIncompleteLesson($user, $course);
+                $accessStatus['next_lesson'] = $nextLesson ? [
+                    'id' => $nextLesson->id,
+                    'title' => $nextLesson->title ?? '',
+                    'module_id' => $nextLesson->module_id ?? null,
+                ] : null;
+            } catch (\Exception $e) {
+                \Log::warning('Error getting next lesson', [
+                    'course_id' => $courseId,
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+                $accessStatus['next_lesson'] = null;
+            }
+
+            // Get next incomplete test (using getNextIncompleteTest instead of getNextIncompleteExam)
+            try {
+                $nextTest = $this->progressService->getNextIncompleteTest($user, $course);
+                $accessStatus['next_exam'] = $nextTest ? [
+                    'id' => $nextTest->id,
+                    'title' => $nextTest->title ?? '',
+                    'module_id' => null, // Tests are linked via CourseTest, not directly to modules
+                ] : null;
+            } catch (\Exception $e) {
+                \Log::warning('Error getting next test', [
+                    'course_id' => $courseId,
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+                $accessStatus['next_exam'] = null;
+            }
+
+            // Check if user can progress (all required exams passed)
+            try {
+                $accessStatus['can_progress'] = $this->progressService->canUserProgress($user, $course);
+            } catch (\Exception $e) {
+                \Log::warning('Error checking if user can progress', [
+                    'course_id' => $courseId,
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+                $accessStatus['can_progress'] = false;
+            }
+
+            // Check if course is complete
+            try {
+                $accessStatus['course_complete'] = $this->progressService->isCourseComplete($user, $course);
+            } catch (\Exception $e) {
+                \Log::warning('Error checking if course is complete', [
+                    'course_id' => $courseId,
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+                $accessStatus['course_complete'] = false;
+            }
 
             return response()->json($accessStatus);
+        } catch (ModelNotFoundException|HttpExceptionInterface $e) {
+            // Curs inexistent sau interzis: 404/403, nu eroare de server.
+            throw $e;
         } catch (\Exception $e) {
             \Log::error('Error in CourseProgressController::getCourseProgress', [
                 'course_id' => $courseId,
@@ -207,57 +209,7 @@ class CourseProgressController extends Controller
             
             return response()->json([
                 'error' => 'Nu s-a putut încărca progresul cursului',
-                'message' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    /**
-     * Enrollment is assignment-only. Opening a course never enrolls the learner.
-     */
-    public function enrollCourse($courseId)
-    {
-        try {
-            $user = Auth::user();
-            if (!$user) {
-                return response()->json([
-                    'message' => 'Utilizator neautentificat',
-                ], 401);
-            }
-
-            if ($user->isLearningActivityExempt()) {
-                return response()->json([
-                    'message' => 'Acest rol nu necesita inscriere in curs.',
-                    'enrolled' => false,
-                ]);
-            }
-
-            $course = Course::findOrFail($courseId);
-
-            if ($this->isEnrolled($user, $course)) {
-                $accessStatus = $this->progressService->getUserAccessStatus($user, $course);
-                $accessStatus['progress_percentage'] = $accessStatus['course_progress'] ?? 0;
-
-                return response()->json([
-                    'message' => 'Ești deja înscris la acest curs.',
-                    'enrolled' => true,
-                    'progress' => $accessStatus,
-                ]);
-            }
-
-            return response()->json([
-                'message' => 'Înscrierea se face doar prin atribuire, nu prin accesarea cursului.',
-                'enrolled' => false,
-            ], 403);
-        } catch (\Exception $e) {
-            \Log::error('Error in CourseProgressController::enrollCourse', [
-                'course_id' => $courseId,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'error' => 'Nu s-a putut inscrie in curs',
-                'message' => $e->getMessage(),
+                'message' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
@@ -288,6 +240,13 @@ class CourseProgressController extends Controller
 
             $this->progressService->calculateCourseProgress($user, $course);
 
+            $enrolled = LearningVisibility::isEnrolledInCourse($user, (int) $course->id);
+            if (! $enrolled && ! $user->isLearningActivityExempt()) {
+                return response()->json([
+                    'message' => 'Nu ești înscris la acest curs.',
+                ], 403);
+            }
+
             // Aceleași reguli ca isCourseComplete: toate lecțiile + toate testele publicate din course_test
             if (!$this->progressService->isCourseComplete($user, $course)) {
                 $nextTest = $this->progressService->getNextIncompleteTest($user, $course);
@@ -309,7 +268,7 @@ class CourseProgressController extends Controller
                 DB::table('course_user')->insert([
                     'user_id' => $user->id,
                     'course_id' => $course->id,
-                    'enrolled' => false,
+                    'enrolled' => true,
                     'enrolled_at' => now(),
                     'progress_percentage' => 100,
                     'completed_at' => now(),
@@ -345,6 +304,9 @@ class CourseProgressController extends Controller
                 'message' => 'Cursul a fost marcat ca finalizat.',
                 'completed_at' => $completedAtOut,
             ]);
+        } catch (ModelNotFoundException|HttpExceptionInterface $e) {
+            // Curs inexistent sau interzis: 404/403, nu eroare de server.
+            throw $e;
         } catch (\Exception $e) {
             \Log::error('Error in CourseProgressController::finishCourse', [
                 'course_id' => $courseId,
@@ -353,7 +315,7 @@ class CourseProgressController extends Controller
 
             return response()->json([
                 'error' => 'Nu s-a putut finaliza cursul',
-                'message' => $e->getMessage(),
+                'message' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
@@ -369,7 +331,10 @@ class CourseProgressController extends Controller
                 'message' => 'Lecția a fost deschisă fără a fi înregistrată în progres.',
             ]);
         }
-        $lesson = Lesson::with(['module.course', 'course'])->findOrFail($lessonId);
+        $lesson = Lesson::with(['module.course', 'course'])->find($lessonId);
+        if (! $lesson) {
+            return $this->removedLessonResponse($request, (int) $lessonId);
+        }
 
         $module = $lesson->module;
         $course = $module?->course ?: $lesson->course;
@@ -382,12 +347,24 @@ class CourseProgressController extends Controller
         if (! LearningVisibility::courseVisibleToLearner($user, $course)) {
             abort(404, 'Lecție negăsită.');
         }
-        if (! LearningVisibility::isStaff($user) && ($lesson->status ?? 'draft') !== 'published') {
+        $onPublishedSnapshot = $this->progressService->lessonIsOnPublishedSnapshot($user, $course, (int) $lesson->id);
+        if (! LearningVisibility::isStaff($user) && ($lesson->status ?? 'draft') !== 'published' && ! $onPublishedSnapshot) {
             abort(404, 'Lecție negăsită.');
         }
 
-        $isUnlocked = $this->progressService->isLessonUnlocked($user, $lesson, $module, $course);
-        if (!$isUnlocked) {
+        $enrollment = \DB::table('course_user')
+            ->where('user_id', $user->id)
+            ->where('course_id', $course->id)
+            ->where('enrolled', true)
+            ->first();
+
+        if (! $enrollment && ! LearningVisibility::isStaff($user)) {
+            return response()->json([
+                'message' => 'Nu ești înscris la acest curs.',
+            ], 403);
+        }
+
+        if (! $this->learnerMayFinishOpenLesson($user, $lesson, $course)) {
             return response()->json([
                 'message' => 'Lecția este blocată. Completează lecțiile anterioare.',
             ], 403);
@@ -398,7 +375,6 @@ class CourseProgressController extends Controller
             $this->progressService->getUserAccessStatus($user, $course)
         );
         $accessStatus['progress_percentage'] = $accessStatus['course_progress'] ?? 0;
-        $accessStatus = $this->withProgressNavigation($user, $course, $accessStatus);
 
         return response()->json([
             'message' => 'Lecție finalizată cu succes',
@@ -407,127 +383,30 @@ class CourseProgressController extends Controller
     }
 
     /**
-     * Check access to a module
+     * Lecție ștearsă de admin, dar încă în versiunea publicată pe care o vede cursantul (până la
+     * următoarea publicare): nu mai contează la progres, deci finalizarea ei nu are ce înregistra.
+     * Răspundem cu succes în loc de 404, ca trecerea la lecția următoare să nu afișeze o eroare.
      */
-    public function checkModuleAccess($moduleId)
+    private function removedLessonResponse(Request $request, int $lessonId)
     {
         $user = Auth::user();
-        $module = Module::with('course')->findOrFail($moduleId);
-        if ($user->isLearningActivityExempt()) {
-            return response()->json([
-                'unlocked' => true,
-                'progress' => 0,
-            ]);
+        $published = app(PublishedCourseView::class)->hydratePublishedLesson($lessonId, $request);
+        $course = $published?->course;
+        if (! $course || ! LearningVisibility::courseVisibleToLearner($user, $course)) {
+            abort(404, 'Lecție negăsită.');
         }
 
-        $isUnlocked = $this->progressService->isModuleUnlocked($user, $module, $module->course);
-        $progress = $this->progressService->calculateModuleProgress($user, $module);
-
-        return response()->json([
-            'unlocked' => $isUnlocked,
-            'progress' => $progress,
-        ]);
-    }
-
-    /**
-     * Check access to a lesson
-     */
-    public function checkLessonAccess($lessonId)
-    {
-        $user = Auth::user();
-        $lesson = Lesson::with(['module', 'module.course', 'course'])->findOrFail($lessonId);
-        $course = $lesson->module?->course ?: $lesson->course;
-        if ($user->isLearningActivityExempt()) {
-            return response()->json([
-                'unlocked' => true,
-                'completed' => false,
-                'is_preview' => $lesson->is_preview,
-            ]);
-        }
-
-        if (!$course) {
-            return response()->json([
-                'message' => 'Lecția nu aparține unui curs',
-            ], 400);
-        }
-
-        $isUnlocked = $this->progressService->isLessonUnlocked(
-            $user,
-            $lesson,
-            $lesson->module,
-            $course
+        $accessStatus = $this->withFlattenedLessonProgress(
+            $this->progressService->getUserAccessStatus($user, $course)
         );
-
-        $isCompleted = \DB::table('lesson_progress')
-            ->where('user_id', $user->id)
-            ->where('lesson_id', $lessonId)
-            ->where('completed', true)
-            ->exists();
-
-        $dripUnlockAt = app(\App\Services\DripContentService::class)
-            ->getLessonUnlockAtForUser($user, $course, $lesson);
+        $accessStatus['progress_percentage'] = $accessStatus['course_progress'] ?? 0;
 
         return response()->json([
-            'unlocked' => $isUnlocked,
-            'completed' => $isCompleted,
-            'is_preview' => $lesson->is_preview,
-            'drip_unlock_at' => $dripUnlockAt?->toIso8601String(),
-        ]);
-    }
-
-    /**
-     * Check access to an exam or a course test (Test id).
-     * For tests linked to multiple courses, pass ?course_id=...
-     */
-    public function checkExamAccess(Request $request, $examId)
-    {
-        $user = Auth::user();
-        if ($user->isLearningActivityExempt()) {
-            return response()->json([
-                'unlocked' => true,
-                'is_required' => false,
-            ]);
-        }
-
-        $test = Test::find($examId);
-        if ($test) {
-            $courseId = $request->query('course_id') ? (int) $request->query('course_id') : null;
-            if (!$courseId) {
-                $rows = \App\Models\CourseTest::where('test_id', $test->id)->get();
-                if ($rows->count() === 1) {
-                    $courseId = (int) $rows->first()->course_id;
-                }
-            }
-            if (!$courseId) {
-                return response()->json([
-                    'message' => 'Pentru acest test specifică cursul în query (?course_id=...).',
-                    'unlocked' => false,
-                    'is_required' => false,
-                ], 422);
-            }
-
-            $course = Course::findOrFail($courseId);
-            $isUnlocked = $this->progressService->isTestUnlocked($user, $test, $course);
-            $courseTest = \App\Models\CourseTest::where('test_id', $test->id)
-                ->where('course_id', $courseId)
-                ->first();
-
-            return response()->json([
-                'unlocked' => $isUnlocked,
-                'is_required' => (bool) ($courseTest && ($courseTest->required ?? false)),
-            ]);
-        }
-
-        $exam = Exam::with(['module', 'lesson'])->findOrFail($examId);
-
-        $module = $exam->module;
-        $lesson = $exam->lesson;
-
-        $isUnlocked = $this->progressService->isExamUnlocked($user, $exam, $module, $lesson);
-
-        return response()->json([
-            'unlocked' => $isUnlocked,
-            'is_required' => $exam->is_required ?? false,
+            'message' => 'Lecția nu mai face parte din curs.',
+            'lesson_removed' => true,
+            'completed' => true,
+            'progress_percentage' => 100,
+            'progress' => $accessStatus,
         ]);
     }
 
@@ -537,7 +416,10 @@ class CourseProgressController extends Controller
     public function updateLessonProgress(Request $request, $lessonId)
     {
         $user = Auth::user();
-        $lesson = Lesson::findOrFail($lessonId);
+        $lesson = Lesson::with(['module.course', 'course'])->find($lessonId);
+        if (! $lesson) {
+            return $this->removedLessonResponse($request, (int) $lessonId);
+        }
 
         if ($user->isLearningActivityExempt()) {
             return response()->json([
@@ -547,6 +429,31 @@ class CourseProgressController extends Controller
                 'completed' => false,
                 'auto_completed' => false,
             ]);
+        }
+
+        $course = $lesson->module?->course ?: $lesson->course;
+        if (! $course) {
+            return response()->json(['message' => 'Lecția nu aparține unui curs.'], 400);
+        }
+
+        $coursePublished = ($course->status ?? '') === 'published';
+        $isPreview = (bool) ($lesson->is_preview ?? false);
+        if (! $coursePublished && ! $isPreview) {
+            return response()->json(['message' => 'Lecția nu este disponibilă.'], 403);
+        }
+
+        $enrolled = false;
+        if (SchemaCache::hasTable('course_user')) {
+            $enrolledQuery = \DB::table('course_user')
+                ->where('course_id', $course->id)
+                ->where('user_id', $user->id);
+            if (SchemaCache::hasColumn('course_user', 'enrolled')) {
+                $enrolledQuery->where('enrolled', true);
+            }
+            $enrolled = $enrolledQuery->exists();
+        }
+        if (! $enrolled && ! $isPreview) {
+            return response()->json(['message' => 'Nu ești înscris la acest curs.'], 403);
         }
 
         $validated = $request->validate([
@@ -583,12 +490,34 @@ class CourseProgressController extends Controller
             ? max((float) ($existingProgress?->last_milestone_reached ?? 0), $incomingMilestone)
             : (float) ($existingProgress?->last_milestone_reached ?? 0);
 
-        $shouldAutoComplete = ! $isAlreadyCompleted && ($progressPercentage >= 100 || $lastMilestoneReached >= 100);
-        $didAutoCompleteNow = false;
+        $lesson->loadMissing('contentBlocks');
+        $now = now();
+        $startedAt = ($existingProgress && ! empty($existingProgress->started_at))
+            ? Carbon::parse($existingProgress->started_at)
+            : $now;
+        $elapsedWall = max(0, $now->getTimestamp() - $startedAt->getTimestamp());
+        $minDwell = $this->progressService->minimumAutoCompleteDwellSeconds($lesson);
+        $dwellMet = $elapsedWall >= $minDwell;
 
+        $wantsComplete = $progressPercentage >= 100 || $lastMilestoneReached >= 100;
         if ($isAlreadyCompleted) {
             $progressPercentage = 100;
             $lastMilestoneReached = max($lastMilestoneReached, 100);
+            $wantsComplete = false;
+            $dwellMet = true;
+        } elseif ($wantsComplete && ! $dwellMet) {
+            $progressPercentage = min($progressPercentage, 99.0);
+            $lastMilestoneReached = min($lastMilestoneReached, 99.0);
+        }
+
+        $shouldAutoComplete = ! $isAlreadyCompleted && ($progressPercentage >= 100 || $lastMilestoneReached >= 100) && $dwellMet;
+        $didAutoCompleteNow = false;
+
+        if (! $this->learnerMayRecordLessonProgress($user, $lesson, $course)) {
+            return response()->json([
+                'message' => 'Lecția este blocată. Completează lecțiile anterioare.',
+                'locked' => true,
+            ], 403);
         }
 
         if ($shouldAutoComplete && ! $isAlreadyCompleted) {
@@ -607,13 +536,14 @@ class CourseProgressController extends Controller
         if (!empty($validated['add_time_spent_seconds'])) {
             $timeSpent = $existingTime + min(7200, max(0, (int) $validated['add_time_spent_seconds']));
         } elseif (array_key_exists('time_spent_seconds', $validated) && $validated['time_spent_seconds'] !== null) {
-            $timeSpent = max((int) $validated['time_spent_seconds'], $existingTime);
+            $incomingTime = max(0, (int) $validated['time_spent_seconds']);
+            $timeSpent = min($incomingTime, $existingTime + 7200);
+            $timeSpent = max($timeSpent, $existingTime);
         } else {
             $timeSpent = $existingTime;
         }
 
         // Update or create lesson progress (created_at obligatoriu la insert pe unele DB)
-        $now = now();
         $payload = [
             'progress_percentage' => $progressPercentage,
             'time_spent_seconds' => $timeSpent,
@@ -628,27 +558,127 @@ class CourseProgressController extends Controller
             'created_at' => $existingProgress ? ($existingProgress->created_at ?? $now) : $now,
         ];
 
-        if (\Schema::hasColumn('lesson_progress', 'last_milestone_reached')) {
+        if (\App\Support\SchemaCache::hasColumn('lesson_progress', 'last_milestone_reached')) {
             $payload['last_milestone_reached'] = $lastMilestoneReached;
         }
 
-        \DB::table('lesson_progress')->updateOrInsert(
-            [
-                'user_id' => $user->id,
-                'lesson_id' => $lessonId,
-            ],
+        $saved = $this->writeLessonProgressWithoutClearingCompletion(
+            (int) $user->id,
+            (int) $lessonId,
+            $existingProgress,
             $payload
         );
 
         return response()->json([
             'message' => 'Progres actualizat',
-            'progress_percentage' => $progressPercentage,
-            'last_milestone_reached' => $lastMilestoneReached,
-            'completed' => $didAutoCompleteNow || $isAlreadyCompleted || $shouldAutoComplete,
-            'auto_completed' => $didAutoCompleteNow,
+            'progress_percentage' => $saved['progress_percentage'],
+            'last_milestone_reached' => $saved['completed'] ? max($lastMilestoneReached, 100) : $lastMilestoneReached,
+            'completed' => $saved['completed'],
+            'auto_completed' => $didAutoCompleteNow && $saved['completed'],
+            'awaiting_dwell' => $wantsComplete && ! $saved['completed'] && ! $dwellMet,
+            'min_dwell_seconds' => $minDwell,
         ]);
     }
+
+    /**
+     * Heartbeat-ul de timp poate citi rândul înainte de „Următoarea” și să-l rescrie după.
+     * Scrierea nu are voie să șteargă o finalizare deja comisă.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array{completed: bool, progress_percentage: float}
+     */
+    private function writeLessonProgressWithoutClearingCompletion(int $userId, int $lessonId, ?object $seen, array $payload): array
+    {
+        $keys = [
+            'user_id' => $userId,
+            'lesson_id' => $lessonId,
+        ];
+
+        $preserveCompletion = function (?object $row) use (&$payload): void {
+            $alreadyDone = $row && (
+                (bool) $row->completed || (int) ($row->progress_percentage ?? 0) >= 100
+            );
+            if (! $alreadyDone) {
+                return;
+            }
+            $payload['completed'] = true;
+            $payload['progress_percentage'] = 100;
+            $payload['completed_at'] = $row->completed_at ?: ($payload['completed_at'] ?? now());
+            if (array_key_exists('last_milestone_reached', $payload)) {
+                $payload['last_milestone_reached'] = max(100, (float) $payload['last_milestone_reached']);
+            }
+        };
+
+        return \DB::transaction(function () use ($keys, &$payload, $preserveCompletion, $lessonId) {
+            \DB::table('lessons')->where('id', $lessonId)->lockForUpdate()->first();
+            $rows = \DB::table('lesson_progress')->where($keys)->lockForUpdate()->get();
+            if ($rows->isEmpty()) {
+                try {
+                    \DB::table('lesson_progress')->insert(array_merge($keys, $payload));
+
+                    return [
+                        'completed' => (bool) $payload['completed'],
+                        'progress_percentage' => (float) $payload['progress_percentage'],
+                    ];
+                } catch (\Illuminate\Database\QueryException $e) {
+                    $sqlState = (string) ($e->errorInfo[0] ?? '');
+                    if (! in_array($sqlState, ['23000', '23505'], true)) {
+                        throw $e;
+                    }
+                    $rows = \DB::table('lesson_progress')->where($keys)->lockForUpdate()->get();
+                }
+            }
+
+            foreach ($rows as $row) {
+                $preserveCompletion($row);
+            }
+            if ($rows->isNotEmpty()) {
+                \DB::table('lesson_progress')->where($keys)->update($payload);
+            }
+
+            return [
+                'completed' => (bool) $payload['completed'],
+                'progress_percentage' => (float) $payload['progress_percentage'],
+            ];
+        });
+    }
+
+    /**
+     * Marcarea explicită (butonul Următoarea) salvează lecția publicată la care ești înscris.
+     */
+    private function learnerMayFinishOpenLesson($user, Lesson $lesson, Course $course): bool
+    {
+        if (! $user || LearningVisibility::isStaff($user) || (bool) ($lesson->is_preview ?? false)) {
+            return true;
+        }
+        if (! LearningVisibility::isEnrolledInCourse($user, (int) $course->id)) {
+            return false;
+        }
+        if (($lesson->status ?? 'draft') === 'published') {
+            return true;
+        }
+
+        return $this->progressService->lessonIsOnPublishedSnapshot($user, $course, (int) $lesson->id);
+    }
+
+    /**
+     * Aceeași regulă ca la deschiderea lecției: dacă textul se încarcă, progresul se poate salva.
+     */
+    private function learnerMayRecordLessonProgress($user, Lesson $lesson, Course $course): bool
+    {
+        if (! $user || LearningVisibility::isStaff($user) || (bool) ($lesson->is_preview ?? false)) {
+            return true;
+        }
+
+        $view = app(PublishedCourseView::class);
+        if ($view->shouldServeSnapshot($course, request())) {
+            $overlay = $view->overlayLesson($lesson, $view->latestPublishedSnapshot((int) $course->id));
+            if ($overlay) {
+                $lesson = $overlay;
+            }
+        }
+
+        return $this->progressService->isLessonUnlocked($user, $lesson, $lesson->module, $course);
+    }
+
 }
-
-
-

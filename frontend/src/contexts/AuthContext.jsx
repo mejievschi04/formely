@@ -1,11 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import { setVoltCapabilities } from '../utils/voltAvailability';
+import { AuthContext } from './AuthContextShared.js';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { ensureApiCsrfCookie } from '../api';
 import { authService } from '../services/api';
-import { isStaffAdminRole, computeAdminPermissions } from '../constants/staffRoles';
 
-export const AuthContext = createContext(null);
 
-const STORAGE_VIEW_KEY = 'formelyAdminViewMode';
+
+const STORAGE_VIEW_KEY = 'voltaAdminViewMode';
 
 function readStoredAdminView() {
 	try {
@@ -27,25 +28,20 @@ function writeStoredAdminView(mode) {
 function buildContextUser(rawUser, adminViewMode) {
 	if (!rawUser) return null;
 	const actualRole = rawUser.role ?? 'student';
-	if (!['admin', 'company_owner'].includes(actualRole)) {
+	if (actualRole !== 'admin') {
 		return { ...rawUser, actualRole };
 	}
-	const effectiveRole = adminViewMode === 'student' ? 'student' : actualRole;
-	return { ...rawUser, role: effectiveRole, actualRole };
+	const effectiveRole = adminViewMode === 'student' ? 'student' : 'admin';
+	return { ...rawUser, role: effectiveRole, actualRole: 'admin' };
 }
 
-export const useAuth = () => {
-	const context = useContext(AuthContext);
-	if (!context) {
-		throw new Error('useAuth must be used within AuthProvider');
-	}
-	return context;
-};
+
 
 export const AuthProvider = ({ children }) => {
 	const [rawUser, setRawUser] = useState(null);
 	const [loading, setLoading] = useState(true);
 	const [adminViewMode, setAdminViewModeState] = useState(readStoredAdminView);
+	const authCheckId = useRef(0);
 
 	const setAdminViewMode = useCallback((mode) => {
 		if (mode !== 'admin' && mode !== 'student') return;
@@ -60,64 +56,71 @@ export const AuthProvider = ({ children }) => {
 
 	const canMutateInAdminArea = useMemo(() => {
 		if (!user) return false;
-		if (user.permissions?.can_mutate_admin != null) {
-			return Boolean(user.permissions.can_mutate_admin);
-		}
-		return computeAdminPermissions(user.actualRole ?? user.role).can_mutate_admin;
+		const ar = user.actualRole ?? 'student';
+		if (ar === 'analyst') return false;
+		if (ar === 'admin') return user.role === 'admin';
+		if (ar === 'instructor') return true;
+		return false;
 	}, [user]);
 
-	/** Admin în preview „student” sau instructor: poate deschide builder / editează curs. */
+	/** Admin în preview „student” sau instructor: poate deschide builder / editează curs, fără a depinde de canMutateInAdminArea. */
 	const canEditCoursesAsStaff = useMemo(() => {
 		if (!user) return false;
-		if (user.permissions?.can_edit_courses != null) {
-			return Boolean(user.permissions.can_edit_courses);
-		}
-		return computeAdminPermissions(user.actualRole ?? user.role).can_edit_courses;
+		const ar = user.actualRole ?? user.role ?? 'student';
+		if (ar === 'analyst') return false;
+		return ar === 'admin' || ar === 'instructor';
 	}, [user]);
 
+	const checkAuth = useCallback(async () => {
+		const id = ++authCheckId.current;
+		try {
+			const data = await authService.me();
+			if (id !== authCheckId.current) return;
+			setVoltCapabilities(data?.user?.capabilities, data?.user?.entitlements);
+			setRawUser(data?.user ?? null);
+		} catch {
+			// Rețea / 5xx pe /auth/me: nu ștergem sesiunea din UI (evită logout fals).
+			// 401 e tratat în authService.me() → { user: null }, fără throw.
+		} finally {
+			if (id === authCheckId.current) {
+				setLoading(false);
+			}
+		}
+	}, []);
+
 	useEffect(() => {
+		let cancelled = false;
 		(async () => {
 			try {
 				await ensureApiCsrfCookie();
 			} catch {
 				/* rețea / backend indisponibil */
 			}
-			await checkAuth();
-		})();
-	}, []);
-
-	const checkAuth = async () => {
-		try {
-			const data = await authService.me();
-			if (data?.access_blocked || data?.suspended) {
-				setRawUser(null);
-				try {
-					sessionStorage.setItem(
-						'formelyAuthError',
-						data.message || 'Contul tău este suspendat.'
-					);
-				} catch {
-					/* ignore */
-				}
+			// Rulare anulată (demontare / dublul efect din StrictMode): nu marcăm încărcarea ca terminată
+			// fără utilizator, altfel rutele protejate redirecționează la /login deși sesiunea e validă.
+			if (cancelled) {
 				return;
 			}
-			setRawUser(data?.user ?? null);
-		} catch {
-			// Rețea / 5xx pe /auth/me: nu ștergem sesiunea din UI (evită logout fals).
-			// 401 e tratat în authService.me() → { user: null }, fără throw.
-		} finally {
-			setLoading(false);
-		}
-	};
+			await checkAuth();
+		})();
+		return () => {
+			cancelled = true;
+			authCheckId.current += 1;
+		};
+	}, [checkAuth]);
 
 	const login = async (email, password) => {
+		authCheckId.current += 1;
 		const data = await authService.login(email, password);
+		setVoltCapabilities(data.user?.capabilities, data.user?.entitlements);
 		setRawUser(data.user);
+		setLoading(false);
 		return data;
 	};
 
 	const changePassword = async (currentPassword, newPassword, newPasswordConfirmation) => {
 		const data = await authService.changePassword(currentPassword, newPassword, newPasswordConfirmation);
+		setVoltCapabilities(data.user?.capabilities, data.user?.entitlements);
 		setRawUser(data.user);
 		return data;
 	};
@@ -125,6 +128,7 @@ export const AuthProvider = ({ children }) => {
 	const register = async (name, email, password) => {
 		const data = await authService.register(name, email, password);
 		if (!data.pending_approval && data.user) {
+			setVoltCapabilities(data.user?.capabilities, data.user?.entitlements);
 			setRawUser(data.user);
 		}
 		return data;
@@ -132,6 +136,7 @@ export const AuthProvider = ({ children }) => {
 
 	const logout = async () => {
 		await authService.logout();
+		setVoltCapabilities(null);
 		setRawUser(null);
 	};
 

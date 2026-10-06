@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { adminService } from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
-import { useAuth } from '../../contexts/AuthContext';
+
+import { useToast } from '../../contexts/ToastContextShared.js';
+
+import { useAuth } from '../../contexts/AuthContextShared.js';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import ThemePreferenceControl from '../../components/ThemePreferenceControl';
+import CompanyAcademyPanel from '../../components/admin/settings/CompanyAcademyPanel';
 
 const AdminSettingsPage = () => {
-	const { canMutateInAdminArea } = useAuth();
+	const { canMutateInAdminArea, user } = useAuth();
 	const readOnly = !canMutateInAdminArea;
+	// Formely: setările globale, cache-ul și importul privesc toată platforma; academia își gestionează doar branding-ul.
+	const isTenant = Boolean(user?.company_id);
 	const { success, error: showError } = useToast();
 	const [settings, setSettings] = useState({
 		maintenance_mode: false,
@@ -21,6 +26,7 @@ const AdminSettingsPage = () => {
 	const [activeTab, setActiveTab] = useState('general');
 	const [confirmAction, setConfirmAction] = useState(null); // 'clearCache' | { type: 'importBackup', file }
 	const [confirmLoading, setConfirmLoading] = useState(false);
+
 
 	useEffect(() => {
 		fetchSettings();
@@ -82,7 +88,7 @@ const AdminSettingsPage = () => {
 			const url = URL.createObjectURL(blob);
 			const a = document.createElement('a');
 			a.href = url;
-			a.download = `formely-backup-${new Date().toISOString().split('T')[0]}.json`;
+			a.download = `volta-backup-${new Date().toISOString().split('T')[0]}.json`;
 			document.body.appendChild(a);
 			a.click();
 			document.body.removeChild(a);
@@ -157,7 +163,7 @@ const AdminSettingsPage = () => {
 				<div>
 					<h1 className="admin-page-title">Setări</h1>
 					<p className="admin-page-subtitle">
-						Configurări generale, sistem și backup pentru organizația ta Formely.
+						Gestionează configurațiile aplicației
 					</p>
 					{readOnly && (
 						<p className="admin-page-subtitle" style={{ marginTop: 'var(--space-2)', color: 'var(--text-secondary)' }}>
@@ -176,12 +182,14 @@ const AdminSettingsPage = () => {
 					>
 						⚙️ General
 					</button>
+					{!isTenant && (
 					<button
 						className={`admin-settings-tab ${activeTab === 'system' ? 'active' : ''}`}
 						onClick={() => setActiveTab('system')}
 					>
 						🔧 Sistem
 					</button>
+					)}
 					<button
 						className={`admin-settings-tab ${activeTab === 'backup' ? 'active' : ''}`}
 						onClick={() => setActiveTab('backup')}
@@ -198,17 +206,24 @@ const AdminSettingsPage = () => {
 								<span className="admin-settings-section-icon">⚙️</span>
 								<span>Setări Generale</span>
 							</h2>
+							<p className="admin-settings-section-description">
+								Configurează setările generale ale platformei
+							</p>
 						</div>
 
 						<div className="admin-settings-form">
 							<ThemePreferenceControl className="admin-settings-theme-preference" />
 
+							{isTenant ? <CompanyAcademyPanel readOnly={readOnly} /> : (
 							<div className="admin-settings-toggle-group">
 								<div className="admin-settings-toggle">
 									<div className="admin-settings-toggle-info">
 										<label className="admin-settings-toggle-label">
 											Înregistrări active
 										</label>
+										<p className="admin-settings-toggle-description">
+											Permite utilizatorilor noi să se înregistreze pe platformă
+										</p>
 									</div>
 									<button
 										type="button"
@@ -226,6 +241,9 @@ const AdminSettingsPage = () => {
 										<label className="admin-settings-toggle-label">
 											Notificări Email
 										</label>
+										<p className="admin-settings-toggle-description">
+											Trimite notificări email către utilizatori
+										</p>
 									</div>
 									<button
 										type="button"
@@ -238,19 +256,23 @@ const AdminSettingsPage = () => {
 									</button>
 								</div>
 							</div>
+							)}
 						</div>
 					</div>
 				)}
 
 
 				{/* System Settings */}
-				{activeTab === 'system' && (
+				{activeTab === 'system' && !isTenant && (
 					<div className="admin-settings-section">
 						<div className="admin-settings-section-header">
 							<h2 className="admin-settings-section-title">
 								<span className="admin-settings-section-icon">🔧</span>
 								<span>Setări Sistem</span>
 							</h2>
+							<p className="admin-settings-section-description">
+								Configurează setările de sistem și mentenanță
+							</p>
 						</div>
 
 						<div className="admin-settings-form">
@@ -259,6 +281,9 @@ const AdminSettingsPage = () => {
 									<label className="admin-settings-toggle-label">
 										Mod Mentenanță
 									</label>
+									<p className="admin-settings-toggle-description">
+										Activează modul de mentenanță pentru a restricționa accesul utilizatorilor
+									</p>
 								</div>
 								<button
 									type="button"
@@ -280,6 +305,9 @@ const AdminSettingsPage = () => {
 									<span className="admin-settings-action-icon">🗑️</span>
 									<div className="admin-settings-action-content">
 										<div className="admin-settings-action-title">Șterge Cache</div>
+										<div className="admin-settings-action-description">
+											Elimină toate datele din cache
+										</div>
 									</div>
 								</button>
 							</div>
@@ -296,6 +324,9 @@ const AdminSettingsPage = () => {
 								<span className="admin-settings-section-icon">💾</span>
 								<span>Backup și export</span>
 							</h2>
+							<p className="admin-settings-section-description">
+								Gestionează backup-urile și exportă datele platformei
+							</p>
 						</div>
 
 						<div className="admin-settings-form">
@@ -304,6 +335,9 @@ const AdminSettingsPage = () => {
 									<label className="admin-settings-toggle-label">
 										Backup Automat
 									</label>
+									<p className="admin-settings-toggle-description">
+										Activează backup-uri automate pentru datele platformei
+									</p>
 								</div>
 								<button
 									type="button"
@@ -341,9 +375,13 @@ const AdminSettingsPage = () => {
 									<span className="admin-settings-action-icon">📥</span>
 									<div className="admin-settings-action-content">
 										<div className="admin-settings-action-title">Exportă Date</div>
+										<div className="admin-settings-action-description">
+											Descarcă un backup JSON cu toate datele
+										</div>
 									</div>
 								</button>
 								
+								{!isTenant && (
 								<label className="admin-settings-action-btn" style={{ cursor: 'pointer' }}>
 									<input
 										type="file"
@@ -355,8 +393,12 @@ const AdminSettingsPage = () => {
 									<span className="admin-settings-action-icon">📤</span>
 									<div className="admin-settings-action-content">
 										<div className="admin-settings-action-title">Importă Backup</div>
+										<div className="admin-settings-action-description">
+											Încarcă și restaurează date dintr-un backup JSON
+										</div>
 									</div>
 								</label>
+								)}
 							</div>
 							)}
 						</div>
@@ -364,7 +406,7 @@ const AdminSettingsPage = () => {
 				)}
 
 				{/* Save Button */}
-				{!readOnly && (
+				{!readOnly && !isTenant && (
 				<div className="admin-settings-actions">
 					<button
 						className="lms-btn-primary"

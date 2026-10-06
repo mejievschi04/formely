@@ -1,0 +1,365 @@
+/* ---------- Setările testului: secțiuni cu stilul câmpurilor din aplicație ---------- */
+html body .va-ts.va-ts {
+	display: flex !important;
+	flex-direction: column;
+	gap: 14px;
+	padding: 14px !important;
+}
+
+html body .va-ts__section {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 16px 18px;
+	border: 1px solid var(--border-primary);
+	border-radius: 12px;
+	background: var(--bg-elevated);
+	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+html body .va-ts__title.va-ts__title {
+	margin: 0;
+	font-size: 1rem;
+	font-weight: 700;
+	color: var(--text-primary);
+}
+
+html body .va-ts__grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 14px 16px;
+	align-items: start;
+}
+
+html body .va-ts__grid--three {
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+html body .va-ts__field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+
+html body .va-ts__field--full {
+	grid-column: 1 / -1;
+}
+
+html body .va-ts__field > label,
+html body .va-ts .passing-score-by-questions-label {
+	margin: 0;
+	font-size: 0.875rem !important;
+	font-weight: 600 !important;
+	color: var(--text-primary) !important;
+	text-transform: none !important;
+	letter-spacing: 0 !important;
+}
+
+html body .va-ts__optional {
+	font-weight: 400;
+	color: var(--text-secondary);
+}
+
+html body .va-ts__hint {
+	margin: 0;
+	font-size: 0.8125rem;
+	color: var(--text-secondary);
+}
+
+html body .va-ts .va-ts__input,
+html body .va-ts .passing-score-by-questions-row input {
+	box-sizing: border-box !important;
+	width: 100% !important;
+	height: 44px !important;
+	min-height: 44px !important;
+	margin: 0 !important;
+	padding: 0 12px !important;
+	border: 1px solid var(--btn-outline-border) !important;
+	border-radius: 10px !important;
+	background: var(--bg-elevated) !important;
+	color: var(--text-primary) !important;
+	box-shadow: none !important;
+	font: inherit !important;
+	font-size: 0.9375rem !important;
+}
+
+html body .va-ts .va-ts__textarea {
+	height: auto !important;
+	min-height: 88px !important;
+	padding: 10px 12px !important;
+	resize: vertical;
+}
+
+html body .va-ts .va-ts__input:hover:not(:disabled),
+html body .va-ts .passing-score-by-questions-row input:hover:not(:disabled) {
+	border-color: var(--btn-outline-border-hover) !important;
+}
+
+html body .va-ts .va-ts__input:focus,
+html body .va-ts .passing-score-by-questions-row input:focus {
+	outline: none !important;
+	border-color: var(--text-primary) !important;
+	box-shadow: 0 0 0 3px var(--color-primary-alpha-30) !important;
+}
+
+html body .va-ts .va-ts__input:disabled {
+	background: color-mix(in srgb, var(--text-primary) 4%, var(--bg-elevated)) !important;
+	color: var(--text-secondary) !important;
+}
+
+/* câmp cu unitate („min”) */
+html body .va-ts__suffix-input {
+	position: relative;
+}
+
+html body .va-ts__suffix-input .va-ts__input {
+	padding-right: 48px !important;
+}
+
+html body .va-ts__suffix-input > span {
+	position: absolute;
+	top: 50%;
+	right: 14px;
+	transform: translateY(-50%);
+	font-size: 0.8125rem;
+	font-weight: 600;
+	color: var(--text-secondary);
+	pointer-events: none;
+}
+
+html body .va-ts__inline {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+html body .va-ts__inline .va-ts__input {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+/* comutator pornit/oprit (input checkbox cu role="switch") */
+html body .va-ts__switch {
+	position: relative;
+	display: inline-flex;
+	flex: 0 0 auto;
+	align-items: center;
+	gap: 8px;
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: var(--text-primary);
+	cursor: pointer;
+	user-select: none;
+	white-space: nowrap;
+}
+
+html body .va-ts__switch input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+	pointer-events: none;
+}
+
+html body .va-ts__switch-track {
+	position: relative;
+	flex: 0 0 auto;
+	width: 44px;
+	height: 26px;
+	border: 1px solid var(--btn-outline-border);
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--text-primary) 10%, var(--bg-elevated));
+	transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+html body .va-ts__switch-track::after {
+	content: '';
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 20px;
+	height: 20px;
+	border-radius: 999px;
+	background: #ffffff;
+	box-shadow: 0 1px 3px rgba(15, 23, 42, 0.3);
+	transition: transform 0.15s ease;
+}
+
+html body .va-ts__switch input:checked + .va-ts__switch-track {
+	border-color: #15803d;
+	background: #16a34a;
+}
+
+html body .va-ts__switch input:checked + .va-ts__switch-track::after {
+	transform: translateX(18px);
+}
+
+html body .va-ts__switch input:focus-visible + .va-ts__switch-track {
+	outline: 2px solid var(--border-focus);
+	outline-offset: 2px;
+}
+
+html body .va-ts__switch input:disabled + .va-ts__switch-track {
+	opacity: 0.5;
+}
+
+/* Comportament: rânduri cu text și comutator */
+html body .va-ts__toggles {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px;
+}
+
+html body .va-ts__toggle {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 12px 14px;
+	border: 1px solid var(--border-primary);
+	border-radius: 10px;
+	background: var(--bg-elevated);
+	cursor: pointer;
+	transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+html body .va-ts__toggle:hover {
+	border-color: var(--btn-outline-border);
+}
+
+html body .va-ts__toggle.is-on {
+	border-color: color-mix(in srgb, #16a34a 55%, transparent);
+	background: color-mix(in srgb, #16a34a 7%, var(--bg-elevated));
+}
+
+html body .va-ts__toggle-text {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+html body .va-ts__toggle-text strong,
+html body .va-ts__choice strong {
+	font-size: 0.9375rem;
+	font-weight: 700;
+	color: var(--text-primary);
+}
+
+html body .va-ts__toggle-text small,
+html body .va-ts__choice small {
+	font-size: 0.8125rem;
+	line-height: 1.35;
+	color: var(--text-secondary);
+}
+
+/* Afișarea răspunsurilor: opțiuni ca în fereastra de tip */
+html body .va-ts__choices {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 10px;
+}
+
+html body .va-ts__choice {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 12px 14px;
+	border: 1px solid var(--btn-outline-border);
+	border-radius: 12px;
+	background: var(--bg-elevated);
+	cursor: pointer;
+}
+
+html body .va-ts__choice > span {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+html body .va-ts__choice input {
+	width: 18px;
+	height: 18px;
+	margin: 2px 0 0;
+	flex: 0 0 auto;
+	accent-color: var(--text-primary);
+}
+
+html body .va-ts__choice:hover {
+	border-color: var(--btn-outline-border-hover);
+}
+
+html body .va-ts__choice.is-active {
+	border-color: var(--btn-primary-border);
+	background: color-mix(in srgb, var(--btn-primary-bg) 14%, var(--bg-elevated));
+	box-shadow: inset 0 0 0 1px var(--btn-primary-border);
+}
+
+html body .va-ts__choice:has(input:focus-visible) {
+	outline: 2px solid var(--border-focus);
+	outline-offset: 2px;
+}
+
+/* Promovare („x din y întrebări = z%”) în stilul celorlalte câmpuri */
+html body .va-ts .passing-score-by-questions {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+html body .va-ts .passing-score-by-questions-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+html body .va-ts .passing-score-by-questions-row input {
+	width: 64px !important;
+	flex: 0 0 64px;
+	text-align: center;
+	padding: 0 6px !important;
+}
+
+html body .va-ts .passing-score-by-questions-din,
+html body .va-ts .passing-score-by-questions-hint {
+	font-size: 0.875rem;
+	color: var(--text-secondary);
+}
+
+html body .va-ts .passing-score-by-questions-percent {
+	margin-left: auto;
+	padding: 4px 10px;
+	border-radius: 999px;
+	background: color-mix(in srgb, #16a34a 14%, var(--bg-elevated));
+	color: var(--text-success);
+	font-size: 0.875rem;
+}
+
+@media (max-width: 900px) {
+	html body .va-ts__grid--three,
+	html body .va-ts__choices {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+@media (max-width: 640px) {
+	html body .va-ts__grid,
+	html body .va-ts__toggles {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	html body .va-ts__section {
+		padding: 14px;
+	}
+}
+
+/* fiecare secțiune pe toată lățimea (regulile vechi ale setărilor le dădeau lățimi diferite) */
+html body .va-ts.va-ts > .va-ts__section {
+	box-sizing: border-box;
+	width: 100% !important;
+	max-width: none !important;
+	margin: 0 !important;
+	align-self: stretch !important;
+	justify-self: stretch !important;
+}

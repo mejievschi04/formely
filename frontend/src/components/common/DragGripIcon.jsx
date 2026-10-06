@@ -1,7 +1,7 @@
 import React from 'react';
-import { ArrowsLeftRight } from '@phosphor-icons/react';
+import { DotsSixVertical } from '@phosphor-icons/react';
 
-/** Pictogramă reordonare drag — săgeți stânga/dreapta. */
+/** Pictogramă reordonare drag — puncte verticale. */
 export function DragGripIcon({ size = 20, className, ...rest }) {
-	return <ArrowsLeftRight size={size} weight="bold" className={className} aria-hidden {...rest} />;
+	return <DotsSixVertical size={size} weight="bold" className={className} aria-hidden {...rest} />;
 }

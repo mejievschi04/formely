@@ -8,10 +8,11 @@ import {
 } from '@phosphor-icons/react';
 import ThemePreferenceControl from '../components/ThemePreferenceControl';
 import { profileService } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContextShared.js';
+import { useToast } from '../contexts/ToastContextShared.js';
 import { toImageUrl } from '../utils/imageUrl';
 import '../styles/student-settings.css';
+import { nameInitials } from '../utils/initials';
 
 const emptyFieldErrors = { name: '', email: '', bio: '' };
 
@@ -33,13 +34,7 @@ const StudentSettingsPage = () => {
 	}, [user]);
 
 	const isStudent = user?.role === 'student';
-	const initials = (user?.name || user?.email || 'U')
-		.split(/\s+/)
-		.filter(Boolean)
-		.map((part) => part[0])
-		.join('')
-		.slice(0, 2)
-		.toUpperCase();
+	const initials = nameInitials(user?.name || user?.email);
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
@@ -81,9 +76,6 @@ const StudentSettingsPage = () => {
 		<div className="student-settings-page">
 			<header className="student-settings-header">
 				<h1 className="va-page-title student-settings-title">Setări</h1>
-				<p className="student-settings-subtitle">
-					Preferințe cont și aspect — personalizate pentru experiența ta Formely.
-				</p>
 			</header>
 
 			<div className="student-settings-grid">
@@ -98,14 +90,14 @@ const StudentSettingsPage = () => {
 								)}
 							</div>
 							<div className="student-settings-account-copy">
-								<h2>{user.name || 'Student'}</h2>
+								<h2>{user.name || 'Utilizator'}</h2>
 								<p>{user.email}</p>
 							</div>
 						</div>
 						<div className="student-settings-account-meta">
 							<span className="student-settings-chip">
 								<ShieldCheck size={16} weight="duotone" aria-hidden />
-								{isStudent ? 'Cursant' : (user?.role === 'admin' ? 'Administrator' : user?.role === 'instructor' ? 'Instructor' : 'Utilizator')}
+								{isStudent ? 'Utilizator' : (user?.role === 'admin' ? 'Administrator' : user?.role === 'instructor' ? 'Instructor' : 'Utilizator')}
 							</span>
 							<span className="student-settings-chip">
 								<EnvelopeSimple size={16} weight="duotone" aria-hidden />
@@ -202,7 +194,7 @@ const StudentSettingsPage = () => {
 						{fieldErrors.bio ? <p className="va-input-error">{fieldErrors.bio}</p> : null}
 					</div>
 					<div className="student-settings-actions">
-						<button type="submit" className="lms-btn-primary student-settings-save-btn" disabled={saving}>
+						<button type="submit" className="lms-btn-primary va-btn-save student-settings-save-btn" disabled={saving}>
 							<FloppyDisk size={17} weight="duotone" aria-hidden />
 							{saving ? 'Se salvează...' : 'Salvează'}
 						</button>

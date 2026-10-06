@@ -125,8 +125,8 @@
 }
 
 .aev-detail-participants-btn:hover {
-	border-color: rgba(var(--formely-shadow-rgb), 0.5);
-	background: rgba(var(--formely-shadow-rgb), 0.06);
+	border-color: rgba(56, 189, 248, 0.5);
+	background: rgba(56, 189, 248, 0.06);
 	box-shadow: var(--shadow-sm);
 }
 
@@ -149,11 +149,6 @@
 	color: var(--text-primary);
 }
 
-.aev-detail-count {
-	font-weight: var(--font-weight-medium);
-	color: var(--text-secondary);
-}
-
 .aev-detail-desc {
 	margin-bottom: var(--space-5);
 	padding-bottom: var(--space-5);
@@ -162,67 +157,6 @@
 
 .aev-detail-desc-text {
 	margin: 0;
-}
-
-.aev-detail-lists {
-	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: var(--space-4);
-}
-
-.aev-detail-list-block {
-	min-width: 0;
-	display: flex;
-	flex-direction: column;
-}
-
-.aev-detail-user-list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	max-height: 220px;
-	overflow-y: auto;
-	border: 1px solid var(--border-primary);
-	border-radius: var(--radius-md);
-	background: var(--bg-secondary);
-}
-
-.aev-detail-user-row {
-	display: grid;
-	grid-template-columns: 1fr;
-	gap: 2px;
-	padding: var(--space-2) var(--space-3);
-	border-bottom: 1px solid var(--border-primary);
-	font-size: var(--font-size-xs);
-}
-
-.aev-detail-user-row:last-child {
-	border-bottom: none;
-}
-
-.aev-detail-user-name {
-	font-weight: var(--font-weight-semibold);
-	color: var(--text-primary);
-}
-
-.aev-detail-user-email {
-	color: var(--text-secondary);
-	word-break: break-all;
-}
-
-.aev-detail-user-date {
-	color: var(--text-tertiary);
-	font-size: 0.7rem;
-}
-
-.aev-detail-empty {
-	margin: 0;
-	padding: var(--space-3);
-	font-size: var(--font-size-sm);
-	color: var(--text-tertiary);
-	background: var(--bg-secondary);
-	border: 1px dashed var(--border-primary);
-	border-radius: var(--radius-md);
 }
 
 .aev-detail-footer {

@@ -29,10 +29,13 @@ RUN printf "upload_max_filesize=512M\npost_max_size=550M\nmax_execution_time=600
     > /etc/php/8.2/cli/conf.d/99-uploads.ini
 
 WORKDIR /var/www/html
+# Dependency layers survive changes to application source.
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction --prefer-dist
+COPY package.json package-lock.json ./
+RUN npm ci
 COPY . .
-
-RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
-RUN npm install && npm run build
+RUN composer dump-autoload --no-dev --optimize --no-interaction && npm run build
 
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 /var/www/html/storage \
@@ -41,8 +44,21 @@ RUN chown -R www-data:www-data /var/www/html \
 # Stage producție
 FROM base AS production
 
-RUN echo "opcache.enable=1" > /etc/php/8.2/fpm/conf.d/99-opcache.ini \
-    && echo "opcache.memory_consumption=128" >> /etc/php/8.2/fpm/conf.d/99-opcache.ini
+# Opcache: fișierele se reverifică pe disc cel mult o dată pe minut, nu la fiecare request.
+# Codul e montat din host (docker-compose), deci un `git pull` fără restart e preluat în ≤60 s;
+# scripts/deploy-vps.sh face oricum restart backend după pull.
+RUN printf "opcache.enable=1\nopcache.memory_consumption=256\nopcache.interned_strings_buffer=16\nopcache.max_accelerated_files=20000\nopcache.validate_timestamps=1\nopcache.revalidate_freq=60\nrealpath_cache_size=4096K\nrealpath_cache_ttl=600\n" \
+    > /etc/php/8.2/fpm/conf.d/99-opcache.ini
+
+# Pool PHP-FPM: implicit Debian e pm.max_children=5, prea puțin pentru SPA (cereri paralele + polling).
+# Fiecare worker folosește de obicei 40–80 MB; valorile se pot ajusta din env fără rebuild.
+ENV PHP_FPM_MAX_CHILDREN=16 \
+    PHP_FPM_START_SERVERS=4 \
+    PHP_FPM_MIN_SPARE_SERVERS=2 \
+    PHP_FPM_MAX_SPARE_SERVERS=6 \
+    PHP_FPM_MAX_REQUESTS=500
+RUN printf "[www]\npm = dynamic\npm.max_children = \${PHP_FPM_MAX_CHILDREN}\npm.start_servers = \${PHP_FPM_START_SERVERS}\npm.min_spare_servers = \${PHP_FPM_MIN_SPARE_SERVERS}\npm.max_spare_servers = \${PHP_FPM_MAX_SPARE_SERVERS}\npm.max_requests = \${PHP_FPM_MAX_REQUESTS}\n" \
+    > /etc/php/8.2/fpm/pool.d/zz-volta.conf
 
 WORKDIR /var/www/html
 COPY --from=base --chown=www-data:www-data /var/www/html /var/www/html

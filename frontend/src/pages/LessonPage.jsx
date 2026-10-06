@@ -11,27 +11,24 @@ import {
 } from '@phosphor-icons/react';
 import { normalizeRichTextMediaHtml } from '../utils/richTextContent';
 import { lessonsService, coursesService, courseProgressService } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../contexts/ToastContext';
+
+import { useAuth } from '../contexts/AuthContextShared.js';
+
+import { useToast } from '../contexts/ToastContextShared.js';
 import LessonBlocksPreview from '../components/admin/content-blocks/LessonBlocksPreview';
 import CourseCongratulationsModal from '../components/student/CourseCongratulationsModal';
-import LessonTutorChat from '../components/student/LessonTutorChat';
-import { companyHasFeature } from '../utils/entitlements';
-import { canUseAiFeature } from '../utils/aiAvailability';
-import LessonReadTrackers from '../components/student/LessonReadTrackers';
-import { getNextLessonIdAfter, getRootLessons } from '../utils/lessonOrder';
-import {
-	advanceAfterLessonComplete,
-	getPendingEndOfCourseTestId,
-	normalizeCourseProgressPayload,
-} from '../utils/courseFlowNavigation';
+import { getNextLessonIdAfter, getPreviousLessonIdBefore, getRootLessons } from '../utils/lessonOrder';
 import { useLessonTimeTracking } from '../hooks/useLessonTimeTracking';
-import { useLessonReadCompletion } from '../hooks/useLessonReadCompletion';
-import { LESSON_READ_MILESTONES } from '../utils/lessonReadCompletion';
+import { useLessonReachedEnd } from '../hooks/useLessonReachedEnd';
 import { isLessonMarkedComplete } from '../utils/lessonProgress';
 import { scrollAppToTop } from '../utils/scrollToTop';
 import { normalizeLessonFromApi, lessonLegacyHtml } from '../utils/lessonContent';
+import LessonReadTrackers from '../components/student/LessonReadTrackers';
+import LessonPullRefresh from '../components/student/LessonPullRefresh';
 import './LessonPage.css';
+import '../components/admin/lessons/callout/LessonCallout.css';
+import { logger } from '../utils/logger';
+import { isVoltEnabled } from '../utils/voltAvailability';
 
 const STUDY_TOOL_OPTIONS = [
 	{ id: 'summary', label: 'Rezumat' },
@@ -54,26 +51,18 @@ const LessonPage = () => {
 	const { user } = useAuth();
 	const { showToast } = useToast();
 	const contentRef = useRef(null);
-	const sentMilestonesRef = useRef(new Set());
 	
 	const [lesson, setLesson] = useState(null);
 	const [course, setCourse] = useState(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
+	const [errorLocked, setErrorLocked] = useState(false);
 	const [isCompleted, setIsCompleted] = useState(false);
-	const [isCompleting, setIsCompleting] = useState(false);
 	const [showCourseCongrats, setShowCourseCongrats] = useState(false);
 	const [finalizingCourse, setFinalizingCourse] = useState(false);
-	const [progress, setProgress] = useState(null);
 	const [studyToolLoading, setStudyToolLoading] = useState('');
 	const [studyToolResult, setStudyToolResult] = useState(null);
 	const [studyToolError, setStudyToolError] = useState('');
-
-	useEffect(() => {
-		setStudyToolResult(null);
-		setStudyToolError('');
-		setStudyToolLoading('');
-	}, [lessonId]);
 
 	useLessonTimeTracking(lessonId, {
 		userId: user?.id,
@@ -81,28 +70,24 @@ const LessonPage = () => {
 		enabled: Boolean(user?.id && lessonId && !['admin', 'analyst'].includes(user?.actualRole || user?.role || '')),
 	});
 
-	const { reachedMilestones } = useLessonReadCompletion({
+	const reachedEnd = useLessonReachedEnd({
 		contentRef,
 		lessonId,
-		enabled: Boolean(lesson && user?.id && !isCompleted && !isCompleting && !loading),
+		enabled: Boolean(lesson && !loading),
 	});
+	const canAdvanceLesson = reachedEnd;
 
-	const completeCurrentLesson = useCallback(async () => {
-		if (!lessonId || isCompleted || !user?.id) return { ok: true, payload: null };
+	const completeCurrentLesson = useCallback(async ({ force = false } = {}) => {
+		if (!lessonId || !user?.id) return true;
+		if (isCompleted && !force) return true;
 		try {
-			setIsCompleting(true);
-			const result = await courseProgressService.completeLesson(lessonId);
+			await courseProgressService.completeLesson(lessonId);
 			setIsCompleted(true);
-			if (result?.progress) {
-				setProgress(result.progress);
-			}
-			return { ok: true, payload: result };
+			return true;
 		} catch (err) {
 			const msg = err?.response?.data?.message || err?.message || 'Nu s-a putut marca lecția ca finalizată.';
 			showToast(msg, 'error');
-			return { ok: false, payload: null };
-		} finally {
-			setIsCompleting(false);
+			return false;
 		}
 	}, [lessonId, isCompleted, user?.id, showToast]);
 
@@ -112,65 +97,20 @@ const LessonPage = () => {
 		}
 	}, [lessonId, courseId]);
 
-	useEffect(() => {
-		document.body.classList.add('student-lesson-player');
-		return () => document.body.classList.remove('student-lesson-player');
-	}, []);
-
 	useLayoutEffect(() => {
 		if (!lessonId || loading) return;
 		scrollAppToTop({ behavior: 'instant' });
 	}, [lessonId, loading]);
 
 	useEffect(() => {
-		setReachedMilestones(new Set());
-		sentMilestonesRef.current = new Set();
+		setIsCompleted(false);
 	}, [lessonId]);
 
-	useEffect(() => {
-		const pendingMilestones = LESSON_READ_MILESTONES.filter(
-			(milestone) => reachedMilestones.has(milestone) && !sentMilestonesRef.current.has(milestone)
-		);
-
-		if (!pendingMilestones.length) return;
-
-		pendingMilestones.forEach((milestone) => sentMilestonesRef.current.add(milestone));
-
-		let cancelled = false;
-
-		const syncMilestones = async () => {
-			for (const milestone of pendingMilestones) {
-				try {
-					const response = await courseProgressService.updateLessonProgress(lessonId, {
-						milestone,
-						milestone_reached: milestone,
-						progress_percentage: milestone,
-						completed: milestone >= 100,
-					});
-
-					if (cancelled) return;
-
-					if (response?.completed || response?.auto_completed || milestone >= 100) {
-						setIsCompleted(true);
-					}
-				} catch (err) {
-					if (cancelled) return;
-					sentMilestonesRef.current.delete(milestone);
-				}
-			}
-		};
-
-		syncMilestones();
-
-		return () => {
-			cancelled = true;
-		};
-	}, [lessonId, reachedMilestones]);
-
-	const fetchLessonData = async () => {
+	const fetchLessonData = async ({ silent = false } = {}) => {
 		try {
-			setLoading(true);
+			if (!silent) setLoading(true);
 			setError(null);
+			setErrorLocked(false);
 			
 			// Fetch lesson
 			const lessonData = normalizeLessonFromApi(await lessonsService.getById(lessonId));
@@ -180,84 +120,53 @@ const LessonPage = () => {
 			try {
 				const courseData = await coursesService.getById(courseId);
 				setCourse(courseData);
-			} catch (err) {
-				console.log('Could not fetch course data');
+			} catch  {
+				logger.log('Could not fetch course data');
 			}
 			
 			// Check if lesson is already completed
 			if (user?.id) {
 				try {
-					const progressData = await courseProgressService.getCourseProgress(courseId);
-					setProgress(progressData);
-					if (isLessonMarkedComplete(progressData, lessonId)) {
+					const progress = await courseProgressService.getCourseProgress(courseId);
+					if (isLessonMarkedComplete(progress, lessonId)) {
 						setIsCompleted(true);
 					}
-				} catch (err) {
-					console.log('Could not fetch progress data');
+				} catch  {
+					logger.log('Could not fetch progress data');
 				}
 			}
 		} catch (err) {
 			console.error('Error fetching lesson:', err);
-			setError('Nu s-a putut încărca lecția');
-			showToast('Eroare la încărcarea lecției', 'error');
+			if (silent) {
+				showToast('Nu s-a putut actualiza lecția', 'error');
+				return;
+			}
+			const locked = err?.response?.status === 403 && err?.response?.data?.locked;
+			const message = locked
+				? (err.response.data.message || 'Lecția este blocată. Completează lecțiile anterioare.')
+				: (err?.response?.data?.message || 'Nu s-a putut încărca lecția');
+			// mesajul apare pe pagină; o notificare în plus doar l-ar repeta
+			setError(message);
+			setErrorLocked(Boolean(locked));
 		} finally {
-			setLoading(false);
+			if (!silent) setLoading(false);
 		}
 	};
 
-	const courseModules = [...(course?.modules || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
 	const rootLessons = getRootLessons(course);
-	const nextLessonTarget = getNextLessonIdAfter(courseModules, lessonId, rootLessons);
-	const progressSnapshot = normalizeCourseProgressPayload(progress);
-	const pendingExamId =
-		progressSnapshot?.next_exam?.id ||
-		(nextLessonTarget === null
-			? getPendingEndOfCourseTestId({
-					course,
-					modules: courseModules,
-					rootLessons,
-					progress: progressSnapshot,
-				})
-			: null);
-	const isLastLessonInCourse = nextLessonTarget === null && !pendingExamId;
-	const nextButtonLabel = pendingExamId
-		? 'Continuă la test'
-		: typeof nextLessonTarget === 'number'
-			? 'Lecția următoare'
-			: 'Continuă';
+	const nextLessonTarget = getNextLessonIdAfter(course?.modules, lessonId, rootLessons);
+	const previousLessonTarget = getPreviousLessonIdBefore(course?.modules, lessonId, rootLessons);
+	const isLastLessonInCourse = nextLessonTarget === null;
 
 	const handleNext = async () => {
-		let progressPayload = null;
-		if (!isCompleted) {
-			const { ok, payload } = await completeCurrentLesson();
-			if (!ok) return;
-			progressPayload = payload;
+		if (!reachedEnd) return;
+		const ok = await completeCurrentLesson({ force: true });
+		if (!ok) return;
+		if (typeof nextLessonTarget === 'number') {
+			navigate(`/courses/${courseId}/lessons/${nextLessonTarget}`);
+			return;
 		}
-		const payload = progressPayload;
-		const nextId = getNextLessonIdAfter(courseModules, lessonId, rootLessons);
-		const examId =
-			payload?.next_exam?.id ||
-			(nextId === null
-				? getPendingEndOfCourseTestId({
-						course,
-						modules: courseModules,
-						rootLessons,
-						progress: payload,
-					})
-				: null);
-		await advanceAfterLessonComplete({
-			courseId,
-			lessonId,
-			modules: courseModules,
-			rootLessons,
-			navigate,
-			progressPayload: examId
-				? { ...normalizeCourseProgressPayload(payload), next_exam: { id: examId } }
-				: payload,
-			lessonPageMode: true,
-			onCongrats: () => setShowCourseCongrats(true),
-			onFinalize: handleFinalizeCourse,
-		});
+		navigate(`/courses/${courseId}`);
 	};
 
 	const handleFinalizeCourse = async () => {
@@ -269,21 +178,12 @@ const LessonPage = () => {
 				return;
 			}
 			if (!isCompleted) {
-				const { ok } = await completeCurrentLesson();
+				const ok = await completeCurrentLesson();
 				if (!ok) return;
 			}
 			const p = await courseProgressService.getCourseProgress(courseId);
-			setProgress(p);
-			const pendingId =
-				p?.next_exam?.id ||
-				getPendingEndOfCourseTestId({
-					course,
-					modules: courseModules,
-					rootLessons,
-					progress: p,
-				});
-			if (pendingId) {
-				navigate(`/courses/${courseId}/exams/${pendingId}`);
+			if (p?.next_exam?.id) {
+				navigate(`/courses/${courseId}/exams/${p.next_exam.id}`);
 				return;
 			}
 			if (p?.course_complete) {
@@ -338,7 +238,7 @@ const LessonPage = () => {
 		if (studyToolResult.tool === 'flashcards') {
 			return (
 				<div className="lesson-study-result-grid">
-					{(result.flashcards || result.cards || []).map((card, index) => (
+					{(result.flashcards || []).map((card, index) => (
 						<div className="lesson-study-flashcard" key={`${card.front}-${index}`}>
 							<strong>{card.front}</strong>
 							<p>{card.back}</p>
@@ -352,8 +252,8 @@ const LessonPage = () => {
 			return (
 				<div className="lesson-study-quiz-list">
 					{(result.questions || []).map((question, index) => (
-						<div className="lesson-study-question" key={`${question.question || question.prompt}-${index}`}>
-							<strong>{index + 1}. {question.question || question.prompt}</strong>
+						<div className="lesson-study-question" key={`${question.question}-${index}`}>
+							<strong>{index + 1}. {question.question}</strong>
 							<ul>
 								{(question.options || []).map((option, optionIndex) => (
 									<li key={`${option}-${optionIndex}`} className={optionIndex === question.correct_index ? 'is-correct' : ''}>
@@ -361,7 +261,6 @@ const LessonPage = () => {
 									</li>
 								))}
 							</ul>
-							{question.correct_answer ? <p className="lesson-study-answer">Răspuns: {question.correct_answer}</p> : null}
 							{question.explanation && <p>{question.explanation}</p>}
 						</div>
 					))}
@@ -372,13 +271,12 @@ const LessonPage = () => {
 		if (studyToolResult.tool === 'study_plan') {
 			return (
 				<div className="lesson-study-plan">
-					{result.overview ? <p>{result.overview}</p> : null}
 					{(result.steps || []).map((step, index) => (
-						<div className="lesson-study-plan-step" key={`${step.label || step.title}-${index}`}>
+						<div className="lesson-study-plan-step" key={`${step.label}-${index}`}>
 							<span>{step.minutes ? `${step.minutes} min` : `${index + 1}`}</span>
 							<div>
-								<strong>{step.label || step.title}</strong>
-								<p>{step.instruction || step.action}</p>
+								<strong>{step.label}</strong>
+								<p>{step.instruction}</p>
 							</div>
 						</div>
 					))}
@@ -395,7 +293,6 @@ const LessonPage = () => {
 		return (
 			<div className="lesson-study-text-result">
 				{result.summary && <p>{result.summary}</p>}
-				{result.overview && !result.summary && <p>{result.overview}</p>}
 				{result.simple_explanation && <p>{result.simple_explanation}</p>}
 				{result.analogy && <p><strong>Analogic:</strong> {result.analogy}</p>}
 				{result.key_points?.length ? (
@@ -404,7 +301,7 @@ const LessonPage = () => {
 						<ul>{result.key_points.map((item) => <li key={item}>{item}</li>)}</ul>
 					</div>
 				) : null}
-				{result.steps?.length && typeof result.steps[0] === 'string' ? (
+				{result.steps?.length ? (
 					<div className="lesson-study-list-section">
 						<strong>Pași</strong>
 						<ul>{result.steps.map((item) => <li key={item}>{item}</li>)}</ul>
@@ -439,10 +336,10 @@ const LessonPage = () => {
 					<div className="lesson-page-error-icon">
 						<WarningCircle size={24} weight="duotone" aria-hidden />
 					</div>
-					<h2>Eroare</h2>
-					<p>{error || 'Lecția nu a fost găsită'}</p>
+					<h2>{errorLocked ? 'Lecție blocată' : error ? 'Lecția nu s-a putut încărca' : 'Lecție negăsită'}</h2>
+					<p>{error || 'Lecția nu a fost găsită.'}</p>
 					<button
-						className="lesson-page-btn lesson-page-btn-primary"
+						className="lesson-page-btn lms-btn-primary lesson-page-btn-primary"
 						onClick={() => navigate(`/courses/${courseId}`)}
 					>
 						Înapoi la curs
@@ -452,13 +349,9 @@ const LessonPage = () => {
 		);
 	}
 
-	const isStudentLearner = user?.id && !['admin', 'analyst'].includes(user?.actualRole || user?.role || '');
-	const tutorEnabled = course?.settings?.ai_tutor?.enabled !== false
-		&& companyHasFeature(user, 'ai_tutor')
-		&& canUseAiFeature(user, 'ai_tutor');
-
 	return (
 		<div className="lesson-page-modern">
+			<LessonPullRefresh onRefresh={() => fetchLessonData({ silent: true })} />
 			<CourseCongratulationsModal
 				open={showCourseCongrats}
 				courseTitle={course?.title}
@@ -468,7 +361,7 @@ const LessonPage = () => {
 			<div className="lesson-page-header">
 				<div className="lesson-page-header-content">
 					<button 
-						className="lesson-page-back-btn"
+						className="va-btn-back lesson-page-back-btn"
 						onClick={() => navigate(`/courses/${courseId}`)}
 					>
 						<ArrowLeft size={20} weight="bold" aria-hidden />
@@ -522,7 +415,7 @@ const LessonPage = () => {
 								const html = normalizeRichTextMediaHtml(legacyHtml);
 								return (
 									<div
-										className="lesson-page-content-text rte-content"
+										className="lesson-page-content-text"
 										dangerouslySetInnerHTML={{ __html: html }}
 									/>
 								);
@@ -540,11 +433,11 @@ const LessonPage = () => {
 						</LessonReadTrackers>
 					</div>
 
-					{tutorEnabled ? (
+					{user?.actualRole === 'admin' && user?.role === 'admin' && isVoltEnabled('ai_tutor') && (
 					<section className="lesson-study-tools">
 						<div className="lesson-study-header">
 							<div>
-								<span className="lesson-study-eyebrow">Formely Study Tools</span>
+								<span className="lesson-study-eyebrow">Formely AI Study Tools</span>
 								<h2>Învață mai ușor lecția</h2>
 								<p>Generează rezumat, explicații, flashcards, quiz sau plan de recapitulare din conținutul lecției.</p>
 							</div>
@@ -572,26 +465,21 @@ const LessonPage = () => {
 							<div className="lesson-study-result">
 								<div className="lesson-study-result-header">
 									<h3>{studyToolResult.result.title || 'Rezultat Formely AI'}</h3>
-									<span>{STUDY_TOOL_OPTIONS.find((option) => option.id === studyToolResult.tool)?.label || 'AI'}</span>
+									<span>{STUDY_TOOL_OPTIONS.find((option) => option.id === studyToolResult.tool)?.label || 'Formely AI'}</span>
 								</div>
 								{renderStudyToolResult()}
 							</div>
 						) : null}
 					</section>
-					) : null}
+					)}
 
-					<div className="lesson-page-actions">
-						{isCompleted && (
-							<div className="lesson-page-completed-badge">
-								<Check size={20} weight="bold" aria-hidden />
-								<span>Lecție completată</span>
-							</div>
-						)}
-						
+					<div className="lesson-page-actions" role="navigation" aria-label="Navigare lecții">
+						<button type="button" className="lesson-page-btn lesson-page-btn-secondary" disabled={previousLessonTarget == null || finalizingCourse} onClick={() => navigate(`/courses/${courseId}/lessons/${previousLessonTarget}`)}><ArrowLeft size={20} weight="bold" aria-hidden /><span>Anterioară</span></button>
 						<button
 							type="button"
-							className="lesson-page-btn lesson-page-btn-secondary"
-							disabled={finalizingCourse}
+							className="lesson-page-btn lms-btn-primary lesson-page-btn-primary"
+							disabled={finalizingCourse || !canAdvanceLesson}
+							title={canAdvanceLesson ? undefined : 'Derulează până la finalul lecției'}
 							onClick={isLastLessonInCourse ? handleFinalizeCourse : handleNext}
 						>
 							{isLastLessonInCourse ? (
@@ -600,12 +488,12 @@ const LessonPage = () => {
 								) : (
 									<>
 										<Check size={18} weight="bold" aria-hidden />
-										<span>Finalizează</span>
+										<span>Urmează testul</span>
 									</>
 								)
 							) : (
 								<>
-									<span>{nextButtonLabel}</span>
+									<span>Următoarea lecție</span>
 									<ArrowRight size={18} weight="bold" aria-hidden />
 								</>
 							)}
@@ -613,15 +501,6 @@ const LessonPage = () => {
 					</div>
 				</div>
 			</div>
-			{isStudentLearner ? (
-				<LessonTutorChat
-					lessonId={Number(lessonId)}
-					courseId={Number(courseId)}
-					courseTitle={course?.title}
-					lessonTitle={lesson?.title}
-					enabled={tutorEnabled}
-				/>
-			) : null}
 		</div>
 	);
 };

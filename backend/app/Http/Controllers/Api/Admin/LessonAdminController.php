@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Lesson;
 use App\Models\Module;
-use App\Models\Course;
 use App\Services\CourseBuilderService;
 use Illuminate\Http\Request;
 
@@ -17,30 +16,6 @@ class LessonAdminController extends Controller
     {
         $this->courseBuilderService = $courseBuilderService;
     }
-    public function index(Request $request)
-    {
-        $query = Lesson::with(['course', 'module']);
-        if (auth()->user()->isInstructor()) {
-            $query->whereHas('course', fn($q) => $q->where('teacher_id', auth()->id()));
-        }
-        if ($request->has('course_id')) {
-            $query->where('course_id', $request->course_id);
-            if (auth()->user()->isInstructor()) {
-                $c = Course::find($request->course_id);
-                if (!$c || (int) $c->teacher_id !== (int) auth()->id()) {
-                    abort(403, 'Acces interzis.');
-                }
-            }
-        }
-        if ($request->has('module_id')) {
-            $query->where('module_id', $request->module_id);
-        }
-
-        $lessons = $query->orderBy('order')->get();
-
-        return response()->json($lessons);
-    }
-
     public function show($id)
     {
         $lesson = Lesson::with(['course', 'module', 'contentBlocks' => fn ($q) => $q->orderBy('order')])
@@ -91,8 +66,6 @@ class LessonAdminController extends Controller
         }
 
         $validated = $request->validate([
-            'course_id' => 'nullable|exists:courses,id',
-            'module_id' => 'nullable|exists:modules,id',
             'title' => 'sometimes|required|string|max:255',
             'content' => 'nullable|string',
             'description' => 'nullable|string',
@@ -104,24 +77,42 @@ class LessonAdminController extends Controller
             'order' => 'nullable|integer|min:0',
             'is_preview' => 'nullable|boolean',
             'is_locked' => 'nullable|boolean',
-            'unlock_after_lesson_id' => 'nullable|exists:lessons,id',
+            'module_id' => 'nullable|integer',
+            'unlock_after_lesson_id' => [
+                'nullable',
+                \Illuminate\Validation\Rule::exists('lessons', 'id')->where(
+                    fn ($q) => $q->where('course_id', $lesson->course_id)
+                ),
+            ],
         ]);
 
-        $updateData = array_filter([
-            'course_id' => $validated['course_id'] ?? null,
-            'module_id' => $validated['module_id'] ?? null,
-            'title' => $validated['title'] ?? null,
-            'content' => $validated['content'] ?? $validated['description'] ?? null,
-            'type' => $validated['type'] ?? null,
-            'video_url' => $validated['video_url'] ?? null,
-            'resources' => $validated['resources'] ?? null,
-            'attachments' => $validated['attachments'] ?? null,
-            'duration_minutes' => $validated['duration_minutes'] ?? null,
-            'order' => $validated['order'] ?? null,
-            'is_preview' => $validated['is_preview'] ?? null,
-            'is_locked' => $validated['is_locked'] ?? null,
-            'unlock_after_lesson_id' => $validated['unlock_after_lesson_id'] ?? null,
-        ], fn ($v) => $v !== null);
+        if ($request->exists('course_id') && (int) $request->input('course_id') !== (int) $lesson->course_id) {
+            return response()->json([
+                'message' => 'Mutarea lecției în alt curs nu este permisă pe acest endpoint.',
+            ], 422);
+        }
+
+        if (array_key_exists('module_id', $validated) && $validated['module_id'] !== null) {
+            $destination = Module::find($validated['module_id']);
+            if (! $destination || (int) $destination->course_id !== (int) $lesson->course_id) {
+                return response()->json([
+                    'message' => 'Modulul trebuie să aparțină aceluiași curs.',
+                ], 422);
+            }
+        }
+
+        $updateData = [];
+        foreach ([
+            'title', 'type', 'video_url', 'resources', 'attachments', 'duration_minutes',
+            'order', 'is_preview', 'is_locked', 'unlock_after_lesson_id', 'module_id',
+        ] as $key) {
+            if (array_key_exists($key, $validated)) {
+                $updateData[$key] = $validated[$key];
+            }
+        }
+        if (array_key_exists('content', $validated) || array_key_exists('description', $validated)) {
+            $updateData['content'] = $validated['content'] ?? $validated['description'] ?? null;
+        }
         $lesson = $this->courseBuilderService->updateLesson($lesson, $updateData);
 
         return response()->json([
@@ -143,38 +134,4 @@ class LessonAdminController extends Controller
         ]);
     }
 
-    /**
-     * Reorder lessons in a module
-     */
-    public function reorder(Request $request, $moduleId)
-    {
-        $module = Module::with('course')->findOrFail($moduleId);
-        if (auth()->user()->isInstructor() && (int) $module->course->teacher_id !== (int) auth()->id()) {
-            abort(403, 'Acces interzis.');
-        }
-
-        $validated = $request->validate([
-            'lesson_ids' => 'required|array',
-            'lesson_ids.*' => 'exists:lessons,id',
-        ]);
-
-        // Verify all lessons belong to this module
-        $lessons = Lesson::whereIn('id', $validated['lesson_ids'])
-            ->where('module_id', $moduleId)
-            ->get();
-
-        if ($lessons->count() !== count($validated['lesson_ids'])) {
-            return response()->json([
-                'message' => 'Unele lecții nu aparțin acestui modul',
-            ], 400);
-        }
-
-        // Use CourseBuilderService to reorder lessons
-        $this->courseBuilderService->reorderLessons($module, $validated['lesson_ids']);
-
-        return response()->json([
-            'message' => 'Lecții reordonate cu succes',
-            'lessons' => Lesson::where('module_id', $moduleId)->orderBy('order')->get(),
-        ]);
-    }
 }

@@ -1,6 +1,6 @@
-import api, { ensureApiCsrfCookie } from '../api.js';
+import api, { ensureApiCsrfCookie, refreshApiCsrfCookie } from '../api.js';
 import { logger } from '../utils/logger';
-import { assertAiEnabled } from '../utils/aiAvailability.js';
+import { assertVoltEnabled } from '../utils/voltAvailability.js';
 
 // Categories are no longer supported
 
@@ -16,8 +16,8 @@ export const coursesService = {
     return list;
   },
   
-  getById: async (id) => {
-    const response = await api.get(`/courses/${id}`);
+  getById: async (id, params = {}) => {
+    const response = await api.get(`/courses/${id}`, { params });
     return response.data?.data ?? response.data;
   },
   
@@ -61,12 +61,6 @@ export const courseMapsService = {
 };
 
 export const lessonsService = {
-  getAll: async (courseId = null) => {
-    const params = courseId ? { course_id: courseId } : {};
-    const response = await api.get('/lessons', { params });
-    return response.data;
-  },
-  
   getById: async (id) => {
     const response = await api.get(`/lessons/${id}`);
     return response.data?.data ?? response.data;
@@ -78,7 +72,7 @@ export const lessonsService = {
   },
 
   generateStudyTool: async (id, tool) => {
-    assertAiEnabled();
+    assertVoltEnabled('ai_tutor');
     const response = await api.post(`/lessons/${id}/study-tools`, { tool }, {
       timeout: parseInt(import.meta.env.VITE_AI_API_TIMEOUT || '120000', 10),
     });
@@ -147,10 +141,6 @@ export const dashboardService = {
     }
   },
   
-  getProgress: async (courseId, userId) => {
-    const response = await api.get(`/courses/${courseId}/progress/${userId}`);
-    return response.data;
-  },
 };
 
 /** Evenimente telemetrie (auth) — ore învățare, funnel teste etc. */
@@ -175,11 +165,6 @@ export const courseProgressService = {
     return response.data;
   },
 
-  enrollCourse: async (courseId) => {
-    const response = await api.post(`/courses/${courseId}/enroll`);
-    return response.data;
-  },
-  
   completeLesson: async (lessonId) => {
     const response = await api.post(`/lessons/${lessonId}/complete`);
     return response.data;
@@ -191,82 +176,47 @@ export const courseProgressService = {
     return response.data;
   },
   
-  checkModuleAccess: async (moduleId) => {
-    const response = await api.get(`/modules/${moduleId}/access`);
-    return response.data;
-  },
-  
-  checkLessonAccess: async (lessonId) => {
-    const response = await api.get(`/lessons/${lessonId}/access`);
-    return response.data;
-  },
-  
-  checkExamAccess: async (examId, courseId = null) => {
-    const params = courseId ? { course_id: courseId } : {};
-    const response = await api.get(`/exams/${examId}/access`, { params });
-    return response.data;
-  },
-  
 };
 
 /** Notițe personale per lecție (JSON), sincronizate pe server pentru utilizatorul autentificat */
-export const lessonNotesService = {
-  getNotes: async (lessonId) => {
-    const response = await api.get(`/lessons/${lessonId}/notes`);
-    return response.data;
-  },
-  saveNotes: async (lessonId, notes) => {
-    const response = await api.put(`/lessons/${lessonId}/notes`, { notes });
-    return response.data;
-  },
-};
-
 export const examService = {
-  /** Examene publicate (Admin → Examene), fără teste din curs */
+  /** Examene legacy fără curs (published, vizibile pentru utilizatorul curent) */
   listStandaloneExams: async () => {
     const response = await api.get('/exams');
     return response.data?.data ?? response.data ?? [];
   },
 
-  /** @param {{ newAttempt?: boolean }} [options] — newAttempt: încercare nouă (seed întrebări = următoarea), nu reconstruirea ultimei încercări */
+  /**
+   * @param {{ newAttempt?: boolean, kind?: 'test'|'exam' }} [options] — newAttempt: încercare nouă (seed întrebări = următoarea), nu reconstruirea ultimei încercări;
+   * kind: testele și examenele au id-uri separate, deci un link care știe ce deschide o spune explicit
+   */
   getExam: async (examId, courseId = null, options = {}) => {
     const params = courseId ? { course_id: courseId } : {};
     if (options.newAttempt) {
       params.new_attempt = 1;
     }
+    if (options.kind) {
+      params.kind = options.kind;
+    }
     const response = await api.get(`/exams/${examId}`, { params });
     return response.data;
   },
 
-  submitExam: async (examId, answers, courseId = null, attemptMeta = null) => {
+  submitExam: async (examId, answers, courseId = null, attemptMeta = null, kind = null) => {
     const payload = { answers };
     if (courseId) payload.course_id = courseId;
     if (attemptMeta && typeof attemptMeta === 'object') {
       Object.assign(payload, attemptMeta);
     }
-    const response = await api.post(`/exams/${examId}/submit`, payload);
+    const response = await api.post(`/exams/${examId}/submit`, payload, { params: kind ? { kind } : {} });
     return response.data;
   },
-};
 
-export const testService = {
-  // Get test for student (from course context)
-  getTest: async (testId, courseId = null) => {
-    const params = courseId ? { course_id: courseId } : {};
-    const response = await api.get(`/tests/${testId}`, { params });
-    return response.data;
-  },
-  
-  submitTest: async (testId, answers, courseId = null) => {
+  saveProgress: async (examId, answers, courseId = null, attemptId = null, kind = null) => {
     const payload = { answers };
     if (courseId) payload.course_id = courseId;
-    const response = await api.post(`/tests/${testId}/submit`, payload);
-    return response.data;
-  },
-  
-  // Get available tests for a course
-  getCourseTests: async (courseId) => {
-    const response = await api.get(`/courses/${courseId}/tests`);
+    if (attemptId) payload.attempt_id = attemptId;
+    const response = await api.post(`/exams/${examId}/progress`, payload, { params: kind ? { kind } : {} });
     return response.data;
   },
 };
@@ -320,11 +270,6 @@ export const eventsService = {
     return response.data;
   },
   
-  getMyEvents: async (filter = 'all') => {
-    const response = await api.get('/events/my', { params: { filter } });
-    return response.data;
-  },
-  
   register: async (eventId) => {
     const response = await api.post(`/events/${eventId}/register`);
     return response.data;
@@ -335,51 +280,26 @@ export const eventsService = {
     return response.data;
   },
   
-  markAttendance: async (eventId) => {
-    const response = await api.post(`/events/${eventId}/mark-attendance`);
-    return response.data;
-  },
-  
-  markReplayWatched: async (eventId) => {
-    const response = await api.post(`/events/${eventId}/mark-replay-watched`);
-    return response.data;
-  },
-};
-
-export const quizService = {
-  getQuiz: async (courseId) => {
-    const response = await api.get(`/courses/${courseId}/quiz`);
-    return response.data;
-  },
-  
-  submitQuiz: async (courseId, answers) => {
-    const response = await api.post(`/courses/${courseId}/quiz/submit`, { answers });
-    return response.data;
-  },
 };
 
 export const examResultsService = {
-  getAll: async () => {
-    const response = await api.get('/exam-results');
+  getAll: async (params = {}) => {
+    const response = await api.get('/exam-results', { params });
     return response.data;
   },
   
   getById: async (id, type = null) => {
-    const params = type ? { type } : {};
-    const response = await api.get(`/exam-results/${id}`, { params });
-    return response.data;
-  },
-};
-
-export const catalogExamResultsService = {
-  getAll: async () => {
-    const response = await api.get('/catalog-exam-results');
-    return response.data;
-  },
-
-  getById: async (id) => {
-    const response = await api.get(`/catalog-exam-results/${id}`);
-    return response.data;
+    try {
+      const params = type ? { type } : {};
+      const response = await api.get(`/exam-results/${id}`, { params });
+      return response.data;
+    } catch (err) {
+      if (type && err?.response?.status === 404) {
+        const response = await api.get(`/exam-results/${id}`);
+        return response.data;
+      }
+      throw err;
+    }
   },
 };
 
@@ -409,12 +329,17 @@ export const libraryService = {
     return response.data;
   },
 
-  deleteItem: async (id) => {
-    const response = await api.delete(`/library/items/${id}`);
-    return response.data;
+  // Imagine din editorul unui material scris; întoarce URL-ul de pus în conținut.
+  uploadImage: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/library/images', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data?.url;
   },
 
-  createTextItem: async ({ title, description, body, cover, removeCover = false }) => {
+  createTextItem: async ({ title, description, body, cover }) => {
     await ensureApiCsrfCookie();
     const formData = new FormData();
     formData.append('content_type', 'text');
@@ -457,11 +382,27 @@ export const libraryService = {
     return response.data;
   },
 
+  deleteItem: async (id) => {
+    const response = await api.delete(`/library/items/${id}`);
+    return response.data;
+  },
+
   /** Descarcă fișierul (blob); folosește numele din antet sau fallbackName. */
   downloadItemBlob: async (id, fallbackName = 'document') => {
     const response = await api.get(`/library/items/${id}/download`, {
       responseType: 'blob',
     });
+    const payload = response.data;
+    if (payload instanceof Blob && payload.type && payload.type.includes('application/json')) {
+      const text = await payload.text();
+      let message = 'Descărcarea a eșuat.';
+      try {
+        message = JSON.parse(text)?.message || message;
+      } catch {
+        /* păstrăm mesajul implicit */
+      }
+      throw new Error(message);
+    }
     let name = fallbackName;
     const cd = response.headers['content-disposition'];
     if (cd && typeof cd === 'string') {
@@ -478,23 +419,65 @@ export const libraryService = {
   },
 };
 
+export const guidesService = {
+  listItems: async (params = {}) => {
+    const response = await api.get('/guides/items', { params });
+    return response.data;
+  },
+
+  createItem: async ({ title, description, url, cover }) => {
+    await ensureApiCsrfCookie();
+    const formData = new FormData();
+    formData.append('title', title);
+    if (description) formData.append('description', description);
+    formData.append('url', url);
+    if (cover instanceof Blob) {
+      formData.append('cover', cover, cover.name || 'cover.jpg');
+    }
+    const response = await api.post('/guides/items', formData);
+    return response.data;
+  },
+
+  updateItem: async (id, { title, description, url, cover, removeCover = false }) => {
+    await ensureApiCsrfCookie();
+    const formData = new FormData();
+    formData.append('title', title);
+    if (description) formData.append('description', description);
+    formData.append('url', url);
+    if (removeCover) formData.append('remove_cover', '1');
+    if (cover instanceof Blob) {
+      formData.append('cover', cover, cover.name || 'cover.jpg');
+    }
+    const response = await api.post(`/guides/items/${id}`, formData);
+    return response.data;
+  },
+
+  deleteItem: async (id) => {
+    const response = await api.delete(`/guides/items/${id}`);
+    return response.data;
+  },
+};
+
 
 export const authService = {
   register: async (name, email, password) => {
     await ensureApiCsrfCookie();
     const response = await api.post('/auth/register', { name, email, password });
+    try { await refreshApiCsrfCookie(); } catch { /* înregistrarea a reușit */ }
     return response.data;
   },
   
   login: async (email, password) => {
     await ensureApiCsrfCookie();
     const response = await api.post('/auth/login', { email, password });
+    try { await refreshApiCsrfCookie(); } catch { /* sesiunea e deja deschisă */ }
     return response.data;
   },
   
   logout: async () => {
     await ensureApiCsrfCookie();
     const response = await api.post('/auth/logout');
+    try { await refreshApiCsrfCookie(); } catch { /* sesiunea e închisă */ }
     return response.data;
   },
   
@@ -507,15 +490,6 @@ export const authService = {
       // Return null user data instead of throwing
       if (error.response?.status === 401) {
         return { user: null };
-      }
-      if (error.response?.status === 403 && (error.response?.data?.access_blocked || error.response?.data?.suspended)) {
-        return {
-          user: null,
-          access_blocked: true,
-          suspended: Boolean(error.response?.data?.suspended),
-          inactive: Boolean(error.response?.data?.inactive),
-          message: error.response?.data?.message || 'Accesul la cont este restricționat.',
-        };
       }
       throw error;
     }
@@ -531,36 +505,15 @@ export const authService = {
     return response.data;
   },
 
-  forgotPassword: async (email) => {
-    await ensureApiCsrfCookie();
-    const response = await api.post('/auth/forgot-password', { email });
+  getInvitation: async (token) => {
+    const response = await api.get(`/auth/invitations/${encodeURIComponent(token)}`);
     return response.data;
   },
 
-  resetPassword: async ({ token, email, password, password_confirmation }) => {
+  acceptInvitation: async (token, payload) => {
     await ensureApiCsrfCookie();
-    const response = await api.post('/auth/reset-password', {
-      token,
-      email,
-      password,
-      password_confirmation,
-    });
-    return response.data;
-  },
-
-  validateInvitation: async (token) => {
-    const response = await api.get('/auth/invitations/validate', { params: { token } });
-    return response.data;
-  },
-
-  acceptInvitation: async ({ token, name, password, password_confirmation }) => {
-    await ensureApiCsrfCookie();
-    const response = await api.post('/auth/invitations/accept', {
-      token,
-      name,
-      password,
-      password_confirmation,
-    });
+    const response = await api.post(`/auth/invitations/${encodeURIComponent(token)}/accept`, payload);
+    try { await refreshApiCsrfCookie(); } catch { /* contul e creat */ }
     return response.data;
   },
 };
@@ -646,18 +599,13 @@ export const adminService = {
     return response.data;
   },
 
-  getTeachers: async () => {
-    const response = await api.get('/admin/courses/teachers/list');
+  // Copie ciornă a cursului (module, lecții, teste atașate), fără cursanți și fără echipe.
+  duplicateCourse: async (id) => {
+    const response = await api.post(`/admin/courses/${id}/builder/clone`, { include_teams: false });
     return response.data;
   },
 
   // Modules
-  getModules: async (courseId = null) => {
-    const params = courseId ? { course_id: courseId } : {};
-    const response = await api.get('/admin/modules', { params });
-    return response.data;
-  },
-  
   getModule: async (id) => {
     const response = await api.get(`/admin/modules/${id}`);
     return response.data;
@@ -679,14 +627,6 @@ export const adminService = {
   },
 
   // Lessons
-  getLessons: async (moduleId = null, courseId = null) => {
-    const params = {};
-    if (moduleId) params.module_id = moduleId;
-    if (courseId) params.course_id = courseId;
-    const response = await api.get('/admin/lessons', { params });
-    return response.data;
-  },
-  
   getLesson: async (id) => {
     const response = await api.get(`/admin/lessons/${id}`);
     return response.data;
@@ -774,11 +714,6 @@ export const adminService = {
     return response.data;
   },
 
-  uploadExamCover: async (id, formData) => {
-    const response = await api.post(`/admin/exams/${id}/cover`, formData);
-    return response.data;
-  },
-  
   /**
    * @deprecated Use deleteTest() instead. Kept for backward compatibility.
    */
@@ -798,59 +733,9 @@ export const adminService = {
     const response = await api.get(`/admin/tests/${id}`);
     return response.data;
   },
-
-  getTestResults: async (id, params = {}) => {
-    const response = await api.get(`/admin/tests/${id}/results`, { params });
-    return response.data;
-  },
-
-  getTestQuestionAnalytics: async (id, params = {}) => {
-    const response = await api.get(`/admin/tests/${id}/question-analytics`, { params });
-    return response.data;
-  },
-
-  getTestStatisticsSummary: async (testId) => {
-    const response = await api.get(`/admin/tests/${testId}/statistics`);
-    return response.data;
-  },
-
-  getTestResultBreakdown: async (resultId) => {
-    const response = await api.get(`/admin/test-results/${resultId}/breakdown`);
-    return response.data;
-  },
-
-  updateTestResultScore: async (resultId, score, note = '') => {
-    const response = await api.patch(`/admin/test-results/${resultId}/score`, {
-      score,
-      note: note || undefined,
-    });
-    return response.data;
-  },
-
-  exportTestResultsCsv: async (params = {}) => {
-    const response = await api.get('/admin/test-results/export', {
-      params,
-      responseType: 'blob',
-    });
-    return response;
-  },
-
-  exportSingleTestResultsCsv: async (testId, params = {}) => {
-    const response = await api.get(`/admin/tests/${testId}/results/export`, {
-      params,
-      responseType: 'blob',
-    });
-    return response;
-  },
   
   createTest: async (testData) => {
     const response = await api.post('/admin/tests', testData);
-    return response.data;
-  },
-
-  /** Creează examen independent (catalog elevi) dintr-un test existent */
-  promoteTestToStandaloneExam: async (testId) => {
-    const response = await api.post(`/admin/tests/${testId}/promote-to-exam`);
     return response.data;
   },
   
@@ -869,24 +754,10 @@ export const adminService = {
     return response.data;
   },
 
-  previewTestSelection: async (id, payload = {}) => {
-    const response = await api.post(`/admin/tests/${id}/selection-preview`, payload);
-    return response.data;
-  },
-
   linkTestToCourse: async (testId, courseId, options = {}) => {
     const response = await api.post(`/admin/tests/${testId}/link-to-course`, {
       course_id: courseId,
       ...options,
-    });
-    return response.data;
-  },
-
-  unlinkTestFromCourse: async (testId, courseId, scope = null, scopeId = null) => {
-    const response = await api.post(`/admin/tests/${testId}/unlink-from-course`, {
-      course_id: courseId,
-      scope,
-      scope_id: scopeId,
     });
     return response.data;
   },
@@ -902,31 +773,9 @@ export const adminService = {
     return response.data;
   },
 
-  reorderTestQuestions: async (testId, questionIds) => {
-    const response = await api.post(`/admin/tests/${testId}/questions/reorder`, {
-      question_ids: questionIds,
-    });
-    return response.data;
-  },
-
   listQuestions: async (params = {}) => {
     const response = await api.get('/admin/questions', { params });
     return response.data;
-  },
-
-  moveQuestionsToFolderBulk: async (questionIds = [], targetBankId) => {
-    const response = await api.post('/admin/questions/bulk-move', {
-      question_ids: questionIds,
-      target_bank_id: targetBankId,
-    });
-    return response.data;
-  },
-
-  getQuestionTagSuggestions: async (search = '') => {
-    const response = await api.get('/admin/questions/tag-suggestions', {
-      params: search ? { search } : {},
-    });
-    return Array.isArray(response?.data?.tags) ? response.data.tags : [];
   },
 
   updateQuestion: async (questionId, questionData) => {
@@ -1039,12 +888,30 @@ export const adminService = {
     const response = await api.put(`/admin/question-banks/${id}`, bankData);
     return response.data;
   },
-  
+  /** Șterge folderul (soft delete). 422 dacă e folosit de un test. */
+  /** Biblioteca media: fișierele încărcate din builder (instructorii le văd doar pe ale lor). */
+  getMediaAssets: async (params = {}) => {
+    const response = await api.get('/admin/media', { params });
+    return response.data;
+  },
+  /** 409 dacă fișierul e folosit într-o lecție (răspunsul conține `usages`). */
+  deleteMediaAsset: async (id) => {
+    const response = await api.delete(`/admin/media/${id}`);
+    return response.data;
+  },
   deleteQuestionBank: async (id) => {
     const response = await api.delete(`/admin/question-banks/${id}`);
     return response.data;
   },
-
+  /** Mută întrebările selectate în alt folder. */
+  moveQuestionsToBank: async (questionIds, targetBankId) => {
+    const response = await api.post('/admin/questions/bulk-move', {
+      question_ids: questionIds,
+      target_bank_id: targetBankId,
+    });
+    return response.data;
+  },
+  
   getQuestionBankQuestions: async (bankId) => {
     const response = await api.get(`/admin/question-banks/${bankId}/questions`);
     return response.data;
@@ -1079,47 +946,10 @@ export const adminService = {
     return response.data;
   },
 
-  previewQuestionsWithAi: async (bankId, payload = {}) => {
-    assertAiEnabled();
+  previewQuestionsWithVolt: async (bankId, payload = {}) => {
+    assertVoltEnabled('ai_test_generation');
     const response = await api.post(`/admin/question-banks/${bankId}/ai/preview`, payload, {
       timeout: parseInt(import.meta.env.VITE_AI_API_TIMEOUT || '120000', 10),
-    });
-    return response.data;
-  },
-
-  improveQuestionWithAi: async (questionId, instruction = '') => {
-    assertAiEnabled();
-    const response = await api.post(
-      `/admin/questions/${questionId}/improve`,
-      {
-        instruction,
-      },
-      {
-        timeout: parseInt(import.meta.env.VITE_AI_API_TIMEOUT || '120000', 10),
-      }
-    );
-    return response.data;
-  },
-
-  autoTagQuestionWithAi: async (questionId) => {
-    assertAiEnabled();
-    const response = await api.post(`/admin/questions/${questionId}/auto-tag`);
-    return response.data;
-  },
-
-  generateQuestionsFromCourse: async (bankId, courseId, options = {}) => {
-    assertAiEnabled();
-    const response = await api.post(`/admin/question-banks/${bankId}/generate-from-course`, {
-      course_id: courseId,
-      ...options
-    });
-    return response.data;
-  },
-
-  generateQuestionsFromText: async (bankId, content, options = {}) => {
-    const response = await api.post(`/admin/question-banks/${bankId}/generate-from-text`, {
-      content: content,
-      ...options
     });
     return response.data;
   },
@@ -1153,31 +983,6 @@ export const adminService = {
     return response.data;
   },
   
-  eventQuickAction: async (id, action) => {
-    await ensureApiCsrfCookie();
-    const response = await api.post(`/admin/events/${id}/actions/${action}`);
-    return response.data;
-  },
-  
-  eventBulkAction: async (action, eventIds) => {
-    await ensureApiCsrfCookie();
-    const response = await api.post('/admin/events/bulk-actions', {
-      action,
-      event_ids: eventIds,
-    });
-    return response.data;
-  },
-  
-  getEventInsights: async () => {
-    const response = await api.get('/admin/events/insights');
-    return response.data;
-  },
-  
-  getEventInstructors: async () => {
-    const response = await api.get('/admin/events/instructors/list');
-    return response.data;
-  },
-
   setEventParticipantAttendance: async (eventId, userId, attended) => {
     await ensureApiCsrfCookie();
     const response = await api.put(`/admin/events/${eventId}/participants/${userId}/attendance`, {
@@ -1186,45 +991,9 @@ export const adminService = {
     return response.data;
   },
 
-  // Organization (departments + teams)
-  getOrganizationTree: async () => {
-    const response = await api.get('/admin/organization');
-    return response.data;
-  },
-
-  getDepartments: async () => {
-    const response = await api.get('/admin/departments');
-    return response.data;
-  },
-
-  createDepartment: async (data) => {
-    const response = await api.post('/admin/departments', data);
-    return response.data;
-  },
-
-  updateDepartment: async (id, data) => {
-    const response = await api.put(`/admin/departments/${id}`, data);
-    return response.data;
-  },
-
-  deleteDepartment: async (id) => {
-    const response = await api.delete(`/admin/departments/${id}`);
-    return response.data;
-  },
-
-  reorderDepartments: async (departmentIds) => {
-    const response = await api.post('/admin/departments/reorder', { department_ids: departmentIds });
-    return response.data;
-  },
-
   // Teams
   getTeams: async () => {
     const response = await api.get('/admin/teams');
-    return response.data;
-  },
-  
-  getTeam: async (id) => {
-    const response = await api.get(`/admin/teams/${id}`);
     return response.data;
   },
   
@@ -1280,15 +1049,15 @@ export const adminService = {
     return response.data;
   },
 
-  grantTestExtraAttempt: async (userId, testId, courseId) => {
-    const response = await api.post(`/admin/users/${userId}/tests/${testId}/extra-attempt`, {
-      course_id: courseId || undefined,
-    });
+  markCourseCompleted: async (userId, courseId) => {
+    const response = await api.post(`/admin/users/${userId}/courses/${courseId}/complete`);
     return response.data;
   },
 
-  markCourseCompleted: async (userId, courseId) => {
-    const response = await api.post(`/admin/users/${userId}/courses/${courseId}/complete`);
+  grantTestExtraAttempt: async (userId, testId, courseId) => {
+    const response = await api.post(`/admin/users/${userId}/tests/${testId}/extra-attempt`, {
+      course_id: courseId || null,
+    });
     return response.data;
   },
   
@@ -1299,6 +1068,20 @@ export const adminService = {
   
   updateUser: async (id, userData) => {
     const response = await api.put(`/admin/users/${id}`, userData);
+    return response.data;
+  },
+  /** Suspendă contul (nu se mai poate autentifica). Motiv opțional. */
+  suspendUser: async (id, reason = null) => {
+    const response = await api.post(`/admin/users/${id}/suspend`, reason ? { reason } : {});
+    return response.data;
+  },
+  activateUser: async (id) => {
+    const response = await api.post(`/admin/users/${id}/activate`);
+    return response.data;
+  },
+  /** Utilizatorul va trebui să-și schimbe parola la următoarea autentificare. */
+  resetUserAccess: async (id) => {
+    const response = await api.post(`/admin/users/${id}/reset-access`);
     return response.data;
   },
   
@@ -1317,6 +1100,11 @@ export const adminService = {
     return response.data;
   },
 
+  sendExistingUserInvitation: async (id) => {
+    const response = await api.post(`/admin/users/${id}/send-invitation`);
+    return response.data;
+  },
+
   approveUser: async (id) => {
     const response = await api.post(`/admin/users/${id}/approve`);
     return response.data;
@@ -1327,23 +1115,8 @@ export const adminService = {
     return response.data;
   },
 
-  activateUser: async (id) => {
-    const response = await api.post(`/admin/users/${id}/activate`);
-    return response.data;
-  },
-
-  deactivateUser: async (id) => {
-    const response = await api.post(`/admin/users/${id}/deactivate`);
-    return response.data;
-  },
-
-  getUserInvitations: async (params = {}) => {
-    const response = await api.get('/admin/users/invitations', { params });
-    return response.data;
-  },
-
-  sendUserInvitations: async (payload) => {
-    const response = await api.post('/admin/users/invitations', payload);
+  getUserInvitations: async () => {
+    const response = await api.get('/admin/users/invitations');
     return response.data;
   },
 
@@ -1357,21 +1130,13 @@ export const adminService = {
     return response.data;
   },
 
-  cancelUserInvitation: async (id) => {
-    const response = await api.delete(`/admin/users/invitations/${id}`);
-    return response.data;
-  },
-
   resendUserInvitation: async (id) => {
     const response = await api.post(`/admin/users/invitations/${id}/resend`);
     return response.data;
   },
 
-  assignCourses: async (userId, courseIds, isMandatory = true) => {
-    const response = await api.post(`/admin/users/${userId}/courses`, {
-      course_ids: courseIds,
-      is_mandatory: isMandatory,
-    });
+  cancelUserInvitation: async (id) => {
+    const response = await api.delete(`/admin/users/invitations/${id}`);
     return response.data;
   },
 
@@ -1381,43 +1146,6 @@ export const adminService = {
   },
 
   // Team Members Management
-  getTeamMembers: async (params = {}) => {
-    const response = await api.get('/admin/team-members', { params });
-    const data = response.data;
-    return Array.isArray(data) ? data : (data.data || []);
-  },
-
-  updateRoleAndPermissions: async (userId, role, permissions) => {
-    const response = await api.put(`/admin/team-members/${userId}/role-permissions`, {
-      role,
-      permissions,
-    });
-    return response.data;
-  },
-
-  activateTeamMember: async (userId) => {
-    const response = await api.post(`/admin/team-members/${userId}/activate`);
-    return response.data;
-  },
-
-  suspendTeamMember: async (userId, reason = null, suspendedUntil = null) => {
-    const response = await api.post(`/admin/team-members/${userId}/suspend`, {
-      reason,
-      suspended_until: suspendedUntil,
-    });
-    return response.data;
-  },
-
-  resetTeamMemberAccess: async (userId) => {
-    const response = await api.post(`/admin/team-members/${userId}/reset-access`);
-    return response.data;
-  },
-
-  removeTeamMemberFromTeam: async (userId) => {
-    const response = await api.post(`/admin/team-members/${userId}/remove-from-team`);
-    return response.data;
-  },
-
   // Course Teams
   attachTeamsToCourse: async (courseId, teamIds) => {
     const response = await api.post(`/admin/courses/${courseId}/teams`, { team_ids: teamIds });
@@ -1450,20 +1178,24 @@ export const adminService = {
   // Categories are no longer supported
 
   // Activity Logs
-  getActivityLogs: async (params = {}) => {
-    const response = await api.get('/admin/activity-logs', { params });
+  getActivityLogs: async (params = {}, { signal } = {}) => {
+    const response = await api.get('/admin/activity-logs', {
+      params,
+      signal,
+      timeout: parseInt(import.meta.env.VITE_ACTIVITY_LOGS_TIMEOUT || '30000', 10),
+    });
     return response.data;
   },
   
-  getActivityLog: async (id) => {
-    const response = await api.get(`/admin/activity-logs/${id}`);
-    return response.data;
-  },
-
   // Test Manual Review (Test model - standalone tests)
   getPendingTestReviews: async () => {
     const response = await api.get('/admin/tests/pending-reviews');
     return response.data;
+  },
+
+  getPendingTestReviewsCount: async () => {
+    const response = await api.get('/admin/tests/pending-reviews/count');
+    return Number(response.data?.count) || 0;
   },
 
   clearPendingTestReviews: async (olderThanDays = 30) => {
@@ -1481,9 +1213,47 @@ export const adminService = {
     return response.data;
   },
 
+  suggestTestManualReviewFeedback: async (resultId) => {
+    const response = await api.post(`/admin/test-results/${resultId}/feedback-with-volt`);
+    return response.data;
+  },
+
+  getTestResults: async (testId) => {
+    const response = await api.get(`/admin/tests/${testId}/results`);
+    return response.data;
+  },
+
+  getTestStatisticsSummary: async (testId) => {
+    const response = await api.get(`/admin/tests/${testId}/statistics`);
+    return response.data;
+  },
+
+  getTestQuestionAnalytics: async (testId) => {
+    const response = await api.get(`/admin/tests/${testId}/question-analytics`);
+    return response.data;
+  },
+
+  getTestResultBreakdown: async (resultId) => {
+    const response = await api.get(`/admin/test-results/${resultId}/breakdown`);
+    return response.data;
+  },
+
+  updateTestResultScore: async (resultId, score, note = '') => {
+    const response = await api.patch(`/admin/test-results/${resultId}/score`, {
+      score,
+      note: note || undefined,
+    });
+    return response.data;
+  },
+
   getPendingExamReviews: async () => {
     const response = await api.get('/admin/exams/pending-reviews');
     return response.data;
+  },
+
+  getPendingExamReviewsCount: async () => {
+    const response = await api.get('/admin/exams/pending-reviews/count');
+    return Number(response.data?.count) || 0;
   },
 
   clearPendingExamReviews: async (olderThanDays = 30) => {
@@ -1501,148 +1271,46 @@ export const adminService = {
     return response.data;
   },
 
-  // Course Quick Actions
-  courseQuickAction: async (courseId, action) => {
-    const response = await api.post(`/admin/courses/${courseId}/actions/${action}`);
-    return response.data;
-  },
-
-  // Course Bulk Actions
-  courseBulkAction: async (courseIds, action) => {
-    const response = await api.post('/admin/courses/bulk-actions', {
-      course_ids: courseIds,
-      action: action,
+  updateExamResultScore: async (resultId, score, note = '') => {
+    const response = await api.patch(`/admin/exam-results/${resultId}/score`, {
+      score,
+      note: note || undefined,
     });
     return response.data;
   },
 
+  // Course Quick Actions
+  // Course Bulk Actions
   getStatisticsCourseTestDetail: async (params = {}) => {
     const response = await api.get('/admin/statistics/course-test-detail', { params });
     return response.data;
   },
 
-  generateStatisticsExportWithAi: async (payload = {}) => {
-    const response = await api.post('/admin/statistics/ai-export', payload);
-    return response.data;
-  },
-
-  previewTestWithAi: async (payload = {}) => {
-    assertAiEnabled();
-    const response = await api.post('/admin/tests/ai/preview-from-course', payload, {
+  generateStatisticsExportWithVolt: async (payload = {}) => {
+    assertVoltEnabled('ai_stats');
+    const response = await api.post('/admin/statistics/ai-export', payload, {
       timeout: parseInt(import.meta.env.VITE_AI_API_TIMEOUT || '120000', 10),
     });
-    return response.data;
-  },
-
-  suggestTestBlueprintWithAi: async (payload = {}) => {
-    assertAiEnabled();
-    const response = await api.post('/admin/tests/ai/suggest-blueprint-from-course', payload, {
-      timeout: parseInt(import.meta.env.VITE_AI_API_TIMEOUT || '120000', 10),
-    });
-    return response.data;
-  },
-
-  regenerateTestQuestionWithAi: async (payload = {}) => {
-    assertAiEnabled();
-    const response = await api.post('/admin/tests/ai/regenerate-question-from-course', payload, {
-      timeout: parseInt(import.meta.env.VITE_AI_API_TIMEOUT || '120000', 10),
-    });
-    return response.data;
-  },
-
-  createTestWithAi: async (payload = {}) => {
-    assertAiEnabled();
-    const response = await api.post('/admin/tests/ai/create-from-course', payload, {
-      timeout: parseInt(import.meta.env.VITE_AI_API_TIMEOUT || '120000', 10),
-    });
-    return response.data;
-  },
-
-  suggestManualReviewFeedbackWithAi: async (resultId) => {
-    assertAiEnabled();
-    const response = await api.post(`/admin/test-results/${resultId}/feedback-with-ai`);
-    return response.data;
-  },
-
-  getStatisticsAiExportDatasets: async () => {
-    const response = await api.get('/admin/statistics/ai-export/datasets');
-    return response.data;
-  },
-
-  listPlatformCompanies: async (params = {}) => {
-    const response = await api.get('/admin/platform/companies', { params });
-    return response.data;
-  },
-
-  getPlatformOverview: async () => {
-    const response = await api.get('/admin/platform/overview');
-    return response.data;
-  },
-
-  getPlatformPlans: async () => {
-    const response = await api.get('/admin/platform/plans');
-    return response.data;
-  },
-
-  getPlatformCompany: async (id) => {
-    const response = await api.get(`/admin/platform/companies/${id}`);
-    return response.data;
-  },
-
-  createPlatformCompany: async (payload) => {
-    const response = await api.post('/admin/platform/companies', payload);
-    return response.data;
-  },
-
-  updatePlatformCompany: async (id, payload) => {
-    const response = await api.put(`/admin/platform/companies/${id}`, payload);
-    return response.data;
-  },
-
-  invitePlatformCompanyOwner: async (id, payload) => {
-    const response = await api.post(`/admin/platform/companies/${id}/invite-owner`, payload);
-    return response.data;
-  },
-
-  listPlatformLeads: async (params = {}) => {
-    const response = await api.get('/admin/platform/leads', { params });
-    return response.data;
-  },
-
-  updatePlatformLead: async (id, payload) => {
-    const response = await api.put(`/admin/platform/leads/${id}`, payload);
-    return response.data;
-  },
-
-  getCompanyEntitlements: async () => {
-    const response = await api.get('/admin/company/entitlements');
     return response.data;
   },
 
   // Course Insights
-  getCourseInsights: async () => {
-    const response = await api.get('/admin/courses/insights');
-    return response.data;
-  },
-
   // Course Preview
-  previewCourse: async (id) => {
-    const response = await api.get(`/admin/courses/${id}/preview`);
-    return response.data;
-  },
-
   // ============================================================
   // Course Builder (Admin) - autosave + drag&drop orchestration
   // ============================================================
   getCourseBuilderStructure: async (courseId) => {
     const response = await api.get(`/admin/courses/${courseId}/builder/structure`, {
       params: { _t: Date.now() }, // evita cache-ul care poate returna ordinea veche
+      timeout: parseInt(import.meta.env.VITE_BUILDER_API_TIMEOUT || '60000', 10),
     });
     return response.data;
   },
 
   patchCourseBuilderStructure: async (courseId, ops) => {
-    const response = await api.patch(`/admin/courses/${courseId}/builder/structure`, { ops });
+    const response = await api.patch(`/admin/courses/${courseId}/builder/structure`, { ops }, {
+      timeout: parseInt(import.meta.env.VITE_BUILDER_API_TIMEOUT || '60000', 10),
+    });
     return response.data;
   },
 
@@ -1661,46 +1329,8 @@ export const adminService = {
     return response.data;
   },
 
-  builderCreateContentBlock: async (courseId, lessonId, blockData) => {
-    const response = await api.post(`/admin/courses/${courseId}/builder/lessons/${lessonId}/content-blocks`, blockData);
-    return response.data;
-  },
-
-  builderUpdateContentBlock: async (courseId, blockId, blockData) => {
-    const response = await api.put(`/admin/courses/${courseId}/builder/content-blocks/${blockId}`, blockData);
-    return response.data;
-  },
-
-  builderDeleteContentBlock: async (courseId, blockId) => {
-    const response = await api.delete(`/admin/courses/${courseId}/builder/content-blocks/${blockId}`);
-    return response.data;
-  },
-
-  builderReorderContentBlocks: async (courseId, lessonId, contentBlockIds) => {
-    const response = await api.patch(`/admin/courses/${courseId}/builder/lessons/${lessonId}/content-blocks/reorder`, {
-      content_block_ids: contentBlockIds,
-    });
-    return response.data;
-  },
-
   builderUploadContentFile: async (courseId, formData) => {
     const response = await api.post(`/admin/courses/${courseId}/builder/upload`, formData);
-    return response.data;
-  },
-
-  listMediaAssets: async ({ courseId, type, q, page, perPage } = {}) => {
-    const params = {};
-    if (courseId) params.course_id = courseId;
-    if (type) params.type = type;
-    if (q) params.q = q;
-    if (page) params.page = page;
-    if (perPage) params.per_page = perPage;
-    const response = await api.get('/admin/media', { params });
-    return response.data;
-  },
-
-  deleteMediaAsset: async (id) => {
-    const response = await api.delete(`/admin/media/${id}`);
     return response.data;
   },
 
@@ -1714,34 +1344,10 @@ export const adminService = {
     return response.data;
   },
 
-  builderSubmitForReview: async (courseId) => {
-    const response = await api.post(`/admin/courses/${courseId}/builder/submit-for-review`);
-    return response.data;
-  },
-
   builderPublishCourse: async (courseId, teamIds = [], options = {}) => {
     const response = await api.post(`/admin/courses/${courseId}/builder/publish`, {
       team_ids: teamIds,
       catalog_outside_map: Boolean(options.catalogOutsideMap),
-    });
-    return response.data;
-  },
-
-  builderCloneCourse: async (courseId, includeTeams = true) => {
-    const response = await api.post(`/admin/courses/${courseId}/builder/clone`, {
-      include_teams: includeTeams,
-    });
-    return response.data;
-  },
-
-  builderGetVersions: async (courseId) => {
-    const response = await api.get(`/admin/courses/${courseId}/builder/versions`);
-    return response.data;
-  },
-
-  builderRestoreVersion: async (courseId, versionId, includeTeams = true) => {
-    const response = await api.post(`/admin/courses/${courseId}/builder/versions/${versionId}/restore`, {
-      include_teams: includeTeams,
     });
     return response.data;
   },
@@ -1769,11 +1375,6 @@ export const adminService = {
     return response.data;
   },
 
-  toggleModuleLock: async (moduleId) => {
-    const response = await api.post(`/admin/modules/${moduleId}/toggle-lock`);
-    return response.data;
-  },
-
   // Settings
   getSettings: async () => {
     const response = await api.get('/admin/settings');
@@ -1781,27 +1382,6 @@ export const adminService = {
   },
   updateSettings: async (settingsData) => {
     const response = await api.put('/admin/settings', settingsData);
-    return response.data;
-  },
-
-  getCompanyBranding: async () => {
-    const response = await api.get('/admin/company/branding');
-    return response.data;
-  },
-  updateCompanyBranding: async (payload) => {
-    const response = await api.put('/admin/company/branding', payload);
-    return response.data;
-  },
-  uploadCompanyLogo: async (file) => {
-    const formData = new FormData();
-    formData.append('logo', file);
-    const response = await api.post('/admin/company/branding/logo', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return response.data;
-  },
-  deleteCompanyLogo: async () => {
-    const response = await api.delete('/admin/company/branding/logo');
     return response.data;
   },
 

@@ -13,12 +13,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaCache;
 use Carbon\Carbon;
 
 class StudentDashboardController extends Controller
 {
     protected $progressService;
+    private array $courseProgress = [];
+    private array $courseAccess = [];
+    private array $resultRows = [];
+    private array $lastAccessed = [];
+    private array $completedLessonIds = [];
 
     public function __construct(CourseProgressService $progressService)
     {
@@ -31,17 +36,22 @@ class StudentDashboardController extends Controller
     public function index()
     {
         $user = Auth::user();
+        $this->courseProgress = $this->courseAccess = $this->resultRows = [];
+        $this->completedLessonIds = DB::table('lesson_progress')
+            ->where('user_id', $user->id)->where('completed', true)
+            ->pluck('lesson_id')->flip()->all();
 
         // Get enrolled courses
         $enrolledCourses = DB::table('course_user')
             ->where('user_id', $user->id)
             ->where('enrolled', true)
-            ->pluck('course_id');
+            ->pluck('updated_at', 'course_id');
+        $this->lastAccessed = $enrolledCourses->all();
 
         $courses = Course::with(['teacher', 'modules' => function($q) {
             $q->where('status', 'published')->orderBy('order');
-        }])
-        ->whereIn('id', $enrolledCourses)
+        }, 'modules.lessons' => fn ($q) => $q->where('status', 'published')])
+        ->whereIn('id', $enrolledCourses->keys())
         ->where('status', 'published')
         ->get();
 
@@ -95,16 +105,23 @@ class StudentDashboardController extends Controller
                 'total_courses' => $courses->count(),
                 'active_courses_count' => count($activeCourses),
                 'completed_courses_count' => $courses->filter(function($course) use ($user) {
-                    $progress = $this->progressService->calculateCourseProgress($user, $course);
+                    $progress = $this->getCourseProgress($user, $course);
                     return $progress >= 100;
                 })->count(),
-                'total_lessons_completed' => DB::table('lesson_progress')
-                    ->where('user_id', $user->id)
-                    ->where('completed', true)
-                    ->count(),
+                'total_lessons_completed' => count($this->completedLessonIds),
                 'total_exams_passed' => $this->getTotalExamsPassed($user),
             ],
         ]);
+    }
+
+    private function getCourseProgress($user, $course): float
+    {
+        return $this->courseProgress[$course->id] ??= $this->progressService->calculateCourseProgress($user, $course);
+    }
+
+    private function getCourseAccess($user, $course): array
+    {
+        return $this->courseAccess[$course->id] ??= $this->progressService->getUserAccessStatus($user, $course);
     }
 
     /**
@@ -127,22 +144,16 @@ class StudentDashboardController extends Controller
         $completedCourses = 0;
 
         foreach ($courses as $course) {
-            $courseProgress = $this->progressService->calculateCourseProgress($user, $course);
+            $courseProgress = $this->getCourseProgress($user, $course);
             
             // Count lessons
             $modules = $course->modules;
             foreach ($modules as $module) {
-                $moduleLessons = $module->lessons()->where('status', 'published')->get();
+                $moduleLessons = $module->lessons;
                 $totalLessons += $moduleLessons->count();
 
                 foreach ($moduleLessons as $lesson) {
-                    $isCompleted = Schema::hasTable('lesson_progress')
-                        ? DB::table('lesson_progress')
-                            ->where('user_id', $user->id)
-                            ->where('lesson_id', $lesson->id)
-                            ->where('completed', true)
-                            ->exists()
-                        : false;
+                    $isCompleted = isset($this->completedLessonIds[$lesson->id]);
 
                     if ($isCompleted) {
                         $completedLessons++;
@@ -176,10 +187,10 @@ class StudentDashboardController extends Controller
         $activeCourses = [];
 
         foreach ($courses as $course) {
-            $progress = $this->progressService->calculateCourseProgress($user, $course);
+            $progress = $this->getCourseProgress($user, $course);
             
             if ($progress > 0 && $progress < 100) {
-                $accessStatus = $this->progressService->getUserAccessStatus($user, $course);
+                $accessStatus = $this->getCourseAccess($user, $course);
                 
                 // Find next module to complete
                 $nextModule = null;
@@ -190,7 +201,7 @@ class StudentDashboardController extends Controller
                     }
                 }
 
-                $moduleModel = $nextModule ? Module::find($nextModule['id']) : null;
+                $moduleModel = $nextModule ? $course->modules->firstWhere('id', $nextModule['id']) : null;
                 
                 $activeCourses[] = [
                     'id' => $course->id,
@@ -202,10 +213,7 @@ class StudentDashboardController extends Controller
                         'id' => $moduleModel->id,
                         'title' => $moduleModel->title,
                     ] : null,
-                    'last_accessed_at' => DB::table('course_user')
-                        ->where('user_id', $user->id)
-                        ->where('course_id', $course->id)
-                        ->value('updated_at'),
+                    'last_accessed_at' => $this->lastAccessed[$course->id] ?? null,
                 ];
             }
         }
@@ -230,6 +238,14 @@ class StudentDashboardController extends Controller
             $nextLesson = $this->progressService->getNextIncompleteLesson($user, $course);
             
             if ($nextLesson) {
+                $orderedLessonIds = [];
+                foreach ($course->modules as $module) {
+                    foreach ($module->lessons->sortBy('order')->values() as $lesson) {
+                        $orderedLessonIds[] = (int) $lesson->id;
+                    }
+                }
+                $lessonIndex = array_search((int) $nextLesson->id, $orderedLessonIds, true);
+
                 return [
                     'id' => $nextLesson->id,
                     'title' => $nextLesson->title,
@@ -240,6 +256,8 @@ class StudentDashboardController extends Controller
                     'type' => $nextLesson->type,
                     'duration_minutes' => $nextLesson->duration_minutes,
                     'is_preview' => $nextLesson->is_preview ?? false,
+                    'lesson_number' => $lessonIndex === false ? null : $lessonIndex + 1,
+                    'lesson_count' => count($orderedLessonIds),
                 ];
             }
         }
@@ -278,7 +296,7 @@ class StudentDashboardController extends Controller
         $incompleteLessons = [];
 
         foreach ($courses as $course) {
-            $accessStatus = $this->progressService->getUserAccessStatus($user, $course);
+            $accessStatus = $this->getCourseAccess($user, $course);
             
             foreach ($accessStatus['modules'] as $module) {
                 if (!$module['unlocked']) {
@@ -287,7 +305,8 @@ class StudentDashboardController extends Controller
 
                 foreach ($module['lessons'] as $lesson) {
                     if ($lesson['unlocked'] && !$lesson['completed']) {
-                        $lessonModel = Lesson::find($lesson['id']);
+                        $moduleModel = $course->modules->firstWhere('id', $module['id']);
+                        $lessonModel = $moduleModel?->lessons->firstWhere('id', $lesson['id']);
                         if ($lessonModel) {
                             $incompleteLessons[] = [
                                 'id' => $lessonModel->id,
@@ -295,7 +314,7 @@ class StudentDashboardController extends Controller
                                 'course_id' => $course->id,
                                 'course_title' => $course->title,
                                 'module_id' => $module['id'],
-                                'module_title' => Module::find($module['id'])->title ?? null,
+                                'module_title' => $moduleModel?->title,
                                 'type' => $lessonModel->type,
                                 'duration_minutes' => $lessonModel->duration_minutes,
                             ];
@@ -315,32 +334,29 @@ class StudentDashboardController extends Controller
     {
         $pendingExams = [];
 
+        $publishedView = app(\App\Services\PublishedCourseView::class);
+        $testsByCourseId = CourseTest::query()
+            ->whereIn('course_id', $courses->pluck('id'))
+            ->whereIn('scope', ['module', 'course'])
+            ->with(['test' => fn ($q) => $q->where('status', 'published')])
+            ->get()
+            ->groupBy(fn ($row) => (int) $row->course_id);
+
         foreach ($courses as $course) {
-            $modules = $course->modules()->where('status', 'published')->get();
-            
-            foreach ($modules as $module) {
-                // Get tests linked to this module via CourseTest
-                $module->load(['courseTests' => function($q) {
-                    $q->where('scope', 'module');
-                }, 'courseTests.test' => function($q) {
-                    $q->where('status', 'published');
-                }]);
-                
-                // Also get course-level tests
-                $courseTests = \App\Models\CourseTest::where('course_id', $course->id)
-                    ->where('scope', 'course')
-                    ->with(['test' => function($q) {
-                        $q->where('status', 'published');
-                    }])
-                    ->get();
-                
-                // Process module-level tests
-                foreach ($module->courseTests as $courseTest) {
+            $courseTestRows = $testsByCourseId->get($course->id, collect());
+            $moduleTestsByModuleId = $courseTestRows->where('scope', 'module')->groupBy('scope_id');
+            $courseTests = $courseTestRows->where('scope', 'course');
+
+            foreach ($course->modules as $module) {
+                foreach ($moduleTestsByModuleId->get($module->id, collect()) as $courseTest) {
                     if (!$courseTest->test || $courseTest->test->status !== 'published') {
                         continue;
                     }
                     
                     $test = $courseTest->test;
+                    if (! $publishedView->learnerMayAccessLinkedTest($course, (int) $test->id, request())) {
+                        continue;
+                    }
                     
                     // Check if test is unlocked
                     try {
@@ -351,8 +367,7 @@ class StudentDashboardController extends Controller
                             'user_id' => $user->id,
                             'error' => $e->getMessage(),
                         ]);
-                        // For now, assume unlocked if test exists
-                        $isUnlocked = true;
+                        $isUnlocked = false;
                     }
                     
                     if ($isUnlocked) {
@@ -368,12 +383,14 @@ class StudentDashboardController extends Controller
                                 'module_id' => $module->id,
                                 'module_title' => $module->title,
                                 'passing_score' => $courseTest->passing_score ?? 70,
-                                'is_required' => $courseTest->required ?? false,
+                                'is_required' => true,
                             ];
                         }
                     }
                 }
                 
+            }
+
                 // Process course-level tests
                 foreach ($courseTests as $courseTest) {
                     if (!$courseTest->test || $courseTest->test->status !== 'published') {
@@ -381,6 +398,9 @@ class StudentDashboardController extends Controller
                     }
                     
                     $test = $courseTest->test;
+                    if (! $publishedView->learnerMayAccessLinkedTest($course, (int) $test->id, request())) {
+                        continue;
+                    }
                     
                     // For course-level tests
                     try {
@@ -391,7 +411,7 @@ class StudentDashboardController extends Controller
                             'user_id' => $user->id,
                             'error' => $e->getMessage(),
                         ]);
-                        $isUnlocked = true;
+                        $isUnlocked = false;
                     }
                     
                     if ($isUnlocked) {
@@ -407,12 +427,11 @@ class StudentDashboardController extends Controller
                                 'module_id' => null,
                                 'module_title' => null,
                                 'passing_score' => $courseTest->passing_score ?? 70,
-                                'is_required' => $courseTest->required ?? false,
+                                'is_required' => true,
                             ];
                         }
                     }
                 }
-            }
         }
 
         return array_slice($pendingExams, 0, 10); // Return top 10
@@ -473,13 +492,20 @@ class StudentDashboardController extends Controller
      */
     private function getUnifiedResultRows(int $userId, ?int $testId = null)
     {
+        if (isset($this->resultRows[$userId])) {
+            $rows = $this->resultRows[$userId];
+            return $testId === null ? $rows : $rows->where('test_id', $testId)->values();
+        }
+        if ($testId !== null) {
+            return $this->getUnifiedResultRows($userId)->where('test_id', $testId)->values();
+        }
         $results = collect();
 
         foreach ($this->getResultTableDefinitions() as $definition) {
             $table = $definition['table'];
             $idColumn = $definition['id_column'];
 
-            if (!Schema::hasTable($table) || !Schema::hasColumn($table, 'percentage') || !Schema::hasColumn($table, $idColumn)) {
+            if (!SchemaCache::hasTable($table) || !SchemaCache::hasColumn($table, 'percentage') || !SchemaCache::hasColumn($table, $idColumn)) {
                 continue;
             }
 
@@ -501,7 +527,7 @@ class StudentDashboardController extends Controller
                 $query->where($table . '.' . $idColumn, $testId);
             }
 
-            if (Schema::hasColumn($table, 'attempt_number')) {
+            if (SchemaCache::hasColumn($table, 'attempt_number')) {
                 $query->addSelect($table . '.attempt_number');
             } else {
                 $query->addSelect(DB::raw('NULL as attempt_number'));
@@ -536,7 +562,7 @@ class StudentDashboardController extends Controller
             }
         }
 
-        return $results
+        return $this->resultRows[$userId] = $results
             ->unique('dedupe_key')
             ->values();
     }

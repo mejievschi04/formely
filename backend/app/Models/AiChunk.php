@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCompanyThrough;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class AiChunk extends Model
 {
-    use HasFactory;
+    use BelongsToCompanyThrough, HasFactory;
 
     protected $fillable = [
         'course_id',
@@ -46,13 +47,13 @@ class AiChunk extends Model
         return $this->belongsTo(Lesson::class);
     }
 
-    public function contentBlock()
-    {
-        return $this->belongsTo(ContentBlock::class);
-    }
-
     public function embeddings()
     {
         return $this->hasMany(AiEmbedding::class);
+    }
+
+    protected static function companyThrough(): array
+    {
+        return ['course_id', 'courses'];
     }
 }

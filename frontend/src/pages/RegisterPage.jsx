@@ -1,3 +1,4 @@
+import '../styles/auth-modern.css';
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -10,7 +11,9 @@ import {
 	User,
 	WarningCircle,
 } from '@phosphor-icons/react';
-import { useAuth } from '../contexts/AuthContext';
+
+import { useAuth } from '../contexts/AuthContextShared.js';
+import logoShort from '../assets/Formely logo.png';
 
 const RegisterPage = () => {
 	const [name, setName] = useState('');
@@ -43,7 +46,7 @@ const RegisterPage = () => {
 	};
 
 	return (
-		<div className="modern-auth-container modern-auth--fixed" data-auth-page="register">
+		<div className="modern-auth-container">
 			{/* Background decorative elements */}
 			<div className="modern-auth-background">
 				<div className="modern-auth-gradient"></div>
@@ -56,9 +59,12 @@ const RegisterPage = () => {
 					{/* Logo and Header */}
 					<div className="modern-auth-header">
 						<div className="modern-auth-logo">
-							<span className="modern-auth-logo-text">Formely</span>
+							<img src={logoShort} alt="Formely" className="modern-auth-logo-img" />
 						</div>
 						<h1 className="modern-auth-title">Creează-ți contul</h1>
+						<p className="modern-auth-subtitle">
+							Începe-ți călătoria de învățare astăzi
+						</p>
 					</div>
 
 					{/* Form */}
@@ -168,6 +174,9 @@ const RegisterPage = () => {
 							<Link to="/login" className="modern-auth-link">
 								Autentifică-te
 							</Link>
+						</p>
+						<p className="modern-auth-footer-text modern-form-hint" style={{ marginTop: '0.75rem' }}>
+							Ai primit invitație pe email? Deschide linkul din mesaj pentru a-ți activa contul.
 						</p>
 					</div>
 				</div>

@@ -4,20 +4,14 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Event;
-use App\Models\User;
-use App\Models\Course;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
-use Carbon\Carbon;
+use App\Support\SchemaCache;
 
 class EventAdminController extends Controller
 {
-    use \App\Http\Controllers\Concerns\AssertsPlanEntitlements;
-
     public function index(Request $request)
     {
-        $this->assertCompanyFeature('events');
         $query = Event::with(['instructor:id,name,email', 'course:id,title']);
         if (auth()->user()->isInstructor()) {
             $query->where('instructor_id', auth()->id());
@@ -38,7 +32,7 @@ class EventAdminController extends Controller
 
         // Status filter
         if ($request->filled('status') && $request->status !== 'all') {
-            if (Schema::hasColumn('events', 'status')) {
+            if (SchemaCache::hasColumn('events', 'status')) {
                 $status = $request->status;
                 $now = now();
 
@@ -62,7 +56,7 @@ class EventAdminController extends Controller
                     $query->where('status', $status);
                 }
             }
-        } elseif (Schema::hasColumn('events', 'status')) {
+        } elseif (SchemaCache::hasColumn('events', 'status')) {
             // Default admin list: no drafts (evenimentele noi se publică automat)
             $query->whereNotIn('status', ['draft']);
         }
@@ -74,14 +68,14 @@ class EventAdminController extends Controller
 
         // Access type filter
         if ($request->has('access_type') && $request->access_type !== 'all') {
-            if (Schema::hasColumn('events', 'access_type')) {
+            if (SchemaCache::hasColumn('events', 'access_type')) {
                 $query->where('access_type', $request->access_type);
             }
         }
 
         // Instructor filter
         if ($request->has('instructor') && $request->instructor) {
-            if (Schema::hasColumn('events', 'instructor_id')) {
+            if (SchemaCache::hasColumn('events', 'instructor_id')) {
                 $query->where('instructor_id', $request->instructor);
             }
         }
@@ -149,7 +143,6 @@ class EventAdminController extends Controller
 
     public function store(Request $request)
     {
-        $this->assertCompanyFeature('events');
         $this->normalizeOptionalUrls($request);
 
         $validated = $request->validate([
@@ -290,6 +283,35 @@ class EventAdminController extends Controller
         ]);
     }
 
+    private function extractEventAttributes(array $validated): array
+    {
+        unset($validated['team_ids']);
+        if (! SchemaCache::hasColumn('events', 'audience_type')) {
+            unset($validated['audience_type']);
+        } else {
+            $validated['audience_type'] = ($validated['audience_type'] ?? 'all') === 'teams' ? 'teams' : 'all';
+        }
+        if (array_key_exists('description', $validated) && $validated['description'] === null) {
+            $validated['description'] = '';
+        }
+
+        return $validated;
+    }
+
+    private function syncEventAudience(Event $event, array $validated): void
+    {
+        if (! SchemaCache::hasTable('event_team') || ! method_exists($event, 'teams')) {
+            return;
+        }
+        $audience = $validated['audience_type'] ?? $event->audience_type ?? 'all';
+        $teamIds = $audience === 'teams' ? array_values(array_unique(array_map('intval', $validated['team_ids'] ?? []))) : [];
+        $event->teams()->sync($teamIds);
+        if (SchemaCache::hasColumn('events', 'audience_type')) {
+            $event->audience_type = $teamIds === [] ? 'all' : 'teams';
+            $event->save();
+        }
+    }
+
     public function destroy($id)
     {
         $event = Event::findOrFail($id);
@@ -313,7 +335,7 @@ class EventAdminController extends Controller
             'attended' => 'required|boolean',
         ]);
 
-        if (! Schema::hasTable('event_user')) {
+        if (! SchemaCache::hasTable('event_user')) {
             return response()->json(['message' => 'Înregistrările nu sunt disponibile'], 400);
         }
 
@@ -350,253 +372,12 @@ class EventAdminController extends Controller
     }
 
     /**
-     * Quick actions: publish, unpublish, cancel, complete
-     */
-    public function quickAction(Request $request, $id, $action)
-    {
-        $event = Event::findOrFail($id);
-        $this->ensureCanManageEvent($event);
-
-        switch ($action) {
-            case 'publish':
-                if ($event->status === 'draft') {
-                    $event->status = 'published';
-                    $event->save();
-                    return response()->json([
-                        'message' => 'Eveniment publicat cu succes',
-                        'event' => $this->addEventMetrics($event),
-                    ]);
-                }
-                return response()->json(['message' => 'Evenimentul nu poate fi publicat'], 400);
-
-            case 'unpublish':
-                if (in_array($event->status, ['published', 'upcoming'])) {
-                    $event->status = 'draft';
-                    $event->save();
-                    return response()->json([
-                        'message' => 'Eveniment retras cu succes',
-                        'event' => $this->addEventMetrics($event),
-                    ]);
-                }
-                return response()->json(['message' => 'Evenimentul nu poate fi retras'], 400);
-
-            case 'cancel':
-                if (!in_array($event->status, ['completed', 'cancelled'])) {
-                    $event->status = 'cancelled';
-                    $event->save();
-                    return response()->json([
-                        'message' => 'Eveniment anulat cu succes',
-                        'event' => $this->addEventMetrics($event),
-                    ]);
-                }
-                return response()->json(['message' => 'Evenimentul nu poate fi anulat'], 400);
-
-            case 'complete':
-                if (in_array($event->status, ['published', 'upcoming', 'live'])) {
-                    $event->status = 'completed';
-                    $event->save();
-                    return response()->json([
-                        'message' => 'Eveniment marcat ca finalizat',
-                        'event' => $this->addEventMetrics($event),
-                    ]);
-                }
-                return response()->json(['message' => 'Evenimentul nu poate fi finalizat'], 400);
-
-            default:
-                return response()->json(['message' => 'Acțiune invalidă'], 400);
-        }
-    }
-
-    /**
-     * Bulk actions
-     */
-    public function bulkAction(Request $request)
-    {
-        $request->validate([
-            'action' => 'required|string|in:publish,unpublish,cancel,delete',
-            'event_ids' => 'required|array',
-            'event_ids.*' => 'exists:events,id',
-        ]);
-
-        $action = $request->action;
-        $eventIds = $request->event_ids;
-        $successCount = 0;
-        $errors = [];
-
-        foreach ($eventIds as $eventId) {
-            try {
-                $event = Event::findOrFail($eventId);
-                $this->ensureCanManageEvent($event);
-
-                switch ($action) {
-                    case 'publish':
-                        if ($event->status === 'draft') {
-                            $event->status = 'published';
-                            $event->save();
-                            $successCount++;
-                        } else {
-                            $errors[] = "Evenimentul #{$eventId} nu poate fi publicat";
-                        }
-                        break;
-
-                    case 'unpublish':
-                        if (in_array($event->status, ['published', 'upcoming'])) {
-                            $event->status = 'draft';
-                            $event->save();
-                            $successCount++;
-                        } else {
-                            $errors[] = "Evenimentul #{$eventId} nu poate fi retras";
-                        }
-                        break;
-
-                    case 'cancel':
-                        if (!in_array($event->status, ['completed', 'cancelled'])) {
-                            $event->status = 'cancelled';
-                            $event->save();
-                            $successCount++;
-                        } else {
-                            $errors[] = "Evenimentul #{$eventId} nu poate fi anulat";
-                        }
-                        break;
-
-                    case 'delete':
-                        $event->delete();
-                        $successCount++;
-                        break;
-                }
-            } catch (\Exception $e) {
-                $errors[] = "Eroare la evenimentul #{$eventId}: " . $e->getMessage();
-            }
-        }
-
-        return response()->json([
-            'message' => "Acțiune executată pentru {$successCount} eveniment(e)",
-            'success_count' => $successCount,
-            'errors' => $errors,
-        ]);
-    }
-
-    /**
-     * Get insights and analytics
-     */
-    public function insights()
-    {
-        $scoped = Event::query();
-        if (auth()->user()->isInstructor()) {
-            $scoped->where('instructor_id', auth()->id());
-        }
-
-        $totalEvents = (clone $scoped)->count();
-        $publishedEvents = (clone $scoped)->where('status', 'published')->count();
-        $upcomingEvents = (clone $scoped)->where(function ($q) {
-            $q->where('status', 'upcoming')
-                ->orWhere(function ($q2) {
-                    $q2->where('status', 'published')
-                        ->where('start_date', '>', now());
-                });
-        })->count();
-        $completedEvents = (clone $scoped)->where('status', 'completed')->count();
-        $cancelledEvents = (clone $scoped)->where('status', 'cancelled')->count();
-
-        $myEventIds = (clone $scoped)->pluck('id');
-        $instructorScoped = auth()->user()->isInstructor();
-
-        // Total registrations
-        $totalRegistrations = 0;
-        if (Schema::hasTable('event_user')) {
-            $rq = DB::table('event_user')->where('registered', true);
-            if ($instructorScoped) {
-                $totalRegistrations = $myEventIds->isEmpty() ? 0 : $rq->whereIn('event_id', $myEventIds)->count();
-            } else {
-                $totalRegistrations = $rq->count();
-            }
-        }
-
-        // Total attendance
-        $totalAttendance = 0;
-        if (Schema::hasTable('event_user')) {
-            $aq = DB::table('event_user')->where('attended', true);
-            if ($instructorScoped) {
-                $totalAttendance = $myEventIds->isEmpty() ? 0 : $aq->whereIn('event_id', $myEventIds)->count();
-            } else {
-                $totalAttendance = $aq->count();
-            }
-        }
-
-        // Average attendance rate
-        $avgAttendanceRate = 0;
-        if ($totalRegistrations > 0) {
-            $avgAttendanceRate = round(($totalAttendance / $totalRegistrations) * 100, 1);
-        }
-
-        // Events with low registration
-        $lowRegistrationEvents = (clone $scoped)->where('max_capacity', '>', 0)
-            ->get()
-            ->filter(function($event) {
-                if ($event->max_capacity > 0) {
-                    $rate = ($event->registrations_count / $event->max_capacity) * 100;
-                    return $rate < 30;
-                }
-                return false;
-            })
-            ->take(5)
-            ->map(function($event) {
-                return [
-                    'id' => $event->id,
-                    'title' => $event->title,
-                    'registration_rate' => $event->registration_rate,
-                    'registrations_count' => $event->registrations_count,
-                    'max_capacity' => $event->max_capacity,
-                ];
-            })
-            ->values();
-
-        return response()->json([
-            'total_events' => $totalEvents,
-            'published_events' => $publishedEvents,
-            'upcoming_events' => $upcomingEvents,
-            'completed_events' => $completedEvents,
-            'cancelled_events' => $cancelledEvents,
-            'total_registrations' => $totalRegistrations,
-            'total_attendance' => $totalAttendance,
-            'average_attendance_rate' => $avgAttendanceRate,
-            'low_registration_events' => $lowRegistrationEvents,
-        ]);
-    }
-
-    /**
-     * Get list of instructors for filter
-     */
-    public function getInstructors()
-    {
-        if (auth()->user()->isInstructor()) {
-            $u = auth()->user();
-
-            return response()->json([[
-                'id' => $u->id,
-                'name' => $u->name,
-                'email' => $u->email,
-            ]]);
-        }
-
-        $instructors = User::whereHas('courses')
-            ->orWhereHas('events', function($q) {
-                $q->whereNotNull('instructor_id');
-            })
-            ->select('id', 'name', 'email')
-            ->orderBy('name')
-            ->get();
-
-        return response()->json($instructors);
-    }
-
-    /**
      * Add metrics to event
      */
     private function addEventMetrics($event)
     {
         // Update KPI counts if needed
-        if (Schema::hasTable('event_user')) {
+        if (SchemaCache::hasTable('event_user')) {
             $event->registrations_count = DB::table('event_user')
                 ->where('event_id', $event->id)
                 ->where('registered', true)
@@ -618,41 +399,12 @@ class EventAdminController extends Controller
             }
         }
 
-        if (Schema::hasTable('event_team') && method_exists($event, 'teams')) {
+        if (SchemaCache::hasTable('event_team') && method_exists($event, 'teams')) {
             $event->loadMissing('teams:id,name');
             $event->setAttribute('team_ids', $event->teams->pluck('id')->values()->all());
         }
 
         return $event;
-    }
-
-    private function extractEventAttributes(array $validated): array
-    {
-        unset($validated['team_ids']);
-        if (! Schema::hasColumn('events', 'audience_type')) {
-            unset($validated['audience_type']);
-        } else {
-            $validated['audience_type'] = ($validated['audience_type'] ?? 'all') === 'teams' ? 'teams' : 'all';
-        }
-        if (array_key_exists('description', $validated) && $validated['description'] === null) {
-            $validated['description'] = '';
-        }
-
-        return $validated;
-    }
-
-    private function syncEventAudience(Event $event, array $validated): void
-    {
-        if (! Schema::hasTable('event_team') || ! method_exists($event, 'teams')) {
-            return;
-        }
-        $audience = $validated['audience_type'] ?? $event->audience_type ?? 'all';
-        $teamIds = $audience === 'teams' ? array_values(array_unique(array_map('intval', $validated['team_ids'] ?? []))) : [];
-        $event->teams()->sync($teamIds);
-        if (Schema::hasColumn('events', 'audience_type')) {
-            $event->audience_type = $teamIds === [] ? 'all' : 'teams';
-            $event->save();
-        }
     }
 
     /**

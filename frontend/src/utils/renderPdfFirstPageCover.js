@@ -2,10 +2,7 @@
  * Randare prima pagină PDF → JPEG în browser (pdfjs-dist).
  * Evită dependența de Ghostscript / Imagick pe server.
  */
-import { getDocument } from 'pdfjs-dist';
-import { configurePdfWorker } from './pdfWorker';
-
-configurePdfWorker();
+import { openPdfFromData } from './pdfDocument';
 
 const MAX_EDGE = 1200;
 
@@ -23,7 +20,7 @@ export async function renderPdfFirstPageAsJpegBlob(file, opts = {}) {
 	const maxEdge = typeof opts.maxEdge === 'number' ? opts.maxEdge : MAX_EDGE;
 
 	const arrayBuffer = await file.arrayBuffer();
-	const pdf = await getDocument({ data: arrayBuffer }).promise;
+	const pdf = await openPdfFromData(arrayBuffer);
 	const page = await pdf.getPage(1);
 	const base = page.getViewport({ scale: 1 });
 	const scale = Math.min(2.25, maxEdge / Math.max(base.width, base.height, 1));

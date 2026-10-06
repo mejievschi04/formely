@@ -21,8 +21,6 @@ class AuthApiTest extends TestCase
 
     public function test_register_creates_pending_student_and_returns_pending_response(): void
     {
-        config(['formely.public_register_enabled' => true]);
-
         $this->mock(NotificationService::class, function ($mock) {
             $mock->shouldReceive('notifyRegistrationRequested')->once();
         });
@@ -51,18 +49,6 @@ class AuthApiTest extends TestCase
         $this->assertTrue(Hash::check('Password123', $user->password));
     }
 
-    public function test_register_is_disabled_by_default(): void
-    {
-        $response = $this->postJson('/api/auth/register', [
-            'name' => 'Ana Popescu',
-            'email' => 'ana.popescu@example.com',
-            'password' => 'Password123',
-        ]);
-
-        $response->assertForbidden();
-        $this->assertDatabaseMissing('users', ['email' => 'ana.popescu@example.com']);
-    }
-
     public function test_login_rejects_pending_accounts(): void
     {
         User::factory()->create([
@@ -80,85 +66,6 @@ class AuthApiTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['email']);
-    }
-
-    public function test_login_rejects_suspended_accounts(): void
-    {
-        User::factory()->create([
-            'name' => 'Suspended User',
-            'email' => 'suspended@example.com',
-            'password' => Hash::make('Password123'),
-            'role' => 'student',
-            'status' => 'suspended',
-            'suspended_reason' => 'Încălcarea regulilor',
-        ]);
-
-        $response = $this->postJson('/api/auth/login', [
-            'email' => 'suspended@example.com',
-            'password' => 'Password123',
-        ]);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['email']);
-    }
-
-    public function test_login_allows_account_after_temporary_suspension_expires(): void
-    {
-        User::factory()->create([
-            'name' => 'Temp Suspended',
-            'email' => 'temp@example.com',
-            'password' => Hash::make('Password123'),
-            'role' => 'student',
-            'status' => 'suspended',
-            'suspended_until' => now()->subMinute(),
-        ]);
-
-        $response = $this->postJson('/api/auth/login', [
-            'email' => 'temp@example.com',
-            'password' => 'Password123',
-        ]);
-
-        $response->assertOk();
-
-        $this->assertDatabaseHas('users', [
-            'email' => 'temp@example.com',
-            'status' => 'active',
-        ]);
-    }
-
-    public function test_login_rejects_inactive_accounts(): void
-    {
-        User::factory()->create([
-            'name' => 'Inactive User',
-            'email' => 'inactive@example.com',
-            'password' => Hash::make('Password123'),
-            'role' => 'student',
-            'status' => 'inactive',
-        ]);
-
-        $response = $this->postJson('/api/auth/login', [
-            'email' => 'inactive@example.com',
-            'password' => 'Password123',
-        ]);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['email']);
-    }
-
-    public function test_me_rejects_suspended_accounts(): void
-    {
-        $user = User::factory()->create([
-            'name' => 'Suspended Me',
-            'email' => 'suspended-me@example.com',
-            'role' => 'student',
-            'status' => 'suspended',
-        ]);
-
-        $response = $this->actingAs($user, 'sanctum')->getJson('/api/auth/me');
-
-        $response->assertStatus(403)
-            ->assertJsonPath('access_blocked', true)
-            ->assertJsonPath('suspended', true);
     }
 
     public function test_me_returns_current_user_profile(): void

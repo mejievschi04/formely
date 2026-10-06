@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { adminService } from '../../services/api';
-import AIStatisticsExportPanel from '../../components/admin/statistics/AIStatisticsExportPanel';
-import { useAuth } from '../../contexts/AuthContext';
-import { canUseAiFeature, isAiEnabled } from '../../utils/aiAvailability';
+import TestStatisticsPanel from '../../components/admin/tests/TestStatisticsPanel';
+import { BackButton } from '../../components/ui/ActionButtons';
 import {
 	buildStructuredExcelRows,
 	downloadStructuredExcel,
@@ -11,14 +10,13 @@ import {
 import './AdminStatisticsHubPage.css';
 
 const MENU_ITEMS = [
-	{ id: 'student-progress', label: 'Progresul elevilor' },
-	{ id: 'course-progress', label: 'Progres cursuri' },
-	{ id: 'test-progress', label: 'Progres teste' },
-	{ id: 'students', label: 'Elevi' },
-	{ id: 'courses', label: 'Cursuri' },
-	{ id: 'tests', label: 'Teste' },
-	{ id: 'top-students', label: 'Top 10 studenți' },
-	{ id: 'ai-export', label: 'Export cu Formely AI', feature: 'ai_stats' },
+	{ id: 'student-progress', label: 'Progresul utilizatorilor', detail: 'Cursuri, lecții și teste pe fiecare elev' },
+	{ id: 'course-progress', label: 'Progres cursuri', detail: 'Cât au avansat elevii în fiecare curs' },
+	{ id: 'test-progress', label: 'Progres teste', detail: 'Scoruri și promovări pe teste' },
+	{ id: 'students', label: 'Utilizatori', detail: 'Lista elevilor și activitatea lor' },
+	{ id: 'courses', label: 'Cursuri', detail: 'Înscrieri și finalizări pe curs' },
+	{ id: 'tests', label: 'Teste', detail: 'Încercări, pe teste sau pe elevi' },
+	{ id: 'top-students', label: 'Top 10 studenți', detail: 'Cei mai activi și cei care au nevoie de atenție' },
 ];
 
 const formatLearningDuration = (totalSeconds) => {
@@ -31,30 +29,36 @@ const formatLearningDuration = (totalSeconds) => {
 };
 
 const AdminStatisticsHubPage = () => {
-	const { user } = useAuth();
-	const menuItems = useMemo(
-		() => MENU_ITEMS.filter((item) => {
-			if (!item.feature) return true;
-			if (!isAiEnabled()) return false;
-			return canUseAiFeature(user, item.feature);
-		}),
-		[user]
-	);
 	const [active, setActive] = useState('student-progress');
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
-	const [statsData, setStatsData] = useState(null);
+	const [statsPayload, setStatsPayload] = useState(null);
+	const [teamId, setTeamId] = useState('');
 	const [dateFrom, setDateFrom] = useState('');
 	const [dateTo, setDateTo] = useState('');
 	const [testsViewMode, setTestsViewMode] = useState('tests');
 	const [testsSearch, setTestsSearch] = useState('');
+	const [openedTest, setOpenedTest] = useState(null);
+	const openTestRowProps = (row) => ({
+		className: 'admin-statistics-row-clickable',
+		role: 'button',
+		tabIndex: 0,
+		title: 'Deschide statistica testului',
+		onClick: () => setOpenedTest({ id: row.id, title: row.title }),
+		onKeyDown: (e) => {
+			if (e.key === 'Enter' || e.key === ' ') {
+				e.preventDefault();
+				setOpenedTest({ id: row.id, title: row.title });
+			}
+		},
+	});
 	const formatDateShort = (value) => {
 		if (!value) return '—';
 		const date = new Date(value);
 		if (Number.isNaN(date.getTime())) return '—';
 		return date.toLocaleDateString('en-US');
 	};
-	const activeItem = menuItems.find((item) => item.id === active);
+	const activeItem = MENU_ITEMS.find((item) => item.id === active);
 
 	useEffect(() => {
 		const sectionsUsingStatistics = new Set(['student-progress', 'course-progress', 'test-progress', 'top-students', 'students', 'courses', 'tests']);
@@ -67,7 +71,7 @@ const AdminStatisticsHubPage = () => {
 				if (dateFrom) params.date_from = dateFrom;
 				if (dateTo) params.date_to = dateTo;
 				const res = await adminService.getStatisticsCourseTestDetail(params);
-				setStatsData(res || null);
+				setStatsPayload(res || null);
 			} catch (e) {
 				const detail = e?.response?.data?.message || e?.message;
 				console.error('Failed to load statistics report:', detail || e);
@@ -78,6 +82,21 @@ const AdminStatisticsHubPage = () => {
 		};
 		load();
 	}, [active, dateFrom, dateTo]);
+
+	const statsData = useMemo(() => {
+		if (!statsPayload || !teamId) return statsPayload;
+		const selected = Number(teamId);
+		const students = (statsPayload.students || []).filter((student) =>
+			(student.teams || []).some((team) => Number(team.id) === selected)
+		);
+		const ids = new Set(students.map((student) => student.id));
+		return {
+			...statsPayload,
+			students,
+			enrollments: (statsPayload.enrollments || []).filter((row) => ids.has(row.user_id)),
+			test_results: (statsPayload.test_results || []).filter((row) => ids.has(row.user_id)),
+		};
+	}, [statsPayload, teamId]);
 
 	const reportRows = useMemo(() => {
 		const enrollments = statsData?.enrollments || [];
@@ -208,7 +227,7 @@ const AdminStatisticsHubPage = () => {
 				<div className="admin-statistics-top-actions">
 					<button
 						type="button"
-						className="lms-btn-secondary lms-btn-sm"
+						className="lms-btn-secondary lms-btn-sm admin-excel-export-btn"
 						onClick={exportStudentProgressCsv}
 						disabled={loading || Boolean(error)}
 					>
@@ -248,7 +267,7 @@ const AdminStatisticsHubPage = () => {
 					<strong>{kpis.avgCourses}</strong>
 				</article>
 				<article>
-					<span>Lectii (medie)</span>
+					<span>Lecții (medie)</span>
 					<strong>{kpis.avgLessons}</strong>
 				</article>
 				<article>
@@ -267,7 +286,7 @@ const AdminStatisticsHubPage = () => {
 						<tr>
 							<th>Nume complet</th>
 							<th>Cursuri finalizate</th>
-							<th>Lectii finalizate</th>
+							<th>Lecții finalizate</th>
 							<th>Teste finalizate</th>
 							<th>Scor mediu (%)</th>
 							<th>Timp studiu</th>
@@ -403,7 +422,7 @@ const AdminStatisticsHubPage = () => {
 				<div className="admin-statistics-top-actions">
 					<button
 						type="button"
-						className="lms-btn-secondary lms-btn-sm"
+						className="lms-btn-secondary lms-btn-sm admin-excel-export-btn"
 						onClick={exportCourseProgressCsv}
 						disabled={loading || Boolean(error)}
 					>
@@ -584,7 +603,7 @@ const AdminStatisticsHubPage = () => {
 				<div className="admin-statistics-top-actions">
 					<button
 						type="button"
-						className="lms-btn-secondary lms-btn-sm"
+						className="lms-btn-secondary lms-btn-sm admin-excel-export-btn"
 						onClick={exportTestProgressCsv}
 						disabled={loading || Boolean(error)}
 					>
@@ -620,7 +639,7 @@ const AdminStatisticsHubPage = () => {
 					<strong>{testKpis.totalTests}</strong>
 				</article>
 				<article>
-					<span>Total incercari</span>
+					<span>Total încercări</span>
 					<strong>{testKpis.totalAttempts}</strong>
 				</article>
 				<article>
@@ -647,7 +666,7 @@ const AdminStatisticsHubPage = () => {
 					</thead>
 					<tbody>
 						{testProgressRows.map((row) => (
-							<tr key={row.id}>
+							<tr key={row.id} {...openTestRowProps(row)}>
 								<td><strong>{row.title}</strong></td>
 								<td>{row.attempts}</td>
 								<td>{row.passed}</td>
@@ -779,7 +798,7 @@ const AdminStatisticsHubPage = () => {
 				<div className="admin-statistics-top-actions">
 					<button
 						type="button"
-						className="lms-btn-secondary lms-btn-sm"
+						className="lms-btn-secondary lms-btn-sm admin-excel-export-btn"
 						onClick={exportTopStudentsCsv}
 						disabled={loading || Boolean(error)}
 					>
@@ -947,7 +966,7 @@ const AdminStatisticsHubPage = () => {
 					<span className="admin-statistics-meta-pill">Total elevi: {studentsRows.length}</span>
 					<button
 						type="button"
-						className="lms-btn-secondary lms-btn-sm"
+						className="lms-btn-secondary lms-btn-sm admin-excel-export-btn"
 						onClick={exportStudentsOverviewCsv}
 						disabled={loading || Boolean(error)}
 					>
@@ -1101,7 +1120,7 @@ const AdminStatisticsHubPage = () => {
 					<span className="admin-statistics-meta-pill">Cursuri: {coursesRows.length}</span>
 					<button
 						type="button"
-						className="lms-btn-secondary lms-btn-sm"
+						className="lms-btn-secondary lms-btn-sm admin-excel-export-btn"
 						onClick={exportCoursesOverviewCsv}
 						disabled={loading || Boolean(error)}
 					>
@@ -1324,7 +1343,7 @@ const AdminStatisticsHubPage = () => {
 					<span className="admin-statistics-meta-pill">Teste: {testsRows.length}</span>
 					<button
 						type="button"
-						className="lms-btn-secondary lms-btn-sm"
+						className="lms-btn-secondary lms-btn-sm admin-excel-export-btn"
 						onClick={exportTestsOverviewCsv}
 						disabled={loading || Boolean(error)}
 					>
@@ -1344,14 +1363,14 @@ const AdminStatisticsHubPage = () => {
 			<div className="admin-statistics-tests-tabs">
 				<button
 					type="button"
-					className={testsViewMode === 'tests' ? 'is-active' : ''}
+					className={`admin-statistics-tests-tab${testsViewMode === 'tests' ? ' is-active' : ''}`}
 					onClick={() => setTestsViewMode('tests')}
 				>
 					Vizualizare teste
 				</button>
 				<button
 					type="button"
-					className={testsViewMode === 'students' ? 'is-active' : ''}
+					className={`admin-statistics-tests-tab${testsViewMode === 'students' ? ' is-active' : ''}`}
 					onClick={() => setTestsViewMode('students')}
 				>
 					Vizualizare elevi
@@ -1382,7 +1401,7 @@ const AdminStatisticsHubPage = () => {
 					<tbody>
 						{testsViewMode === 'tests'
 							? filteredTestsRows.map((row) => (
-								<tr key={row.id}>
+								<tr key={row.id} {...openTestRowProps(row)}>
 									<td><strong>{row.title}</strong></td>
 									<td>{row.notStarted}</td>
 									<td>{row.started}</td>
@@ -1419,36 +1438,54 @@ const AdminStatisticsHubPage = () => {
 				<div className="admin-page-header-content">
 					<h1 className="admin-page-title">Statistică</h1>
 					<p className="admin-page-subtitle">
-						Rapoarte Formely de progres, cursuri, teste și clasamente — din datele live ale platformei
+						Rapoarte de progres, cursuri, teste și clasamente — aliniate la datele din platformă
 					</p>
 				</div>
+				<label className="admin-statistics-team-filter">
+					<span className="va-input-label">Echipă</span>
+					<select
+						className="va-input"
+						value={teamId}
+						onChange={(e) => setTeamId(e.target.value)}
+						aria-label="Filtrează statisticile după echipă"
+					>
+						<option value="">Toate echipele</option>
+						{(statsPayload?.teams || []).map((team) => (
+							<option key={team.id} value={team.id}>{team.name}</option>
+						))}
+					</select>
+				</label>
 			</header>
 
 			<div className="admin-statistics-hub-layout">
 				<aside className="admin-statistics-hub-sidebar" aria-label="Navigare rapoarte">
 					<p className="admin-statistics-hub-sidebar-title">Rapoarte</p>
 					<nav className="admin-statistics-hub-nav">
-						{menuItems.map((item) => (
+						{MENU_ITEMS.map((item) => (
 							<button
 								key={item.id}
 								type="button"
-								className={active === item.id ? 'is-active' : ''}
+								className={`admin-statistics-hub-nav-btn${active === item.id ? ' is-active' : ''}`}
 								onClick={() => {
-									if (item.comingSoon) return;
 									setActive(item.id);
+									setOpenedTest(null);
 								}}
-								disabled={item.comingSoon}
-								title={item.comingSoon ? 'Formely AI — în curând' : undefined}
-								aria-label={item.comingSoon ? 'Formely AI, în curând' : undefined}
+								aria-pressed={active === item.id}
 							>
-								{item.label}
+								<span className="admin-statistics-hub-nav-label">{item.label}</span>
+								<span className="admin-statistics-hub-nav-detail">{item.detail}</span>
 							</button>
 						))}
 					</nav>
 				</aside>
 
 				<section className="admin-statistics-hub-main">
-				{active === 'student-progress' ? (
+				{openedTest && (active === 'tests' || active === 'test-progress') ? (
+					<div className="admin-statistics-test-detail">
+						<BackButton onClick={() => setOpenedTest(null)}>Înapoi la teste</BackButton>
+						<TestStatisticsPanel testId={openedTest.id} testTitle={openedTest.title || 'Test'} />
+					</div>
+				) : active === 'student-progress' ? (
 					renderStudentProgress()
 				) : active === 'course-progress' ? (
 					renderCourseProgress()
@@ -1462,8 +1499,6 @@ const AdminStatisticsHubPage = () => {
 					renderCoursesOverview()
 				) : active === 'tests' ? (
 					renderTestsOverview()
-				) : active === 'ai-export' ? (
-					<AIStatisticsExportPanel dateFrom={dateFrom} dateTo={dateTo} />
 				) : (
 					<div className="admin-statistics-placeholder">
 						<h2 className="admin-statistics-section-heading">{activeItem?.label || 'Statistică'}</h2>

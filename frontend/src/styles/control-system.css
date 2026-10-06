@@ -1,0 +1,561 @@
+/*
+ * Single control style for the app.
+ * Surface: elevated background, secondary border, 40px, shared radius.
+ * Primary and selected: brand yellow, dark text, same shape.
+ * No lift and no offset shadow.
+ *
+ * Butonul principal are o singură clasă: .lms-btn-primary. Clasele proprii ale componentelor
+ * (ex. .library-btn--primary) rămân doar pentru așezare (lățime, margini), nu pentru culori.
+ */
+
+html body :is(
+	.lms-btn-primary,
+	.modern-auth-submit
+) {
+	min-height: var(--btn-desktop-min-height) !important;
+	border: 1px solid var(--btn-primary-border) !important;
+	border-radius: var(--btn-desktop-radius) !important;
+	background: var(--btn-primary-bg) !important;
+	background-color: var(--btn-primary-bg) !important;
+	color: var(--btn-primary-text) !important;
+	box-shadow: none !important;
+	font-weight: var(--font-weight-semibold) !important;
+	transform: none !important;
+}
+
+html body :is(
+	.lms-btn-primary,
+	.modern-auth-submit
+):hover:not(:disabled) {
+	background: var(--btn-primary-hover) !important;
+	background-color: var(--btn-primary-hover) !important;
+	border-color: var(--btn-primary-border) !important;
+	color: var(--btn-primary-text) !important;
+	box-shadow: none !important;
+	transform: none !important;
+}
+
+/* Dezactivat: aceeași culoare, estompată (nu mai are fiecare variantă regula ei) */
+html body :is(
+	.lms-btn-primary,
+	.modern-auth-submit
+):is(:disabled, [aria-disabled="true"], .disabled) {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+
+html body :is(
+	.lms-btn-primary
+) :is(svg, span) {
+	color: inherit !important;
+}
+
+/*
+ * Tema întunecată: dark-theme.css forțează culoarea pe orice p/span/div/label (text deschis)
+ * și pe orice link (galben), cu specificitate mai mare decât regulile de mai sus. Pe butoanele
+ * galbene asta dădea text alb sau galben pe galben; aici textul rămâne cel definit pentru buton.
+ */
+html[data-theme="dark"] body :is(
+	.lms-btn-primary,
+	.modern-auth-submit
+):not(.va-btn-danger):not(:disabled):not([aria-disabled="true"]),
+html[data-theme="dark"] body :is(
+	.lms-btn-primary,
+	.modern-auth-submit
+):not(.va-btn-danger):not(:disabled):not([aria-disabled="true"]) :is(svg, span, div, p, small, strong) {
+	color: var(--btn-primary-text) !important;
+}
+
+html body :is(
+	.lms-btn-secondary,
+	.admin-btn-secondary,
+	.btn-secondary,
+	.lesson-page-btn-secondary,
+	.lessons-page-nav-btn--prev
+):not(.va-btn-danger):not(.btn-danger) {
+	min-height: var(--btn-desktop-min-height) !important;
+	border: 1px solid var(--btn-outline-border) !important;
+	border-radius: var(--btn-desktop-radius) !important;
+	background: var(--bg-elevated) !important;
+	background-color: var(--bg-elevated) !important;
+	color: var(--text-primary) !important;
+	box-shadow: none !important;
+	font-weight: var(--font-weight-semibold) !important;
+	transform: none !important;
+}
+
+html body :is(
+	.lms-btn-secondary,
+	.admin-btn-secondary,
+	.btn-secondary,
+	.lesson-page-btn-secondary,
+	.lessons-page-nav-btn--prev
+):not(.va-btn-danger):not(.btn-danger):hover:not(:disabled) {
+	background: var(--bg-secondary) !important;
+	background-color: var(--bg-secondary) !important;
+	border-color: var(--btn-outline-border-hover) !important;
+	color: var(--text-primary) !important;
+	box-shadow: none !important;
+	transform: none !important;
+}
+
+html body :is(
+	.courses-page-filter-chip,
+	.courses-page-student-filter
+) {
+	border: 1px solid var(--btn-outline-border) !important;
+	border-radius: var(--btn-desktop-radius) !important;
+	background: var(--bg-elevated) !important;
+	background-color: var(--bg-elevated) !important;
+	color: var(--text-primary) !important;
+	box-shadow: none !important;
+	transform: none !important;
+}
+
+html body :is(
+	.courses-page-filter-chip.active,
+	.courses-page-student-filter.is-active,
+	.modern-nav-item.active,
+	.modern-nav-item.is-active,
+	.student-mobile-tab.active
+),
+html body :is(
+	.courses-page-filter-chip.active,
+	.courses-page-student-filter.is-active,
+	.modern-nav-item.active,
+	.modern-nav-item.is-active,
+	.student-mobile-tab.active
+):hover {
+	border-color: var(--btn-primary-border) !important;
+	background: var(--btn-primary-bg) !important;
+	background-color: var(--btn-primary-bg) !important;
+	color: var(--btn-primary-text) !important;
+	box-shadow: none !important;
+}
+
+html body :is(
+	.courses-page-filter-chip.active,
+	.courses-page-student-filter.is-active,
+	.modern-nav-item.active,
+	.modern-nav-item.is-active,
+	.student-mobile-tab.active
+) :is(svg, span, .courses-page-student-filter-label, .courses-page-student-filter-count, .modern-nav-item-label, .modern-nav-item-icon, .student-mobile-tab-label, .student-mobile-tab-icon) {
+	color: var(--btn-primary-text) !important;
+	background: transparent !important;
+}
+
+/*
+ * Butoanele cu contur (iconițele din bara de sus, Înapoi, filtre și file neselectate, butoanele
+ * secundare ale paginilor): aceeași margine, vizibilă pe fundal în ambele teme. Starea activă
+ * (galbenă) și butoanele de ștergere își păstrează culorile.
+ */
+
+/* One Save, one Back, one Delete. */
+html body :is(
+	.va-btn-save,
+	.admin-exams-builder-save-btn,
+	.student-settings-save-btn
+).va-btn-save,
+html body .va-btn-save.va-btn-save.va-btn-save,
+html body .admin-exams-builder-save-btn.admin-exams-builder-save-btn,
+html body .student-settings-save-btn.student-settings-save-btn {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 8px !important;
+	min-height: var(--btn-desktop-min-height) !important;
+	padding: 0 16px !important;
+	border: 1px solid var(--btn-primary-border) !important;
+	border-radius: var(--btn-desktop-radius) !important;
+	background: var(--btn-primary-bg) !important;
+	background-color: var(--btn-primary-bg) !important;
+	color: var(--btn-primary-text) !important;
+	box-shadow: none !important;
+	font-weight: var(--font-weight-semibold) !important;
+	transform: none !important;
+	text-decoration: none !important;
+}
+
+html body .va-btn-save.va-btn-save.va-btn-save:hover:not(:disabled),
+html body .admin-exams-builder-save-btn.admin-exams-builder-save-btn:hover:not(:disabled),
+html body .student-settings-save-btn.student-settings-save-btn:hover:not(:disabled) {
+	background: var(--btn-primary-hover) !important;
+	background-color: var(--btn-primary-hover) !important;
+	border-color: var(--btn-primary-border) !important;
+	color: var(--btn-primary-text) !important;
+	box-shadow: none !important;
+	transform: none !important;
+}
+
+html body :is(
+	.va-btn-back,
+	.admin-back-btn,
+	.admin-topnav-page-context-back,
+	.student-preview-back-to-admin,
+	.qb-back-btn,
+	.course-map-page-back,
+	.lessons-page-sidebar-back-btn,
+	.lesson-page-back-btn,
+	.lessons-page-nav-btn--prev,
+	.va-course-sidebar-back
+).va-btn-back,
+html body .va-btn-back.va-btn-back.va-btn-back,
+html body .admin-back-btn.admin-back-btn,
+html body .admin-topnav-page-context-back.admin-topnav-page-context-back,
+html body .student-preview-back-to-admin.student-preview-back-to-admin,
+html body .qb-back-btn.qb-back-btn,
+html body .course-map-page-back.course-map-page-back,
+html body .lessons-page-sidebar-back-btn.lessons-page-sidebar-back-btn,
+html body .lesson-page-back-btn.lesson-page-back-btn,
+html body .lessons-page-nav-btn--prev.lessons-page-nav-btn--prev {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 8px !important;
+	min-height: var(--btn-desktop-min-height) !important;
+	padding: 0 16px !important;
+	border: 1px solid var(--border-secondary) !important;
+	border-radius: var(--btn-desktop-radius) !important;
+	background: var(--bg-elevated) !important;
+	background-color: var(--bg-elevated) !important;
+	color: var(--text-primary) !important;
+	box-shadow: none !important;
+	font-weight: var(--font-weight-semibold) !important;
+	transform: none !important;
+	text-decoration: none !important;
+}
+
+html body .va-btn-back.va-btn-back.va-btn-back:hover:not(:disabled),
+html body .admin-back-btn.admin-back-btn:hover:not(:disabled),
+html body .admin-topnav-page-context-back.admin-topnav-page-context-back:hover:not(:disabled),
+html body .student-preview-back-to-admin.student-preview-back-to-admin:hover:not(:disabled),
+html body .qb-back-btn.qb-back-btn:hover:not(:disabled),
+html body .course-map-page-back.course-map-page-back:hover:not(:disabled),
+html body .lessons-page-sidebar-back-btn.lessons-page-sidebar-back-btn:hover:not(:disabled),
+html body .lesson-page-back-btn.lesson-page-back-btn:hover:not(:disabled),
+html body .lessons-page-nav-btn--prev.lessons-page-nav-btn--prev:hover:not(:disabled) {
+	background: var(--bg-secondary) !important;
+	background-color: var(--bg-secondary) !important;
+	border-color: var(--border-accent) !important;
+	color: var(--text-primary) !important;
+	box-shadow: none !important;
+	transform: none !important;
+}
+
+html body :is(
+	.va-btn-delete,
+	.va-btn-danger,
+	.btn-danger,
+	.admin-btn-danger,
+	.library-btn--danger,
+	.admin-manual-review-clear-danger,
+	.exam-picker-clear-danger,
+	.rte-image-delete-btn,
+	.qb-delete-btn,
+	.admin-exams-list-btn-danger-solid,
+	.admin-course-builder-actions-delete
+).va-btn-delete,
+html body .va-btn-delete.va-btn-delete.va-btn-delete,
+html body .va-btn-danger.va-btn-danger,
+html body .admin-btn-danger.admin-btn-danger,
+html body .library-btn--danger.library-btn--danger,
+html body .admin-manual-review-clear-danger.admin-manual-review-clear-danger,
+html body .exam-picker-clear-danger.exam-picker-clear-danger,
+html body .rte-image-delete-btn.rte-image-delete-btn,
+html body .qb-delete-btn.qb-delete-btn,
+html body .admin-exams-list-btn-danger-solid.admin-exams-list-btn-danger-solid,
+html body .admin-course-builder-actions-delete.admin-course-builder-actions-delete {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 8px !important;
+	min-height: var(--btn-desktop-min-height) !important;
+	padding: 0 16px !important;
+	/* Roșu puțin mai închis decât --color-error: text alb lizibil (contrast ≥ 4.5) */
+	border: 1px solid color-mix(in srgb, var(--color-error) 88%, black) !important;
+	border-radius: var(--btn-desktop-radius) !important;
+	background: color-mix(in srgb, var(--color-error) 88%, black) !important;
+	background-color: color-mix(in srgb, var(--color-error) 88%, black) !important;
+	color: var(--color-white) !important;
+	box-shadow: none !important;
+	font-weight: var(--font-weight-semibold) !important;
+	transform: none !important;
+	text-decoration: none !important;
+}
+
+/* iconița are aceeași culoare ca textul (albă), nu roșul vechi al butonului cu contur */
+html body :is(
+	.va-btn-delete,
+	.va-btn-danger,
+	.btn-danger,
+	.admin-btn-danger,
+	.library-btn--danger,
+	.admin-manual-review-clear-danger,
+	.exam-picker-clear-danger,
+	.admin-exams-list-btn-danger-solid,
+	.admin-course-builder-actions-delete
+) svg {
+	color: inherit !important;
+}
+
+html body .va-btn-delete.va-btn-delete.va-btn-delete:hover:not(:disabled),
+html body .va-btn-danger.va-btn-danger:hover:not(:disabled),
+html body .admin-btn-danger.admin-btn-danger:hover:not(:disabled),
+html body .library-btn--danger.library-btn--danger:hover:not(:disabled),
+html body .admin-manual-review-clear-danger.admin-manual-review-clear-danger:hover:not(:disabled),
+html body .exam-picker-clear-danger.exam-picker-clear-danger:hover:not(:disabled),
+html body .rte-image-delete-btn.rte-image-delete-btn:hover:not(:disabled),
+html body .qb-delete-btn.qb-delete-btn:hover:not(:disabled),
+html body .admin-exams-list-btn-danger-solid.admin-exams-list-btn-danger-solid:hover:not(:disabled),
+html body .admin-course-builder-actions-delete.admin-course-builder-actions-delete:hover:not(:disabled) {
+	background: color-mix(in srgb, var(--color-error) 76%, black) !important;
+	background-color: color-mix(in srgb, var(--color-error) 76%, black) !important;
+	border-color: color-mix(in srgb, var(--color-error) 76%, black) !important;
+	color: var(--color-white) !important;
+	box-shadow: none !important;
+	transform: none !important;
+}
+
+html body .va-btn-icon.va-btn-icon,
+html body .qb-delete-btn.qb-delete-btn,
+html body .rte-image-delete-btn.rte-image-delete-btn {
+	width: var(--btn-desktop-min-height) !important;
+	min-width: var(--btn-desktop-min-height) !important;
+	padding: 0 !important;
+}
+
+html body :is(.va-btn-save, .va-btn-back, .va-btn-delete):disabled,
+html body :is(.va-btn-save, .va-btn-back, .va-btn-delete)[aria-disabled="true"] {
+	opacity: 0.55 !important;
+	cursor: not-allowed !important;
+	transform: none !important;
+}
+
+html body :is(.va-btn-save, .va-btn-back, .va-btn-delete) :is(svg, span) {
+	color: inherit !important;
+	background: transparent !important;
+}
+
+/* Delete on a map cover stays a 32px chip, same shape as edit, with a visible trash icon. */
+html body .admin-course-map-showcase-wrap .admin-course-map-delete-btn.va-card-icon-btn {
+	width: 32px !important;
+	min-width: 32px !important;
+	height: 32px !important;
+	min-height: 32px !important;
+	padding: 0 !important;
+	gap: 0 !important;
+	border-radius: 8px !important;
+	background: var(--bg-elevated) !important;
+	background-color: var(--bg-elevated) !important;
+	color: var(--color-error) !important;
+	border: 1px solid var(--border-secondary) !important;
+	box-shadow: none !important;
+	line-height: 0 !important;
+}
+
+html body .admin-course-map-showcase-wrap .admin-course-map-delete-btn.va-card-icon-btn:hover,
+html body .admin-team-card-compact__icon-btn.admin-team-card-compact__icon-btn--danger:hover {
+	background: color-mix(in srgb, var(--color-error) 14%, var(--bg-elevated)) !important;
+	background-color: color-mix(in srgb, var(--color-error) 14%, var(--bg-elevated)) !important;
+	color: var(--color-error) !important;
+	border-color: var(--color-error) !important;
+}
+
+html body .admin-team-card-compact__icon-btn.admin-team-card-compact__icon-btn--danger:hover svg {
+	color: var(--color-error) !important;
+	fill: currentColor !important;
+	background: transparent !important;
+}
+
+html body .admin-course-map-showcase-wrap .admin-course-map-delete-btn.va-card-icon-btn svg {
+	width: 16px !important;
+	height: 16px !important;
+	display: block !important;
+	color: currentColor !important;
+	fill: currentColor !important;
+	background: transparent !important;
+}
+
+html body :is(.va-input, .form-input, .form-select, input.va-input, select.va-input) {
+	min-height: var(--btn-desktop-min-height);
+	border: 1px solid var(--border-secondary) !important;
+	border-radius: var(--btn-desktop-radius) !important;
+	background: var(--bg-elevated) !important;
+	color: var(--text-primary) !important;
+	box-shadow: none !important;
+}
+
+/* One published switch. On = green track, never brand yellow or white. */
+html body .va-publish.va-publish {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+	padding: 0 !important;
+	margin: 0 !important;
+	background: transparent !important;
+	border: 0 !important;
+	box-shadow: none !important;
+}
+
+html body .va-publish-label {
+	font-size: 0.75rem !important;
+	font-weight: 700 !important;
+	line-height: 1 !important;
+	letter-spacing: 0.02em !important;
+	color: var(--text-tertiary) !important;
+	background: transparent !important;
+	white-space: nowrap !important;
+}
+
+html body .va-publish.is-published .va-publish-label {
+	color: var(--text-success) !important;
+}
+
+html body .va-publish-switch.va-publish-switch {
+	position: relative !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: flex-start !important;
+	width: 44px !important;
+	min-width: 44px !important;
+	max-width: 44px !important;
+	height: 26px !important;
+	min-height: 26px !important;
+	max-height: 26px !important;
+	padding: 2px !important;
+	margin: 0 !important;
+	border: 0 !important;
+	border-radius: 999px !important;
+	background: #cbd5e1 !important;
+	background-color: #cbd5e1 !important;
+	box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08) !important;
+	transform: none !important;
+	cursor: pointer;
+	flex-shrink: 0;
+	line-height: 0 !important;
+	font-size: 0 !important;
+}
+
+html body .va-publish.is-published .va-publish-switch.va-publish-switch,
+html body .va-publish-switch.va-publish-switch[aria-checked='true'] {
+	background: var(--color-success) !important;
+	background-color: var(--color-success) !important;
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-success) 70%, black) !important;
+}
+
+html body .va-publish.is-published .va-publish-switch.va-publish-switch:hover:not(:disabled) {
+	background: color-mix(in srgb, var(--color-success) 86%, black) !important;
+	background-color: color-mix(in srgb, var(--color-success) 86%, black) !important;
+}
+
+html body .va-publish-switch-thumb {
+	display: block !important;
+	width: 22px !important;
+	height: 22px !important;
+	border-radius: 50% !important;
+	background: #ffffff !important;
+	background-color: #ffffff !important;
+	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.22) !important;
+	transform: translateX(0);
+	transition: transform 0.2s ease;
+}
+
+html body .va-publish.is-published .va-publish-switch-thumb {
+	transform: translateX(18px);
+}
+
+html body .va-publish-switch.va-publish-switch:disabled {
+	opacity: 0.55 !important;
+	cursor: wait !important;
+}
+
+html[data-theme='dark'] body .va-publish-switch.va-publish-switch:not([aria-checked='true']) {
+	background: #4b5563 !important;
+	background-color: #4b5563 !important;
+}
+
+/*
+ * Butonul de închidere (X) din ferestre, panouri, sertare și notificări: un singur aspect.
+ * Clasele proprii (ex. .admin-team-modal-close) rămân doar pentru poziționare.
+ */
+html body .va-close-btn.va-close-btn {
+	display: inline-flex !important;
+	flex: 0 0 auto !important;
+	align-items: center !important;
+	justify-content: center !important;
+	box-sizing: border-box !important;
+	width: 36px !important;
+	min-width: 36px !important;
+	max-width: 36px !important;
+	height: 36px !important;
+	min-height: 36px !important;
+	max-height: 36px !important;
+	padding: 0 !important;
+	border: 1px solid var(--btn-outline-border) !important;
+	border-radius: 8px !important;
+	background: var(--bg-elevated) !important;
+	background-color: var(--bg-elevated) !important;
+	color: var(--text-primary) !important;
+	box-shadow: none !important;
+	font-size: 0 !important;
+	line-height: 1 !important;
+	opacity: 1 !important;
+	cursor: pointer;
+	transform: none !important;
+	transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+html body .va-close-btn.va-close-btn:hover:not(:disabled) {
+	background: var(--bg-secondary) !important;
+	background-color: var(--bg-secondary) !important;
+	border-color: var(--btn-outline-border-hover) !important;
+	color: var(--text-primary) !important;
+}
+
+html body .va-close-btn.va-close-btn:active:not(:disabled) {
+	transform: scale(0.94) !important;
+}
+
+html body .va-close-btn.va-close-btn:focus-visible {
+	outline: 2px solid var(--border-focus) !important;
+	outline-offset: 2px !important;
+}
+
+html body .va-close-btn.va-close-btn:disabled {
+	opacity: 0.5 !important;
+	cursor: not-allowed;
+}
+
+html body .va-close-btn.va-close-btn svg {
+	width: 18px !important;
+	height: 18px !important;
+	color: inherit !important;
+	fill: currentColor;
+	pointer-events: none;
+}
+
+@media (max-width: 768px) {
+	html body .va-close-btn.va-close-btn {
+		width: 40px !important;
+		min-width: 40px !important;
+		max-width: 40px !important;
+		height: 40px !important;
+		min-height: 40px !important;
+		max-height: 40px !important;
+	}
+}
+
+/* varianta mică, în notificările toast */
+html body .va-close-btn.va-close-btn.va-close-btn--sm {
+	width: 28px !important;
+	min-width: 28px !important;
+	max-width: 28px !important;
+	height: 28px !important;
+	min-height: 28px !important;
+	max-height: 28px !important;
+}
+
+html body .va-close-btn.va-close-btn.va-close-btn--sm svg {
+	width: 14px !important;
+	height: 14px !important;
+}

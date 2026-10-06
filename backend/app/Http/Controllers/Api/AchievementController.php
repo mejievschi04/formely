@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaCache;
 
 class AchievementController extends Controller
 {
@@ -26,7 +26,7 @@ class AchievementController extends Controller
 
         // Get completed lessons count
         $completedLessons = 0;
-        if (Schema::hasTable('lesson_progress')) {
+        if (SchemaCache::hasTable('lesson_progress')) {
             $completedLessons = DB::table('lesson_progress')
                 ->where('user_id', $user->id)
                 ->where('completed', true)
@@ -35,13 +35,13 @@ class AchievementController extends Controller
 
         // Timp real petrecut (lesson_progress) sau, dacă lipsește, estimare din durata lecțiilor completate
         $learningHours = 0;
-        if (Schema::hasTable('lesson_progress')) {
+        if (SchemaCache::hasTable('lesson_progress')) {
             $totalSeconds = (int) DB::table('lesson_progress')
                 ->where('user_id', $user->id)
                 ->sum('time_spent_seconds');
             if ($totalSeconds > 0) {
                 $learningHours = round($totalSeconds / 3600, 1);
-            } elseif (Schema::hasTable('lessons')) {
+            } elseif (SchemaCache::hasTable('lessons')) {
                 $totalMinutes = DB::table('lesson_progress')
                     ->join('lessons', 'lesson_progress.lesson_id', '=', 'lessons.id')
                     ->where('lesson_progress.user_id', $user->id)

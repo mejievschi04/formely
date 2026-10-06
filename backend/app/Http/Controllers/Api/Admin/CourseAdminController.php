@@ -3,23 +3,22 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\RecalculateCourseProgressJob;
 use App\Models\Course;
+use App\Models\Lesson;
 use App\Models\User;
 use App\Models\Team;
 use App\Models\Module;
-use App\Models\CourseMap;
 use App\Support\CourseMapBuckets;
-use App\Models\CourseTest;
 use App\Models\ActivityLog;
-use App\Services\CourseProgressService;
 use App\Services\CourseBuilderService;
-use App\Services\EnrollmentAssignmentService;
+use App\Services\UserAssignedCoursesService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaCache;
 use Illuminate\Support\Facades\Cache;
-use Carbon\Carbon;
 
 class CourseAdminController extends Controller
 {
@@ -32,30 +31,9 @@ class CourseAdminController extends Controller
     public function index(Request $request)
     {
         try {
-            // Check if courses table exists
-            if (!Schema::hasTable('courses')) {
-                return response()->json(['data' => [], 'total' => 0]);
-            }
-            
             $query = Course::with(['teacher:id,name,email'])
-                ->withCount('modules');
-        
-        // Add enrollments count if course_user table exists
-        if (Schema::hasTable('course_user')) {
-            try {
-                $query->withCount(['assignedUsers as enrollments_count' => function($q) {
-                    if (Schema::hasColumn('course_user', 'enrolled')) {
-                        $q->where('enrolled', true);
-                    }
-                }]);
-            } catch (\Exception $e) {
-                // If relationship fails, add default count
-                $query->addSelect(DB::raw('0 as enrollments_count'));
-            }
-        } else {
-            // If table doesn't exist, add a default count
-            $query->addSelect(DB::raw('0 as enrollments_count'));
-        }
+                ->withCount('modules')
+                ->withCount(['assignedUsers as enrollments_count' => fn ($q) => $q->where('enrolled', true)]);
 
         // Search
         if ($request->has('search') && $request->search) {
@@ -71,13 +49,7 @@ class CourseAdminController extends Controller
 
         // Status filter (default to 'published' if status column exists, otherwise show all)
         if ($request->has('status') && $request->status !== 'all') {
-            // If status column exists in database
-            if (Schema::hasColumn('courses', 'status')) {
-                $query->where('status', $request->status);
-            } else {
-                // Fallback: treat all as published for now
-                // You can add status migration later
-            }
+            $query->where('status', $request->status);
         }
 
 
@@ -89,7 +61,7 @@ class CourseAdminController extends Controller
         }
 
         // Filter by course map (cursuri din această mapă)
-        if ($request->has('course_map_id') && Schema::hasTable('course_map_course')) {
+        if ($request->has('course_map_id')) {
             $mapId = (int) $request->course_map_id;
             if ($mapId > 0) {
                 $query->whereHas('courseMaps', fn ($q) => $q->where('course_maps.id', $mapId));
@@ -98,9 +70,7 @@ class CourseAdminController extends Controller
 
         // Level filter (if level column exists)
         if ($request->has('level') && $request->level !== 'all') {
-            if (Schema::hasColumn('courses', 'level')) {
-                $query->where('level', $request->level);
-            }
+            $query->where('level', $request->level);
         }
 
         // Sort
@@ -124,12 +94,8 @@ class CourseAdminController extends Controller
                 $query->orderBy('updated_at', $sortDirection);
                 break;
             case 'list_order':
-                if (Schema::hasColumn('courses', 'list_order')) {
-                    $query->orderBy('list_order', strtolower($sortDirection) === 'desc' ? 'desc' : 'asc')
-                        ->orderBy('id', 'asc');
-                } else {
-                    $query->orderBy('updated_at', 'desc');
-                }
+                $query->orderBy('list_order', strtolower($sortDirection) === 'desc' ? 'desc' : 'asc')
+                    ->orderBy('id', 'asc');
                 break;
             default:
                 $query->orderBy($sortBy, $sortDirection);
@@ -139,9 +105,10 @@ class CourseAdminController extends Controller
             $perPage = $request->get('per_page', 50);
             $courses = $query->paginate($perPage);
 
-            // Add metrics to each course
-            $courses->getCollection()->transform(function($course) {
-                return $this->addCourseMetrics($course);
+            // Metrici pentru toată pagina dintr-un singur query, nu câte unul per curs.
+            $enrollmentCounts = $this->enrollmentCountsFor($courses->getCollection()->pluck('id')->all());
+            $courses->getCollection()->transform(function($course) use ($enrollmentCounts) {
+                return $this->addCourseMetrics($course, $enrollmentCounts);
             });
 
             return response()->json($courses);
@@ -153,7 +120,7 @@ class CourseAdminController extends Controller
             
             return response()->json([
                 'error' => 'Failed to fetch courses',
-                'message' => $e->getMessage()
+                'message' => (config('app.debug') ? $e->getMessage() : null)
             ], 500);
         }
     }
@@ -164,7 +131,7 @@ class CourseAdminController extends Controller
      */
     public function reorderList(Request $request)
     {
-        if (!Schema::hasColumn('courses', 'list_order')) {
+        if (!SchemaCache::hasColumn('courses', 'list_order')) {
             return response()->json(['message' => 'Coloana list_order lipsește. Rulează migrările.'], 422);
         }
 
@@ -207,33 +174,45 @@ class CourseAdminController extends Controller
         return [];
     }
 
-    private function addCourseMetrics($course)
+    /**
+     * Înscrieri active și finalizări (course_user) pentru cursurile date.
+     *
+     * @param  array<int, int>  $courseIds
+     * @return array<int, array{enrolled: int, completed: int}>
+     */
+    private function enrollmentCountsFor(array $courseIds): array
+    {
+        if ($courseIds === []) {
+            return [];
+        }
+
+        return DB::table('course_user')
+            ->whereIn('course_id', $courseIds)
+            ->groupBy('course_id')
+            ->selectRaw(
+                'course_id,
+                SUM(CASE WHEN enrolled = ? THEN 1 ELSE 0 END) AS enrolled,
+                SUM(CASE WHEN completed_at IS NOT NULL THEN 1 ELSE 0 END) AS completed',
+                [true]
+            )
+            ->get()
+            ->mapWithKeys(fn ($row) => [(int) $row->course_id => [
+                'enrolled' => (int) $row->enrolled,
+                'completed' => (int) $row->completed,
+            ]])
+            ->all();
+    }
+
+    /**
+     * @param  array<int, array{enrolled: int, completed: int}>|null  $enrollmentCounts  preîncărcate (listă) sau null (un singur curs)
+     */
+    private function addCourseMetrics($course, ?array $enrollmentCounts = null)
     {
         try {
-            // Get enrollments count
-            $enrollmentsCount = 0;
-            if (Schema::hasTable('course_user')) {
-                $enrollmentsCount = DB::table('course_user')
-                    ->where('course_id', $course->id)
-                    ->where(function($q) {
-                        if (Schema::hasColumn('course_user', 'enrolled')) {
-                            $q->where('enrolled', true);
-                        } else {
-                            // If enrolled column doesn't exist, count all records
-                            $q->whereNotNull('course_id');
-                        }
-                    })
-                    ->count();
-            }
-
-            // Get completed count
-            $completedCount = 0;
-            if (Schema::hasTable('course_user') && Schema::hasColumn('course_user', 'completed_at')) {
-                $completedCount = DB::table('course_user')
-                    ->where('course_id', $course->id)
-                    ->whereNotNull('completed_at')
-                    ->count();
-            }
+            $enrollmentCounts ??= $this->enrollmentCountsFor([(int) $course->id]);
+            $counts = $enrollmentCounts[(int) $course->id] ?? ['enrolled' => 0, 'completed' => 0];
+            $enrollmentsCount = $counts['enrolled'];
+            $completedCount = $counts['completed'];
 
             // Calculate completion rate
             $completionRate = $enrollmentsCount > 0 
@@ -241,18 +220,11 @@ class CourseAdminController extends Controller
                 : 0;
 
             // Revenue - use from course if available, otherwise 0
-            $revenue = 0;
-            if (Schema::hasColumn('courses', 'total_revenue')) {
-                $revenue = $course->total_revenue ?? 0;
-            }
+            $revenue = $course->total_revenue ?? 0;
 
             // Rating - use from course if available
-            $rating = null;
-            $ratingCount = 0;
-            if (Schema::hasColumn('courses', 'average_rating')) {
-                $rating = $course->average_rating;
-                $ratingCount = $course->rating_count ?? 0;
-            }
+            $rating = $course->average_rating;
+            $ratingCount = $course->rating_count ?? 0;
 
             // Check for alerts
             $hasAlerts = false;
@@ -261,14 +233,10 @@ class CourseAdminController extends Controller
             }
 
             // Status (default to published if no status column)
-            $status = 'published';
-            if (Schema::hasColumn('courses', 'status')) {
-                $status = $course->status ?? 'draft';
-            }
+            $status = $course->status ?? 'draft';
 
             // Add metrics to course
             $course->enrollments_count = $enrollmentsCount;
-            // UI Overview citește total_enrollments (coloană DB); sincronizează cu numărul real.
             $course->total_enrollments = $enrollmentsCount;
             $course->completion_rate = $completionRate;
             $course->revenue = $revenue;
@@ -319,30 +287,25 @@ class CourseAdminController extends Controller
                 'teams',
                 'assignedUsers' => function ($query) use ($course) {
                     $query->select('users.id', 'users.name', 'users.email', 'users.role');
-                    app(EnrollmentAssignmentService::class)->constrainToManualAssignedUsers($query, $course);
+                    app(UserAssignedCoursesService::class)->constrainToDirectAssignedUsers($query, $course);
                 },
                 'courseTests.test' => function($query) {
                     $query->with('questions');
                 }
             ])->findOrFail($id);
 
-            // Add counts — lecțiile pot exista și fără modul (module_id null).
+            // Add counts. Lecțiile pot sta direct pe curs, nu doar în module.
             $course->modules_count = $course->modules->count();
-            $course->lessons_count = (int) \App\Models\Lesson::query()
-                ->where('course_id', $course->id)
+            $moduleIds = $course->modules->pluck('id');
+            $course->lessons_count = Lesson::query()
+                ->where(function ($query) use ($course, $moduleIds) {
+                    $query->where('course_id', $course->id);
+                    if ($moduleIds->isNotEmpty()) {
+                        $query->orWhereIn('module_id', $moduleIds);
+                    }
+                })
                 ->count();
-
-            // Root lessons for clients that render structure without modules.
-            $course->setRelation(
-                'root_lessons',
-                \App\Models\Lesson::query()
-                    ->where('course_id', $course->id)
-                    ->where(function ($q) {
-                        $q->whereNull('module_id')->orWhere('module_id', 0);
-                    })
-                    ->orderBy('order')
-                    ->get()
-            );            
+            
             // Load all course-test links for this course
             $courseTests = \App\Models\CourseTest::where('course_id', $course->id)
                 ->with('test')
@@ -420,6 +383,9 @@ class CourseAdminController extends Controller
             $course = $this->addCourseMetrics($course);
             
             return response()->json($course);
+        } catch (ModelNotFoundException|HttpExceptionInterface $e) {
+            // Curs inexistent sau al altui instructor: 404/403, nu eroare de server.
+            throw $e;
         } catch (\Exception $e) {
             \Log::error('Error fetching course', [
                 'course_id' => $id,
@@ -429,7 +395,7 @@ class CourseAdminController extends Controller
             
             return response()->json([
                 'error' => 'Failed to fetch course',
-                'message' => $e->getMessage()
+                'message' => (config('app.debug') ? $e->getMessage() : null)
             ], 500);
         }
     }
@@ -487,7 +453,7 @@ class CourseAdminController extends Controller
             'card_color' => $validated['card_color'] ?? null,
             'teacher_id' => $validated['teacher_id'] ?? null,
             'reward_points' => $validated['reward_points'] ?? 50,
-            'status' => $validated['status'] ?? 'draft',
+            'status' => 'draft',
             'access_type' => $validated['access_type'] ?? 'free',
             'enrollment_type' => $validated['enrollment_type'] ?? 'open',
             'price' => 0,
@@ -527,7 +493,7 @@ class CourseAdminController extends Controller
         $course = $this->courseBuilderService->createCourse($data, $teacher);
         $this->attachCourseToDefaultMap($course, (int) $request->user()->id);
 
-        if (Schema::hasColumn('courses', 'list_order')) {
+        if (SchemaCache::hasColumn('courses', 'list_order')) {
             $q = Course::query()->where('id', '!=', $course->id);
             if ($request->user()->isInstructor()) {
                 $q->where('teacher_id', $request->user()->id);
@@ -600,27 +566,11 @@ class CourseAdminController extends Controller
             'comments_enabled' => 'nullable|boolean',
             'visibility' => 'nullable|in:public,private,hidden',
             'permissions' => 'nullable|array',
-            'settings' => 'nullable|array',
-            'settings.ai_tutor' => 'nullable|array',
-            'settings.ai_tutor.enabled' => 'nullable|boolean',
-            'settings.ai_tutor.tone' => 'nullable|in:friendly,professional,encouraging,casual',
-            'settings.ai_tutor.depth' => 'nullable|in:basic,medium,advanced',
-            'settings.ai_tutor.allowed_topics' => 'nullable|array',
-            'settings.ai_tutor.allowed_topics.*' => 'nullable|string|max:120',
-            'settings.ai_tutor.restricted_topics' => 'nullable|array',
-            'settings.ai_tutor.restricted_topics.*' => 'nullable|string|max:120',
         ];
 
         // For updates, image is optional. Validate only when a new file is uploaded.
         if ($request->hasFile('image')) {
             $rules['image'] = 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048';
-        }
-
-        if ($request->has('settings') && is_string($request->input('settings'))) {
-            $decodedSettings = json_decode($request->input('settings'), true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($decodedSettings)) {
-                $request->merge(['settings' => $decodedSettings]);
-            }
         }
 
         $validated = $request->validate($rules);
@@ -668,16 +618,19 @@ class CourseAdminController extends Controller
             $data['image'] = $request->file('image');
         }
 
-        if (isset($validated['settings']) && is_array($validated['settings'])) {
-            $currentSettings = is_array($course->settings) ? $course->settings : [];
-            $data['settings'] = array_replace_recursive($currentSettings, $validated['settings']);
-        }
-
         $previousStatus = $course->status;
+        $wantsPublish = (($data['status'] ?? null) === 'published') && $previousStatus !== 'published';
+        if ($wantsPublish) {
+            unset($data['status']);
+        }
         $course = $this->courseBuilderService->updateCourse($course, $data);
 
-        if ($course->status === 'published' && $previousStatus !== 'published') {
-            $this->courseBuilderService->publishDraftLinkedAssessmentsForCourse((int) $course->id);
+        if ($wantsPublish) {
+            $published = $this->courseBuilderService->publishLive($course, $request->user());
+            if (! ($published['ok'] ?? false)) {
+                return response()->json($published, 422);
+            }
+            $course = $published['course'] ?? $course->fresh();
             $this->notifyStudentsCoursePublished($course, $previousStatus);
         }
 
@@ -700,34 +653,6 @@ class CourseAdminController extends Controller
         ]);
     }
 
-    public function getTeachers()
-    {
-        try {
-            if (!Schema::hasTable('users')) {
-                return response()->json([]);
-            }
-            if (auth()->user()->isInstructor()) {
-                $teachers = User::where('id', auth()->id())->get(['id', 'name', 'email']);
-                return response()->json($teachers);
-            }
-            $teachers = User::whereIn('role', ['admin', 'instructor'])
-                ->orderBy('name')
-                ->get(['id', 'name', 'email']);
-
-            return response()->json($teachers);
-        } catch (\Exception $e) {
-            \Log::error('Error fetching teachers', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return response()->json([
-                'error' => 'Failed to fetch teachers',
-                'message' => $e->getMessage()
-            ], 500);
-        }
-    }
-
     public function attachTeams(Request $request, $id)
     {
         $course = Course::findOrFail($id);
@@ -740,30 +665,16 @@ class CourseAdminController extends Controller
             'team_ids.*' => 'exists:teams,id',
         ]);
 
-        $existingTeamIds = $course->teams()->pluck('teams.id')->map(fn ($id) => (int) $id)->all();
-        $requestedTeamIds = array_map('intval', $validated['team_ids']);
-        $newTeamIds = array_values(array_diff($requestedTeamIds, $existingTeamIds));
-        $removedTeamIds = array_values(array_diff($existingTeamIds, $requestedTeamIds));
-
-        $course->teams()->sync($requestedTeamIds);
-
-        $assignment = app(EnrollmentAssignmentService::class);
-        if ($newTeamIds !== []) {
-            $assignment->autoEnrollCourseForTeams(
-                $course,
-                $newTeamIds,
-                ['assigned_by' => auth()->user()]
-            );
-        }
-        if ($removedTeamIds !== []) {
-            $assignment->revokeCourseAccessForRemovedTeams($course, $removedTeamIds, $requestedTeamIds);
-        }
+        app(UserAssignedCoursesService::class)->syncCourseTeams(
+            $course,
+            array_map('intval', $validated['team_ids'])
+        );
 
         return response()->json([
             'message' => 'Echipe atașate cu succes',
             'course' => $course->load(['modules', 'teacher', 'teams', 'assignedUsers' => function ($q) use ($course) {
                 $q->select('users.id', 'users.name', 'users.email', 'users.role');
-                app(EnrollmentAssignmentService::class)->constrainToManualAssignedUsers($q, $course);
+                app(UserAssignedCoursesService::class)->constrainToDirectAssignedUsers($q, $course);
             }]),
         ]);
     }
@@ -851,24 +762,46 @@ class CourseAdminController extends Controller
             }
         }
 
-        $result = app(EnrollmentAssignmentService::class)->assignCourseToUsers($course, $userIds, [
+        foreach ($userIds as $userId) {
+            $user = User::find($userId);
+            if (! $user || $user->role !== 'student') {
+                return response()->json([
+                    'message' => 'Poți atribui cursul doar utilizatorilor cu rolul de elev (student).',
+                    'user_id' => $userId,
+                ], 422);
+            }
+            if ($user->isLearningActivityExempt()) {
+                return response()->json([
+                    'message' => 'Nu atribuim cursuri pentru acest tip de utilizator.',
+                    'user_id' => $userId,
+                ], 422);
+            }
+            if ($teamIdsForInstructor !== null) {
+                $inLinkedTeam = $user->teams()->whereIn('teams.id', $teamIdsForInstructor)->exists();
+                if (! $inLinkedTeam) {
+                    return response()->json([
+                        'message' => 'Elevul trebuie să fie într-o echipă la care este deja atașat acest curs.',
+                        'user_id' => $userId,
+                    ], 422);
+                }
+            }
+        }
+
+        $pivot = [
             'is_mandatory' => $isMandatory,
-            'assigned_by' => auth()->user(),
-            'allowed_team_ids' => $teamIdsForInstructor?->all(),
-        ]);
+            'assigned_at' => now(),
+            'enrolled' => true,
+            'enrolled_at' => now(),
+        ];
 
-        if ($result['errors'] !== []) {
-            $userId = array_key_first($result['errors']);
-
-            return response()->json([
-                'message' => $result['errors'][$userId],
-                'user_id' => $userId,
-            ], 422);
+        $assignment = app(UserAssignedCoursesService::class);
+        foreach ($userIds as $userId) {
+            $assignment->assignCourseDirectly(User::findOrFail($userId), $course, $pivot);
         }
 
         $course->load(['assignedUsers' => function ($q) use ($course) {
             $q->select('users.id', 'users.name', 'users.email', 'users.role');
-            app(EnrollmentAssignmentService::class)->constrainToManualAssignedUsers($q, $course);
+            app(UserAssignedCoursesService::class)->constrainToDirectAssignedUsers($q, $course);
         }]);
 
         return response()->json([
@@ -891,13 +824,13 @@ class CourseAdminController extends Controller
             ], 404);
         }
 
-        app(EnrollmentAssignmentService::class)->revokeManualCourseAssignment($user, $course);
+        app(UserAssignedCoursesService::class)->revokeDirectAssignment($user, $course);
         Cache::forget("dashboard_user_{$user->id}_stats");
         Cache::forget("profile_user_{$user->id}");
 
         $course->load(['assignedUsers' => function ($q) use ($course) {
             $q->select('users.id', 'users.name', 'users.email', 'users.role');
-            app(EnrollmentAssignmentService::class)->constrainToManualAssignedUsers($q, $course);
+            app(UserAssignedCoursesService::class)->constrainToDirectAssignedUsers($q, $course);
         }]);
 
         return response()->json([
@@ -907,134 +840,7 @@ class CourseAdminController extends Controller
     }
 
     // Quick Actions
-    public function quickAction(Request $request, $id, $action)
-    {
-        $course = Course::findOrFail($id);
-        if (auth()->user()->isInstructor() && (int) $course->teacher_id !== (int) auth()->id()) {
-            abort(403, 'Acces interzis.');
-        }
-
-        switch ($action) {
-            case 'publish':
-                if (Schema::hasColumn('courses', 'status')) {
-                    $previousStatus = $course->status;
-                    $course->update(['status' => 'published']);
-                    $this->courseBuilderService->publishDraftLinkedAssessmentsForCourse((int) $course->id);
-                    $this->notifyStudentsCoursePublished($course->fresh(), $previousStatus);
-                }
-                break;
-            case 'unpublish':
-                if (Schema::hasColumn('courses', 'status')) {
-                    $course->update(['status' => 'draft']);
-                }
-                break;
-            case 'duplicate':
-                $newCourse = $course->replicate();
-                $newCourse->title = $course->title . ' (Copy)';
-                $newCourse->status = 'draft';
-                $newCourse->save();
-                // Duplicate modules if needed
-                break;
-            default:
-                return response()->json(['message' => 'Acțiune invalidă'], 400);
-        }
-
-        return response()->json([
-            'message' => 'Acțiune efectuată cu succes',
-            'course' => $this->addCourseMetrics($course->fresh()),
-        ]);
-    }
-
     // Bulk Actions
-    public function bulkAction(Request $request)
-    {
-        try {
-            $validated = $request->validate([
-                'course_ids' => 'required|array|min:1',
-                'course_ids.*' => 'exists:courses,id',
-                'action' => 'required|in:publish,delete,unpublish',
-            ]);
-
-            $query = Course::whereIn('id', $validated['course_ids']);
-            if (auth()->user()->isInstructor()) {
-                $query->where('teacher_id', auth()->id());
-            }
-            $courses = $query->get();
-
-            if ($courses->isEmpty()) {
-                return response()->json([
-                    'message' => 'Nu s-au găsit cursuri',
-                ], 404);
-            }
-
-            $updated = 0;
-            $deleted = 0;
-            $errors = [];
-
-            foreach ($courses as $course) {
-                try {
-                    switch ($validated['action']) {
-                        case 'publish':
-                            if (Schema::hasColumn('courses', 'status')) {
-                                $previousStatus = $course->status;
-                                $course->update(['status' => 'published']);
-                                $this->courseBuilderService->publishDraftLinkedAssessmentsForCourse((int) $course->id);
-                                $this->notifyStudentsCoursePublished($course->fresh(), $previousStatus);
-                                $updated++;
-                            }
-                            break;
-                        case 'unpublish':
-                            if (Schema::hasColumn('courses', 'status')) {
-                                $course->update(['status' => 'draft']);
-                                $updated++;
-                            }
-                            break;
-                        case 'delete':
-                            if ($course->image) {
-                                try {
-                                    Storage::disk('public')->delete($course->image);
-                                } catch (\Exception $e) {
-                                    // Continue even if image deletion fails
-                                }
-                            }
-                            $course->delete();
-                            $deleted++;
-                            break;
-                    }
-                } catch (\Exception $e) {
-                    $errors[] = "Eroare la cursul {$course->id}: " . $e->getMessage();
-                    \Log::error("Bulk action error for course {$course->id}: " . $e->getMessage());
-                }
-            }
-
-            $message = $validated['action'] === 'delete' 
-                ? "Șters {$deleted} cursuri"
-                : "Actualizat {$updated} cursuri";
-
-            $response = [
-                'message' => $message,
-                'updated' => $updated,
-                'deleted' => $deleted,
-            ];
-
-            if (!empty($errors)) {
-                $response['errors'] = $errors;
-            }
-
-            return response()->json($response);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'message' => 'Date invalide',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (\Exception $e) {
-            \Log::error("Bulk action error: " . $e->getMessage());
-            return response()->json([
-                'message' => 'Eroare la procesarea acțiunii: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
-
     // Reorder Modules
     public function reorderModules(Request $request, $id)
     {
@@ -1062,9 +868,8 @@ class CourseAdminController extends Controller
         // Use CourseBuilderService to reorder modules
         $this->courseBuilderService->reorderModules($course, $validated['module_ids']);
 
-        // Recalculate course progress after structure change
-        $progressService = app(CourseProgressService::class);
-        $progressService->recalculateCourseProgress($course);
+        // Progresul cursanților se recalculează în coadă, o singură dată pentru toată reordonarea
+        RecalculateCourseProgressJob::queueFor((int) $course->id);
 
         return response()->json([
             'message' => 'Module reordonate cu succes',
@@ -1073,105 +878,7 @@ class CourseAdminController extends Controller
     }
 
     // Preview course (for admin / instructor)
-    public function preview($id)
-    {
-        $course = Course::findOrFail($id);
-        if (auth()->user()->isInstructor() && (int) $course->teacher_id !== (int) auth()->id()) {
-            abort(403, 'Acces interzis.');
-        }
-        $course = Course::with([
-            'modules' => function($query) {
-                $query->orderBy('order')->with(['lessons' => function($q) {
-                    $q->orderBy('order');
-                }]);
-            },
-            'tests' => function($query) {
-                $query->withPivot('scope', 'scope_id', 'required', 'passing_score', 'order');
-            },
-            'teacher'
-        ])->findOrFail($id);
-        
-        // Return course data for preview
-        return response()->json([
-            'course' => $course,
-            'preview_mode' => true,
-        ]);
-    }
-
     // Insights
-    public function insights()
-    {
-        try {
-            $insights = [];
-            $thresholdCompletion = 30; // 30% completion threshold
-            $thresholdDaysOutdated = 90; // 90 days outdated threshold
-
-            $courses = Course::with('teacher')->get();
-
-            foreach ($courses as $course) {
-                $enrollments = 0;
-                if (Schema::hasTable('course_user')) {
-                    $enrollments = DB::table('course_user')
-                        ->where('course_id', $course->id)
-                        ->where(function($q) {
-                            if (Schema::hasColumn('course_user', 'enrolled')) {
-                                $q->where('enrolled', true);
-                            } else {
-                                $q->whereNotNull('course_id');
-                            }
-                        })
-                        ->count();
-                }
-
-                if ($enrollments === 0) continue;
-
-                $completed = 0;
-                if (Schema::hasTable('course_user') && Schema::hasColumn('course_user', 'completed_at')) {
-                    $completed = DB::table('course_user')
-                        ->where('course_id', $course->id)
-                        ->whereNotNull('completed_at')
-                        ->count();
-                }
-
-                $completionRate = $enrollments > 0 ? ($completed / $enrollments) * 100 : 0;
-
-                // Low completion
-                if ($completionRate < $thresholdCompletion && $enrollments > 5) {
-                    $insights[] = [
-                        'id' => 'low_completion_' . $course->id,
-                        'type' => 'low_completion',
-                        'course_id' => $course->id,
-                        'course_title' => $course->title,
-                        'message' => "Rată de finalizare " . round($completionRate, 1) . "% (sub {$thresholdCompletion}%)",
-                        'severity' => 'warning',
-                    ];
-                }
-
-                // Outdated course
-                if ($course->updated_at) {
-                    $daysSinceUpdate = Carbon::parse($course->updated_at)->diffInDays(Carbon::now());
-                    if ($daysSinceUpdate > $thresholdDaysOutdated) {
-                        $insights[] = [
-                            'id' => 'outdated_' . $course->id,
-                            'type' => 'outdated',
-                            'course_id' => $course->id,
-                            'course_title' => $course->title,
-                            'message' => "Neactualizat de {$daysSinceUpdate} zile",
-                            'severity' => 'info',
-                        ];
-                    }
-                }
-            }
-
-            return response()->json($insights);
-        } catch (\Exception $e) {
-            \Log::error("Error fetching insights: " . $e->getMessage());
-            return response()->json([
-                'error' => 'Error fetching insights: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
     private function notifyStudentsCoursePublished(Course $course, ?string $previousStatus): void
     {
         if (($previousStatus ?? '') === 'published' || ($course->status ?? '') !== 'published') {
@@ -1179,7 +886,12 @@ class CourseAdminController extends Controller
         }
 
         try {
-            app(\App\Services\NotificationService::class)->notifyCoursePublished($course, [], false);
+            $teamIds = $course->teams()->pluck('teams.id')->map(fn ($id) => (int) $id)->all();
+            app(\App\Services\NotificationService::class)->notifyCoursePublished(
+                $course,
+                $teamIds,
+                broadcastAllStudentsIfNoTargets: count($teamIds) === 0
+            );
         } catch (\Throwable $e) {
             \Log::warning('CourseAdminController: notifyCoursePublished failed', [
                 'course_id' => $course->id,

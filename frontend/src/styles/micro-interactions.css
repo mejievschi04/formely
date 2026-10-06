@@ -128,77 +128,19 @@
    ============================================ */
 
 /* Lift on Hover */
-.va-hover-lift {
-	transition: transform var(--transition-base), box-shadow var(--transition-base);
-}
-
-.va-hover-lift:hover {
-	transform: translateY(-2px);
-	box-shadow: var(--shadow-hover);
-}
 
 /* Scale on Hover */
-.va-hover-scale {
-	transition: transform var(--transition-base);
-}
-
-.va-hover-scale:hover {
-	transform: scale(1.05);
-}
 
 /* Glow on Hover */
-.va-hover-glow {
-	transition: box-shadow var(--transition-base);
-}
-
-.va-hover-glow:hover {
-	box-shadow: 0 0 20px rgba(var(--formely-white-rgb), 0.3);
-}
 
 /* ============================================
    4. UTILITY CLASSES
    ============================================ */
 
 /* Animation Classes */
-.va-animate-fadeIn {
-	animation: fadeIn var(--transition-base);
-}
-
-.va-animate-slideUp {
-	animation: slideUp var(--transition-smooth);
-}
-
-.va-animate-slideDown {
-	animation: slideDown var(--transition-smooth);
-}
-
-.va-animate-scaleIn {
-	animation: scaleIn var(--transition-smooth);
-}
-
-.va-animate-fadeInScale {
-	animation: fadeInScale var(--transition-smooth);
-}
 
 /* Stagger Animation Delays */
-.va-stagger-1 { animation-delay: 50ms; }
-.va-stagger-2 { animation-delay: 100ms; }
-.va-stagger-3 { animation-delay: 150ms; }
-.va-stagger-4 { animation-delay: 200ms; }
-.va-stagger-5 { animation-delay: 250ms; }
 
 /* ============================================
    5. TRANSITION UTILITIES
    ============================================ */
-
-.va-transition-fast {
-	transition: all var(--transition-fast);
-}
-
-.va-transition-base {
-	transition: all var(--transition-base);
-}
-
-.va-transition-smooth {
-	transition: all var(--transition-smooth);
-}

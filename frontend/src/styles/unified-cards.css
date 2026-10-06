@@ -7,216 +7,38 @@
 /* ============================================
    1. BASE CARD - Foundation for all cards
    ============================================ */
-.va-unified-card {
-	background-color: var(--bg-elevated);
-	border: 1px solid var(--border-primary);
-	border-radius: var(--radius-lg);
-	padding: var(--space-6);
-	box-shadow: var(--shadow-sm);
-	transition: all var(--transition-base);
-	position: relative;
-	overflow: hidden;
-}
-
-.va-unified-card:hover {
-	box-shadow: var(--shadow-md);
-	border-color: var(--border-secondary);
-	transform: translateY(-2px);
-}
-
-.va-unified-card:active {
-	transform: translateY(0);
-}
 
 /* ============================================
    2. CARD VARIANTS
    ============================================ */
 
 /* Compact Card - Less padding */
-.va-unified-card.compact {
-	padding: var(--space-4);
-}
 
 /* Elevated Card - More shadow */
-.va-unified-card.elevated {
-	box-shadow: var(--shadow-lg);
-}
-
-.va-unified-card.elevated:hover {
-	box-shadow: var(--shadow-xl);
-}
 
 /* Interactive Card - Clickable */
-.va-unified-card.interactive {
-	cursor: pointer;
-}
 
 /* Bordered Card - Stronger border */
-.va-unified-card.bordered {
-	border-width: 2px;
-}
 
 /* ============================================
    3. CARD STRUCTURE
    ============================================ */
 
-.va-unified-card-header {
-	margin-bottom: var(--space-4);
-	padding-bottom: var(--space-4);
-	border-bottom: 1px solid var(--border-primary);
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: var(--space-4);
-}
-
-.va-unified-card-title {
-	font-size: var(--font-size-lg);
-	font-weight: var(--font-weight-semibold);
-	color: var(--text-primary);
-	margin: 0;
-	line-height: var(--line-height-tight);
-}
-
-.va-unified-card-subtitle {
-	font-size: var(--font-size-sm);
-	color: var(--text-tertiary);
-	margin: var(--space-1) 0 0 0;
-	line-height: var(--line-height-normal);
-}
-
-.va-unified-card-body {
-	color: var(--text-secondary);
-	line-height: var(--line-height-relaxed);
-}
-
-.va-unified-card-footer {
-	margin-top: var(--space-4);
-	padding-top: var(--space-4);
-	border-top: 1px solid var(--border-primary);
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: var(--space-3);
-	flex-wrap: wrap;
-}
-
 /* ============================================
    4. CARD CONTENT ELEMENTS
    ============================================ */
-
-.va-unified-card-icon {
-	width: 48px;
-	height: 48px;
-	border-radius: var(--radius-lg);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	font-size: var(--font-size-xl);
-	flex-shrink: 0;
-	background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
-	color: var(--btn-primary-text);
-}
-
-.va-unified-card-value {
-	font-size: var(--font-size-2xl);
-	font-weight: var(--font-weight-bold);
-	color: var(--text-primary);
-	margin: 0 0 var(--space-2) 0;
-	line-height: 1.2;
-}
-
-.va-unified-card-label {
-	font-size: var(--font-size-sm);
-	color: var(--text-tertiary);
-	margin: 0;
-}
-
-.va-unified-card-description {
-	font-size: var(--font-size-sm);
-	color: var(--text-secondary);
-	margin: 0;
-	line-height: var(--line-height-relaxed);
-}
 
 /* ============================================
    5. CARD GRID & LAYOUT
    ============================================ */
 
-.va-unified-card-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-	gap: var(--space-6);
-}
-
-.va-unified-card-list {
-	display: flex;
-	flex-direction: column;
-	gap: var(--space-4);
-}
-
 /* ============================================
    6. RESPONSIVE
    ============================================ */
 
-@media (max-width: 768px) {
-	.va-unified-card {
-		padding: var(--space-4);
-	}
-
-	.va-unified-card-grid {
-		grid-template-columns: 1fr;
-		gap: var(--space-4);
-	}
-
-	.va-unified-card-header {
-		flex-direction: column;
-		align-items: flex-start;
-	}
-}
-
 /* ============================================
    LIGHT THEME - IMPROVED CONTRAST & VISIBILITY
    ============================================ */
-
-[data-theme="light"] .va-unified-card {
-	background-color: var(--bg-elevated);
-	border-color: var(--border-primary);
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-[data-theme="light"] .va-unified-card:hover {
-	border-color: var(--border-secondary);
-	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-}
-
-[data-theme="light"] .va-unified-card.elevated {
-	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-}
-
-[data-theme="light"] .va-unified-card.elevated:hover {
-	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-}
-
-[data-theme="light"] .va-unified-card-header {
-	border-bottom-color: var(--border-primary);
-}
-
-[data-theme="light"] .va-unified-card-title {
-	color: var(--text-primary);
-}
-
-[data-theme="light"] .va-unified-card-subtitle {
-	color: var(--text-secondary);
-}
-
-[data-theme="light"] .va-unified-card-body {
-	color: var(--text-secondary);
-}
-
-[data-theme="light"] .va-unified-card-footer {
-	border-top-color: var(--border-primary);
-}
 
 /* ============================================
    7. CARD SYSTEM V2 (Model Standard)
@@ -364,7 +186,7 @@
 
 [data-theme="light"] .va-card-icon-btn {
 	background: #fff;
-	color: #0f172a;
+	color: var(--text-primary);
 	border: 1px solid rgba(15, 23, 42, 0.2);
 	box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
 	backdrop-filter: none;
@@ -373,7 +195,7 @@
 
 [data-theme="light"] .va-card-icon-btn:hover {
 	background: rgba(15, 23, 42, 0.08);
-	color: #0f172a;
+	color: var(--text-primary);
 	border-color: rgba(15, 23, 42, 0.32);
 }
 

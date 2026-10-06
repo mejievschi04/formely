@@ -109,14 +109,6 @@
 		0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.modern-sidebar-logo-img {
-	display: block;
-	width: 2rem;
-	height: 2rem;
-	object-fit: contain;
-	border-radius: 6px;
-}
-
 .modern-sidebar-logo,
 .va-logo-text {
 	display: flex;
@@ -327,7 +319,7 @@
 	background-color: var(--color-primary);
 	color: var(--text-primary);
 	font-weight: var(--font-weight-semibold);
-	box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.3), 0 8px 20px rgba(34, 211, 238, 0.2);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* When collapsed, make active state more visible */
@@ -336,7 +328,7 @@
 .modern-sidebar:not(.expanded) .va-nav-btn.active,
 .modern-sidebar:not(.expanded) .va-nav-btn.is-active {
 	background-color: var(--color-primary);
-	box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.35), 0 10px 24px rgba(34, 211, 238, 0.24);
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Light theme - yellow background with dark gray text */
@@ -347,7 +339,7 @@
 	background-color: var(--color-primary);
 	color: var(--text-primary);
 	font-weight: var(--font-weight-semibold);
-	box-shadow: 0 0 0 1px rgba(8, 145, 178, 0.3), 0 8px 20px rgba(8, 145, 178, 0.2);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 [data-theme="light"] .modern-sidebar:not(.expanded) .modern-nav-item.active,
@@ -355,7 +347,7 @@
 [data-theme="light"] .modern-sidebar:not(.expanded) .va-nav-btn.active,
 [data-theme="light"] .modern-sidebar:not(.expanded) .va-nav-btn.is-active {
 	background-color: var(--color-primary);
-	box-shadow: 0 0 0 1px rgba(8, 145, 178, 0.35), 0 10px 24px rgba(8, 145, 178, 0.24);
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
 }
 
 .modern-nav-item.active::before,
@@ -420,7 +412,7 @@
 .va-nav-btn.active .va-nav-icon,
 .va-nav-btn.is-active .va-nav-icon {
 	opacity: 1;
-	color: #030712 !important;
+	color: var(--text-primary);
 }
 
 /* Light theme - dark gray icons for active items */
@@ -428,7 +420,8 @@
 [data-theme="light"] .modern-nav-item.is-active .modern-nav-item-icon,
 [data-theme="light"] .va-nav-btn.active .va-nav-icon,
 [data-theme="light"] .va-nav-btn.is-active .va-nav-icon {
-	color: #ffffff !important;
+	/* Active icon should be black in light theme */
+	color: var(--text-inverse) !important;
 	opacity: 1;
 }
 
@@ -438,7 +431,7 @@
 .modern-sidebar:not(.expanded) .va-nav-btn.active .va-nav-icon,
 .modern-sidebar:not(.expanded) .va-nav-btn.is-active .va-nav-icon {
 	opacity: 1;
-	color: #030712 !important;
+	color: var(--text-primary);
 }
 
 /* Light theme - dark gray icons for collapsed active items */
@@ -446,7 +439,8 @@
 [data-theme="light"] .modern-sidebar:not(.expanded) .modern-nav-item.is-active .modern-nav-item-icon,
 [data-theme="light"] .modern-sidebar:not(.expanded) .va-nav-btn.active .va-nav-icon,
 [data-theme="light"] .modern-sidebar:not(.expanded) .va-nav-btn.is-active .va-nav-icon {
-	color: #ffffff !important;
+	/* Active icon should be black in light theme */
+	color: var(--text-inverse) !important;
 	opacity: 1;
 }
 
@@ -455,9 +449,8 @@
 .modern-nav-item.is-active svg,
 .va-nav-btn.active svg,
 .va-nav-btn.is-active svg {
-	color: #030712 !important;
-	stroke: #030712 !important;
-	fill: #030712 !important;
+	color: currentColor;
+	stroke: currentColor;
 }
 
 /* Light theme: active icon SVG must be dark (not bg-primary/white) */
@@ -465,9 +458,8 @@
 [data-theme="light"] .modern-nav-item.is-active svg,
 [data-theme="light"] .va-nav-btn.active svg,
 [data-theme="light"] .va-nav-btn.is-active svg {
-	color: #ffffff !important;
-	stroke: #ffffff !important;
-	fill: #ffffff !important;
+	color: var(--text-inverse);
+	stroke: currentColor;
 }
 
 /* Keep Phosphor and legacy SVGs synced with active color */
@@ -475,8 +467,7 @@
 [data-theme="light"] .modern-nav-item.is-active svg *,
 [data-theme="light"] .va-nav-btn.active svg *,
 [data-theme="light"] .va-nav-btn.is-active svg * {
-	stroke: #ffffff !important;
-	fill: #ffffff !important;
+	stroke: currentColor;
 }
 
 .modern-nav-item:hover .modern-nav-item-icon,
@@ -521,7 +512,7 @@
 .modern-nav-item.is-active .modern-nav-item-label,
 .va-nav-btn.active .va-nav-label,
 .va-nav-btn.is-active .va-nav-label {
-	color: var(--bg-primary) !important;
+	color: var(--bg-primary);
 	font-weight: var(--font-weight-semibold);
 }
 
@@ -529,7 +520,7 @@
 [data-theme="light"] .modern-nav-item.is-active .modern-nav-item-label,
 [data-theme="light"] .va-nav-btn.active .va-nav-label,
 [data-theme="light"] .va-nav-btn.is-active .va-nav-label {
-	color: var(--text-inverse) !important;
+	color: var(--text-inverse);
 	font-weight: var(--font-weight-semibold);
 }
 
@@ -583,9 +574,9 @@
 /* Părintele (Cursuri, Teste & Bănci) nu e niciodată activ – doar subitem-ul curent e galben */
 .modern-nav-group .modern-nav-group-label,
 .modern-nav-group button.va-nav-btn {
-	background-color: transparent !important;
-	color: var(--text-secondary) !important;
-	font-weight: inherit !important;
+	background-color: transparent;
+	color: var(--text-secondary);
+	font-weight: inherit;
 }
 .modern-nav-group .modern-nav-group-label::before,
 .modern-nav-group button.va-nav-btn::before {
@@ -602,7 +593,7 @@
 .modern-nav-group button.modern-nav-group-label {
 	width: 100%;
 	text-align: left;
-	background: transparent !important;
+	background: transparent;
 	border: none;
 	cursor: pointer;
 	font: inherit;
@@ -630,6 +621,14 @@
 .modern-nav-subitem {
 	padding-left: var(--space-4);
 	font-size: var(--font-size-sm);
+}
+
+.modern-nav-subitem .va-nav-label-row {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	justify-content: space-between;
 }
 
 /* Doar subitem-ul activ primește galben */
@@ -799,10 +798,10 @@
 .modern-topnav-item.is-active,
 .va-topnav-btn.active,
 .va-topnav-btn.is-active {
-	color: var(--color-primary);
+	color: var(--text-accent);
 	font-weight: var(--font-weight-semibold);
-	background: linear-gradient(135deg, rgba(var(--formely-white-rgb), 0.25) 0%, rgba(230, 214, 0, 0.15) 100%);
-	box-shadow: 0 2px 8px rgba(var(--formely-white-rgb), 0.3);
+	background: linear-gradient(135deg, rgba(var(--color-primary-rgb), 0.25) 0%, rgba(230, 214, 0, 0.15) 100%);
+	box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.3);
 }
 
 /* Light theme - yellow background with black text */
@@ -821,7 +820,7 @@
 .va-topnav-btn.is-active::after {
 	width: 80%;
 	height: 3px;
-	box-shadow: 0 0 8px rgba(var(--formely-white-rgb), 0.5);
+	box-shadow: 0 0 8px rgba(var(--color-primary-rgb), 0.5);
 }
 
 .modern-topnav-item-icon,
@@ -895,7 +894,7 @@
 .admin-topnav-search-input:focus {
 	outline: none;
 	border-color: var(--color-primary);
-	box-shadow: 0 0 0 3px rgba(var(--formely-white-rgb), 0.1), 0 4px 12px rgba(var(--formely-white-rgb), 0.2);
+	box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1), 0 4px 12px rgba(var(--color-primary-rgb), 0.2);
 	background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-secondary) 100%);
 	transform: translateY(-1px);
 }
@@ -945,8 +944,8 @@
 
 .admin-topnav-calendar-btn:hover {
 	border-color: var(--color-primary);
-	color: var(--color-primary);
-	box-shadow: 0 4px 12px rgba(var(--formely-white-rgb), 0.15);
+	color: var(--text-accent);
+	box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.15);
 	transform: translateY(-1px);
 }
 
@@ -973,8 +972,8 @@
 .admin-topnav-notification-btn:hover {
 	background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-secondary) 100%);
 	border-color: var(--color-primary);
-	color: var(--color-primary);
-	box-shadow: 0 4px 12px rgba(var(--formely-white-rgb), 0.2);
+	color: var(--text-accent);
+	box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.2);
 	transform: translateY(-1px);
 }
 
@@ -996,109 +995,6 @@
 	border: 2px solid var(--bg-elevated);
 	box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
 	animation: pulse 2s infinite;
-}
-
-.admin-topnav-notifications-dropdown {
-	position: absolute;
-	top: calc(100% + var(--space-2));
-	right: 0;
-	width: 360px;
-	background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-secondary) 100%);
-	border: 1px solid var(--border-primary);
-	border-radius: var(--radius-lg);
-	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
-	z-index: var(--z-dropdown);
-	overflow: hidden;
-	animation: slideDown 0.2s ease-out;
-	backdrop-filter: blur(20px) saturate(180%);
-	-webkit-backdrop-filter: blur(20px) saturate(180%);
-}
-
-.admin-topnav-notifications-header {
-	padding: var(--space-4) var(--space-6);
-	border-bottom: 1px solid var(--border-primary);
-}
-
-.admin-topnav-notifications-header h3 {
-	font-size: var(--font-size-base);
-	font-weight: var(--font-weight-semibold);
-	color: var(--text-primary);
-	margin: 0;
-}
-
-.admin-topnav-notifications-header-row {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: var(--space-3);
-}
-
-.admin-topnav-notifications-see-all {
-	font-size: var(--font-size-xs);
-	font-weight: var(--font-weight-semibold);
-	color: var(--color-primary);
-	text-decoration: none;
-	white-space: nowrap;
-	flex-shrink: 0;
-}
-
-.admin-topnav-notifications-see-all:hover {
-	text-decoration: underline;
-}
-
-.admin-topnav-notifications-list {
-	max-height: 400px;
-	overflow-y: auto;
-}
-
-.admin-topnav-notification-item {
-	display: flex;
-	gap: var(--space-3);
-	padding: var(--space-4) var(--space-6);
-	border-bottom: 1px solid var(--border-primary);
-	transition: all var(--transition-base);
-	cursor: pointer;
-	text-decoration: none;
-	color: inherit;
-}
-
-.admin-topnav-notification-item:hover {
-	background-color: var(--bg-secondary);
-}
-
-.admin-topnav-notification-item:last-child {
-	border-bottom: none;
-}
-
-.admin-topnav-notification-icon {
-	width: 24px;
-	height: 24px;
-	flex-shrink: 0;
-	color: var(--color-warning);
-}
-
-.admin-topnav-notification-content {
-	flex: 1;
-	min-width: 0;
-}
-
-.admin-topnav-notification-title {
-	font-size: var(--font-size-sm);
-	font-weight: var(--font-weight-medium);
-	color: var(--text-primary);
-	margin-bottom: var(--space-1);
-}
-
-.admin-topnav-notification-time {
-	font-size: var(--font-size-xs);
-	color: var(--text-tertiary);
-}
-
-.admin-topnav-notifications-empty {
-	padding: var(--space-8) var(--space-6);
-	text-align: center;
-	color: var(--text-tertiary);
-	font-size: var(--font-size-sm);
 }
 
 /* ============================================
@@ -1130,40 +1026,6 @@
 	border-color: var(--border-secondary);
 }
 
-.admin-view-switcher-slider svg {
-	color: var(--text-inverse);
-	stroke: var(--text-inverse);
-	width: 16px;
-	height: 16px;
-	flex-shrink: 0;
-	display: block;
-}
-
-[data-theme="light"] .admin-view-switcher-slider svg {
-	color: var(--text-inverse);
-	stroke: var(--text-inverse);
-}
-
-.admin-view-switcher-slider {
-	position: absolute;
-	top: 2px;
-	left: 2px;
-	width: 20px;
-	height: 20px;
-	min-width: 20px;
-	max-width: 20px;
-	min-height: 20px;
-	max-height: 20px;
-	background-color: var(--color-primary);
-	border-radius: var(--radius-full);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	transition: transform var(--transition-base);
-	color: white;
-	box-sizing: border-box;
-}
-
 /* ============================================
    8. ADMIN USER INFO
    ============================================ */
@@ -1184,7 +1046,7 @@
 .admin-topnav-user:hover {
 	border-color: var(--color-primary);
 	background: transparent;
-	box-shadow: 0 4px 12px rgba(var(--formely-white-rgb), 0.15);
+	box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.15);
 	transform: translateY(-1px);
 }
 
@@ -1200,7 +1062,7 @@
 	font-weight: var(--font-weight-bold);
 	font-size: var(--font-size-sm);
 	flex-shrink: 0;
-	box-shadow: 0 2px 8px rgba(var(--formely-white-rgb), 0.3);
+	box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.3);
 	border: 2px solid rgba(255, 255, 255, 0.1);
 	overflow: hidden;
 }
@@ -1345,54 +1207,50 @@
 	/* Remove blur from sidebar on mobile - must be first */
 	.modern-sidebar,
 	.va-sidebar {
-		backdrop-filter: none !important;
-		-webkit-backdrop-filter: none !important;
+		backdrop-filter: none;
+		-webkit-backdrop-filter: none;
 	}
 	.modern-topnav,
 	.admin-topnav,
 	.va-topnav {
 		padding: 0 var(--space-4);
-		display: flex !important;
-		visibility: visible !important;
+		display: flex;
+		visibility: visible;
 	}
 
 	/* Logo visible in topnav on mobile */
 	.modern-topnav-left,
 	.va-topnav-brand {
-		display: flex !important;
-		visibility: visible !important;
+		display: flex;
+		visibility: visible;
 	}
 
 	.va-logo-text,
 	.modern-sidebar-logo {
-		display: flex !important;
-		visibility: visible !important;
-		opacity: 1 !important;
+		display: flex;
+		visibility: visible;
+		opacity: 1;
 	}
 
 	.va-logo-icon-img {
-		display: block !important;
-		visibility: visible !important;
-		opacity: 1 !important;
-		width: 32px !important;
-		height: 32px !important;
+		display: block;
+		visibility: visible;
+		opacity: 1;
+		width: 32px;
+		height: 32px;
 	}
 
 	.admin-topnav-search {
 		display: none;
 	}
 
-	.admin-topnav-control-label {
+	/* Hide toggle controls from topnav on mobile - they're in bottom menu */
+	.admin-topnav-control {
 		display: none;
 	}
 
-	/* Hide toggle controls from topnav on mobile - they're in bottom menu */
-	.admin-topnav-control {
-		display: none !important;
-	}
-
 	.admin-topnav-user {
-		display: none !important;
+		display: none;
 	}
 
 	.admin-topnav-user-info {
@@ -1401,24 +1259,13 @@
 
 	.va-main {
 		padding: var(--space-4);
-		padding-top: 56px !important;
-	}
-
-	.admin-topnav-notifications-dropdown,
-	.va-topnav-notifications-dropdown {
-		position: fixed;
-		left: 50%;
-		right: auto;
-		top: calc(56px + var(--space-2));
-		transform: translateX(-50%);
-		width: calc(100vw - var(--space-8));
-		max-width: 360px;
+		padding-top: 56px;
 	}
 
 	/* Mobile hamburger button in topnav - matches topnav background */
 	.mobile-sidebar-toggle {
-		display: flex !important;
-		visibility: visible !important;
+		display: flex;
+		visibility: visible;
 		align-items: center;
 		justify-content: center;
 		width: 44px;
@@ -1426,7 +1273,7 @@
 		min-width: 44px;
 		min-height: 44px;
 		padding: var(--space-2);
-		background: var(--bg-elevated) !important;
+		background: var(--bg-elevated);
 		border: none;
 		border-radius: var(--radius-md);
 		color: var(--text-primary);

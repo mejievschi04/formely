@@ -66,7 +66,7 @@ class TestAttemptAnswerOrderService
      */
     public function correctIndicesForAnswers(array $answers, string $type): array
     {
-        if (! in_array($type, ['multiple_choice', 'single_choice', 'true_false'], true)) {
+        if (! in_array($type, ['multiple_choice', 'single_choice', 'true_false', 'yes_no'], true)) {
             return [];
         }
 
@@ -77,7 +77,7 @@ class TestAttemptAnswerOrderService
             }
         }
 
-        if ($type === 'single_choice' || $type === 'true_false') {
+        if ($type === 'single_choice' || $type === 'true_false' || $type === 'yes_no') {
             return $indices !== [] ? [$indices[0]] : [];
         }
 
@@ -113,7 +113,7 @@ class TestAttemptAnswerOrderService
 
         $displayAnswers = $originalAnswers;
 
-        if (in_array($type, ['multiple_choice', 'single_choice', 'true_false'], true)
+        if (in_array($type, ['multiple_choice', 'single_choice', 'true_false', 'yes_no'], true)
             && $test->randomize_answers
             && count($originalAnswers) > 1
         ) {
@@ -295,7 +295,7 @@ class TestAttemptAnswerOrderService
             }
 
             $type = (string) ($question->type ?? 'multiple_choice');
-            if (! in_array($type, ['multiple_choice', 'single_choice', 'true_false'], true)) {
+            if (! in_array($type, ['multiple_choice', 'single_choice', 'true_false', 'yes_no'], true)) {
                 $normalized[$questionId] = $userAnswer;
                 continue;
             }
@@ -344,16 +344,6 @@ class TestAttemptAnswerOrderService
         $legacyDisplay = $this->selectedDisplayIndices($storedAnswer, $order['display_answers']);
 
         return $this->displayIndicesToOriginal($legacyDisplay, $order['display_to_original']);
-    }
-
-    /**
-     * @return int[]
-     */
-    public function selectedOriginalAsDisplay(mixed $storedAnswer, string $questionType, array $order): array
-    {
-        $originalSelected = $this->selectedOriginalIndicesFromStored($storedAnswer, $questionType, $order);
-
-        return $this->originalIndicesToDisplay($originalSelected, $order['original_to_display']);
     }
 
     public function comparableAnswerText(mixed $value): string

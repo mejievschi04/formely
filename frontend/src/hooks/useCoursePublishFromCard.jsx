@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { adminService } from '../services/api';
 import PublishCourseModal from '../components/admin/courses/PublishCourseModal';
 
@@ -7,6 +8,7 @@ export function isCoursePublished(course) {
 }
 
 export function useCoursePublishFromCard({ onCoursePatched, showToast }) {
+	const navigate = useNavigate();
 	const [publishModalCourse, setPublishModalCourse] = useState(null);
 	const [publishValidationReport, setPublishValidationReport] = useState(null);
 	const [statusBusyId, setStatusBusyId] = useState(null);
@@ -69,6 +71,14 @@ export function useCoursePublishFromCard({ onCoursePatched, showToast }) {
 		[onCoursePatched, showToast, statusBusyId]
 	);
 
+	const handleFixPublishIssue = useCallback((issue) => {
+		const courseId = publishModalCourse?.id;
+		if (!courseId || !issue?.kind || !issue.id) return;
+		const params = new URLSearchParams({ focus: issue.kind === 'test' ? 'test' : issue.kind, id: String(issue.id) });
+		closePublishModal();
+		navigate(`/admin/courses/${courseId}/builder?${params.toString()}`);
+	}, [closePublishModal, navigate, publishModalCourse?.id]);
+
 	const publishModal = (
 		<PublishCourseModal
 			open={Boolean(publishModalCourse)}
@@ -77,6 +87,7 @@ export function useCoursePublishFromCard({ onCoursePatched, showToast }) {
 			onValidate={handleValidateForPublish}
 			onPublished={handlePublished}
 			onClose={closePublishModal}
+			onFixIssue={handleFixPublishIssue}
 		/>
 	);
 

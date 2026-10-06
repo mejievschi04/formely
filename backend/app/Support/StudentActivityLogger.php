@@ -9,33 +9,6 @@ use Illuminate\Support\Facades\DB;
 
 class StudentActivityLogger
 {
-    public static function logEnrolledCourse(User $user, Course $course, string $source = 'manual'): void
-    {
-        if ($user->isLearningActivityExempt()) {
-            return;
-        }
-
-        if (self::hasActionForModel($user->id, 'enrolled_course', 'Course', $course->id)) {
-            return;
-        }
-
-        ActivityLog::create([
-            'user_id' => $user->id,
-            'action' => 'enrolled_course',
-            'model_type' => 'Course',
-            'model_id' => $course->id,
-            'description' => "{$user->name} s-a înscris la cursul \"{$course->title}\"",
-            'new_values' => [
-                'course_id' => $course->id,
-                'course_title' => $course->title,
-                'source' => $source,
-                'enrolled_at' => now()->toDateTimeString(),
-            ],
-            'ip_address' => request()?->ip(),
-            'user_agent' => request()?->userAgent(),
-        ]);
-    }
-
     /**
      * @return bool True if a new completed_course log was written.
      */
@@ -117,16 +90,4 @@ class StudentActivityLogger
             ->exists();
     }
 
-    public static function courseWasAlreadyCompleted(int $userId, int $courseId): bool
-    {
-        if (! DB::getSchemaBuilder()->hasTable('course_user')) {
-            return false;
-        }
-
-        return DB::table('course_user')
-            ->where('user_id', $userId)
-            ->where('course_id', $courseId)
-            ->whereNotNull('completed_at')
-            ->exists();
-    }
 }

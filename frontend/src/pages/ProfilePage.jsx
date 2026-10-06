@@ -1,11 +1,17 @@
+import '../styles/profile-modern.css';
+import { X } from '@phosphor-icons/react';
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { profileService, adminService } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../contexts/ToastContext';
+
+import { useAuth } from '../contexts/AuthContextShared.js';
+
+import { useToast } from '../contexts/ToastContextShared.js';
 import ConfirmModal from '../components/common/ConfirmModal';
 import { toImageUrl } from '../utils/imageUrl';
-import { getRoleLabel } from '../constants/staffRoles';
+import { courseProgressLabel } from '../utils/courseProgressLabel.js';
+import { nameInitials } from '../utils/initials';
 
 const AVATAR_EDITOR_SIZE = 280;
 const AVATAR_OUTPUT_SIZE = 512;
@@ -71,6 +77,7 @@ const ProfilePage = () => {
 	const [showRemoveAvatarConfirm, setShowRemoveAvatarConfirm] = useState(false);
 	const [avatarEditorState, setAvatarEditorState] = useState(null);
 	const [courseFilter, setCourseFilter] = useState('all');
+	const [completingCourseId, setCompletingCourseId] = useState(null);
 	const [grantingAttemptKey, setGrantingAttemptKey] = useState(null);
 	const viewerRole = currentUser?.actualRole ?? currentUser?.role;
 	const isViewingOtherUser = Boolean(userId) && ['admin', 'instructor'].includes(viewerRole);
@@ -79,6 +86,7 @@ const ProfilePage = () => {
 		try {
 			setLoading(true);
 			let profile;
+
 			if (isViewingOtherUser) {
 				const userData = await adminService.getUser(userId);
 				profile = buildProfileFromCourseData(userData, userData);
@@ -86,6 +94,7 @@ const ProfilePage = () => {
 				const profileResponse = await profileService.getProfile();
 				profile = buildProfileFromCourseData(profileResponse.user, profileResponse);
 			}
+
 			setProfileData(profile);
 		} catch (err) {
 			console.error('Error fetching profile:', err);
@@ -95,13 +104,31 @@ const ProfilePage = () => {
 		}
 	};
 
+	useEffect(() => {
+		fetchData();
+	}, [userId, isViewingOtherUser]);
+
+	const handleMarkCourseCompleted = async (courseId) => {
+		if (!userId || !courseId) return;
+		setCompletingCourseId(courseId);
+		try {
+			await adminService.markCourseCompleted(userId, courseId);
+			showToast('Curs marcat ca finalizat', 'success');
+			await fetchData();
+		} catch (err) {
+			showToast(err?.response?.data?.message || 'Nu s-a putut marca cursul ca finalizat', 'error');
+		} finally {
+			setCompletingCourseId(null);
+		}
+	};
+
 	const handleGrantExtraAttempt = async (courseId, testId) => {
 		if (!userId || !testId) return;
 		const key = `${courseId}-${testId}`;
 		setGrantingAttemptKey(key);
 		try {
-			await adminService.grantTestExtraAttempt(userId, testId, courseId);
-			showToast('A fost adăugată 1 încercare', 'success');
+			const granted = await adminService.grantTestExtraAttempt(userId, testId, courseId);
+			showToast(granted?.message || 'A fost adăugată 1 încercare', 'success');
 			await fetchData();
 		} catch (err) {
 			showToast(err?.response?.data?.message || 'Nu s-a putut adăuga încercarea', 'error');
@@ -109,10 +136,6 @@ const ProfilePage = () => {
 			setGrantingAttemptKey(null);
 		}
 	};
-
-	useEffect(() => {
-		fetchData();
-	}, [userId, isViewingOtherUser]);
 
 	useEffect(() => {
 		setCourseFilter('all');
@@ -166,7 +189,7 @@ const ProfilePage = () => {
 			setProfileData((prev) => prev ? { ...prev, user: { ...prev.user, avatar: null } } : prev);
 			await checkAuth();
 			showToast('Poza de profil a fost ștearsă', 'success');
-		} catch (err) {
+		} catch  {
 			showToast('Eroare la ștergerea pozei', 'error');
 		} finally {
 			setUploadingAvatar(false);
@@ -232,7 +255,7 @@ const ProfilePage = () => {
 							/>
 						</div>
 						<div className="va-course-card-meta">
-							<span>Progres: {course.progress ?? 0}%</span>
+							<span>{Number(course.progress) >= 100 ? 'Finalizat' : `Progres: ${courseProgressLabel(course.progress)}`}</span>
 							{course.totalModules ? (
 								<span>{course.completedModules ?? 0} / {course.totalModules} module</span>
 							) : null}
@@ -262,7 +285,7 @@ const ProfilePage = () => {
 										<strong>{test.title}</strong>
 										<span>{resultLabel}</span>
 									</div>
-									{failed ? (
+									{failed && test.max_attempts != null && (viewerRole !== 'instructor' || Number(test.created_by) === Number(currentUser?.id)) ? (
 										<button
 											type="button"
 											className="lms-btn-secondary lms-btn-sm"
@@ -281,14 +304,26 @@ const ProfilePage = () => {
 					<div className="va-course-card-meta">
 						<span>
 							{isViewingOtherUser
-								? 'Elevul nu a deschis încă acest curs.'
+								? 'Utilizatorul nu a deschis încă acest curs.'
 								: 'Nu ai deschis încă acest curs.'}
 						</span>
 					</div>
 				) : null}
-				<Link to={courseLink} className={buttonClass}>
-					{actionLabel}
-				</Link>
+				<div className="va-course-card-actions">
+					<Link to={courseLink} className={buttonClass}>
+						{actionLabel}
+					</Link>
+					{isViewingOtherUser && status !== 'completed' ? (
+						<button
+							type="button"
+							className="lms-btn-primary lms-btn-sm"
+							disabled={completingCourseId === course.id}
+							onClick={() => handleMarkCourseCompleted(course.id)}
+						>
+							{completingCourseId === course.id ? 'Se marchează…' : 'Marchează finalizat'}
+						</button>
+					) : null}
+				</div>
 			</div>
 		);
 	};
@@ -299,10 +334,11 @@ const ProfilePage = () => {
 			{isViewingOtherUser && (
 				<div className="va-profile-back-button">
 					<button
+						type="button"
 						onClick={() => navigate('/admin/users')}
-						className="lms-btn-secondary"
+						className="va-btn-back admin-back-btn"
 					>
-						<span>←</span>
+						<ArrowLeft size={18} aria-hidden />
 						<span>Înapoi la Utilizatori</span>
 					</button>
 				</div>
@@ -321,11 +357,7 @@ const ProfilePage = () => {
 								/>
 							) : (
 								<div className="va-profile-avatar-inner">
-									{profileData.user.name
-										.split(' ')
-										.map((n) => n[0])
-										.join('')
-										.toUpperCase()}
+									{nameInitials(profileData.user.name || profileData.user.email)}
 								</div>
 							)}
 						</div>
@@ -362,16 +394,20 @@ const ProfilePage = () => {
 					</div>
 					<div className="va-profile-details">
 						<h1 className="va-profile-name">{profileData.user.name}</h1>
-						{!isViewingOtherUser ? (
-							<p className="va-profile-subtitle">
-								Profilul tău Formely — progres la cursuri, statistici și activitate recentă.
-							</p>
-						) : null}
 						<p className="va-profile-role">
 							{isViewingOtherUser
-								? getRoleLabel(profileData.user.role)
-								: getRoleLabel(currentUser?.role)}
+								? (profileData.user.role === 'admin'
+									? 'Administrator'
+									: profileData.user.role === 'instructor'
+										? 'Instructor'
+										: profileData.user.role === 'analyst'
+											? 'Analist'
+											: 'Utilizator')
+								: 'Utilizator'}
 						</p>
+						{!isViewingOtherUser && (
+							<Link to="/settings" className="va-profile-settings-link">Setări</Link>
+						)}
 						{isViewingOtherUser && (
 							<div className="va-profile-badges">
 								<span className="va-profile-badge va-profile-badge-email">
@@ -577,7 +613,7 @@ const AvatarEditorModal = ({ open, imageUrl, fileName, busy, onClose, onSave }) 
 						<h3>Poziționează poza de profil</h3>
 						<p>Mută imaginea și ajustează zoom-ul până arată exact cum vrei.</p>
 					</div>
-					<button type="button" className="va-avatar-editor-close" onClick={onClose} disabled={busy}>×</button>
+					<button type="button" className="va-avatar-editor-close va-close-btn" onClick={onClose} disabled={busy} aria-label="Închide"><X size={18} weight="bold" aria-hidden="true" /></button>
 				</div>
 				<div className="va-avatar-editor-stage-wrap">
 					<div

@@ -154,7 +154,7 @@
 	justify-content: center;
 	background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1));
 	border-radius: var(--analytics-radius-sm);
-	color: var(--color-primary);
+	color: var(--text-accent);
 	flex-shrink: 0;
 }
 
@@ -316,7 +316,7 @@
 	color: var(--color-error);
 }
 
-/* AI recommendations */
+/* Volt recommendations */
 .analytics-section {
 	margin-bottom: var(--space-8);
 }
@@ -403,7 +403,7 @@
 .analytics-ai-action {
 	font-size: var(--font-size-sm);
 	font-weight: 600;
-	color: var(--color-primary);
+	color: var(--text-accent);
 	cursor: pointer;
 }
 

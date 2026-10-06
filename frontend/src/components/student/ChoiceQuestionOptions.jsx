@@ -24,7 +24,6 @@ export default function ChoiceQuestionOptions({
 			<div className="student-exam-answer-options" role={multi ? 'group' : 'radiogroup'} aria-label="Variante de răspuns">
 				{question.options.map((opt, i) => {
 					const isSelected = isChoiceOptionSelected(question, value, i);
-					const letter = String.fromCharCode(65 + i);
 
 					return (
 						<label
@@ -45,9 +44,6 @@ export default function ChoiceQuestionOptions({
 									}
 								}}
 							/>
-							<span className="student-exam-answer-option-letter" aria-hidden>
-								{letter}
-							</span>
 							<span className="student-exam-answer-option-text">{opt}</span>
 						</label>
 					);

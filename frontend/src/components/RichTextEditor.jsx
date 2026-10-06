@@ -24,25 +24,26 @@ import {
 	TextT,
 	TextUnderline,
 	VideoCamera,
+	X,
 } from '@phosphor-icons/react';
-import { useToast } from '../contexts/ToastContext';
+
+import { useToast } from '../contexts/ToastContextShared.js';
 import { logger } from '../utils/logger';
-import { estimatePdfContentPreviewHeight } from '../utils/pdfTextExtractor';
-import { getPdfPageCount, slicePdfFileByRange } from '../utils/pdfRangeUtils';
 import { toImageUrl } from '../utils/imageUrl';
 import { stripRichTextEditorChrome } from '../utils/richTextContent';
+import { normalizePastedHtmlForRichText } from '../utils/pasteRichTextColor';
 import { adminService } from '../services/api';
 import './RichTextEditor.css';
 
 /** Paletă culori pentru text/fundal - o singură sursă pentru afișare corectă */
 const RTE_COLOR_PALETTE = [
-	'#0891b2', '#22d3ee', '#0e7490', '#155e75',
-	'#ffffff', '#e2e8f0', '#94a3b8', '#475569', '#0f172a',
-	'#ef4444', '#f87171', '#dc2626', '#b91c1c',
+	'#ffee00', '#ffcc00', '#ffd700', '#ffff00',
+	'#ffffff', '#cccccc', '#999999', '#666666', '#000000',
+	'#ff6b6b', '#ff5252', '#ff1744', '#d32f2f',
 	'#4ade80', '#22c55e', '#10b981', '#059669',
-	'#38bdf8', '#7dd3fc', '#0284c7', '#0369a1',
-	'#67e8f9', '#a5f3fc', '#cbd5e1', '#334155',
-	'#64748b', '#1e293b', '#e0f2fe', '#ecfeff',
+	'#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8',
+	'#a78bfa', '#8b5cf6', '#7c3aed', '#6d28d9',
+	'#f472b6', '#ec4899', '#db2777', '#be185d',
 ];
 
 const RTE_CALLOUT_TYPES = [
@@ -320,149 +321,6 @@ function placeImageAtPoint(img, clientX, clientY, editor) {
 	return true;
 }
 
-function cleanPastedCssValue(value) {
-	return String(value || '')
-		.replace(/!important/gi, '')
-		.trim();
-}
-
-function isUsefulPastedColor(value) {
-	const color = cleanPastedCssValue(value);
-	return Boolean(color)
-		&& !/^(inherit|initial|revert|unset|currentcolor|transparent|windowtext|auto)$/i.test(color);
-}
-
-function getDeclarationColor(declarations, propertyName) {
-	if (!declarations || typeof document === 'undefined') return '';
-	const probe = document.createElement('span');
-	probe.style.cssText = declarations;
-	const parsed = cleanPastedCssValue(probe.style.getPropertyValue(propertyName));
-	if (isUsefulPastedColor(parsed)) return parsed;
-
-	const escapedProperty = propertyName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-	const rawMatch = declarations.match(new RegExp(`(?:^|;)\\s*${escapedProperty}\\s*:\\s*([^;]+)`, 'i'));
-	const raw = cleanPastedCssValue(rawMatch?.[1]);
-	return isUsefulPastedColor(raw) ? raw : '';
-}
-
-function extractPastedStyleSheets(doc) {
-	return Array.from(doc.querySelectorAll('style'))
-		.map((styleTag) => styleTag.textContent || '')
-		.join('\n')
-		.replace(/<!--|-->/g, '')
-		.replace(/\/\*[\s\S]*?\*\//g, '');
-}
-
-function applyPastedCssColorRules(doc) {
-	const css = extractPastedStyleSheets(doc);
-	const rulePattern = /([^{}]+)\{([^{}]+)\}/g;
-	let match;
-
-	while ((match = rulePattern.exec(css)) !== null) {
-		const selectors = String(match[1] || '').split(',');
-		const declarations = String(match[2] || '');
-		const color = getDeclarationColor(declarations, 'color')
-			|| getDeclarationColor(declarations, '-webkit-text-fill-color');
-		const backgroundColor = getDeclarationColor(declarations, 'background-color')
-			|| getDeclarationColor(declarations, 'background');
-		if (!color && !backgroundColor) continue;
-
-		selectors.forEach((selector) => {
-			const trimmedSelector = selector.trim();
-			if (!trimmedSelector || trimmedSelector.startsWith('@') || /:(?!not\()/.test(trimmedSelector)) return;
-			try {
-				doc.body.querySelectorAll(trimmedSelector).forEach((node) => {
-					if (color && !isUsefulPastedColor(node.style.getPropertyValue('color'))) {
-						node.style.setProperty('color', color);
-					}
-					if (backgroundColor && !isUsefulPastedColor(node.style.getPropertyValue('background-color'))) {
-						node.style.setProperty('background-color', backgroundColor);
-					}
-				});
-			} catch {
-				// Clipboard CSS often contains browser/editor-only selectors. Invalid selectors can be ignored safely.
-			}
-		});
-	}
-}
-
-function collectPastedClassColorRules(doc) {
-	const rulesByClass = new Map();
-	const css = Array.from(doc.querySelectorAll('style'))
-		.map((styleTag) => styleTag.textContent || '')
-		.join('\n')
-		.replace(/<!--|-->/g, '')
-		.replace(/\/\*[\s\S]*?\*\//g, '');
-
-	const rulePattern = /([^{}]+)\{([^{}]+)\}/g;
-	let match;
-	while ((match = rulePattern.exec(css)) !== null) {
-		const selectors = String(match[1] || '').split(',');
-		const declarations = String(match[2] || '');
-		const color = getDeclarationColor(declarations, 'color');
-		const backgroundColor = getDeclarationColor(declarations, 'background-color')
-			|| getDeclarationColor(declarations, 'background');
-		if (!color && !backgroundColor) continue;
-
-		selectors.forEach((selector) => {
-			const trimmedSelector = selector.trim();
-			if (!/^(?:[a-z][\w-]*)?(?:\.[_a-zA-Z][\w-]*)+$/i.test(trimmedSelector)) return;
-			const classMatches = trimmedSelector.match(/\.[_a-zA-Z][\w-]*/g) || [];
-			classMatches.forEach((classMatch) => {
-				const className = classMatch.slice(1);
-				const current = rulesByClass.get(className) || {};
-				rulesByClass.set(className, {
-					color: current.color || color || '',
-					backgroundColor: current.backgroundColor || backgroundColor || '',
-				});
-			});
-		});
-	}
-
-	return rulesByClass;
-}
-
-function normalizePastedHtmlForRichText(html) {
-	if (!html || typeof DOMParser === 'undefined') return html;
-	const doc = new DOMParser().parseFromString(html, 'text/html');
-	applyPastedCssColorRules(doc);
-	const rulesByClass = collectPastedClassColorRules(doc);
-
-	Array.from(doc.body.querySelectorAll('*')).forEach((node) => {
-		const inlineColor = cleanPastedCssValue(node.style.getPropertyValue('color'))
-			|| cleanPastedCssValue(node.style.getPropertyValue('-webkit-text-fill-color'));
-		const inlineBackgroundColor = cleanPastedCssValue(node.style.getPropertyValue('background-color'));
-		const fontColor = node.tagName === 'FONT' ? cleanPastedCssValue(node.getAttribute('color')) : '';
-
-		let classColor = '';
-		let classBackgroundColor = '';
-		Array.from(node.classList || []).some((className) => {
-			const rule = rulesByClass.get(className);
-			if (!rule) return false;
-			if (!classColor && rule.color) classColor = rule.color;
-			if (!classBackgroundColor && rule.backgroundColor) classBackgroundColor = rule.backgroundColor;
-			return classColor && classBackgroundColor;
-		});
-
-		const nextColor = isUsefulPastedColor(inlineColor)
-			? inlineColor
-			: (isUsefulPastedColor(fontColor) ? fontColor : classColor);
-		const nextBackgroundColor = isUsefulPastedColor(inlineBackgroundColor)
-			? inlineBackgroundColor
-			: classBackgroundColor;
-
-		if (isUsefulPastedColor(nextColor)) {
-			node.style.setProperty('color', nextColor);
-		}
-		if (isUsefulPastedColor(nextBackgroundColor)) {
-			node.style.setProperty('background-color', nextBackgroundColor);
-		}
-	});
-
-	doc.querySelectorAll('style').forEach((styleTag) => styleTag.remove());
-	return doc.body.innerHTML || html;
-}
-
 /** 'crop' = marginea de sus (decupare); 'height' = înălțime vizibilă (margine jos / laterale) */
 function getClipboardImageFile(clipboardData) {
 	if (!clipboardData) return null;
@@ -570,13 +428,13 @@ function getBasicFontAtSelection(editor) {
 	return matchBasicFontOption(window.getComputedStyle(base || editor).fontFamily);
 }
 
-const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVariant = 'full', courseId = null, showSideTools = true }) => {
+const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVariant = 'full', courseId = null, showSideTools = true, emphasis = null }) => {
 	const { warning: showWarning, error: showError } = useToast();
 	const editorRef = useRef(null);
 	const savedSelectionRef = useRef(null);
 	const skipNextValueSyncRef = useRef(false);
 	const [isFocused, setIsFocused] = useState(false);
-	const [internalValue, setInternalValue] = useState(value || '');
+	const [, setInternalValue] = useState(value || '');
 	const [showColorPicker, setShowColorPicker] = useState(false);
 	const [showLinkDialog, setShowLinkDialog] = useState(false);
 	const [showCalloutDialog, setShowCalloutDialog] = useState(false);
@@ -585,8 +443,8 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 	const [contextMenu, setContextMenu] = useState({ open: false, x: 0, y: 0 });
 	const [colorType, setColorType] = useState('foreground'); // 'foreground' or 'background'
 	const [linkUrl, setLinkUrl] = useState('');
-	const [selectedColor, setSelectedColor] = useState('#0891b2');
-	const [selectedCalloutColor, setSelectedCalloutColor] = useState('#0891b2');
+	const [selectedColor, setSelectedColor] = useState('#ffee00');
+	const [selectedCalloutColor, setSelectedCalloutColor] = useState('#ffee00');
 	const [selectedCalloutType, setSelectedCalloutType] = useState('soft');
 	const [pdfFile, setPdfFile] = useState(null);
 	const [pdfFileName, setPdfFileName] = useState('');
@@ -595,7 +453,7 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 	const [pdfEndPage, setPdfEndPage] = useState(1);
 	const [uploadingPdf, setUploadingPdf] = useState(false);
 	const [sideToolsExpanded, setSideToolsExpanded] = useState(false);
-	const [basicFontValue, setBasicFontValue] = useState(BASIC_FONT_DEFAULT);
+	const [, setBasicFontValue] = useState(BASIC_FONT_DEFAULT);
 	const fileInputRef = useRef(null);
 	const imageInputRef = useRef(null);
 	const [pdfEditHost, setPdfEditHost] = useState(null);
@@ -671,15 +529,18 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 			skipNextValueSyncRef.current = false;
 			return;
 		}
+		const editor = editorRef.current;
+		if (editor.contains(document.activeElement)) return;
 		const cleaned = stripRichTextEditorChrome(value || '');
-		if (editorRef.current.innerHTML !== cleaned) {
-			editorRef.current.innerHTML = cleaned;
+		if (editor.innerHTML !== cleaned) {
+			editor.innerHTML = cleaned;
 			setInternalValue(cleaned);
 		}
 	}, [value, showImageEditModal]);
 
 	const handleInput = (e) => {
 		const newValue = e.target.innerHTML;
+		skipNextValueSyncRef.current = true;
 		setInternalValue(newValue);
 		if (onChange) {
 			onChange(newValue);
@@ -1033,9 +894,7 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 		restoreSelection();
 	};
 
-	const handleFontSelectPointerDown = () => {
-		handleEditorSelectionChange();
-	};
+
 
 	const execCommand = (command, value = null) => {
 		restoreSelection();
@@ -1219,6 +1078,7 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 				return;
 			}
 			try {
+				const { getPdfPageCount } = await import('../utils/pdfRangeUtils');
 				const pageCount = await getPdfPageCount(file);
 				setPdfFile(file);
 				setPdfFileName(file.name);
@@ -1240,6 +1100,7 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 			let fileToUpload = pdfFile;
 			const canSlice = pdfTotalPages > 0 && (pdfStartPage > 1 || pdfEndPage < pdfTotalPages);
 			if (canSlice) {
+				const { slicePdfFileByRange } = await import('../utils/pdfRangeUtils');
 				fileToUpload = await slicePdfFileByRange(pdfFile, pdfStartPage, pdfEndPage);
 			}
 
@@ -1265,6 +1126,7 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 			if (!normalizedUrl) {
 				throw new Error('Nu am primit URL pentru PDF.');
 			}
+			const { estimatePdfContentPreviewHeight } = await import('../utils/pdfTextExtractor');
 			const adaptiveHeight = await estimatePdfContentPreviewHeight(fileToUpload);
 			const safeViewportHeight = adaptiveHeight;
 
@@ -1369,25 +1231,7 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 		insertNodeAtSelection(container);
 	};
 
-	const insertCodeFromPrompt = () => {
-		const code = prompt('Introdu codul:');
-		if (!code || !code.trim()) return;
-		const pre = document.createElement('pre');
-		pre.style.background = 'rgba(0, 0, 0, 0.3)';
-		pre.style.padding = '1rem';
-		pre.style.borderRadius = '8px';
-		pre.style.overflow = 'auto';
-		pre.style.margin = '1rem 0';
-		pre.style.border = '1px solid rgba(9, 168, 107, 0.2)';
 
-		const codeEl = document.createElement('code');
-		codeEl.textContent = code.trim();
-		codeEl.style.color = '#09A86B';
-		codeEl.style.fontFamily = 'monospace';
-		codeEl.style.fontSize = '0.9rem';
-		pre.appendChild(codeEl);
-		insertNodeAtSelection(pre);
-	};
 
 	const handlePastePlainFromClipboard = async () => {
 		try {
@@ -1482,75 +1326,11 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 		</button>
 	);
 
-	const dispatchEditorInput = () => {
-		if (!editorRef.current) return;
-		const event = new Event('input', { bubbles: true });
-		editorRef.current.dispatchEvent(event);
-	};
 
-	const applyBasicFontFamily = (fontFamily) => {
-		restoreSelection();
-		const editor = editorRef.current;
-		const selection = window.getSelection();
-		if (!editor || !selection || selection.rangeCount === 0) {
-			editor?.focus();
-			return;
-		}
 
-		const range = selection.getRangeAt(0);
-		if (!editor.contains(range.commonAncestorContainer)) {
-			editor.focus();
-			return;
-		}
 
-		const wrapRangeWithSpan = (targetRange, span) => {
-			try {
-				targetRange.surroundContents(span);
-				return span;
-			} catch {
-				const fragment = targetRange.extractContents();
-				span.appendChild(fragment);
-				targetRange.insertNode(span);
-				return span;
-			}
-		};
 
-		if (!fontFamily) {
-			editor.focus();
-			return;
-		}
 
-		const span = document.createElement('span');
-		span.style.fontFamily = fontFamily;
-		span.setAttribute('data-rte-font', '1');
-
-		if (range.collapsed) {
-			range.insertNode(span);
-			const caret = document.createRange();
-			caret.setStart(span, 0);
-			caret.collapse(true);
-			selection.removeAllRanges();
-			selection.addRange(caret);
-			savedSelectionRef.current = caret.cloneRange();
-		} else {
-			const wrapped = wrapRangeWithSpan(range, span);
-			const after = document.createRange();
-			after.selectNodeContents(wrapped);
-			after.collapse(false);
-			selection.removeAllRanges();
-			selection.addRange(after);
-			savedSelectionRef.current = after.cloneRange();
-		}
-
-		editor.focus();
-		dispatchEditorInput();
-		setBasicFontValue(fontFamily);
-	};
-
-	const handleBasicFontChange = (fontFamily) => {
-		if (!fontFamily) return;
-		applyBasicFontFamily(fontFamily);
-	};
 
 	const sideToolGroups = [
 		[
@@ -1580,33 +1360,11 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 	];
 
 	return (
-		<div className={`rte-container ${toolbarVariant === 'basic' ? 'rte-container-basic' : ''}`} style={style}>
+		<div className={`rte-container ${toolbarVariant === 'basic' || toolbarVariant === 'none' ? 'rte-container-basic' : ''} ${emphasis === 'strong' ? 'rte-emphasis-strong' : ''} ${emphasis === 'plain' ? 'rte-emphasis-plain' : ''}`} style={style}>
 			{toolbarVariant === 'basic' && (
 				<div className="rte-toolbar rte-toolbar-basic">
-					<div className="rte-toolbar-group rte-toolbar-group-labeled">
-						<span className="rte-toolbar-label">Font</span>
-						<select
-							className="rte-toolbar-select rte-toolbar-select-basic"
-							value={basicFontValue}
-							onMouseDown={handleFontSelectPointerDown}
-							onPointerDown={handleFontSelectPointerDown}
-							onChange={(e) => {
-								handleBasicFontChange(e.target.value);
-							}}
-							title="Fontul textului selectat sau de la cursor"
-						>
-							{BASIC_FONT_OPTIONS.map((option) => (
-								<option
-									key={option.value}
-									value={option.value}
-									style={{ fontFamily: option.value }}
-								>
-									{option.label}
-								</option>
-							))}
-						</select>
-					</div>
-					<div className="rte-toolbar-separator" />
+					<ToolbarButton onClick={() => execCommand('bold')} icon={<strong>B</strong>} title="Aldin (text gros)" />
+					<ToolbarButton onClick={() => execCommand('italic')} icon={<em>I</em>} title="Italic (text înclinat)" />
 					<ToolbarButton onClick={() => execCommand('underline')} icon={<u>U</u>} title="Subliniat" />
 					<ToolbarButton
 						onClick={() => {
@@ -1736,7 +1494,7 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 					onMouseDown={handleEditorMouseDown}
 					onDoubleClick={handleEditorDoubleClick}
 					onPaste={handlePaste}
-					onContextMenu={toolbarVariant === 'basic' ? undefined : (e) => {
+					onContextMenu={toolbarVariant === 'full' ? (e) => {
 						e.preventDefault();
 						saveSelection();
 						const imageTarget = findEditableImage(e.target, editorRef.current);
@@ -1746,7 +1504,7 @@ const RichTextEditor = ({ value, onChange, onBlur, placeholder, style, toolbarVa
 							y: e.clientY,
 							imageTarget: imageTarget || null,
 						});
-					}}
+					} : undefined}
 					onMouseUp={handleEditorSelectionChange}
 					onKeyDown={handleEditorKeyDown}
 					onKeyUp={handleEditorSelectionChange}
@@ -2031,7 +1789,7 @@ const ImageEditModal = ({ draft, onDraftChange, onApply, onClose, onDelete }) =>
 			<div className="rte-modal rte-image-edit-modal" onClick={(e) => e.stopPropagation()}>
 				<div className="rte-modal-header">
 					<h3 id="rte-image-edit-title" className="rte-modal-title">Setări imagine</h3>
-					<button type="button" onClick={onClose} className="rte-modal-close" aria-label="Închide">×</button>
+					<button type="button" onClick={onClose} className="rte-modal-close va-close-btn" aria-label="Închide"><X size={18} weight="bold" aria-hidden="true" /></button>
 				</div>
 
 				<div className="rte-modal-body">
@@ -2077,12 +1835,12 @@ const ImageEditModal = ({ draft, onDraftChange, onApply, onClose, onDelete }) =>
 					</div>
 
 					<div className="rte-image-edit-actions">
-						<button type="button" className="rte-image-delete-btn" onClick={onDelete}>
+						<button type="button" className="va-btn-delete rte-image-delete-btn" onClick={onDelete}>
 							Șterge imaginea
 						</button>
 						<div className="rte-image-edit-actions__main">
 							<button type="button" className="rte-image-modal-btn rte-image-modal-btn--secondary" onClick={onClose}>Anulează</button>
-							<button type="button" className="rte-image-modal-btn rte-image-modal-btn--primary" onClick={onApply}>Aplică</button>
+							<button type="button" className="rte-image-modal-btn lms-btn-primary rte-image-modal-btn--primary" onClick={onApply}>Aplică</button>
 						</div>
 					</div>
 				</div>
@@ -2093,11 +1851,13 @@ const ImageEditModal = ({ draft, onDraftChange, onApply, onClose, onDelete }) =>
 
 // Color Picker Modal Component
 const ColorPickerModal = ({ palette = RTE_COLOR_PALETTE, selectedColor, onColorSelect, onClose, type }) => {
-	const [customColor, setCustomColor] = useState(selectedColor || '#0891b2');
+	const [customColor, setCustomColor] = useState(selectedColor || '#ffee00');
 
-	useEffect(() => {
-		setCustomColor(selectedColor || '#0891b2');
-	}, [selectedColor]);
+	const [previousColor, setPreviousColor] = useState(selectedColor);
+	if (previousColor !== selectedColor) {
+		setPreviousColor(selectedColor);
+		setCustomColor(selectedColor || '#ffee00');
+	}
 
 	const colors = Array.isArray(palette) && palette.length > 0 ? palette : RTE_COLOR_PALETTE;
 
@@ -2119,10 +1879,10 @@ const ColorPickerModal = ({ palette = RTE_COLOR_PALETTE, selectedColor, onColorS
 					<button
 						type="button"
 						onClick={onClose}
-						className="rte-modal-close"
+						className="rte-modal-close va-close-btn"
 						aria-label="Închide"
 					>
-						×
+						<X size={18} weight="bold" aria-hidden="true" />
 					</button>
 				</div>
 
@@ -2154,66 +1914,26 @@ const ColorPickerModal = ({ palette = RTE_COLOR_PALETTE, selectedColor, onColorS
 
 					{/* Custom Color Input */}
 					<div>
-						<label style={{
-							display: 'block',
-							marginBottom: '0.75rem',
-							color: 'rgba(255,255,255,0.7)',
-							fontSize: '0.9rem',
-							fontWeight: 600,
-						}}>
+						<label className="rte-modal-label" htmlFor="rte-custom-color-text">
 							Culoare personalizată
 						</label>
-						<div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+						<div className="rte-modal-color-row">
 							<input
 								type="color"
+								className="rte-modal-color-input"
 								value={customColor}
 								onChange={(e) => setCustomColor(e.target.value)}
-								style={{
-									width: '60px',
-									height: '40px',
-									border: '1px solid rgba(8,145,178,0.3)',
-									borderRadius: '8px',
-									cursor: 'pointer',
-									background: 'transparent',
-								}}
+								aria-label="Alege culoarea"
 							/>
 							<input
+								id="rte-custom-color-text"
 								type="text"
+								className="rte-modal-input"
 								value={customColor}
 								onChange={(e) => setCustomColor(e.target.value)}
-								placeholder="#0891b2"
-								style={{
-									flex: 1,
-									padding: '0.75rem',
-									background: 'rgba(255,255,255,0.05)',
-									border: '1px solid rgba(8,145,178,0.2)',
-									borderRadius: '10px',
-									color: '#fff',
-									fontSize: '0.95rem',
-								}}
+								placeholder="#ffee00"
 							/>
-							<button
-								type="button"
-								onClick={() => onColorSelect(customColor)}
-								style={{
-									padding: '0.75rem 1.5rem',
-									background: 'linear-gradient(135deg, rgba(8,145,178,0.2), rgba(8,145,178,0.15))',
-									border: '1px solid rgba(8,145,178,0.4)',
-									borderRadius: '10px',
-									color: '#0891b2',
-									fontWeight: 700,
-									cursor: 'pointer',
-									transition: 'all 0.3s ease',
-								}}
-								onMouseEnter={(e) => {
-									e.currentTarget.style.background = 'linear-gradient(135deg, rgba(8,145,178,0.3), rgba(8,145,178,0.2))';
-									e.currentTarget.style.transform = 'translateY(-2px)';
-								}}
-								onMouseLeave={(e) => {
-									e.currentTarget.style.background = 'linear-gradient(135deg, rgba(8,145,178,0.2), rgba(8,145,178,0.15))';
-									e.currentTarget.style.transform = 'translateY(0)';
-								}}
-							>
+							<button type="button" className="lms-btn-primary rte-modal-btn" onClick={() => onColorSelect(customColor)}>
 								Aplică
 							</button>
 						</div>
@@ -2223,92 +1943,6 @@ const ColorPickerModal = ({ palette = RTE_COLOR_PALETTE, selectedColor, onColorS
 		</div>
 	);
 };
-
-const CalloutDialogModal = ({
-	palette = RTE_COLOR_PALETTE,
-	types = RTE_CALLOUT_TYPES,
-	selectedType,
-	selectedColor,
-	onTypeChange,
-	onColorChange,
-	onApply,
-	onClose,
-}) => (
-	<div
-		className="rte-modal-overlay"
-		role="dialog"
-		aria-modal="true"
-		aria-labelledby="rte-callout-title"
-	>
-		<div className="rte-modal" onClick={(e) => e.stopPropagation()}>
-			<div className="rte-modal-header">
-				<h3 id="rte-callout-title" className="rte-modal-title">Chenар stilizat</h3>
-				<button type="button" onClick={onClose} className="rte-modal-close" aria-label="Inchide">
-					X
-				</button>
-			</div>
-			<div className="rte-modal-body">
-				<div className="rte-callout-modal-section">
-					<label className="rte-color-palette-label">Stil chenar</label>
-					<div className="rte-callout-type-grid">
-						{types.map((type) => (
-							<button
-								key={type.id}
-								type="button"
-								className={`rte-callout-type-btn ${selectedType === type.id ? 'is-selected' : ''}`}
-								data-type={type.id}
-								onClick={() => onTypeChange(type.id)}
-							>
-								<span className="rte-callout-type-btn-name">{type.label}</span>
-							</button>
-						))}
-					</div>
-				</div>
-				<div className="rte-callout-modal-section">
-					<label className="rte-color-palette-label">Culoare accent</label>
-					<div className="rte-color-palette-grid">
-						{palette.map((hex, i) => (
-							<div
-								key={`${hex}-${i}`}
-								role="button"
-								tabIndex={0}
-								className={`rte-color-swatch ${selectedColor === hex ? 'is-selected' : ''}`}
-								style={{ background: hex }}
-								onClick={() => onColorChange(hex)}
-								onKeyDown={(e) => {
-									if (e.key === 'Enter' || e.key === ' ') {
-										e.preventDefault();
-										onColorChange(hex);
-									}
-								}}
-								title={hex}
-								aria-label={`Culoare ${hex}`}
-							/>
-						))}
-					</div>
-				</div>
-				<div className="rte-callout-preview">
-					<blockquote
-						className="rte-callout-preview-box"
-						data-callout-box="true"
-						data-callout-type={selectedType}
-						style={{
-							'--rte-callout-accent': selectedColor,
-						}}
-					>
-						<div className="rte-callout-content">
-							<p>Preview pentru chenарul selectat.</p>
-						</div>
-					</blockquote>
-				</div>
-				<div className="rte-callout-actions">
-					<button type="button" className="rte-callout-action-secondary" onClick={onClose}>Anuleaza</button>
-					<button type="button" className="rte-callout-action-primary" onClick={onApply}>Aplica</button>
-				</div>
-			</div>
-		</div>
-	</div>
-);
 
 const CalloutInlinePanel = ({
 	palette = RTE_COLOR_PALETTE,
@@ -2331,10 +1965,10 @@ const CalloutInlinePanel = ({
 		<div className="rte-callout-inline-header">
 			<div>
 				<div className="rte-callout-inline-title">Chenar</div>
-				<div className="rte-callout-inline-subtitle">Click direct pe stil si culoare</div>
+				<div className="rte-callout-inline-subtitle">Click direct pe stil și culoare</div>
 			</div>
-			<button type="button" onClick={onClose} className="rte-callout-inline-close" aria-label="Inchide">
-				X
+			<button type="button" onClick={onClose} className="rte-callout-inline-close va-close-btn" aria-label="Închide">
+				<X size={18} weight="bold" aria-hidden="true" />
 			</button>
 		</div>
 		<div className="rte-callout-inline-section">
@@ -2394,147 +2028,38 @@ const CalloutInlinePanel = ({
 // Link Dialog Modal Component
 const LinkDialogModal = ({ linkUrl, setLinkUrl, onInsert, onClose }) => {
 	return (
-		<div
-			className="rte-modal-overlay"
-		>
-			<div
-				className="rte-modal"
-				onClick={(e) => e.stopPropagation()}
-			>
+		<div className="rte-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="rte-link-title">
+			<div className="rte-modal rte-modal--form" onClick={(e) => e.stopPropagation()}>
 				<div className="rte-modal-header">
-					<h3 style={{
-						margin: 0,
-						background: 'linear-gradient(135deg, #ffffff, #0891b2)',
-						WebkitBackgroundClip: 'text',
-						WebkitTextFillColor: 'transparent',
-						backgroundClip: 'text',
-						fontSize: '1.25rem',
-						fontWeight: 700,
-					}}>
-						🔗 Inserare Link
-					</h3>
-					<button
-						type="button"
-						onClick={onClose}
-						className="rte-modal-close"
-					>
-						×
+					<h3 id="rte-link-title" className="rte-modal-title">🔗 Inserare Link</h3>
+					<button type="button" onClick={onClose} className="rte-modal-close va-close-btn" aria-label="Închide">
+						<X size={18} weight="bold" aria-hidden="true" />
 					</button>
 				</div>
 
 				<div className="rte-modal-body">
-					<div>
-						<label style={{
-							display: 'block',
-							marginBottom: '0.75rem',
-							color: 'rgba(255,255,255,0.7)',
-							fontSize: '0.9rem',
-							fontWeight: 600,
-						}}>
-							URL
-						</label>
-						<input
-							type="text"
-							value={linkUrl}
-							onChange={(e) => setLinkUrl(e.target.value)}
-							onKeyDown={(e) => {
-								if (e.key === 'Enter') {
-									onInsert();
-								}
-							}}
-							placeholder="https://… sau domeniu.extensie"
-							autoFocus
-							style={{
-								width: '100%',
-								padding: '1rem',
-								background: 'rgba(255,255,255,0.05)',
-								border: '1px solid rgba(8,145,178,0.2)',
-								borderRadius: '12px',
-								color: '#fff',
-								fontSize: '1rem',
-								transition: 'all 0.3s ease',
-							}}
-							onFocus={(e) => {
-								e.target.style.borderColor = 'rgba(8,145,178,0.4)';
-								e.target.style.background = 'rgba(255,255,255,0.08)';
-							}}
-							onBlur={(e) => {
-								e.target.style.borderColor = 'rgba(8,145,178,0.2)';
-								e.target.style.background = 'rgba(255,255,255,0.05)';
-							}}
-						/>
-						<div style={{
-							marginTop: '0.5rem',
-							color: 'rgba(255,255,255,0.6)',
-							fontSize: '0.85rem',
-						}}>
-							💡 Poți introduce un URL complet (https://…) sau doar domeniul.
-						</div>
-					</div>
+					<label className="rte-modal-label" htmlFor="rte-link-url">URL</label>
+					<input
+						id="rte-link-url"
+						type="text"
+						className="rte-modal-input"
+						value={linkUrl}
+						onChange={(e) => setLinkUrl(e.target.value)}
+						onKeyDown={(e) => {
+							if (e.key === 'Enter') {
+								onInsert();
+							}
+						}}
+						placeholder="https://… sau domeniu.extensie"
+						autoFocus
+					/>
+					<p className="rte-modal-hint">💡 Poți introduce un URL complet (https://…) sau doar domeniul.</p>
 
-					<div style={{
-						display: 'flex',
-						gap: '1rem',
-						justifyContent: 'flex-end',
-						marginTop: '1.5rem',
-					}}>
-						<button
-							type="button"
-							onClick={onClose}
-							style={{
-								padding: '0.75rem 1.5rem',
-								background: 'rgba(255,255,255,0.05)',
-								border: '1px solid rgba(255,255,255,0.15)',
-								borderRadius: '10px',
-								color: '#fff',
-								fontWeight: 600,
-								cursor: 'pointer',
-								transition: 'all 0.3s ease',
-							}}
-							onMouseEnter={(e) => {
-								e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-								e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)';
-							}}
-							onMouseLeave={(e) => {
-								e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-								e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-							}}
-						>
+					<div className="rte-modal-actions">
+						<button type="button" className="lms-btn-secondary rte-modal-btn" onClick={onClose}>
 							Anulează
 						</button>
-						<button
-							type="button"
-							onClick={onInsert}
-							disabled={!linkUrl.trim()}
-							style={{
-								padding: '0.75rem 1.5rem',
-								background: linkUrl.trim()
-									? 'linear-gradient(135deg, rgba(8,145,178,0.2), rgba(8,145,178,0.15))'
-									: 'rgba(255,255,255,0.05)',
-								border: linkUrl.trim()
-									? '1px solid rgba(8,145,178,0.4)'
-									: '1px solid rgba(255,255,255,0.1)',
-								borderRadius: '10px',
-								color: linkUrl.trim() ? '#0891b2' : 'rgba(255,255,255,0.5)',
-								fontWeight: 700,
-								cursor: linkUrl.trim() ? 'pointer' : 'not-allowed',
-								transition: 'all 0.3s ease',
-							}}
-							onMouseEnter={(e) => {
-								if (linkUrl.trim()) {
-									e.currentTarget.style.background = 'linear-gradient(135deg, rgba(8,145,178,0.3), rgba(8,145,178,0.2))';
-									e.currentTarget.style.borderColor = 'rgba(8,145,178,0.5)';
-									e.currentTarget.style.transform = 'translateY(-2px)';
-								}
-							}}
-							onMouseLeave={(e) => {
-								if (linkUrl.trim()) {
-									e.currentTarget.style.background = 'linear-gradient(135deg, rgba(8,145,178,0.2), rgba(8,145,178,0.15))';
-									e.currentTarget.style.borderColor = 'rgba(8,145,178,0.4)';
-									e.currentTarget.style.transform = 'translateY(0)';
-								}
-							}}
-						>
+						<button type="button" className="lms-btn-primary rte-modal-btn" onClick={onInsert} disabled={!linkUrl.trim()}>
 							Inserare
 						</button>
 					</div>
@@ -2564,261 +2089,76 @@ const PdfUploadModal = ({
 	const isPartialRange = totalPages > 0 && (safeStart > 1 || safeEnd < totalPages);
 
 	return (
-		<div
-			className="rte-modal-overlay"
-		>
-			<div
-				className="rte-modal"
-				onClick={(e) => e.stopPropagation()}
-				style={{ maxWidth: '600px' }}
-			>
+		<div className="rte-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="rte-pdf-title">
+			<div className="rte-modal rte-modal--form rte-modal--wide" onClick={(e) => e.stopPropagation()}>
 				<div className="rte-modal-header">
-					<h3 style={{
-						margin: 0,
-						background: 'linear-gradient(135deg, #ffffff, #0891b2)',
-						WebkitBackgroundClip: 'text',
-						WebkitTextFillColor: 'transparent',
-						backgroundClip: 'text',
-						fontSize: '1.25rem',
-						fontWeight: 700,
-					}}>
-						📄 Încarcă PDF original
-					</h3>
-					<button
-						type="button"
-						onClick={onClose}
-						className="rte-modal-close"
-					>
-						×
+					<h3 id="rte-pdf-title" className="rte-modal-title">📄 Încarcă PDF original</h3>
+					<button type="button" onClick={onClose} className="rte-modal-close va-close-btn" aria-label="Închide">
+						<X size={18} weight="bold" aria-hidden="true" />
 					</button>
 				</div>
 
 				<div className="rte-modal-body">
-					{/* File Selection Area */}
 					{!pdfFile ? (
-						<div
-							onClick={onFileSelect}
-							style={{
-								border: '2px dashed rgba(8,145,178,0.3)',
-								borderRadius: '16px',
-								padding: '3rem 2rem',
-								textAlign: 'center',
-								cursor: 'pointer',
-								transition: 'all 0.3s ease',
-								background: 'rgba(8,145,178,0.05)',
-							}}
-							onMouseEnter={(e) => {
-								e.currentTarget.style.borderColor = 'rgba(8,145,178,0.5)';
-								e.currentTarget.style.background = 'rgba(8,145,178,0.1)';
-								e.currentTarget.style.transform = 'translateY(-2px)';
-							}}
-							onMouseLeave={(e) => {
-								e.currentTarget.style.borderColor = 'rgba(8,145,178,0.3)';
-								e.currentTarget.style.background = 'rgba(8,145,178,0.05)';
-								e.currentTarget.style.transform = 'translateY(0)';
-							}}
-						>
-							<div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📄</div>
-							<div style={{
-								color: '#0891b2',
-								fontSize: '1.1rem',
-								fontWeight: 700,
-								marginBottom: '0.5rem',
-							}}>
-								Click pentru a selecta PDF
-							</div>
-							<div style={{
-								color: 'rgba(255,255,255,0.6)',
-								fontSize: '0.9rem',
-							}}>
-								Maxim 10MB · PDF-ul va fi inserat ca document vizibil în lecție
-							</div>
-						</div>
+						<button type="button" className="rte-modal-dropzone" onClick={onFileSelect}>
+							<span className="rte-modal-dropzone__icon" aria-hidden="true">📄</span>
+							<span className="rte-modal-dropzone__title">Click pentru a selecta PDF</span>
+							<span className="rte-modal-hint">Maxim 10MB · PDF-ul va fi inserat ca document vizibil în lecție</span>
+						</button>
 					) : (
-						<div style={{
-							padding: '1.5rem',
-							background: 'rgba(8,145,178,0.1)',
-							border: '1px solid rgba(8,145,178,0.3)',
-							borderRadius: '16px',
-							marginBottom: '1.5rem',
-						}}>
-							<div style={{
-								display: 'flex',
-								alignItems: 'center',
-								gap: '1rem',
-								marginBottom: '1rem',
-							}}>
-								<div style={{ fontSize: '2.5rem' }}>📄</div>
-								<div style={{ flex: 1 }}>
-									<div style={{
-										color: '#0891b2',
-										fontWeight: 700,
-										marginBottom: '0.25rem',
-									}}>
-										{pdfFileName}
-									</div>
-									<div style={{
-										color: 'rgba(255,255,255,0.6)',
-										fontSize: '0.85rem',
-									}}>
-										{(pdfFile.size / 1024 / 1024).toFixed(2)} MB
-									</div>
+						<div className="rte-modal-file">
+							<div className="rte-modal-file__head">
+								<span className="rte-modal-file__icon" aria-hidden="true">📄</span>
+								<div className="rte-modal-file__meta">
+									<div className="rte-modal-file__name">{pdfFileName}</div>
+									<div className="rte-modal-hint">{(pdfFile.size / 1024 / 1024).toFixed(2)} MB</div>
 								</div>
-								<button
-									type="button"
-									onClick={onFileSelect}
-									style={{
-										padding: '0.5rem 1rem',
-										background: 'rgba(255,255,255,0.05)',
-										border: '1px solid rgba(255,255,255,0.15)',
-										borderRadius: '8px',
-										color: '#fff',
-										cursor: 'pointer',
-										fontSize: '0.85rem',
-										transition: 'all 0.3s ease',
-									}}
-									onMouseEnter={(e) => {
-										e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-										e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)';
-									}}
-									onMouseLeave={(e) => {
-										e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-										e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-									}}
-								>
+								<button type="button" className="lms-btn-secondary rte-modal-btn rte-modal-btn--sm" onClick={onFileSelect}>
 									Schimbă
 								</button>
 							</div>
 
-							<div style={{
-								padding: '0.85rem',
-								background: 'rgba(255,255,255,0.04)',
-								border: '1px solid rgba(255,255,255,0.1)',
-								borderRadius: '10px',
-							}}>
-								<div style={{
-									color: 'rgba(255,255,255,0.82)',
-									fontSize: '0.85rem',
-									marginBottom: '0.65rem',
-								}}>
+							<div className="rte-modal-range">
+								<p className="rte-modal-range__title">
 									Taie PDF după pagini ({totalPages || 0} pagini detectate)
-								</div>
-								<div style={{
-									display: 'flex',
-									gap: '0.75rem',
-									alignItems: 'center',
-									flexWrap: 'wrap',
-								}}>
-									<label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem' }}>
+								</p>
+								<div className="rte-modal-range__row">
+									<label className="rte-modal-range__field">
 										De la
 										<input
 											type="number"
+											className="rte-modal-input rte-modal-input--page"
 											min={1}
 											max={Math.max(1, totalPages || 1)}
 											value={safeStart}
 											onChange={(e) => onStartPageChange(Number(e.target.value || 1))}
-											style={{ marginLeft: '0.45rem', width: '76px' }}
 										/>
 									</label>
-									<label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem' }}>
+									<label className="rte-modal-range__field">
 										Până la
 										<input
 											type="number"
+											className="rte-modal-input rte-modal-input--page"
 											min={safeStart}
 											max={Math.max(safeStart, totalPages || safeStart)}
 											value={safeEnd}
 											onChange={(e) => onEndPageChange(Number(e.target.value || safeStart))}
-											style={{ marginLeft: '0.45rem', width: '76px' }}
 										/>
 									</label>
-									<div style={{
-										color: isPartialRange ? '#0891b2' : 'rgba(255,255,255,0.55)',
-										fontSize: '0.8rem',
-										fontWeight: 600,
-									}}>
+									<span className={`rte-modal-range__note${isPartialRange ? ' is-partial' : ''}`}>
 										{isPartialRange ? `Se va insera doar intervalul ${safeStart}-${safeEnd}.` : 'Se va insera PDF-ul complet.'}
-									</div>
+									</span>
 								</div>
 							</div>
 						</div>
 					)}
 
-					<div style={{
-						display: 'flex',
-						gap: '1rem',
-						justifyContent: 'flex-end',
-					}}>
-						<button
-							type="button"
-							onClick={onClose}
-							style={{
-								padding: '0.75rem 1.5rem',
-								background: 'rgba(255,255,255,0.05)',
-								border: '1px solid rgba(255,255,255,0.15)',
-								borderRadius: '10px',
-								color: '#fff',
-								fontWeight: 600,
-								cursor: 'pointer',
-								transition: 'all 0.3s ease',
-							}}
-							onMouseEnter={(e) => {
-								e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-								e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)';
-							}}
-							onMouseLeave={(e) => {
-								e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-								e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-							}}
-						>
+					<div className="rte-modal-actions">
+						<button type="button" className="lms-btn-secondary rte-modal-btn" onClick={onClose}>
 							Anulează
 						</button>
-						<button
-							type="button"
-							onClick={onUpload}
-							disabled={!pdfFile || uploadingPdf}
-							style={{
-								padding: '0.75rem 1.5rem',
-								background: pdfFile && !uploadingPdf
-									? 'linear-gradient(135deg, rgba(8,145,178,0.2), rgba(8,145,178,0.15))'
-									: 'rgba(255,255,255,0.05)',
-								border: pdfFile && !uploadingPdf
-									? '1px solid rgba(8,145,178,0.4)'
-									: '1px solid rgba(255,255,255,0.1)',
-								borderRadius: '10px',
-								color: pdfFile && !uploadingPdf ? '#0891b2' : 'rgba(255,255,255,0.5)',
-								fontWeight: 700,
-								cursor: pdfFile && !uploadingPdf ? 'pointer' : 'not-allowed',
-								transition: 'all 0.3s ease',
-								display: 'inline-flex',
-								alignItems: 'center',
-								gap: '0.5rem',
-							}}
-							onMouseEnter={(e) => {
-								if (pdfFile && !uploadingPdf) {
-									e.currentTarget.style.background = 'linear-gradient(135deg, rgba(8,145,178,0.3), rgba(8,145,178,0.2))';
-									e.currentTarget.style.borderColor = 'rgba(8,145,178,0.5)';
-									e.currentTarget.style.transform = 'translateY(-2px)';
-								}
-							}}
-							onMouseLeave={(e) => {
-								if (pdfFile && !uploadingPdf) {
-									e.currentTarget.style.background = 'linear-gradient(135deg, rgba(8,145,178,0.2), rgba(8,145,178,0.15))';
-									e.currentTarget.style.borderColor = 'rgba(8,145,178,0.4)';
-									e.currentTarget.style.transform = 'translateY(0)';
-								}
-							}}
-						>
-							{uploadingPdf ? (
-								<>
-									<span>⏳</span>
-									<span>Se încarcă...</span>
-								</>
-							) : (
-								<>
-									<span>✅</span>
-									<span>Inserează PDF original</span>
-								</>
-							)}
+						<button type="button" className="lms-btn-primary rte-modal-btn" onClick={onUpload} disabled={!pdfFile || uploadingPdf}>
+							{uploadingPdf ? 'Se încarcă…' : 'Inserează PDF original'}
 						</button>
 					</div>
 				</div>

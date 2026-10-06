@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Image as ImageIcon } from '@phosphor-icons/react';
-import RichTextEditor from '../components/RichTextEditor';
+import LessonTipTapEditor from '../components/admin/lessons/LessonTipTapEditor';
 import { libraryService } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../contexts/ToastContext';
+
+import { useAuth } from '../contexts/AuthContextShared.js';
+
+import { useToast } from '../contexts/ToastContextShared.js';
 import { logger } from '../utils/logger';
 import { toImageUrl } from '../utils/imageUrl';
 import '../styles/library-compose-page.css';
@@ -26,9 +28,7 @@ const LibraryComposePage = () => {
 	const coverInputRef = useRef(null);
 
 	const actualRole = user?.actualRole ?? user?.role ?? 'student';
-	const canWrite = user?.role !== 'student' && (
-		actualRole === 'admin' || actualRole === 'instructor' || actualRole === 'company_owner'
-	);
+	const canWrite = actualRole === 'admin' || actualRole === 'instructor';
 
 	const [loading, setLoading] = useState(isEditing);
 	const [saving, setSaving] = useState(false);
@@ -188,7 +188,7 @@ const LibraryComposePage = () => {
 				<div>
 					<h1 className="library-compose-title">{isEditing ? 'Editează material' : 'Scrie material'}</h1>
 					<p className="library-compose-lead">
-						Compune un material nou în biblioteca Formely — articol, notă sau ghid formatat, cu copertă opțională.
+						Compune direct în bibliotecă — articole, note sau ghiduri formatate, cu copertă opțională.
 					</p>
 				</div>
 				<button type="button" className="library-btn library-btn--secondary" onClick={() => navigate('/library')}>
@@ -268,21 +268,22 @@ const LibraryComposePage = () => {
 				</div>
 
 				<div className="library-compose-field library-compose-field--editor">
-					<label htmlFor="library-compose-body">Conținut</label>
-					<RichTextEditor
-						value={body}
-						onChange={setBody}
-						placeholder="Scrie materialul aici..."
-						toolbarVariant="full"
-						showSideTools={false}
-					/>
+					<span className="library-compose-label">Conținut</span>
+					<div className="library-compose-editor">
+						<LessonTipTapEditor
+							value={body}
+							onChange={setBody}
+							uploadImage={libraryService.uploadImage}
+							placeholder="Scrie materialul aici..."
+						/>
+					</div>
 				</div>
 
 				<div className="library-compose-actions">
 					<button type="button" className="library-btn library-btn--secondary" onClick={() => navigate('/library')} disabled={saving}>
 						Anulează
 					</button>
-					<button type="submit" className="library-btn library-btn--primary" disabled={saving}>
+					<button type="submit" className="va-btn-save library-btn lms-btn-primary library-btn--primary" disabled={saving}>
 						{saving ? 'Se salvează...' : isEditing ? 'Salvează modificările' : 'Publică în bibliotecă'}
 					</button>
 				</div>

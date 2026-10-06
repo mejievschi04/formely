@@ -1,0 +1,35 @@
+/* Shared catalog and assessment refinements for both viewport sizes. */
+.courses-page-student .courses-page-search-input { min-height: 48px; padding-right: 48px; }
+.courses-page-student .courses-page-search-clear { width: 44px; height: 44px; }
+.courses-page-student-filter:focus-visible,
+.courses-page-search-clear:focus-visible,
+.exam-question-overview summary:focus-visible {
+	outline: 2px solid var(--text-primary);
+	outline-offset: 3px;
+}
+.exam-question-overview { flex: 0 0 248px; min-width: 0; position: sticky; top: 16px; }
+.exam-question-overview > summary {
+	padding: 12px;
+	color: var(--text-secondary);
+	font-size: 13px;
+	line-height: 1.6;
+	cursor: pointer;
+}
+.student-exam-page .exam-question-overview .student-exam-nav {
+	position: static;
+	width: 100%;
+	box-sizing: border-box;
+}
+.student-exam-page .exam-question-overview .student-exam-nav-item { min-width: 44px; min-height: 44px; }
+@media (max-width: 768px) {
+	.va-shell .courses-page-student .courses-page-student-filters { gap: 4px; }
+	.va-shell .courses-page-student .courses-page-student-filter {
+		min-width: 0;
+		text-align: center;
+		justify-content: center;
+	}
+	.courses-page-student .courses-page-search-input { font-size: 16px; }
+	.student-exam-page .exam-question-overview { position: static; width: 100%; margin-bottom: 16px; border: 1px solid var(--border-primary); border-radius: 12px; background: var(--bg-elevated); }
+	.student-exam-page .exam-question-overview summary { min-height: 44px; box-sizing: border-box; }
+	.student-exam-page .exam-question-overview .student-exam-nav { display: block !important; border: 0; }
+}

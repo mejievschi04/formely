@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaCache;
 
 class StudentActivityController extends Controller
 {
@@ -27,7 +27,7 @@ class StudentActivityController extends Controller
 
     public function index(Request $request)
     {
-        if (! Schema::hasTable('activity_logs')) {
+        if (! SchemaCache::hasTable('activity_logs')) {
             return response()->json([
                 'data' => [],
                 'pagination' => [

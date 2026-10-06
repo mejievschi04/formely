@@ -2,7 +2,7 @@
 
 .admin-statistics-hub-layout {
 	display: grid;
-	grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+	grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
 	gap: var(--space-6);
 	align-items: start;
 	width: 100%;
@@ -30,43 +30,36 @@
 .admin-statistics-hub-nav {
 	display: flex;
 	flex-direction: column;
-	gap: var(--space-1);
+	gap: 8px;
 }
 
 .admin-statistics-hub-nav button {
 	width: 100%;
 	text-align: left;
-	padding: var(--space-3) var(--space-4);
-	border-radius: var(--radius-md);
-	font-size: var(--font-size-sm);
-	font-weight: var(--font-weight-medium);
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
 	font-family: var(--font-family);
-	color: var(--text-secondary);
-	background: var(--bg-secondary);
-	border: 1px solid var(--border-primary);
-	cursor: pointer;
-	transition:
-		background-color var(--transition-base),
-		border-color var(--transition-base),
-		color var(--transition-base);
 }
 
-.admin-statistics-hub-nav button:hover:not(:disabled) {
-	background: var(--bg-tertiary);
-	color: var(--text-primary);
-	border-color: var(--border-secondary);
+.admin-statistics-hub-nav-label {
+	line-height: 1.2;
 }
 
-.admin-statistics-hub-nav button:disabled {
-	opacity: 0.55;
-	cursor: not-allowed;
+.admin-statistics-hub-nav-detail {
+	font-size: 0.75rem;
+	line-height: 1.3;
 }
 
-.admin-statistics-hub-nav button.is-active {
-	color: var(--text-primary);
-	border-color: var(--color-primary);
-	background: color-mix(in srgb, var(--color-primary) 14%, var(--bg-elevated));
-	box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 35%, transparent);
+.admin-statistics-team-filter {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: min(280px, 100%);
+}
+
+.admin-statistics-team-filter select {
+	padding: 0 12px;
 }
 
 .admin-statistics-hub-main {
@@ -273,37 +266,7 @@
 /* Tab-uri teste */
 .admin-statistics-tests-tabs {
 	display: inline-flex;
-	gap: var(--space-1);
-	padding: var(--space-1);
-	background: var(--bg-secondary);
-	border-radius: var(--radius-lg);
-	border: 1px solid var(--border-primary);
-}
-
-.admin-statistics-tests-tabs button {
-	border: none;
-	background: transparent;
-	color: var(--text-secondary);
-	font-weight: var(--font-weight-medium);
-	font-size: var(--font-size-xs);
-	font-family: var(--font-family);
-	padding: var(--space-1) var(--space-3);
-	border-radius: var(--radius-md);
-	cursor: pointer;
-	transition:
-		background-color var(--transition-base),
-		color var(--transition-base);
-}
-
-.admin-statistics-tests-tabs button:hover {
-	color: var(--text-primary);
-	background: var(--bg-tertiary);
-}
-
-.admin-statistics-tests-tabs button.is-active {
-	color: var(--text-primary);
-	background: var(--bg-elevated);
-	box-shadow: var(--shadow-sm);
+	flex-wrap: wrap;
 }
 
 .admin-statistics-student-person {
@@ -441,4 +404,29 @@
 	.admin-statistics-student-kpis {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
+}
+
+.admin-statistics-row-clickable {
+	cursor: pointer;
+}
+
+.admin-statistics-row-clickable:hover td,
+.admin-statistics-row-clickable:focus-visible td {
+	background: color-mix(in srgb, var(--btn-primary-bg, #f5c518) 10%, transparent);
+}
+
+.admin-statistics-row-clickable:focus-visible {
+	outline: 2px solid var(--btn-primary-bg, #f5c518);
+	outline-offset: -2px;
+}
+
+.admin-statistics-test-detail {
+	display: grid;
+	gap: 16px;
+	justify-items: start;
+}
+
+.admin-statistics-test-detail > :not(.va-btn-back) {
+	justify-self: stretch;
+	width: 100%;
 }

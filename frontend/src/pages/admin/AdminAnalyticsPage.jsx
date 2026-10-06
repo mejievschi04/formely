@@ -67,7 +67,7 @@ const AdminAnalyticsPage = () => {
 
 	const totalUsers = parseInt(String(kpis.total_users?.value || 0).replace(/,/g, '')) || 0;
 	const activeUsers = parseInt(String(kpis.active_users?.value || 0).replace(/,/g, '')) || 0;
-	const totalCourses = parseInt(String(kpis.total_courses?.value || 0).replace(/,/g, '')) || 0;
+
 	const completionRate = parseFloat(String(kpis.completion_rate?.value || 0).replace('%', '')) || 0;
 	const engagement = parseFloat(String(kpis.engagement?.value || 0).replace('%', '')) || 0;
 	const newEnrollments = parseInt(String(kpis.new_enrollments?.value || 0).replace(/,/g, '')) || 0;
@@ -83,17 +83,17 @@ const AdminAnalyticsPage = () => {
 
 	// Learning funnel - din API (date reale)
 	const funnelData = [
-		{ name: 'Înscriși', value: learningFunnelApi.enrolled ?? 0, fill: '#64748b' },
-		{ name: 'Au început', value: learningFunnelApi.started ?? 0, fill: '#38bdf8' },
-		{ name: '25%+', value: learningFunnelApi.progress_25 ?? 0, fill: '#22d3ee' },
-		{ name: '50%+', value: learningFunnelApi.progress_50 ?? 0, fill: '#0891b2' },
-		{ name: '75%+', value: learningFunnelApi.progress_75 ?? 0, fill: '#0e7490' },
+		{ name: 'Înscriși', value: learningFunnelApi.enrolled ?? 0, fill: '#6366f1' },
+		{ name: 'Au început', value: learningFunnelApi.started ?? 0, fill: '#8b5cf6' },
+		{ name: '25%+', value: learningFunnelApi.progress_25 ?? 0, fill: '#a855f7' },
+		{ name: '50%+', value: learningFunnelApi.progress_50 ?? 0, fill: '#c084fc' },
+		{ name: '75%+', value: learningFunnelApi.progress_75 ?? 0, fill: '#d8b4fe' },
 		{ name: 'Finalizat', value: learningFunnelApi.completed ?? 0, fill: '#10b981' },
 	];
 
 	// User segments - din API (date reale)
 	const segmentsRaw = [
-		{ name: 'Noi (30z)', value: userSegmentsApi.new ?? 0, color: '#0891b2' },
+		{ name: 'Noi (30z)', value: userSegmentsApi.new ?? 0, color: '#6366f1' },
 		{ name: 'În risc', value: userSegmentsApi.at_risk ?? 0, color: '#ef4444' },
 		{ name: 'Implicați', value: userSegmentsApi.highly_engaged ?? 0, color: '#10b981' },
 		{ name: 'Inactivi', value: userSegmentsApi.inactive ?? 0, color: '#94a3b8' },
@@ -122,9 +122,9 @@ const AdminAnalyticsPage = () => {
 			<header className="analytics-header">
 				<div className="analytics-header-content">
 					<div>
-						<h1 className="analytics-title">Analiză avansată</h1>
+						<h1 className="analytics-title">Analiză Avansată</h1>
 						<p className="analytics-subtitle">
-							Tendințe de învățare, engagement și performanță cursuri în Formely.
+							Statistici detaliate și insight-uri pentru optimizarea platformei
 						</p>
 					</div>
 					<div className="analytics-header-actions">
@@ -140,7 +140,7 @@ const AdminAnalyticsPage = () => {
 							))}
 						</div>
 						<button
-							className="analytics-back-btn"
+							className="analytics-back-btn va-btn-back admin-back-btn"
 							onClick={() => navigate('/admin')}
 						>
 							<ArrowLeft size={14} weight="bold" aria-hidden /> Dashboard
@@ -202,8 +202,8 @@ const AdminAnalyticsPage = () => {
 							<AreaChart data={chartDataFormatted}>
 								<defs>
 									<linearGradient id="colorEnrollments" x1="0" y1="0" x2="0" y2="1">
-										<stop offset="5%" stopColor="#0891b2" stopOpacity={0.4} />
-										<stop offset="95%" stopColor="#0891b2" stopOpacity={0} />
+										<stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
+										<stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
 									</linearGradient>
 									<linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
 										<stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
@@ -226,7 +226,7 @@ const AdminAnalyticsPage = () => {
 									type="monotone"
 									dataKey="enrollments"
 									name="Înscrieri"
-									stroke="#0891b2"
+									stroke="#6366f1"
 									fillOpacity={1}
 									fill="url(#colorEnrollments)"
 									strokeWidth={2}
@@ -344,7 +344,7 @@ const AdminAnalyticsPage = () => {
 											borderRadius: 'var(--radius-lg)',
 										}}
 									/>
-									<Bar dataKey="enrollments" name="Înscrieri" fill="#0891b2" radius={[0, 4, 4, 0]} />
+									<Bar dataKey="enrollments" name="Înscrieri" fill="#6366f1" radius={[0, 4, 4, 0]} />
 								</BarChart>
 							</ResponsiveContainer>
 						) : (
@@ -388,10 +388,10 @@ const AdminAnalyticsPage = () => {
 				</div>
 			</section>
 
-			{/* AI recommendations */}
+			{/* Volt recommendations */}
 			{(problematicCourses.length > 0 || completionRate < 70) && (
 				<section className="analytics-section">
-					<h2 className="analytics-section-title">Recomandări AI</h2>
+					<h2 className="analytics-section-title">Recomandări Formely AI</h2>
 					<div className="analytics-ai-grid">
 						{problematicCourses.slice(0, 2).map((c) => (
 							<div
@@ -428,6 +428,7 @@ const AdminAnalyticsPage = () => {
 				<div className="analytics-section-header">
 					<div>
 						<h2 className="analytics-section-title">Feed activitate</h2>
+						<p className="analytics-section-subtitle">Evenimente recente pe platformă</p>
 					</div>
 					<div className="analytics-activity-filters">
 						{['all', 'completion', 'exam_submitted'].map((f) => (

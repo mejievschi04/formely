@@ -2,6 +2,7 @@ export const AI_QUESTION_TYPE_OPTIONS = [
   { id: 'multiple_choice', label: 'Răspuns multiplu' },
   { id: 'single_choice', label: 'Răspuns unic' },
   { id: 'true_false', label: 'Adevărat/Fals' },
+  { id: 'yes_no', label: 'Da / Nu' },
   { id: 'matching', label: 'Potrivire' },
   { id: 'ordering', label: 'Ordonare' },
 ];

@@ -1,29 +1,40 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, BarChart3, Eye, ListChecks, Save, Settings, Users } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { X } from '@phosphor-icons/react';
+import { ArrowLeft, BarChart3, ChevronRight, Eye, ListChecks, Save, Settings, Users } from 'lucide-react';
 import { adminService } from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
-import { useAuth } from '../../contexts/AuthContext';
-import { downloadSimpleExcel, statisticsExcelFilename } from '../../utils/statisticsExcelExport';
+
+import { useToast } from '../../contexts/ToastContextShared.js';
+
+import { useAuth } from '../../contexts/AuthContextShared.js';
+
 import AdminContentItemCard from '../../components/admin/content/AdminContentItemCard';
+import { PublishSwitch } from '../../components/ui/PublishSwitch';
 import TestResultsPanel from '../../components/admin/tests/TestResultsPanel';
 import ExamContentPicker from '../../components/admin/exams/ExamContentPicker';
 import PassingScoreByQuestions from '../../components/admin/tests/PassingScoreByQuestions';
+import Modal from '../../components/common/Modal';
 import '../../styles/admin-content-list.css';
 import './AdminTestsPage.css';
 import './AdminExamsPage.css';
+import '../../styles/test-settings.css';
+import {
+  TEST_RESULTS_DISPLAY_OPTIONS,
+  getExamResultsDisplayMode,
+  patchExamResultsDisplayMode,
+} from '../../utils/testQuestionBuilder';
 
 /** Id-uri stabile pentru logică; etichete cu diacritice în UI. */
 const EXAM_BUILDER_SECTIONS = [
-  { id: 'settings', label: 'Setări' },
-  { id: 'questions', label: 'Întrebări' },
-  { id: 'access', label: 'Acces' },
-  { id: 'statistics', label: 'Statistici' },
+  { id: 'settings', label: 'Setări', hint: 'Reguli și notare' },
+  { id: 'questions', label: 'Întrebări', hint: 'Alege conținutul' },
+  { id: 'access', label: 'Acces', hint: 'Cine poate intra' },
+  { id: 'statistics', label: 'Statistici', hint: 'Rezultate' },
 ];
 const DEFAULT_EXAM_SECTION = EXAM_BUILDER_SECTIONS[0].id;
 
 const FILTERS = [
   { value: 'all', label: 'Toate' },
-  { value: 'draft', label: 'Draft' },
+  { value: 'draft', label: 'Ciornă' },
   { value: 'published', label: 'Publicat' },
   { value: 'archived', label: 'Arhivat' },
 ];
@@ -35,20 +46,19 @@ const DEFAULT_SETTINGS = {
   manualReview: false,
   showFeedbackInstant: false,
   showCorrectAnswers: false,
-  showOnlySubmittedAnswers: false,
-  timeLimitEnabled: false,
-  timeLimitMinutes: 60,
-  attempts: 1,
+  showOnlySubmittedAnswers: true,
+  timeLimitMinutes: '',
+  attempts: '',
+  deadlineFlexible: false,
   passingScore: 0,
   navigationMode: 'sequential',
   deadlineType: 'none',
   deadlineAt: '',
   deadlineDays: 7,
   contentBankId: null,
-  selectionMode: 'questions',
   selectedFolderIds: [],
   selectedQuestionIds: [],
-  selectedTags: [],
+  selectionMode: 'questions',
   includeStarred: true,
   questionCount: 10,
 };
@@ -64,6 +74,7 @@ const typeLabel = (type) => ({
   multiple_choice: 'Grilă',
   single_choice: 'Alegere unică',
   true_false: 'Adevărat / fals',
+  yes_no: 'Da / Nu',
   matching: 'Asocieri',
   ordering: 'Ordonare',
 }[type] || type);
@@ -72,7 +83,7 @@ function examStatusLabelRo(status) {
   const s = String(status || 'draft').toLowerCase();
   if (s === 'published') return 'Publicat';
   if (s === 'archived') return 'Arhivat';
-  return 'Draft';
+  return 'Ciornă';
 }
 
 export default function AdminExamsPage() {
@@ -102,9 +113,7 @@ export default function AdminExamsPage() {
   const [previewData, setPreviewData] = useState(null);
   const [previewError, setPreviewError] = useState('');
   const [examSettings, setExamSettings] = useState(DEFAULT_SETTINGS);
-  const [showContentModal, setShowContentModal] = useState(false);
   const [contentBanks, setContentBanks] = useState([]);
-  const [questionTags, setQuestionTags] = useState([]);
   const [contentBanksLoading, setContentBanksLoading] = useState(false);
   const [contentBanksError, setContentBanksError] = useState('');
   const [contentSearch, setContentSearch] = useState('');
@@ -112,25 +121,25 @@ export default function AdminExamsPage() {
   const [contentOnlyWithQuestions, setContentOnlyWithQuestions] = useState(false);
   const [contentConfirmLoading, setContentConfirmLoading] = useState(false);
   const [selectedQuestionItems, setSelectedQuestionItems] = useState([]);
-  const [examAccess, setExamAccess] = useState({ mode: 'all_students', selectedStudents: [] });
-  const [showStudentsModal, setShowStudentsModal] = useState(false);
-  const [studentsLoading, setStudentsLoading] = useState(false);
-  const [studentsError, setStudentsError] = useState('');
-  const [studentsSearch, setStudentsSearch] = useState('');
-  const [studentsList, setStudentsList] = useState([]);
-  const [studentsDraftSelected, setStudentsDraftSelected] = useState([]);
+  const [examAccess, setExamAccess] = useState({ mode: 'teams', teamIds: [], excludedStudentIds: [], selectedStudents: [] });
+  const [accessTeams, setAccessTeams] = useState([]);
+  const [accessTeamsLoading, setAccessTeamsLoading] = useState(false);
+  const [accessTeamsError, setAccessTeamsError] = useState('');
+  const [openTeamId, setOpenTeamId] = useState(null);
   const [manualReviewState, setManualReviewState] = useState({ reviewMode: 'after_complete' });
-  const [statisticsRows, setStatisticsRows] = useState([]);
   const [statisticsQuestionRows, setStatisticsQuestionRows] = useState([]);
   const [statisticsLoading, setStatisticsLoading] = useState(false);
   const [statisticsTab, setStatisticsTab] = useState('students');
-  const [statisticsStatusFilter, setStatisticsStatusFilter] = useState('all');
-  const [statisticsDateFrom, setStatisticsDateFrom] = useState('');
-  const [statisticsDateTo, setStatisticsDateTo] = useState('');
 
-  const selectedBank = useMemo(() => contentBanks.find((bank) => String(bank.id) === String(examSettings.contentBankId)), [contentBanks, examSettings.contentBankId]);
-  const selectedFoldersStarred = useMemo(() => contentBanks.filter((bank) => examSettings.selectedFolderIds.includes(bank.id)).reduce((acc, bank) => acc + Number(bank?.starred_questions_count || 0), 0), [contentBanks, examSettings.selectedFolderIds]);
-  const selectedStudentsPreview = useMemo(() => studentsList.filter((student) => examAccess.selectedStudents.includes(student.id)).slice(0, 8), [studentsList, examAccess.selectedStudents]);
+  const isQuestionMode = examSettings.selectionMode === 'questions';
+  const selectedQuestionCount = Array.isArray(examSettings.selectedQuestionIds) ? examSettings.selectedQuestionIds.length : 0;
+  const learnerMembersOf = (team) => (Array.isArray(team?.users) ? team.users : [])
+    .filter((user) => user?.role === 'student' && user?.status !== 'suspended')
+    .map((user) => ({ id: Number(user.id), name: user.name || 'Utilizator', email: user.email || '' }))
+    .filter((user) => Number.isFinite(user.id));
+  const accessSummaryLabel = examAccess.mode === 'teams'
+    ? (examAccess.teamIds.length ? `${examAccess.teamIds.length} ${examAccess.teamIds.length === 1 ? 'echipă' : 'echipe'}` : 'Nicio echipă')
+    : (examAccess.mode === 'selected_students' ? `${examAccess.selectedStudents.length} utilizatori` : 'Toți');
   const listStats = useMemo(() => {
     const counts = { all: items.length, draft: 0, published: 0, archived: 0 };
     items.forEach((item) => {
@@ -148,26 +157,6 @@ export default function AdminExamsPage() {
       return String(item?.title || '').toLowerCase().includes(query) || String(item?.course_title || '').toLowerCase().includes(query);
     });
   }, [items, listStatusFilter, search]);
-
-  const catalogExams = useMemo(
-    () => filteredItems.filter((item) => !item?.course_id),
-    [filteredItems]
-  );
-
-  const courseLinkedExams = useMemo(
-    () => filteredItems.filter((item) => item?.course_id),
-    [filteredItems]
-  );
-
-  const catalogStatsCount = useMemo(
-    () => items.filter((item) => !item?.course_id).length,
-    [items]
-  );
-
-  const courseLinkedStatsCount = useMemo(
-    () => items.filter((item) => item?.course_id).length,
-    [items]
-  );
   const filteredContentBanks = useMemo(() => {
     const query = contentSearch.trim().toLowerCase();
     let rows = Array.isArray(contentBanks) ? [...contentBanks] : [];
@@ -184,28 +173,10 @@ export default function AdminExamsPage() {
     });
     return rows;
   }, [contentBanks, contentOnlyWithQuestions, contentSearch, contentSort]);
-  const filteredStatisticsRows = useMemo(() => statisticsRows.filter((row) => {
-    if (statisticsStatusFilter !== 'all' && String(row?.status || '') !== statisticsStatusFilter) return false;
-    const completedAt = row?.completed_at ? new Date(row.completed_at) : null;
-    if (statisticsDateFrom) {
-      const from = new Date(`${statisticsDateFrom}T00:00:00`);
-      if (!completedAt || completedAt < from) return false;
-    }
-    if (statisticsDateTo) {
-      const to = new Date(`${statisticsDateTo}T23:59:59`);
-      if (!completedAt || completedAt > to) return false;
-    }
-    return true;
-  }), [statisticsRows, statisticsStatusFilter, statisticsDateFrom, statisticsDateTo]);
   const builderHeroTitle = examSettings.title?.trim() || activeExamDraft.title || 'Examen nou';
   const builderHeroAccent = published ? 'var(--color-success)' : 'var(--color-warning)';
 
   const deleteConfirmTitle = deleteConfirmExam?.title || 'Examen';
-  const contentSelectionLabel = examSettings.selectionMode === 'folders' ? 'Foldere' : 'Tag-uri';
-  const contentSelectionCount = examSettings.selectionMode === 'folders'
-    ? examSettings.selectedFolderIds.length
-    : examSettings.selectedTags.length;
-  const studentsDraftCount = studentsDraftSelected.length;
   const previewQuestionCount = Array.isArray(previewData?.questions) ? previewData.questions.length : 0;
   const activeBuilderSection = EXAM_BUILDER_SECTIONS.find((section) => section.id === activeSection) || EXAM_BUILDER_SECTIONS[0];
   const renderBuilderSectionIcon = (sectionId) => {
@@ -215,60 +186,6 @@ export default function AdminExamsPage() {
     if (sectionId === 'statistics') return <BarChart3 {...props} />;
     return <Settings {...props} />;
   };
-  const builderSidecarConfig = {
-    settings: {
-      eyebrow: 'Focus pe identitate',
-      title: 'Pui la punct prima impresie',
-      description: 'Stabilește titlul examenului și regulile de notare, timp și comportament din această secțiune.',
-      facts: [
-        { label: 'Timp', value: examSettings.timeLimitEnabled ? `${examSettings.timeLimitMinutes} min` : 'Nelimitat' },
-        { label: 'Deadline', value: examSettings.deadlineType === 'none' ? 'Fără' : 'Setat' },
-      ],
-    },
-    questions: {
-      eyebrow: 'Focus pe conținut',
-      title: 'Alegi sursa de întrebări',
-      description: 'Schimbi între foldere și tag-uri, vezi imediat câte întrebări intră și câtă informație vei acoperi.',
-      facts: [
-        { label: 'Mod', value: contentSelectionLabel },
-        { label: 'Selectate', value: String(contentSelectionCount) },
-        { label: 'În examen', value: String(Number(examSettings.questionCount || 0)) },
-        { label: 'Stele', value: String(examSettings.includeStarred ? selectedFoldersStarred : 0) },
-      ],
-    },
-    access: {
-      eyebrow: 'Focus pe distribuție',
-      title: 'Controlezi cine vede examenul',
-      description: 'Alegi între acces pentru toți elevii sau doar o selecție precisă, fără să ieși din builder.',
-      facts: [
-        { label: 'Mod acces', value: examAccess.mode === 'selected_students' ? 'Selectat' : 'General' },
-        { label: 'Elevi', value: examAccess.mode === 'selected_students' ? String(examAccess.selectedStudents.length) : 'Toți' },
-        { label: 'Preview', value: String(selectedStudentsPreview.length) },
-        { label: 'Plus', value: examAccess.selectedStudents.length > selectedStudentsPreview.length ? `+${examAccess.selectedStudents.length - selectedStudentsPreview.length}` : '0' },
-      ],
-    },
-    statistics: {
-      eyebrow: 'Focus pe analiză',
-      title: 'Vezi ce funcționează și ce nu',
-      description: 'Rezultatele și analizele pe întrebări te ajută să ajustezi examenul fără să ieși din pagină.',
-      facts: [
-        { label: 'Rezultate', value: String(filteredStatisticsRows.length) },
-        { label: 'Întrebări', value: String(statisticsQuestionRows.length) },
-        { label: 'Tab activ', value: statisticsTab === 'students' ? 'Elevi' : 'Întrebări' },
-        { label: 'Export', value: statisticsRows.length ? 'Disponibil' : 'Gol' },
-      ],
-    },
-  }[activeSection] || {
-    eyebrow: activeBuilderSection?.label || 'Builder',
-    title: builderHeroTitle,
-    description: '',
-    facts: [],
-  };
-
-  const SUMMARY_GLOBAL_LABELS = new Set(['Status', 'Întrebări', 'Acces', 'Review']);
-  const builderSectionFacts = builderSidecarConfig.facts.filter(
-    (fact) => !SUMMARY_GLOBAL_LABELS.has(fact.label),
-  );
 
   const loadExams = useCallback(async () => {
     try {
@@ -290,16 +207,15 @@ export default function AdminExamsPage() {
 
   const handleRefreshStatistics = useCallback(async (notify = false) => {
     if (viewMode !== 'create' || activeSection !== 'statistics') return;
-    if (!activeExamDraft.id) { setStatisticsRows([]); setStatisticsQuestionRows([]); return; }
+    if (!activeExamDraft.id) { setStatisticsQuestionRows([]); return; }
     try {
       setStatisticsLoading(true);
-      const [resultsData, questionData] = await Promise.all([adminService.getExamResults(activeExamDraft.id), adminService.getExamQuestionAnalytics(activeExamDraft.id)]);
-      setStatisticsRows(Array.isArray(resultsData) ? resultsData : []);
+      const questionData = await adminService.getExamQuestionAnalytics(activeExamDraft.id);
       setStatisticsQuestionRows(Array.isArray(questionData) ? questionData : []);
       if (notify) toastSuccess('Statisticile au fost actualizate.');
     } catch (e) {
       console.error('Failed to refresh statistics:', e);
-      setStatisticsRows([]); setStatisticsQuestionRows([]);
+      setStatisticsQuestionRows([]);
       if (notify) toastError('Nu s-au putut actualiza statisticile.');
     } finally { setStatisticsLoading(false); }
   }, [activeExamDraft.id, activeSection, viewMode, toastSuccess, toastError]);
@@ -312,12 +228,18 @@ export default function AdminExamsPage() {
     if (!title) { setCreateError('Titlul este obligatoriu.'); return; }
     setCreateError(''); setCreatingExam(true);
     try {
-      const response = await adminService.createExam({ title, description: createDescription.trim(), max_score: 100 });
+      const response = await adminService.createExam({
+        title,
+        description: createDescription.trim(),
+        max_score: 100,
+        settings: { access_mode: 'teams', team_ids: [], excluded_student_ids: [] },
+      });
       const createdExam = response?.exam || response;
       if (createdExam?.id) setItems((prev) => [createdExam, ...prev]);
       setActiveExamDraft({ id: createdExam?.id || null, title, description: createDescription.trim(), course_id: null });
       setExamSettings({ ...DEFAULT_SETTINGS, title, description: createDescription.trim() });
-      setExamAccess({ mode: 'all_students', selectedStudents: [] });
+      setExamAccess({ mode: 'teams', teamIds: [], excludedStudentIds: [], selectedStudents: [] });
+      setSelectedQuestionItems([]);
       setPublished(false); setShowCreateModal(false); setViewMode('create'); setActiveSection(DEFAULT_EXAM_SECTION);
     } catch (e) {
       console.error('Failed to create exam:', e);
@@ -365,25 +287,41 @@ export default function AdminExamsPage() {
     } finally { setListActionId(null); }
   };
   const handleOpenExistingExam = (item, options = {}) => {
-    setSelectedQuestionItems([]);
     setActiveExamDraft({ id: item?.id || null, title: item?.title || '', description: item?.description || '', course_id: item?.course_id || null });
     setExamSettings({
       ...DEFAULT_SETTINGS,
       title: item?.title || '', description: item?.description || '', instructions: item?.settings?.instructions || '',
-      attempts: Number(item?.max_attempts ?? 1) || 1, passingScore: Number(item?.passing_score ?? 0) || 0,
-      timeLimitEnabled: Boolean(item?.time_limit_minutes), timeLimitMinutes: Number(item?.time_limit_minutes || 60),
+      attempts: item?.max_attempts == null ? '' : Number(item.max_attempts), passingScore: Number(item?.passing_score ?? 0) || 0,
+      timeLimitMinutes: item?.time_limit_minutes ? Number(item.time_limit_minutes) : '',
       shuffleQuestions: Boolean(item?.settings?.shuffle_questions), manualReview: Boolean(item?.settings?.manual_review),
       showFeedbackInstant: Boolean(item?.settings?.show_feedback_instant), showCorrectAnswers: Boolean(item?.settings?.show_correct_answers),
       showOnlySubmittedAnswers: Boolean(item?.settings?.show_only_submitted_answers),
-      navigationMode: item?.settings?.navigation_mode || 'sequential', deadlineType: item?.settings?.deadline_type || 'none',
+      navigationMode: item?.settings?.navigation_mode || 'sequential',
+      deadlineFlexible: Boolean(item?.settings?.deadline_flexible),
+      deadlineType: item?.settings?.deadline_type || 'none',
       deadlineAt: localDateTime(item?.settings?.deadline_at), deadlineDays: Number(item?.settings?.deadline_days ?? 7) || 7,
-      contentBankId: item?.settings?.question_bank_id || null, selectionMode: item?.settings?.selection_mode || 'questions',
+      contentBankId: item?.settings?.question_bank_id || null,
       selectedFolderIds: Array.isArray(item?.settings?.folder_ids) ? item.settings.folder_ids : [],
-      selectedQuestionIds: Array.isArray(item?.settings?.question_ids) ? item.settings.question_ids.map(Number).filter(Boolean) : [],
-      selectedTags: Array.isArray(item?.settings?.tags) ? item.settings.tags : [], includeStarred: item?.settings?.include_starred !== false,
+      selectedQuestionIds: Array.isArray(item?.settings?.question_ids) ? item.settings.question_ids.map((id) => Number(id)).filter(Boolean) : [],
+      selectionMode: item?.settings?.selection_mode === 'folders'
+        || (item?.settings?.selection_mode !== 'questions'
+          && Array.isArray(item?.settings?.folder_ids)
+          && item.settings.folder_ids.length
+          && !(Array.isArray(item?.settings?.question_ids) && item.settings.question_ids.length))
+        ? 'folders'
+        : 'questions',
+      includeStarred: item?.settings?.include_starred !== false,
       questionCount: Number(item?.settings?.question_count ?? item?.question_selection?.count ?? 10) || 10,
     });
-    setExamAccess({ mode: item?.settings?.access_mode || 'all_students', selectedStudents: Array.isArray(item?.settings?.selected_students) ? item.settings.selected_students.map((id) => Number(id)).filter(Boolean) : [] });
+    const settings = item?.settings || {};
+    const accessMode = settings.access_mode || 'all_students';
+    setExamAccess({
+      mode: accessMode === 'teams' ? 'teams' : accessMode,
+      teamIds: Array.isArray(settings.team_ids) ? settings.team_ids.map((id) => Number(id)).filter(Boolean) : [],
+      excludedStudentIds: Array.isArray(settings.excluded_student_ids) ? settings.excluded_student_ids.map((id) => Number(id)).filter(Boolean) : [],
+      selectedStudents: Array.isArray(settings.selected_students) ? settings.selected_students.map((id) => Number(id)).filter(Boolean) : [],
+    });
+    setSelectedQuestionItems([]);
     setManualReviewState({ reviewMode: item?.settings?.manual_review_mode || 'after_complete' });
     setPublished(String(item?.status || 'draft').toLowerCase() === 'published');
     setSaveState({ loading: false, message: '', type: '' });
@@ -395,19 +333,60 @@ export default function AdminExamsPage() {
     );
   };
 
-  const handleOpenStudentsModal = async () => {
-    setShowStudentsModal(true); setStudentsError(''); setStudentsSearch(''); setStudentsLoading(true);
-    setStudentsDraftSelected(Array.isArray(examAccess.selectedStudents) ? [...examAccess.selectedStudents] : []);
-    try {
-      const rows = await adminService.getUsers({ role: 'student', per_page: 500 });
-      setStudentsList(Array.isArray(rows) ? rows.map((user) => ({ id: Number(user?.id), name: user?.name || 'Elev', email: user?.email || '' })).filter((user) => Number.isFinite(user.id)) : []);
-    } catch (e) {
-      console.error('Failed to load students:', e);
-      setStudentsList([]); setStudentsError('Nu s-au putut încărca elevii.');
-    } finally { setStudentsLoading(false); }
+  const handleToggleExamTeam = (teamId) => {
+    setExamAccess((prev) => {
+      const selected = prev.teamIds.includes(teamId);
+      const teamIds = selected ? prev.teamIds.filter((id) => id !== teamId) : [...prev.teamIds, teamId];
+      const stillCovered = new Set();
+      accessTeams
+        .filter((team) => teamIds.includes(team.id))
+        .forEach((team) => {
+          learnerMembersOf(team).forEach((member) => stillCovered.add(member.id));
+        });
+      return {
+        ...prev,
+        mode: 'teams',
+        teamIds,
+        excludedStudentIds: prev.excludedStudentIds.filter((id) => stillCovered.has(id)),
+      };
+    });
   };
-  const handleToggleStudentDraft = (studentId) => setStudentsDraftSelected((prev) => prev.includes(studentId) ? prev.filter((id) => id !== studentId) : [...prev, studentId]);
-  const handleApplyStudentsSelection = () => { setExamAccess((prev) => ({ ...prev, selectedStudents: [...studentsDraftSelected] })); setShowStudentsModal(false); };
+
+  const handleToggleExamMember = (memberId) => {
+    setExamAccess((prev) => {
+      const excluded = prev.excludedStudentIds.includes(memberId);
+      return {
+        ...prev,
+        mode: 'teams',
+        excludedStudentIds: excluded
+          ? prev.excludedStudentIds.filter((id) => id !== memberId)
+          : [...prev.excludedStudentIds, memberId],
+      };
+    });
+  };
+
+  useEffect(() => {
+    if (viewMode !== 'create') return undefined;
+    let cancelled = false;
+    setAccessTeamsLoading(true);
+    setAccessTeamsError('');
+    adminService.getTeams()
+      .then((rows) => {
+        if (cancelled) return;
+        const list = Array.isArray(rows) ? rows : (Array.isArray(rows?.data) ? rows.data : []);
+        setAccessTeams(list.map((team) => ({ ...team, id: Number(team.id) })).filter((team) => Number.isFinite(team.id)));
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error('Failed to load teams for exam access:', error);
+        setAccessTeams([]);
+        setAccessTeamsError('Nu s-au putut încărca echipele.');
+      })
+      .finally(() => {
+        if (!cancelled) setAccessTeamsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [viewMode]);
 
   const handleSaveExam = async (options = {}) => {
     const forcedPublished = Object.prototype.hasOwnProperty.call(options, 'published') ? Boolean(options.published) : null;
@@ -420,8 +399,15 @@ export default function AdminExamsPage() {
         title,
         description: examSettings.description || null,
         max_score: 100,
-        max_attempts: Number(examSettings.attempts || 1),
-        time_limit_minutes: examSettings.timeLimitEnabled ? Math.max(1, Number(examSettings.timeLimitMinutes || 60)) : null,
+        max_attempts: examSettings.attempts === '' || examSettings.attempts == null
+          ? null
+          : Math.max(1, Number(examSettings.attempts) || 1),
+        time_limit_minutes: (() => {
+          const raw = examSettings.timeLimitMinutes;
+          if (raw === '' || raw == null) return null;
+          const minutes = Number(raw);
+          return Number.isFinite(minutes) && minutes > 0 ? Math.min(300, Math.round(minutes)) : null;
+        })(),
         passing_score: Number(examSettings.passingScore || 0),
         is_required: Boolean(effectivePublished),
         status: effectivePublished ? 'published' : 'draft',
@@ -430,20 +416,25 @@ export default function AdminExamsPage() {
           show_feedback_instant: Boolean(examSettings.showFeedbackInstant), show_correct_answers: Boolean(examSettings.showCorrectAnswers),
           show_only_submitted_answers: Boolean(examSettings.showOnlySubmittedAnswers),
           manual_review_mode: manualReviewState.reviewMode, navigation_mode: examSettings.navigationMode,
+          deadline_flexible: Boolean(examSettings.deadlineFlexible),
           deadline_type: examSettings.deadlineType,
           deadline_at: examSettings.deadlineType === 'fixed' && examSettings.deadlineAt ? new Date(examSettings.deadlineAt).toISOString() : null,
           deadline_days: examSettings.deadlineType === 'relative' ? Math.max(1, Number(examSettings.deadlineDays || 1)) : null,
           question_bank_id: examSettings.contentBankId || null,
-          instructions: examSettings.instructions || null, access_mode: examAccess.mode, selected_students: examAccess.selectedStudents,
-          selection_mode: examSettings.selectionMode === 'questions' ? 'questions' : (examSettings.selectionMode === 'tags' ? 'tags' : 'folders'),
+          instructions: examSettings.instructions || null,
+          access_mode: examAccess.mode === 'teams' ? 'teams' : examAccess.mode,
+          team_ids: examAccess.mode === 'teams' ? examAccess.teamIds : [],
+          excluded_student_ids: examAccess.mode === 'teams' ? examAccess.excludedStudentIds : [],
+          selected_students: examAccess.mode === 'selected_students' ? examAccess.selectedStudents : [],
+          selection_mode: examSettings.selectionMode === 'questions' ? 'questions' : 'folders',
           folder_ids: examSettings.selectionMode === 'questions' ? [] : examSettings.selectedFolderIds,
           question_ids: examSettings.selectionMode === 'questions' ? examSettings.selectedQuestionIds : [],
-          tags: examSettings.selectionMode === 'tags' ? examSettings.selectedTags : [],
-          include_starred: examSettings.includeStarred !== false, question_count: Number(examSettings.questionCount || 0),
+          include_starred: examSettings.includeStarred !== false,
+          question_count: Number(examSettings.questionCount || 0),
         },
         question_selection: examSettings.selectionMode === 'questions'
           ? { mode: 'random', count: Number(examSettings.questionCount || 0), question_ids: examSettings.selectedQuestionIds, include_starred: examSettings.includeStarred !== false }
-          : { mode: 'random', count: Number(examSettings.questionCount || 0), folder_ids: examSettings.selectedFolderIds, tags: examSettings.selectedTags, include_starred: examSettings.includeStarred !== false },
+          : { mode: 'random', count: Number(examSettings.questionCount || 0), folder_ids: examSettings.selectedFolderIds, include_starred: examSettings.includeStarred !== false },
       };
       if (activeExamDraft.id) {
         const response = await adminService.updateExam(activeExamDraft.id, payload);
@@ -478,16 +469,7 @@ export default function AdminExamsPage() {
         setActiveExamDraft((prev) => ({ ...prev, id: createdExam?.id || prev.id, title }));
       }
       setPublished(effectivePublished);
-      const publishedHint = effectivePublished && !activeExamDraft.course_id
-        ? ' Elevii îl văd la Cursuri → Examene (tab Examene).'
-        : effectivePublished && activeExamDraft.course_id
-          ? ' Elevii îl deschid din cursul atașat.'
-          : '';
-      setSaveState({
-        loading: false,
-        message: (forcedPublished === null ? 'Examen salvat cu succes.' : effectivePublished ? 'Examen publicat cu succes.' : 'Examen retras în draft.') + publishedHint,
-        type: 'success',
-      });
+      setSaveState({ loading: false, message: forcedPublished === null ? 'Examen salvat cu succes.' : effectivePublished ? 'Examen publicat cu succes.' : 'Examen retras in draft.', type: 'success' });
       return true;
     } catch (e) {
       console.error('Failed to save exam:', e);
@@ -506,17 +488,8 @@ export default function AdminExamsPage() {
     try { setPreviewData(await adminService.previewExam(activeExamDraft.id)); }
     catch (e) { console.error('Failed to preview exam:', e); setPreviewError(e?.response?.data?.message || 'Nu s-a putut încărca previzualizarea examenului.'); }
     finally { setPreviewLoading(false); }
-  };  const handleOpenContentModal = async () => {
-    setShowContentModal(true); setContentBanksLoading(true); setContentBanksError('');
-    try {
-      const [banks, tags] = await Promise.all([adminService.getQuestionBanks(), adminService.getQuestionTagSuggestions()]);
-      setContentBanks(Array.isArray(banks) ? banks : []); setQuestionTags(Array.isArray(tags) ? tags : []);
-    } catch (e) {
-      console.error('Failed to load content sources:', e);
-      setContentBanks([]); setQuestionTags([]); setContentBanksError('Nu s-au putut încărca băncile de întrebări.');
-    } finally { setContentBanksLoading(false); }
   };
-  const handleConfirmContentSelection = async () => { setContentConfirmLoading(true); try { await handleSaveExam(); } finally { setContentConfirmLoading(false); } };
+
   const loadExamContentSources = useCallback(async () => {
     setContentBanksLoading(true);
     setContentBanksError('');
@@ -531,10 +504,12 @@ export default function AdminExamsPage() {
       setContentBanksLoading(false);
     }
   }, []);
+
   useEffect(() => {
     if (viewMode !== 'create' || activeSection !== 'questions') return;
     void loadExamContentSources();
   }, [viewMode, activeSection, loadExamContentSources]);
+
   useEffect(() => {
     if (viewMode !== 'create' || activeSection !== 'questions') return;
     const ids = Array.isArray(examSettings.selectedQuestionIds) ? examSettings.selectedQuestionIds : [];
@@ -550,6 +525,9 @@ export default function AdminExamsPage() {
           content: question.content || '',
           type: question.type,
           origin: question.question_bank?.title || question.test?.title || 'Selectată',
+          is_starred: Boolean(question.is_starred),
+          testId: Number(question.test_id || question.test?.id || question.usage?.tests?.[0]?.id || 0) || null,
+          bankId: Number(question.question_bank_id || question.question_bank?.id || 0) || null,
         })));
       } catch (e) {
         console.error('Failed to load selected questions:', e);
@@ -564,52 +542,74 @@ export default function AdminExamsPage() {
       const selectedQuestionIds = Array.isArray(prev.selectedQuestionIds) ? prev.selectedQuestionIds : [];
       const exists = selectedQuestionIds.includes(id);
       const nextIds = exists ? selectedQuestionIds.filter((questionId) => Number(questionId) !== id) : [...selectedQuestionIds, id];
-      return { ...prev, selectionMode: 'questions', selectedQuestionIds: nextIds };
+      return {
+        ...prev,
+        selectionMode: 'questions',
+        selectedQuestionIds: nextIds,
+      };
     });
     setSelectedQuestionItems((prev) => {
       if (prev.some((item) => Number(item.id) === id)) return prev.filter((item) => Number(item.id) !== id);
-      return [...prev, { id, content: question.content || question.question_text || '', type: question.type, origin }];
+      return [...prev, {
+        id,
+        content: question.content || question.question_text || '',
+        type: question.type,
+        origin,
+        is_starred: Boolean(question.is_starred),
+        testId: Number(question.test_id || question.test?.id || 0) || null,
+        bankId: Number(question.question_bank_id || question.question_bank?.id || 0) || null,
+      }];
     });
   };
   const handleAddQuestions = (questions, origin = 'Selectată') => {
-    const incoming = (Array.isArray(questions) ? questions : []).map((question) => ({
-      id: Number(question?.id),
-      content: question.content || question.question_text || '',
-      type: question.type,
-      origin,
-    })).filter((row) => Number.isFinite(row.id));
-    if (!incoming.length) return;
+    const incoming = (Array.isArray(questions) ? questions : [])
+      .map((question) => ({
+        id: Number(question?.id),
+        content: question.content || question.question_text || '',
+        type: question.type,
+        origin,
+        is_starred: Boolean(question.is_starred),
+        testId: Number(question.test_id || question.test?.id || 0) || null,
+        bankId: Number(question.question_bank_id || question.question_bank?.id || 0) || null,
+      }))
+      .filter((question) => Number.isFinite(question.id));
+    if (!incoming.length) return 0;
     setExamSettings((prev) => {
-      const selectedQuestionIds = Array.isArray(prev.selectedQuestionIds) ? prev.selectedQuestionIds : [];
-      const nextIds = [...selectedQuestionIds];
-      incoming.forEach((row) => { if (!nextIds.includes(row.id)) nextIds.push(row.id); });
-      return { ...prev, selectionMode: 'questions', selectedQuestionIds: nextIds };
+      const have = new Set((prev.selectedQuestionIds || []).map(Number));
+      const extraIds = incoming.filter((question) => !have.has(question.id)).map((question) => question.id);
+      if (!extraIds.length) return prev;
+      const selectedQuestionIds = [...(prev.selectedQuestionIds || []), ...extraIds];
+      return {
+        ...prev,
+        selectionMode: 'questions',
+        selectedQuestionIds,
+      };
     });
     setSelectedQuestionItems((prev) => {
-      const next = [...prev];
-      incoming.forEach((row) => { if (!next.some((item) => Number(item.id) === row.id)) next.push(row); });
-      return next;
+      const have = new Set(prev.map((item) => Number(item.id)));
+      const extra = incoming.filter((question) => !have.has(question.id));
+      return extra.length ? [...prev, ...extra] : prev;
     });
+    return incoming.length;
   };
   const handleClearQuestions = () => {
-    setExamSettings((prev) => ({ ...prev, selectedQuestionIds: [] }));
+    setExamSettings((prev) => ({
+      ...prev,
+      selectedQuestionIds: [],
+    }));
     setSelectedQuestionItems([]);
   };
-
-  const exportStatistics = () => {
-    downloadSimpleExcel(
-      statisticsExcelFilename(`examen-${activeExamDraft.id || 'export'}`),
-      'Statistici examen',
-      ['Data susținerii', 'Nume complet', 'Email', 'Status', 'Scor'],
-      filteredStatisticsRows.map((row) => [
-        row.completed_at ? new Date(row.completed_at).toLocaleDateString('ro-RO') : '-',
-        row.user?.name || '-',
-        row.user?.email || '-',
-        row.status || '-',
-        row.percentage != null ? `${row.percentage}%` : '-',
-      ]),
-    );
+  const handleConfirmContentSelection = async () => {
+    setContentConfirmLoading(true);
+    try {
+      const ok = await handleSaveExam();
+      if (ok) toastSuccess('Selecția de întrebări a fost salvată.');
+    } finally {
+      setContentConfirmLoading(false);
+    }
   };
+
+
   const buildExamMetaLine = (item) => {
     const configuredQuestionCount = Number(
       item?.settings?.question_count
@@ -620,65 +620,10 @@ export default function AdminExamsPage() {
     const parts = [
       `${configuredQuestionCount} întrebări în examen`,
       `${Number(item.passing_score ?? 0)}% prag`,
-      item.max_attempts != null ? `${item.max_attempts} încercări` : null,
+      item.max_attempts != null ? `${item.max_attempts} încercări` : 'Nelimitat',
     ].filter(Boolean);
     return parts.join(' · ');
   };
-
-  const getExamVisibilityBadge = (item) => (
-    item?.course_id
-      ? `În curs: ${item.course_title || 'Curs'}`
-      : 'Catalog elevi'
-  );
-
-  const getExamVisibilityHint = (item) => (
-    item?.course_id
-      ? 'Legat de curs în admin — elevii NU îl văd în meniul cursului; mută în „fără curs” pentru tab-ul Examene.'
-      : 'Apare la elev: Cursuri → Examene.'
-  );
-
-  const renderExamListGrid = (examRows) => (
-    <div className="admin-content-list-grid">
-      {examRows.map((item) => {
-        const status = String(item?.status || 'draft').toLowerCase();
-        const busy = listActionId === item.id;
-
-        const secondaryActions = canMutateInAdminArea
-          ? [
-              {
-                label: duplicatingExamId === item.id ? 'Se duplică…' : 'Duplică',
-                onClick: () => handleDuplicateExam(item),
-                disabled: busy || duplicatingExamId === item.id,
-              },
-              ...(status !== 'published'
-                ? [{ label: 'Publică', onClick: () => patchExamListStatus(item, 'published'), disabled: busy, emphasis: true }]
-                : [{ label: 'Arhivează', onClick: () => patchExamListStatus(item, 'archived'), disabled: busy }]),
-              ...(status === 'archived'
-                ? [{ label: 'Draft', onClick: () => patchExamListStatus(item, 'draft'), disabled: busy }]
-                : []),
-              { label: 'Șterge', onClick: () => setDeleteConfirmExam(item), disabled: busy, danger: true },
-            ]
-          : [];
-
-        return (
-          <AdminContentItemCard
-            key={item.id}
-            title={item.title || 'Examen fără titlu'}
-            badge={getExamVisibilityBadge(item)}
-            status={status}
-            statusLabel={examStatusLabelRo(item.status)}
-            metaLine={`${buildExamMetaLine(item)} — ${getExamVisibilityHint(item)}`}
-            primaryAction={{
-              label: 'Deschide builder-ul',
-              onClick: () => handleOpenExistingExam(item),
-              disabled: busy,
-            }}
-            actions={secondaryActions}
-          />
-        );
-      })}
-    </div>
-  );
 
   const listView = (
     <div className="admin-tests-page admin-exams-page admin-content-list-page">
@@ -687,18 +632,18 @@ export default function AdminExamsPage() {
           <p className="admin-content-list-header__kicker">Conținut</p>
           <h1>Examene</h1>
           <p className="admin-content-list-header__lead">
-            Examene din catalogul Formely și cele legate de cursuri — vizibile elevilor în tab-ul Examene.
+            Examene independente — întrebări, acces și statistici.
           </p>
           <div className="admin-content-list-stats" aria-label="Rezumat">
             <span>Total<strong>{listStats.all}</strong></span>
-            <span>Catalog elevi<strong>{catalogStatsCount}</strong></span>
-            <span>În curs<strong>{courseLinkedStatsCount}</strong></span>
+            <span>Ciornă<strong>{listStats.draft}</strong></span>
             <span>Publicate<strong>{listStats.published}</strong></span>
+            <span>Arhivate<strong>{listStats.archived}</strong></span>
           </div>
         </div>
         {canMutateInAdminArea ? (
           <div className="admin-content-list-header__actions">
-            <button type="button" className="admin-content-list-btn-primary" onClick={handleOpenCreateModal}>
+            <button type="button" className="lms-btn-primary admin-content-list-btn-primary" onClick={handleOpenCreateModal}>
               Creează examen
             </button>
           </div>
@@ -746,135 +691,282 @@ export default function AdminExamsPage() {
             : 'Niciun rezultat — schimbă filtrul sau căutarea.'}
         </div>
       ) : (
-        <div className="admin-exams-list-sections">
-          {catalogExams.length > 0 ? (
-            <section className="admin-exams-list-section" aria-label="Examene în catalogul elevilor">
-              <h2 className="admin-exams-list-section-title">Fără curs atașat</h2>
-              {renderExamListGrid(catalogExams)}
-            </section>
-          ) : null}
-          {courseLinkedExams.length > 0 ? (
-            <section className="admin-exams-list-section" aria-label="Examene legate de curs">
-              <h2 className="admin-exams-list-section-title">Legate de curs</h2>
-              <p className="admin-exams-list-section-hint">
-                Vizibile și în tab-ul Examene al elevului; pot fi deschise și din meniul cursului.
-              </p>
-              {renderExamListGrid(courseLinkedExams)}
-            </section>
-          ) : null}
+        <div className="admin-content-list-grid">
+          {filteredItems.map((item) => {
+            const status = String(item?.status || 'draft').toLowerCase();
+            const busy = listActionId === item.id;
+
+            const secondaryActions = canMutateInAdminArea
+              ? [
+                  {
+                    label: 'Rezultate',
+                    onClick: () => handleOpenExistingExam(item, { initialSection: 'statistics' }),
+                    disabled: busy,
+                  },
+                  {
+                    label: duplicatingExamId === item.id ? 'Se duplică…' : 'Duplică',
+                    onClick: () => handleDuplicateExam(item),
+                    disabled: busy || duplicatingExamId === item.id,
+                  },
+                  ...(status !== 'published'
+                    ? [{ label: 'Publică', onClick: () => patchExamListStatus(item, 'published'), disabled: busy, emphasis: true }]
+                    : [{ label: 'Arhivează', onClick: () => patchExamListStatus(item, 'archived'), disabled: busy }]),
+                  ...(status === 'archived'
+                    ? [{ label: 'Ciornă', onClick: () => patchExamListStatus(item, 'draft'), disabled: busy }]
+                    : []),
+                  { label: 'Șterge', onClick: () => setDeleteConfirmExam(item), disabled: busy, danger: true },
+                ]
+              : [];
+
+            return (
+              <AdminContentItemCard
+                key={item.id}
+                title={item.title || 'Examen fără titlu'}
+                badge={item.course_title || 'Examen independent'}
+                status={status}
+                statusLabel={examStatusLabelRo(item.status)}
+                metaLine={buildExamMetaLine(item)}
+                primaryAction={{
+                  label: 'Deschide builder-ul',
+                  onClick: () => handleOpenExistingExam(item),
+                  disabled: busy,
+                }}
+                actions={secondaryActions}
+              />
+            );
+          })}
         </div>
       )}
     </div>
   );
 
+  const patchExamSettings = (patch) => setExamSettings((prev) => ({ ...prev, ...patch }));
+  const unlimitedAttempts = examSettings.attempts === '' || examSettings.attempts == null;
   const sectionBody = activeSection === 'settings' ? (
     <div className="admin-exams-modern-section admin-exams-builder-form-root">
-      <div className="admin-exams-builder-panel">
-        <section className="admin-exams-builder-card va-card-shell va-card-shell--uniform">
-          <h3 className="admin-exams-builder-card-title">Identitate</h3>
-          <div className="admin-exams-builder-field-grid">
-            <label className="admin-exams-builder-field-span2">
-              Titlu examen
-              <input type="text" value={examSettings.title} onChange={(e) => setExamSettings((prev) => ({ ...prev, title: e.target.value }))} />
-            </label>
+      <div className="va-ts admin-exams-settings">
+        <section className="va-ts__section" aria-labelledby="exam-ts-info">
+          <h3 id="exam-ts-info" className="va-ts__title">Informații</h3>
+          <div className="va-ts__grid">
+            <div className="va-ts__field va-ts__field--full">
+              <label htmlFor="exam-title">Titlu examen</label>
+              <input
+                id="exam-title"
+                type="text"
+                className="va-ts__input"
+                value={examSettings.title}
+                onChange={(e) => patchExamSettings({ title: e.target.value })}
+                placeholder="Ex.: Examen final"
+              />
+            </div>
           </div>
         </section>
 
-        <section className="admin-exams-builder-card va-card-shell va-card-shell--uniform">
-          <h3 className="admin-exams-builder-card-title">Notare, timp și încercări</h3>
-          <div className="admin-exams-builder-field-grid">
-            <PassingScoreByQuestions
-              questionCount={Math.min(Number(examSettings.questionCount || 0) || 10, examSettings.selectionMode === 'questions' ? (examSettings.selectedQuestionIds?.length || 10) : (Number(examSettings.questionCount || 10) || 10))}
-              passingScore={examSettings.passingScore}
-              onPassingScoreChange={(next) => setExamSettings((prev) => ({ ...prev, passingScore: next }))}
-              disabled={!canMutateInAdminArea}
-            />
-            <label>
-              Număr maxim de încercări
-              <input type="number" min={1} max={20} value={examSettings.attempts} onChange={(e) => setExamSettings((prev) => ({ ...prev, attempts: Number(e.target.value || 1) }))} />
-            </label>
-            <label className="admin-exams-builder-field-span2 admin-exams-builder-toggle-row">
-              <input
-                type="checkbox"
-                checked={examSettings.timeLimitEnabled}
-                onChange={(e) => setExamSettings((prev) => ({ ...prev, timeLimitEnabled: e.target.checked }))}
-              />
-              <span>Activează limită de timp pentru întreg examenul</span>
-            </label>
-            {examSettings.timeLimitEnabled ? (
-              <label>
-                Durată (minute)
+        <section className="va-ts__section" aria-labelledby="exam-ts-run">
+          <h3 id="exam-ts-run" className="va-ts__title">Desfășurare</h3>
+          <div className="va-ts__grid va-ts__grid--three">
+            <div className="va-ts__field">
+              <label htmlFor="exam-time">Durată</label>
+              <div className="va-ts__suffix-input">
                 <input
+                  id="exam-time"
                   type="number"
                   min={1}
                   max={300}
+                  className="va-ts__input"
+                  placeholder="Fără limită"
                   value={examSettings.timeLimitMinutes}
-                  onChange={(e) => setExamSettings((prev) => ({ ...prev, timeLimitMinutes: Math.max(1, Number(e.target.value || 1)) }))}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    patchExamSettings({ timeLimitMinutes: next === '' ? '' : Math.max(1, Math.min(300, Number(next) || 1)) });
+                  }}
                 />
-              </label>
-            ) : null}
-            <label>
-              Termen limită
-              <select value={examSettings.deadlineType} onChange={(e) => setExamSettings((prev) => ({ ...prev, deadlineType: e.target.value }))}>
+                <span aria-hidden="true">min</span>
+              </div>
+              <p className="va-ts__hint">Din momentul în care elevul începe. Gol = fără limită.</p>
+            </div>
+            <div className="va-ts__field">
+              <label htmlFor="exam-attempts">Încercări</label>
+              <div className="va-ts__inline">
+                <input
+                  id="exam-attempts"
+                  type="number"
+                  min={1}
+                  max={20}
+                  className="va-ts__input"
+                  placeholder="∞"
+                  value={unlimitedAttempts ? '' : examSettings.attempts}
+                  disabled={unlimitedAttempts}
+                  onChange={(e) => patchExamSettings({ attempts: Math.max(1, Math.min(20, Number(e.target.value) || 1)) })}
+                />
+                <label className="va-ts__switch">
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    checked={unlimitedAttempts}
+                    onChange={(e) => patchExamSettings({ attempts: e.target.checked ? '' : 1 })}
+                  />
+                  <span className="va-ts__switch-track" aria-hidden="true" />
+                  <span>Nelimitate</span>
+                </label>
+              </div>
+            </div>
+            <div className="va-ts__field">
+              <PassingScoreByQuestions
+                questionCount={Math.min(
+                  Math.max(1, Number(examSettings.questionCount || 1)),
+                  Math.max(1, isQuestionMode ? selectedQuestionCount || 1 : Number(examSettings.questionCount || 1)),
+                )}
+                passingScore={examSettings.passingScore}
+                onPassingScoreChange={(next) => patchExamSettings({ passingScore: next })}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="va-ts__section" aria-labelledby="exam-ts-deadline">
+          <h3 id="exam-ts-deadline" className="va-ts__title">Termen limită</h3>
+          <p className="va-ts__hint">Până când poate fi deschis examenul. Nu depinde de durată.</p>
+          <div className="va-ts__grid">
+            <div className="va-ts__field">
+              <label htmlFor="exam-deadline-type">Tip termen</label>
+              <select
+                id="exam-deadline-type"
+                className="va-ts__input"
+                value={examSettings.deadlineType}
+                onChange={(e) => patchExamSettings({ deadlineType: e.target.value })}
+              >
                 <option value="none">Fără termen</option>
                 <option value="fixed">Dată fixă</option>
                 <option value="relative">Zile de la începere</option>
               </select>
-            </label>
+            </div>
             {examSettings.deadlineType === 'fixed' ? (
-              <label>
-                Dată și oră limită
-                <input type="datetime-local" value={examSettings.deadlineAt} onChange={(e) => setExamSettings((prev) => ({ ...prev, deadlineAt: e.target.value }))} />
-              </label>
+              <div className="va-ts__field">
+                <label htmlFor="exam-deadline-at">Dată și oră limită</label>
+                <input
+                  id="exam-deadline-at"
+                  type="datetime-local"
+                  className="va-ts__input"
+                  value={examSettings.deadlineAt}
+                  onChange={(e) => patchExamSettings({ deadlineAt: e.target.value })}
+                />
+              </div>
             ) : null}
             {examSettings.deadlineType === 'relative' ? (
-              <label>
-                Zile disponibile
-                <input type="number" min={1} max={365} value={examSettings.deadlineDays} onChange={(e) => setExamSettings((prev) => ({ ...prev, deadlineDays: Math.max(1, Number(e.target.value || 1)) }))} />
-              </label>
+              <div className="va-ts__field">
+                <label htmlFor="exam-deadline-days">Zile disponibile</label>
+                <div className="va-ts__suffix-input">
+                  <input
+                    id="exam-deadline-days"
+                    type="number"
+                    min={1}
+                    max={365}
+                    className="va-ts__input"
+                    value={examSettings.deadlineDays}
+                    onChange={(e) => patchExamSettings({ deadlineDays: Math.max(1, Number(e.target.value || 1)) })}
+                  />
+                  <span aria-hidden="true">zile</span>
+                </div>
+              </div>
             ) : null}
           </div>
+          {examSettings.deadlineType !== 'none' ? (
+            <div className="va-ts__toggles">
+              <label className={`va-ts__toggle${examSettings.deadlineFlexible ? ' is-on' : ''}`}>
+                <span className="va-ts__toggle-text">
+                  <strong>Termen flexibil</strong>
+                  <small>Elevul poate trece examenul și după expirarea termenului.</small>
+                </span>
+                <span className="va-ts__switch">
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    checked={Boolean(examSettings.deadlineFlexible)}
+                    onChange={(e) => patchExamSettings({ deadlineFlexible: e.target.checked })}
+                  />
+                  <span className="va-ts__switch-track" aria-hidden="true" />
+                </span>
+              </label>
+            </div>
+          ) : null}
         </section>
 
-        <section className="admin-exams-builder-card va-card-shell va-card-shell--uniform">
-          <h3 className="admin-exams-builder-card-title">Comportament în timpul examenului</h3>
-          <div className="admin-exams-builder-field-grid">
-            <label>
-              Navigare între întrebări
-              <select value={examSettings.navigationMode} onChange={(e) => setExamSettings((prev) => ({ ...prev, navigationMode: e.target.value }))}>
-                <option value="sequential">Secvențială (una câte una)</option>
-                <option value="free">Liberă (salt între întrebări)</option>
+        <section className="va-ts__section" aria-labelledby="exam-ts-behaviour">
+          <h3 id="exam-ts-behaviour" className="va-ts__title">Comportament</h3>
+          <div className="va-ts__grid">
+            <div className="va-ts__field">
+              <label htmlFor="exam-navigation">Navigare între întrebări</label>
+              <select
+                id="exam-navigation"
+                className="va-ts__input"
+                value={examSettings.navigationMode}
+                onChange={(e) => patchExamSettings({ navigationMode: e.target.value })}
+              >
+                <option value="sequential">Secvențială</option>
+                <option value="free">Liberă</option>
               </select>
-            </label>
-            <label>
-              Revizuire manuală
-              <select value={manualReviewState.reviewMode} onChange={(e) => setManualReviewState((prev) => ({ ...prev, reviewMode: e.target.value }))}>
+            </div>
+            <div className="va-ts__field">
+              <label htmlFor="exam-review-mode">Revizuire manuală</label>
+              <select
+                id="exam-review-mode"
+                className="va-ts__input"
+                value={manualReviewState.reviewMode}
+                onChange={(e) => setManualReviewState((prev) => ({ ...prev, reviewMode: e.target.value }))}
+              >
                 <option value="after_complete">După finalizare</option>
                 <option value="partial">Parțial</option>
               </select>
-            </label>
+            </div>
           </div>
-          <div className="admin-exams-builder-checks">
-            <label>
-              <input type="checkbox" checked={examSettings.shuffleQuestions} onChange={(e) => setExamSettings((prev) => ({ ...prev, shuffleQuestions: e.target.checked }))} />
-              Amestecă întrebările la fiecare încercare
-            </label>
-            <label>
-              <input type="checkbox" checked={examSettings.manualReview} onChange={(e) => setExamSettings((prev) => ({ ...prev, manualReview: e.target.checked }))} />
-              Necesită verificare manuală
-            </label>
-            <label>
-              <input type="checkbox" checked={examSettings.showFeedbackInstant} onChange={(e) => setExamSettings((prev) => ({ ...prev, showFeedbackInstant: e.target.checked }))} />
-              Afișează rezultatul imediat după trimitere
-            </label>
-            <label>
-              <input type="checkbox" checked={examSettings.showCorrectAnswers} onChange={(e) => setExamSettings((prev) => ({ ...prev, showCorrectAnswers: e.target.checked }))} />
-              Afișează răspunsurile corecte (unde e cazul)
-            </label>
-            <label>
-              <input type="checkbox" checked={examSettings.showOnlySubmittedAnswers} onChange={(e) => setExamSettings((prev) => ({ ...prev, showOnlySubmittedAnswers: e.target.checked }))} />
-              Doar răspunsurile oferite (fără corect/greșit)
-            </label>
+          <div className="va-ts__toggles">
+            {[
+              ['shuffleQuestions', 'Amestecă întrebările', 'Ordinea întrebărilor diferă la fiecare încercare.'],
+              ['manualReview', 'Necesită verificare manuală', 'Rezultatul rămâne în așteptare până la corectare.'],
+              ['showFeedbackInstant', 'Arată rezultatul imediat', 'Elevul vede scorul imediat după trimitere.'],
+            ].map(([key, label, hint]) => (
+              <label key={key} className={`va-ts__toggle${examSettings[key] ? ' is-on' : ''}`}>
+                <span className="va-ts__toggle-text">
+                  <strong>{label}</strong>
+                  <small>{hint}</small>
+                </span>
+                <span className="va-ts__switch">
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    checked={Boolean(examSettings[key])}
+                    onChange={(e) => patchExamSettings({ [key]: e.target.checked })}
+                  />
+                  <span className="va-ts__switch-track" aria-hidden="true" />
+                </span>
+              </label>
+            ))}
+          </div>
+        </section>
+
+        <section className="va-ts__section" aria-labelledby="exam-ts-results">
+          <h3 id="exam-ts-results" className="va-ts__title">Afișarea răspunsurilor după examen</h3>
+          <p className="va-ts__hint">O singură opțiune: răspunsurile corecte și cele date de elev nu se afișează împreună.</p>
+          <div className="va-ts__choices" role="radiogroup" aria-labelledby="exam-ts-results">
+            {TEST_RESULTS_DISPLAY_OPTIONS.map((option) => {
+              const active = getExamResultsDisplayMode(examSettings) === option.id;
+              return (
+                <label key={option.id} className={`va-ts__choice${active ? ' is-active' : ''}`}>
+                  <input
+                    type="radio"
+                    name="exam-results-display"
+                    value={option.id}
+                    checked={active}
+                    onChange={() => patchExamSettings(patchExamResultsDisplayMode(option.id))}
+                  />
+                  <span>
+                    <strong>{option.label}</strong>
+                    {option.hint ? <small>{option.hint}</small> : null}
+                  </span>
+                </label>
+              );
+            })}
           </div>
         </section>
       </div>
@@ -888,6 +980,11 @@ export default function AdminExamsPage() {
         onToggleQuestion={handleToggleQuestion}
         onAddQuestions={handleAddQuestions}
         onClearQuestions={handleClearQuestions}
+        onPatchSelectedQuestion={(id, patch) => {
+          setSelectedQuestionItems((prev) => prev.map((row) => (
+            Number(row.id) === Number(id) ? { ...row, ...patch } : row
+          )));
+        }}
         canMutate={canMutateInAdminArea}
         contentBanks={contentBanks}
         contentBanksLoading={contentBanksLoading}
@@ -908,50 +1005,131 @@ export default function AdminExamsPage() {
       <div className="admin-exams-builder-panel">
         <section className="admin-exams-builder-card va-card-shell va-card-shell--uniform">
           <div className="admin-exams-builder-card-head">
-            <div>
-              <h3 className="admin-exams-builder-card-title">Acces la examen</h3>
-            </div>
-            {examAccess.mode === 'selected_students' ? (
-              <button type="button" className="admin-exams-builder-primary-outline" onClick={handleOpenStudentsModal}>
-                Alege elevii
-              </button>
-            ) : null}
+            <h3 className="admin-exams-builder-card-title">Acces la examen</h3>
           </div>
-          <div className="admin-exams-builder-field-grid">
-            <label>
-              Mod acces
-              <select value={examAccess.mode} onChange={(e) => setExamAccess((prev) => ({ ...prev, mode: e.target.value }))}>
-                <option value="all_students">Toți elevii</option>
-                <option value="selected_students">Doar elevii selectați</option>
-              </select>
-            </label>
-            <label>
-              Rezumat
-              <input
-                type="text"
-                readOnly
-                value={examAccess.mode === 'selected_students' ? `${examAccess.selectedStudents.length} elevi selectați` : 'Acces general'}
-              />
-            </label>
-          </div>
-          {examAccess.mode === 'selected_students' ? (
-            <div className="admin-exams-modern-student-chips admin-exams-builder-student-chips">
-              {selectedStudentsPreview.length > 0 ? (
-                selectedStudentsPreview.map((student) => (
-                  <span key={student.id} className="admin-exams-modern-student-chip">
-                    {student.name}
-                  </span>
-                ))
-              ) : (
-                <span className="admin-exams-modern-empty-note">Nicio selecție încă — apasă „Alege elevii”.</span>
-              )}
-              {examAccess.selectedStudents.length > selectedStudentsPreview.length ? (
-                <span className="admin-exams-modern-student-chip is-muted">
-                  +{examAccess.selectedStudents.length - selectedStudentsPreview.length} în plus
-                </span>
-              ) : null}
-            </div>
+          <p className="admin-exams-access-lead">
+            Alege una sau mai multe echipe. Toți membrii sunt bifați din start. Deschide echipa ca să scoți pe cineva. Un membru nou intrat în echipă primește examenul automat.
+          </p>
+          {examAccess.mode === 'all_students' && examAccess.teamIds.length === 0 ? (
+            <p className="admin-exams-modern-empty-note">Acum îl văd toți utilizatorii. După ce alegi echipe și salvezi, rămân doar acele echipe.</p>
           ) : null}
+          {examAccess.mode === 'selected_students' && examAccess.teamIds.length === 0 ? (
+            <p className="admin-exams-modern-empty-note">Acum e limitat la {examAccess.selectedStudents.length} utilizatori aleși manual. După ce salvezi echipe, regula veche se înlocuiește.</p>
+          ) : null}
+          {examAccess.mode === 'teams' && examAccess.teamIds.length === 0 ? (
+            <p className="admin-exams-modern-empty-note">Nicio echipă selectată — elevii nu văd examenul până alegi cel puțin una.</p>
+          ) : null}
+          {accessTeamsError ? <p className="admin-form-error-inline" role="alert">{accessTeamsError}</p> : null}
+          {accessTeamsLoading ? (
+            <p className="admin-exams-modern-empty-note">Se încarcă echipele...</p>
+          ) : accessTeams.length === 0 && !accessTeamsError ? (
+            <p className="admin-exams-modern-empty-note">Nu există echipe. Creează una din Echipe, apoi revino aici.</p>
+          ) : (
+            <div className="admin-exams-team-access">
+              {accessTeams.map((team) => {
+                const members = learnerMembersOf(team);
+                const selected = examAccess.teamIds.includes(team.id);
+                const included = members.filter((member) => !examAccess.excludedStudentIds.includes(member.id)).length;
+                return (
+                  <div key={team.id} className={`admin-exams-team-access-item${selected ? ' is-selected' : ''}`}>
+                    <div className="admin-exams-team-access-head">
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={() => handleToggleExamTeam(team.id)}
+                        />
+                        <span className="admin-exams-team-access-avatar" aria-hidden>
+                          {(team.name || 'E').trim().charAt(0).toUpperCase()}
+                        </span>
+                        <span className="admin-exams-team-access-copy">
+                          <strong>{team.name || `Echipa ${team.id}`}</strong>
+                          <small>
+                            {selected
+                              ? `${included} din ${members.length} ${members.length === 1 ? 'elev' : 'elevi'}`
+                              : `${members.length} ${members.length === 1 ? 'elev' : 'elevi'}`}
+                          </small>
+                        </span>
+                      </label>
+                      <button
+                        type="button"
+                        className="admin-exams-team-access-expand"
+                        onClick={() => setOpenTeamId(team.id)}
+                        aria-haspopup="dialog"
+                        aria-label="Arată elevii"
+                        title="Arată elevii"
+                      >
+                        <ChevronRight size={16} aria-hidden />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {(() => {
+            const team = accessTeams.find((entry) => entry.id === openTeamId);
+            if (!team) return null;
+            const members = learnerMembersOf(team);
+            const selected = examAccess.teamIds.includes(team.id);
+            const included = members.filter((member) => !examAccess.excludedStudentIds.includes(member.id)).length;
+            return (
+              <Modal
+                isOpen
+                onClose={() => setOpenTeamId(null)}
+                closeOnBackdropClick
+                closeOnEscape
+                ariaLabelledby="exam-team-members-title"
+                contentClassName="admin-exams-team-modal"
+              >
+                <div className="admin-exams-team-modal-body">
+                  <header className="admin-exams-team-modal-head">
+                    <span className="admin-exams-team-access-avatar" aria-hidden>
+                      {(team.name || 'E').trim().charAt(0).toUpperCase()}
+                    </span>
+                    <div className="admin-exams-team-access-copy">
+                      <strong id="exam-team-members-title">{team.name || `Echipa ${team.id}`}</strong>
+                      <small>
+                        {selected
+                          ? `${included} din ${members.length} elevi primesc examenul`
+                          : `${members.length} ${members.length === 1 ? 'elev' : 'elevi'} · echipa nu e bifată`}
+                      </small>
+                    </div>
+                  </header>
+                  {!selected ? (
+                    <button
+                      type="button"
+                      className="admin-exams-team-modal-enable"
+                      onClick={() => handleToggleExamTeam(team.id)}
+                    >
+                      Bifează echipa
+                    </button>
+                  ) : null}
+                  <div className="admin-exams-team-access-members">
+                    {members.length === 0 ? (
+                      <p>Niciun elev în echipă.</p>
+                    ) : members.map((member) => (
+                      <label key={member.id}>
+                        <input
+                          type="checkbox"
+                          checked={selected && !examAccess.excludedStudentIds.includes(member.id)}
+                          disabled={!selected}
+                          onChange={() => handleToggleExamMember(member.id)}
+                        />
+                        <span>{member.name}</span>
+                        <small>{member.email}</small>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="admin-exams-team-modal-actions">
+                    <button type="button" className="admin-exams-team-modal-done" onClick={() => setOpenTeamId(null)}>
+                      Gata
+                    </button>
+                  </div>
+                </div>
+              </Modal>
+            );
+          })()}
         </section>
       </div>
     </div>
@@ -961,7 +1139,6 @@ export default function AdminExamsPage() {
         <div className="admin-exams-statistics admin-exams-builder-statistics-card">
           <div className="admin-exams-statistics-head">
             <h2>Statistici</h2>
-            <p>Rezultate pe elevi și analiză pe întrebări pentru examenul curent.</p>
             <button
               type="button"
               className="admin-exams-section-refresh-btn"
@@ -978,7 +1155,7 @@ export default function AdminExamsPage() {
             <>
               <div className="admin-exams-statistics-tabs">
                 <button type="button" className={statisticsTab === 'students' ? 'is-active' : ''} onClick={() => setStatisticsTab('students')}>
-                  Elevi
+                  Utilizatori
                 </button>
                 <button type="button" className={statisticsTab === 'questions' ? 'is-active' : ''} onClick={() => setStatisticsTab('questions')}>
                   Întrebări
@@ -1018,7 +1195,7 @@ export default function AdminExamsPage() {
   ) : null;
 
   const createView = (
-    <div className="admin-tests-page admin-exams-modern-page admin-exams-page admin-exams-builder-redesign">
+    <div className="admin-tests-page admin-exams-modern-page admin-exams-page admin-exams-builder-redesign admin-exams-builder-refined">
       <div className="admin-exams-builder-shell">
         <header
           className="admin-exams-builder-top"
@@ -1029,7 +1206,7 @@ export default function AdminExamsPage() {
           <div className="admin-exams-builder-top-left">
             <button
               type="button"
-              className="admin-exams-builder-back-btn"
+              className="admin-exams-builder-back-btn va-btn-back admin-back-btn"
               onClick={() => setViewMode('list')}
             >
               <ArrowLeft size={18} aria-hidden />
@@ -1042,22 +1219,11 @@ export default function AdminExamsPage() {
           </div>
 
           <div className="admin-exams-builder-actions">
-            <div className="admin-exams-builder-publish">
-              <span>{published ? 'Publicat' : 'Draft'}</span>
-              <button
-                type="button"
-                className="admin-view-switcher admin-exams-header-switch"
-                onClick={handleTogglePublishedNow}
-                aria-pressed={published}
-                disabled={publishToggleLoading || saveState.loading}
-              >
-                <div
-                  className="admin-view-switcher-slider"
-                  style={{ transform: published ? 'translateX(27px)' : 'translateX(0)' }}
-                  aria-hidden
-                />
-              </button>
-            </div>
+            <PublishSwitch
+              published={published}
+              disabled={publishToggleLoading || saveState.loading}
+              onToggle={handleTogglePublishedNow}
+            />
             <button
               type="button"
               className="admin-exams-builder-ghost-btn"
@@ -1070,7 +1236,7 @@ export default function AdminExamsPage() {
             {canMutateInAdminArea ? (
               <button
                 type="button"
-                className="admin-exams-builder-save-btn"
+                className="va-btn-save admin-exams-builder-save-btn"
                 onClick={() => handleSaveExam()}
                 disabled={saveState.loading || publishToggleLoading}
               >
@@ -1081,19 +1247,18 @@ export default function AdminExamsPage() {
           </div>
         </header>
 
-        <nav
-          className="admin-exams-builder-workflow"
-          aria-label="Pași builder examen"
-        >
+        <nav className="admin-exams-builder-workflow" aria-label="Pași builder examen">
           <div className="admin-exams-builder-rail-block">
             <span className="admin-exams-builder-rail-label">Workflow</span>
             <div className="admin-exams-builder-tabs-rail">
-              <div className="admin-exams-builder-tabs">
+              <div className="admin-exams-builder-tabs" role="tablist">
                 {EXAM_BUILDER_SECTIONS.map((section, idx) => (
                   <button
                     key={section.id}
                     type="button"
-                    className={activeSection === section.id ? 'is-active' : ''}
+                    role="tab"
+                    aria-selected={activeSection === section.id}
+                    className={`admin-exams-builder-tab${activeSection === section.id ? ' is-active' : ''}`}
                     onClick={() => setActiveSection(section.id)}
                   >
                     <span className="admin-exams-builder-tab-num" aria-hidden>
@@ -1104,7 +1269,7 @@ export default function AdminExamsPage() {
                     </span>
                     <span className="admin-exams-builder-tab-text">
                       <strong>{section.label}</strong>
-                      <small>{activeSection === section.id ? 'Secțiune activă' : 'Deschide secțiunea'}</small>
+                      <small>{section.hint}</small>
                     </span>
                   </button>
                 ))}
@@ -1114,16 +1279,15 @@ export default function AdminExamsPage() {
         </nav>
 
         <main className="admin-exams-builder-main">
-          <div className="admin-exams-builder-board">
+          <div className={`admin-exams-builder-board ${activeSection === 'questions' ? 'is-question-picker' : ''}`}>
             <aside className="admin-exams-builder-rail" aria-label="Rezumat builder examen">
               <section className="admin-exams-builder-summary" aria-label="Rezumat rapid examen">
                 <div className="admin-exams-builder-summary-head">
                   <span className="admin-exams-builder-rail-label">Rezumat</span>
-                  <span className="admin-exams-content-summary-chip">{activeBuilderSection?.label || 'Builder'}</span>
                 </div>
                 <div className="admin-exams-builder-summary-card">
                   <span>Status</span>
-                  <strong>{published ? 'Publicat' : 'Draft'}</strong>
+                  <strong>{published ? 'Publicat' : 'Ciornă'}</strong>
                 </div>
                 <div className="admin-exams-builder-summary-card">
                   <span>Întrebări</span>
@@ -1131,24 +1295,12 @@ export default function AdminExamsPage() {
                 </div>
                 <div className="admin-exams-builder-summary-card">
                   <span>Acces</span>
-                  <strong>{examAccess.mode === 'selected_students' ? `${examAccess.selectedStudents.length} elevi` : 'Toți'}</strong>
+                  <strong>{accessSummaryLabel}</strong>
                 </div>
                 <div className="admin-exams-builder-summary-card">
                   <span>Review</span>
                   <strong>{examSettings.manualReview ? 'Manual' : 'Auto'}</strong>
                 </div>
-                {builderSectionFacts.length > 0 ? (
-                  <>
-                    <div className="admin-exams-builder-summary-divider" aria-hidden />
-                    <span className="admin-exams-builder-rail-label">Secțiune activă</span>
-                    {builderSectionFacts.map((fact) => (
-                      <div key={fact.label} className="admin-exams-builder-summary-card">
-                        <span>{fact.label}</span>
-                        <strong>{fact.value}</strong>
-                      </div>
-                    ))}
-                  </>
-                ) : null}
               </section>
             </aside>
 
@@ -1170,7 +1322,7 @@ export default function AdminExamsPage() {
     <>
       {viewMode === 'list' ? listView : createView}
       {deleteConfirmExam ? (
-        <div className="admin-exams-create-modal-overlay" onClick={() => !listActionId && setDeleteConfirmExam(null)}>
+        <div className="admin-exams-create-modal-overlay">
           <div className="admin-exams-delete-confirm-modal" onClick={(e) => e.stopPropagation()}>
             <div className="admin-exams-delete-confirm-hero">
               <span className="admin-exams-delete-confirm-icon" aria-hidden="true">!</span>
@@ -1192,192 +1344,81 @@ export default function AdminExamsPage() {
               <button type="button" className="admin-exams-list-btn-secondary" disabled={listActionId} onClick={() => setDeleteConfirmExam(null)}>
                 Anuleaza
               </button>
-              <button type="button" className="admin-exams-list-btn-danger-solid" disabled={listActionId} onClick={handleConfirmDeleteExam}>
+              <button type="button" className="va-btn-delete admin-exams-list-btn-danger-solid" disabled={listActionId} onClick={handleConfirmDeleteExam}>
                 {listActionId ? 'Se șterge...' : 'Da, șterge'}
               </button>
             </div>
           </div>
         </div>
       ) : null}
-      {showCreateModal ? (
-        <div className="admin-exams-create-modal-overlay" onClick={() => setShowCreateModal(false)}>
-          <div className="admin-exams-create-modal" onClick={(e) => e.stopPropagation()}>
-            <aside className="admin-exams-create-modal-aside">
-              <span className="admin-exams-create-modal-kicker">Pasul 1</span>
-              <h3>Creează examen</h3>
-              <p>
-                Stabilești numele și descrierea. Acesta este un <strong>examen</strong> (catalog elevi), nu un test de curs.
-                Pentru teste în module, folosește constructorul de curs sau tab-ul Teste.
-              </p>
-              <div className="admin-exams-create-modal-aside-stats">
-                <div className="admin-exams-create-modal-aside-stat">
-                  <span>Titlu</span>
-                  <strong>obligatoriu</strong>
-                </div>
-                <div className="admin-exams-create-modal-aside-stat">
-                  <span>Descriere</span>
-                  <strong>optional</strong>
-                </div>
-              </div>
-            </aside>
-            <div className="admin-exams-create-modal-form">
-              <label htmlFor="exam-create-title">Titlu examen</label>
-              <input id="exam-create-title" type="text" value={createTitle} onChange={(e) => setCreateTitle(e.target.value)} placeholder="Ex: Examen final modul 1" />
-              <label htmlFor="exam-create-description">Descriere</label>
-              <textarea id="exam-create-description" value={createDescription} onChange={(e) => setCreateDescription(e.target.value)} rows={4} placeholder="Descriere scurta pentru examen" />
-              {createError ? <p className="admin-exams-create-modal-error">{createError}</p> : null}
-              <div className="admin-exams-create-modal-actions">
-                <button type="button" className="cancel" onClick={() => setShowCreateModal(false)} disabled={creatingExam}>Anuleaza</button>
-                <button type="button" className="confirm" onClick={handleConfirmCreate} disabled={!createTitle.trim() || creatingExam}>
-                  {creatingExam ? 'Se creeaza...' : 'Continua'}
-                </button>
-              </div>
-            </div>
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => !creatingExam && setShowCreateModal(false)}
+        closeOnBackdropClick={!creatingExam}
+        closeOnEscape={!creatingExam}
+        unstyledContent
+        ariaLabelledby="exam-create-title"
+        className="admin-exam-create-overlay"
+      >
+        <form
+          className="admin-team-modal admin-exam-create-panel"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleConfirmCreate();
+          }}
+        >
+          <div className="admin-team-modal-header">
+            <h2 id="exam-create-title" className="admin-team-modal-title">Examen nou</h2>
+            <button
+              type="button"
+              className="admin-team-modal-close va-close-btn"
+              onClick={() => !creatingExam && setShowCreateModal(false)}
+              aria-label="Închide"
+            >
+              <X size={18} weight="bold" aria-hidden="true" />
+            </button>
           </div>
-        </div>
-      ) : null}
-      {showStudentsModal ? (
-        <div className="admin-exams-create-modal-overlay" onClick={() => setShowStudentsModal(false)}>
-          <div className="admin-exams-create-modal admin-exams-students-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="admin-exams-students-modal-head">
-              <div>
-                <h3>Selectează elevi</h3>
-              </div>
-              <span className="admin-exams-content-summary-chip">{studentsDraftCount} selectati</span>
-            </div>
-            <input type="text" placeholder="Caută după nume sau email..." value={studentsSearch} onChange={(e) => setStudentsSearch(e.target.value)} />
-            {studentsError ? <p className="admin-exams-create-modal-error">{studentsError}</p> : null}
-            <div className="admin-exams-students-list">
-              {studentsLoading ? (
-                <p>Se încarcă elevii...</p>
-              ) : (
-                studentsList.filter((student) => {
-                  const query = studentsSearch.trim().toLowerCase();
-                  if (!query) return true;
-                  return String(student.name).toLowerCase().includes(query) || String(student.email).toLowerCase().includes(query);
-                }).map((student) => (
-                  <label key={student.id} className="admin-exams-students-row">
-                    <input type="checkbox" checked={studentsDraftSelected.includes(student.id)} onChange={() => handleToggleStudentDraft(student.id)} />
-                    <span>{student.name}</span>
-                    <small>{student.email}</small>
-                  </label>
-                ))
-              )}
-            </div>
-            <div className="admin-exams-create-modal-actions">
-              <button type="button" className="cancel" onClick={() => setShowStudentsModal(false)}>Anuleaza</button>
-              <button type="button" className="confirm" onClick={handleApplyStudentsSelection}>Aplica selectia</button>
-            </div>
+          <div className="admin-team-modal-body">
+            <label className="admin-form-label" htmlFor="exam-create-title-input">Titlu</label>
+            <input
+              id="exam-create-title-input"
+              type="text"
+              className="admin-form-input"
+              value={createTitle}
+              onChange={(e) => setCreateTitle(e.target.value)}
+              placeholder="Ex: Examen final modul 1"
+              data-modal-initial-focus
+              required
+              disabled={creatingExam}
+            />
+            <label className="admin-form-label" htmlFor="exam-create-description">Descriere</label>
+            <textarea
+              id="exam-create-description"
+              className="admin-form-input"
+              value={createDescription}
+              onChange={(e) => setCreateDescription(e.target.value)}
+              rows={3}
+              placeholder="Opțional"
+              disabled={creatingExam}
+            />
+            {createError ? <p className="admin-form-error-inline" role="alert">{createError}</p> : null}
           </div>
-        </div>
-      ) : null}
-      {showContentModal ? (
-        <div className="admin-exams-create-modal-overlay" onClick={() => setShowContentModal(false)}>
-          <div className="admin-exams-content-modal admin-exams-content-picker-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="admin-exams-content-modal-head">
-              <div>
-                <h3>Selectează întrebări</h3>
-              </div>
-              <div className="admin-exams-content-mode-option">
-                <span>Mod activ</span>
-                <strong>{contentSelectionLabel}</strong>
-              </div>
-            </div>
-            <div className="admin-exams-content-summary-row">
-              <span className="admin-exams-content-summary-chip">{contentSelectionCount} selectate</span>
-              <span className="admin-exams-content-summary-chip">{Number(examSettings.questionCount || 0)} întrebări în examen</span>
-              <span className="admin-exams-content-summary-chip">{contentOnlyWithQuestions ? 'Doar cu întrebări' : 'Toate băncile'}</span>
-            </div>
-            <div className="admin-exams-content-toolbar">
-              <input type="search" placeholder="Caută bancă sau tag..." value={contentSearch} onChange={(e) => setContentSearch(e.target.value)} />
-              <select value={contentSort} onChange={(e) => setContentSort(e.target.value)}>
-                <option value="questions_desc">Cele mai multe întrebări</option>
-                <option value="questions_asc">Cele mai puține întrebări</option>
-                <option value="title_asc">Titlu A-Z</option>
-                <option value="title_desc">Titlu Z-A</option>
-              </select>
-              <label className="admin-exams-modern-inline-check">
-                <span>Doar bănci cu întrebări</span>
-                <input type="checkbox" checked={contentOnlyWithQuestions} onChange={(e) => setContentOnlyWithQuestions(e.target.checked)} />
-              </label>
-            </div>
-            <div className="admin-exams-content-meta">
-              <span>{filteredContentBanks.length} bănci filtrate</span>
-              <span>{contentSelectionCount} selecție curentă</span>
-            </div>
-            <div className="admin-tests-modal-grid admin-exams-content-settings-grid">
-              <label>
-                Mod selecție
-                <select value={examSettings.selectionMode} onChange={(e) => setExamSettings((prev) => ({ ...prev, selectionMode: e.target.value }))}>
-                  <option value="folders">Foldere</option>
-                  <option value="tags">Tag-uri</option>
-                </select>
-              </label>
-              <label>
-                Număr întrebări
-                <input type="number" min={1} max={200} value={examSettings.questionCount} onChange={(e) => setExamSettings((prev) => ({ ...prev, questionCount: Math.max(1, Number(e.target.value || 1)) }))} />
-              </label>
-            </div>
-            {contentBanksError ? <p className="admin-exams-create-modal-error">{contentBanksError}</p> : null}
-            {contentBanksLoading ? (
-              <p>Se încarcă băncile...</p>
-            ) : (
-              <div className="admin-exams-content-banks">
-                {examSettings.selectionMode === 'folders'
-                  ? filteredContentBanks.map((bank) => (
-                    <button
-                      key={bank.id}
-                      type="button"
-                      className={`admin-exams-content-bank-item ${examSettings.selectedFolderIds.includes(bank.id) ? 'is-active' : ''}`}
-                      onClick={() => setExamSettings((prev) => {
-                        const exists = prev.selectedFolderIds.includes(bank.id);
-                        const selectedFolderIds = exists
-                          ? prev.selectedFolderIds.filter((folderId) => folderId !== bank.id)
-                          : [...prev.selectedFolderIds, bank.id];
-                        return { ...prev, contentBankId: bank.id, selectedFolderIds };
-                      })}
-                    >
-                      <div className="admin-exams-content-bank-main">
-                        <strong>{bank.title}</strong>
-                        <p>{bank.description || 'Fără descriere'}</p>
-                      </div>
-                      <span className="admin-exams-content-bank-count">{bank.questions_count || 0} disponibile</span>
-                    </button>
-                  ))
-                  : questionTags.map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      className={`admin-exams-content-bank-item ${examSettings.selectedTags.includes(tag) ? 'is-active' : ''}`}
-                      onClick={() => setExamSettings((prev) => ({
-                        ...prev,
-                        selectedTags: prev.selectedTags.includes(tag)
-                          ? prev.selectedTags.filter((value) => value !== tag)
-                          : [...prev.selectedTags, tag],
-                      }))}
-                    >
-                      <div className="admin-exams-content-bank-main">
-                        <strong>{tag}</strong>
-                        <p>Tag de selecție</p>
-                      </div>
-                    </button>
-                  ))}
-              </div>
-            )}
-            <div className="admin-exams-create-modal-actions admin-exams-content-modal-actions">
-              <button type="button" className="cancel" onClick={() => setShowContentModal(false)}>Închide</button>
-              <button type="button" className="confirm" onClick={handleConfirmContentSelection} disabled={contentConfirmLoading}>
-                {contentConfirmLoading ? 'Se salvează...' : 'Confirmă selecția'}
-              </button>
-            </div>
+          <div className="admin-modal-actions">
+            <button type="button" className="lms-btn-secondary" onClick={() => setShowCreateModal(false)} disabled={creatingExam}>
+              Anulare
+            </button>
+            <button type="submit" className="lms-btn-primary" disabled={!createTitle.trim() || creatingExam}>
+              {creatingExam ? 'Se creează...' : 'Creează'}
+            </button>
           </div>
-        </div>
-      ) : null}
+        </form>
+      </Modal>
       {showPreviewModal ? (
-        <div className="admin-exams-create-modal-overlay" onClick={() => setShowPreviewModal(false)}>
+        <div className="admin-exams-create-modal-overlay">
           <div className="admin-exams-content-modal admin-exams-preview-modal" onClick={(e) => e.stopPropagation()}>
             <div className="admin-exams-content-modal-head">
               <div>
+                <span className="admin-exams-content-subtitle">Verifici exact cum se vede pentru elev.</span>
                 <h3>Previzualizare examen</h3>
               </div>
               {previewData ? (
@@ -1404,7 +1445,7 @@ export default function AdminExamsPage() {
                 <div className="admin-exams-preview-meta">
                   <span>Prag: {previewData.passing_score ?? 70}%</span>
                   <span>Timp: {previewData.time_limit_minutes ? `${previewData.time_limit_minutes} min` : 'nelimitat'}</span>
-                  <span>Incercari: {previewData.max_attempts ?? '-'}</span>
+                  <span>Incercari: {previewData.max_attempts ?? 'Nelimitat'}</span>
                 </div>
                 <div className="admin-exams-preview-questions">
                   {(Array.isArray(previewData.questions) ? previewData.questions : []).map((question, index) => (
@@ -1422,7 +1463,7 @@ export default function AdminExamsPage() {
                 </div>
               </div>
             ) : (
-              <p>Nu exista date de previzualizare.</p>
+              <p>Nu există date de previzualizare.</p>
             )}
             <div className="admin-exams-create-modal-actions admin-exams-content-modal-actions">
               <button type="button" className="cancel" onClick={() => setShowPreviewModal(false)}>Închide</button>

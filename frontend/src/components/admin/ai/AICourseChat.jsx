@@ -1,21 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { X } from '@phosphor-icons/react';
 import { useLocation } from 'react-router-dom';
 import { openaiService } from '../../../services/openaiService';
 import { adminService } from '../../../services/api';
 
-import { useToast } from '../../../contexts/ToastContext';
-import { buildCourseCreationPromptFromBrief } from '../../../utils/aiPrompts';
-import { detectAiWorkspaceIntent } from '../../../utils/detectAiWorkspaceIntent';
-import { applyAiCoursePlan, summarizeAiPlanOperations, AI_TEST_REFRESH_EVENT } from '../../../utils/aiCoursePlan';
-import { describeAiPageContext, getAiPageContext } from '../../../utils/getAiPageContext';
+import { useToast } from '../../../contexts/ToastContextShared.js';
+import { buildCourseCreationPromptFromBrief } from '../../../utils/voltAiPrompts';
+import { detectVoltWorkspaceIntent } from '../../../utils/detectVoltWorkspaceIntent';
+import { applyVoltCoursePlan, summarizeVoltPlanOperations, VOLT_TEST_REFRESH_EVENT } from '../../../utils/voltCoursePlan';
+import { describeVoltPageContext, getVoltPageContext } from '../../../utils/getVoltPageContext';
 import {
 	buildStructuredExcelRows,
 	downloadStructuredExcel,
 	statisticsExcelFilename,
 } from '../../../utils/statisticsExcelExport';
-import { isAiEnabled, notifyAiComingSoon, canUseAiFeature, notifyAiPlanLocked, AI_PLAN_LOCKED_MESSAGE } from '../../../utils/aiAvailability';
-import { useAuth } from '../../../contexts/AuthContext';
+import { isVoltEnabled, notifyVoltComingSoon, VOLT_COMING_SOON_MESSAGE } from '../../../utils/voltAvailability';
 import './AIChat.css';
+import { logger } from '../../../utils/logger';
 
 function summarizeCoursePlan(plan) {
 	const modules = plan?.modules || plan?.course?.modules || [];
@@ -39,7 +40,7 @@ const AICourseChat = ({
 	selectedLessonDraft = null,
 	mode = 'create', // create | assist | workspace
 	title = 'Generează o ciornă cu Formely AI',
-	titleId = 'ai-chat-title',
+	titleId = 'volt-chat-title',
 	welcomeMessage = null,
 	showPlanPreview = true,
 	autoApplyPlan = false,
@@ -53,29 +54,15 @@ const AICourseChat = ({
 	initialMapId = null,
 }) => {
 	const { showToast } = useToast();
-	const { user } = useAuth();
 	const location = useLocation();
-	const pageContext = getAiPageContext(location);
-	const requiredFeature = mode === 'assist'
-		? 'ai_builder'
-		: mode === 'workspace'
-			? null
-			: 'ai_creator';
-	const aiAllowed = requiredFeature
-		? canUseAiFeature(user, requiredFeature)
-		: (
-			canUseAiFeature(user, 'ai_builder')
-			|| canUseAiFeature(user, 'ai_creator')
-			|| canUseAiFeature(user, 'ai_stats')
-			|| canUseAiFeature(user, 'ai_test_generation')
-		);
+	const pageContext = getVoltPageContext(location);
 	const [messages, setMessages] = useState(() => {
 		// În modul "create", subtitlul din header transmite deja mesajul de bun venit — evităm dublarea.
 		if ((mode === 'create' || mode === 'workspace') && !welcomeMessage) {
 			return mode === 'workspace'
 				? [{
 					role: 'assistant',
-					content: `Sunt Formely AI. ${describeAiPageContext(getAiPageContext(typeof window === 'undefined' ? {} : { pathname: window.location.pathname, search: window.location.search }))}`,
+					content: `Sunt Formely AI. ${describeVoltPageContext(getVoltPageContext(typeof window === 'undefined' ? {} : { pathname: window.location.pathname, search: window.location.search }))}`,
 				}]
 				: [];
 		}
@@ -350,7 +337,7 @@ const AICourseChat = ({
 		});
 	};
 
-	const mapAiTestQuestions = (rawQuestions) => {
+	const mapVoltTestQuestions = (rawQuestions) => {
 		if (!Array.isArray(rawQuestions)) return [];
 		return rawQuestions
 			.map((q, index) => {
@@ -392,7 +379,7 @@ const AICourseChat = ({
 					});
 					const test = updated?.test || updated;
 					if (typeof window !== 'undefined') {
-						window.dispatchEvent(new CustomEvent(AI_TEST_REFRESH_EVENT, { detail: { testId: Number(currentTestId) } }));
+						window.dispatchEvent(new CustomEvent(VOLT_TEST_REFRESH_EVENT, { detail: { testId: Number(currentTestId) } }));
 					}
 					showToast('Testul a fost actualizat.', 'success');
 					setPendingDraft(null);
@@ -456,17 +443,13 @@ const AICourseChat = ({
 
 	const submitPrompt = async (promptText) => {
 		if (isGenerating) return;
-		if (!isAiEnabled()) {
-			notifyAiComingSoon(showToast);
-			return;
-		}
-		if (!aiAllowed) {
-			notifyAiPlanLocked(showToast);
+		if (!isVoltEnabled()) {
+			notifyVoltComingSoon(showToast);
 			return;
 		}
 
 		const intent = mode === 'workspace'
-			? detectAiWorkspaceIntent(promptText, {
+			? detectVoltWorkspaceIntent(promptText, {
 				...pageContext,
 				courseId: currentCourseId || pageContext.courseId,
 				testId: currentTestId || pageContext.testId,
@@ -521,7 +504,7 @@ const AICourseChat = ({
 						}
 					);
 					const parsed = extractJsonFromText(streamed);
-					const questions = mapAiTestQuestions(parsed?.questions);
+					const questions = mapVoltTestQuestions(parsed?.questions);
 					if (!parsed?.title || questions.length === 0) {
 						finishAssistantMessage(streamed.trim() || 'Nu am putut pregăti un test valid. Adaugă mai multe detalii.');
 						return;
@@ -625,7 +608,7 @@ const AICourseChat = ({
 				}, 12000);
 			}
 
-			console.log(runMode === 'assist' ? 'Starting builder diff stream...' : 'Starting course generation stream...');
+			logger.log(runMode === 'assist' ? 'Starting builder diff stream...' : 'Starting course generation stream...');
 
 			let courseId = null;
 			let streamResponseType = '';
@@ -705,7 +688,7 @@ const AICourseChat = ({
 				if (data?.course_id) {
 					courseId = data.course_id;
 					setCurrentCourseId(courseId);
-					console.log('Course created/updated with ID:', courseId);
+					logger.log('Course created/updated with ID:', courseId);
 				}
 			};
 
@@ -743,7 +726,7 @@ const AICourseChat = ({
 				}
 			}
 
-			console.log('Stream completed. Total length:', assistantResponse.length);
+			logger.log('Stream completed. Total length:', assistantResponse.length);
 			if (!assistantResponse && rawResponse && !buildModeDetected) {
 				assistantResponse = rawResponse;
 			}
@@ -768,7 +751,7 @@ const AICourseChat = ({
 					const hasOperations = Array.isArray(plan.operations) && plan.operations.length > 0;
 					const needsClarification = plan.needs_confirmation === true || Boolean(plan.clarification_question);
 					const applyHandler = onApplyPlan || (currentCourseId
-						? (nextPlan) => applyAiCoursePlan(currentCourseId, nextPlan)
+						? (nextPlan) => applyVoltCoursePlan(currentCourseId, nextPlan)
 						: null);
 					const shouldAutoApply = autoApplyPlan && applyHandler && hasOperations && !needsClarification;
 					if (shouldAutoApply) {
@@ -796,7 +779,7 @@ const AICourseChat = ({
 						await onPlanGenerated(plan, planSource);
 					}
 				} else {
-					showToast('Formely AI a raspuns, dar nu am putut interpreta un plan JSON valid.', 'warning');
+					showToast('Formely AI a răspuns, dar nu am putut interpreta un plan JSON valid.', 'warning');
 				}
 				return;
 			}
@@ -909,12 +892,8 @@ const AICourseChat = ({
 
 	const handleDirectExport = async () => {
 		if (isGenerating) return;
-		if (!isAiEnabled()) {
-			notifyAiComingSoon(showToast);
-			return;
-		}
-		if (!canUseAiFeature(user, 'ai_stats')) {
-			notifyAiPlanLocked(showToast);
+		if (!isVoltEnabled('ai_stats')) {
+			notifyVoltComingSoon(showToast);
 			return;
 		}
 
@@ -934,7 +913,7 @@ const AICourseChat = ({
 		setIsDirectExporting(true);
 
 		try {
-			const exportData = await adminService.generateStatisticsExportWithAi({
+			const exportData = await adminService.generateStatisticsExportWithVolt({
 				prompt: exportPrompt,
 			});
 
@@ -1019,10 +998,7 @@ const AICourseChat = ({
 		: 'Verific detaliile, cer clarificări doar dacă lipsesc informații și apoi finalizez.';
 
 
-	if (!isAiEnabled() || !aiAllowed) {
-		if (!isAiEnabled()) {
-			return null;
-		}
+	if (!isVoltEnabled()) {
 		return (
 			<div className={`ai-chat-container ${mode === 'create' ? 'ai-chat-container-create' : ''}${embed ? ' ai-chat-container-embed' : ''}`}>
 				<div className="ai-chat-header">
@@ -1030,13 +1006,13 @@ const AICourseChat = ({
 						<h2 id={titleId}>{title}</h2>
 					</div>
 					{onClose && (
-						<button type="button" className="ai-chat-close" onClick={onClose} aria-label="Închide">
-							×
+						<button type="button" className="ai-chat-close va-close-btn" onClick={onClose} aria-label="Închide">
+							<X size={18} weight="bold" aria-hidden="true" />
 						</button>
 					)}
 				</div>
-				<div className="ai-chat-coming-soon">
-					<p>{AI_PLAN_LOCKED_MESSAGE}</p>
+				<div className="ai-chat-volt-unavailable">
+					<p>{VOLT_COMING_SOON_MESSAGE}</p>
 				</div>
 			</div>
 		);
@@ -1055,8 +1031,8 @@ const AICourseChat = ({
 					)}
 				</div>
 				{onClose && (
-					<button type="button" className="ai-chat-close" onClick={onClose} aria-label="Închide">
-						×
+					<button type="button" className="ai-chat-close va-close-btn" onClick={onClose} aria-label="Închide">
+						<X size={18} weight="bold" aria-hidden="true" />
 					</button>
 				)}
 			</div>
@@ -1251,7 +1227,7 @@ const AICourseChat = ({
 					<div className="ai-chat-plan-actions">
 						<button
 							type="button"
-							className="ai-chat-btn ai-chat-btn-primary"
+							className="ai-chat-btn lms-btn-primary ai-chat-btn-primary"
 							onClick={() => onCourseGenerated?.(pendingCreatedCourse)}
 						>
 							Deschide ciorna în builder
@@ -1287,7 +1263,7 @@ const AICourseChat = ({
 					<div className="ai-chat-plan-actions">
 						<button
 							type="button"
-							className="ai-chat-btn ai-chat-btn-primary"
+							className="ai-chat-btn lms-btn-primary ai-chat-btn-primary"
 							onClick={applyPendingDraft}
 							disabled={isApplying}
 						>
@@ -1314,14 +1290,14 @@ const AICourseChat = ({
 							<p><strong>Întrebare:</strong> {generatedPlan.clarification_question}</p>
 						)}
 						<p>
-							<strong>{summarizeAiPlanOperations(generatedPlan).total} operații</strong>
-							{` · ${summarizeAiPlanOperations(generatedPlan).counts.create} noi · ${summarizeAiPlanOperations(generatedPlan).counts.update} actualizări · ${summarizeAiPlanOperations(generatedPlan).counts.delete} ștergeri`}
+							<strong>{summarizeVoltPlanOperations(generatedPlan).total} operații</strong>
+							{` · ${summarizeVoltPlanOperations(generatedPlan).counts.create} noi · ${summarizeVoltPlanOperations(generatedPlan).counts.update} actualizări · ${summarizeVoltPlanOperations(generatedPlan).counts.delete} ștergeri`}
 						</p>
-						{summarizeAiPlanOperations(generatedPlan).counts.delete > 0 && (
+						{summarizeVoltPlanOperations(generatedPlan).counts.delete > 0 && (
 							<p className="ai-chat-plan-warning"><strong>Atenție:</strong> unele elemente vor fi șterse.</p>
 						)}
 						<ul>
-							{summarizeAiPlanOperations(generatedPlan).lines.slice(0, 10).map((line, index) => (
+							{summarizeVoltPlanOperations(generatedPlan).lines.slice(0, 10).map((line, index) => (
 								<li key={`${line}-${index}`}>{line}</li>
 							))}
 						</ul>
@@ -1336,10 +1312,10 @@ const AICourseChat = ({
 					<div className="ai-chat-plan-actions">
 						<button
 							type="button"
-							className="ai-chat-btn ai-chat-btn-primary"
+							className="ai-chat-btn lms-btn-primary ai-chat-btn-primary"
 							onClick={async () => {
 								const applyHandler = onApplyPlan || (currentCourseId
-									? (nextPlan) => applyAiCoursePlan(currentCourseId, nextPlan)
+									? (nextPlan) => applyVoltCoursePlan(currentCourseId, nextPlan)
 									: null);
 								if (!applyHandler) return;
 								setIsApplying(true);

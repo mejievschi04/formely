@@ -99,7 +99,7 @@ class LibraryPdfCoverGenerator
 
     private function resolveGhostscriptBinary(): ?string
     {
-        $configured = config('formely.library_pdf_gs');
+        $configured = config('volta.library_pdf_gs');
         if (is_string($configured) && $configured !== '') {
             $trim = trim($configured, " \t\n\r\0\x0B\"'");
             if ($trim !== '' && (is_file($trim) || $this->commandExists($trim))) {

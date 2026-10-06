@@ -2,7 +2,8 @@
 
 namespace App\Services;
 
-use App\Mail\UserNotificationMail;
+use App\Mail\VoltaUserNotificationMail;
+use App\Models\Company;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
@@ -15,6 +16,27 @@ class EmailNotificationService
         return (bool) Setting::get('email_notifications', true);
     }
 
+    /** Formely: comutatorul platformei și cel al academiei trebuie să fie ambele pornite. */
+    public function isEnabledForCompany(?int $companyId): bool
+    {
+        if (! $this->isEnabled()) {
+            return false;
+        }
+        if (! $companyId) {
+            return true;
+        }
+
+        return (bool) (Company::query()->whereKey($companyId)->value('email_notifications') ?? true);
+    }
+
+    /**
+     * Conturile fără status sunt tratate ca active, la fel ca la autentificare.
+     */
+    public function isActiveUser(User $user): bool
+    {
+        return (string) ($user->status ?? 'active') === 'active';
+    }
+
     public function absoluteUrl(?string $path): ?string
     {
         if ($path === null || $path === '') {
@@ -25,9 +47,44 @@ class EmailNotificationService
             return $path;
         }
 
-        $base = config('formely.lms_url', config('formely.frontend_url', 'http://localhost:5173'));
+        $base = config('volta.frontend_url', 'http://localhost:5173');
 
         return $base . (str_starts_with($path, '/') ? $path : '/' . $path);
+    }
+
+    /**
+     * Send to an email address (e.g. before the user account exists).
+     */
+    public function sendToRawEmail(
+        string $email,
+        string $subject,
+        string $body,
+        ?string $actionPath = null,
+        string $actionLabel = 'Deschide în platformă'
+    ): void {
+        if (! $this->isEnabled()) {
+            return;
+        }
+
+        $email = trim($email);
+        if ($email === '') {
+            return;
+        }
+
+        try {
+            Mail::to($email)->queue(new VoltaUserNotificationMail(
+                heading: $subject,
+                body: $body,
+                actionUrl: $this->absoluteUrl($actionPath),
+                actionLabel: $actionLabel,
+            ));
+        } catch (\Throwable $e) {
+            Log::warning('EmailNotificationService::sendToRawEmail failed', [
+                'email' => $email,
+                'subject' => $subject,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -45,12 +102,16 @@ class EmailNotificationService
         }
 
         $email = trim((string) ($user->email ?? ''));
-        if ($email === '') {
+        if ($email === '' || ! $this->isActiveUser($user)) {
+            return;
+        }
+
+        if (! $this->isEnabledForCompany($user->company_id ? (int) $user->company_id : null)) {
             return;
         }
 
         try {
-            Mail::to($email)->send(new UserNotificationMail(
+            Mail::to($email)->queue(new VoltaUserNotificationMail(
                 heading: $subject,
                 body: $body,
                 actionUrl: $this->absoluteUrl($actionPath),
@@ -80,13 +141,13 @@ class EmailNotificationService
             return;
         }
 
-        $users = collect($usersOrIds)->map(function ($item) {
-            if ($item instanceof User) {
-                return $item;
-            }
-
-            return User::query()->find((int) $item);
-        })->filter();
+        $items = collect($usersOrIds);
+        $users = $items->filter(fn ($item) => $item instanceof User);
+        $ids = $items->reject(fn ($item) => $item instanceof User)->map(fn ($id) => (int) $id);
+        if ($ids->isNotEmpty()) {
+            $users = $users->concat(User::query()->whereIn('id', $ids)->get());
+        }
+        $users = $users->unique('id');
 
         foreach ($users as $user) {
             $this->sendToUser($user, $subject, $body, $actionPath, $actionLabel);

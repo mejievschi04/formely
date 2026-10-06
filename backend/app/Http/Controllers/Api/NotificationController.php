@@ -6,16 +6,11 @@ use App\Http\Controllers\Api\Admin\DashboardAdminController;
 use App\Http\Controllers\Controller;
 use App\Models\Notification;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
 
 class NotificationController extends Controller
 {
     public function index(Request $request)
     {
-        if (! Schema::hasTable('notifications')) {
-            return response()->json(['data' => []]);
-        }
-
         $user = $request->user();
         $limit = min((int) $request->get('limit', 50), 100);
 
@@ -34,13 +29,9 @@ class NotificationController extends Controller
     public function unreadCount(Request $request)
     {
         $user = $request->user();
-        $count = 0;
-
-        if (Schema::hasTable('notifications')) {
-            $count = (int) Notification::where('user_id', $user->id)
-                ->whereNull('read_at')
-                ->count();
-        }
+        $count = (int) Notification::where('user_id', $user->id)
+            ->whereNull('read_at')
+            ->count();
 
         // Admin/analyst: include computed dashboard alerts not yet dismissed
         if (in_array($user->role ?? '', ['admin', 'instructor', 'analyst'], true)) {
@@ -53,10 +44,6 @@ class NotificationController extends Controller
 
     public function markRead(Request $request, $id)
     {
-        if (! Schema::hasTable('notifications')) {
-            return response()->json(['message' => 'Notificare marcată'], 200);
-        }
-
         $notification = Notification::where('user_id', $request->user()->id)
             ->where('id', $id)
             ->firstOrFail();
@@ -73,10 +60,6 @@ class NotificationController extends Controller
 
     public function markAllRead(Request $request)
     {
-        if (! Schema::hasTable('notifications')) {
-            return response()->json(['message' => 'Toate notificările au fost marcate', 'updated' => 0]);
-        }
-
         $updated = Notification::where('user_id', $request->user()->id)
             ->whereNull('read_at')
             ->update(['read_at' => now()]);

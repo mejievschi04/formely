@@ -105,16 +105,5 @@ class Test extends Model
         return $this->status === 'published';
     }
 
-    /**
-     * Get total points for this test
-     */
-    public function getTotalPoints(): int
-    {
-        if ($this->question_source === 'bank' && $this->questionBank) {
-            return $this->questionBank->questions()->sum('points');
-        }
-        
-        return $this->questions()->sum('points');
-    }
 }
 

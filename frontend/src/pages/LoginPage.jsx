@@ -1,3 +1,4 @@
+import '../styles/auth-modern.css';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import {
@@ -10,16 +11,38 @@ import {
 	Lock,
 	WarningCircle,
 } from '@phosphor-icons/react';
-import { useAuth } from '../contexts/AuthContext';
+
+import { useAuth } from '../contexts/AuthContextShared.js';
 import { isStaffAdminRole } from '../constants/staffRoles';
 import { prefetchRoute } from '../utils/prefetch';
+import logoShort from '../assets/Formely logo.png';
+import api from '../api';
 
 const LoginPage = () => {
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [showPassword, setShowPassword] = useState(false);
-	const [error, setError] = useState('');
+	const [error, setError] = useState(() => {
+		// Formely: mesaj lăsat de interceptor când academia nu mai e activă.
+		try {
+			const notice = sessionStorage.getItem('formely_login_notice');
+			if (notice) sessionStorage.removeItem('formely_login_notice');
+			return notice || '';
+		} catch {
+			return '';
+		}
+	});
 	const [loading, setLoading] = useState(false);
+	// Formely e sales-led: linkul de înregistrare apare doar dacă register-ul public e pornit.
+	const [publicRegisterEnabled, setPublicRegisterEnabled] = useState(false);
+
+	useEffect(() => {
+		let cancelled = false;
+		api.get('/plans')
+			.then((res) => { if (!cancelled) setPublicRegisterEnabled(Boolean(res.data?.public_register_enabled)); })
+			.catch(() => {});
+		return () => { cancelled = true; };
+	}, []);
 	const { login } = useAuth();
 	const navigate = useNavigate();
 	const location = useLocation();
@@ -28,7 +51,6 @@ const LoginPage = () => {
 	// Prefetch likely post-login routes for instant navigation
 	useEffect(() => {
 		prefetchRoute('/courses');
-		prefetchRoute('/admin');
 	}, []);
 
 	const handleSubmit = async (e) => {
@@ -43,7 +65,7 @@ const LoginPage = () => {
 			if (r === 'admin') {
 				const mode =
 					typeof sessionStorage !== 'undefined'
-						? sessionStorage.getItem('formelyAdminViewMode')
+						? sessionStorage.getItem('voltaAdminViewMode')
 						: null;
 				navigate(mode === 'student' ? '/courses' : '/admin');
 			} else if (isStaffAdminRole(r)) {
@@ -61,7 +83,7 @@ const LoginPage = () => {
 	};
 
 	return (
-		<div className="modern-auth-container modern-auth--fixed" data-auth-page="login">
+		<div className="modern-auth-container">
 			{/* Background decorative elements */}
 			<div className="modern-auth-background">
 				<div className="modern-auth-gradient"></div>
@@ -74,9 +96,12 @@ const LoginPage = () => {
 					{/* Logo and Header */}
 					<div className="modern-auth-header">
 						<div className="modern-auth-logo">
-							<span className="modern-auth-logo-text">Formely</span>
+							<img src={logoShort} alt="Formely" className="modern-auth-logo-img" />
 						</div>
 						<h1 className="modern-auth-title">Bine ai revenit</h1>
+						<p className="modern-auth-subtitle">
+							Autentifică-te pentru a continua călătoria ta de învățare
+						</p>
 					</div>
 
 					{/* Form */}
@@ -164,6 +189,7 @@ const LoginPage = () => {
 					</form>
 
 					{/* Footer */}
+					{publicRegisterEnabled && (
 					<div className="modern-auth-footer">
 						<p className="modern-auth-footer-text">
 							Nu ai cont?{' '}
@@ -172,6 +198,7 @@ const LoginPage = () => {
 							</Link>
 						</p>
 					</div>
+					)}
 				</div>
 			</div>
 		</div>

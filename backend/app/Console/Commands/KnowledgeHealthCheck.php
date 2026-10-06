@@ -8,7 +8,7 @@ use Illuminate\Console\Command;
 class KnowledgeHealthCheck extends Command
 {
     protected $signature = 'ai:knowledge-health {--json : Output machine-readable JSON}';
-    protected $description = 'Check AI knowledge index and embedding health.';
+    protected $description = 'Check Formely AI knowledge index and embedding health.';
 
     public function handle(AIKnowledgeService $service): int
     {
@@ -19,7 +19,7 @@ class KnowledgeHealthCheck extends Command
             return $report['embedding_available'] ? self::SUCCESS : self::FAILURE;
         }
 
-        $this->info('AI knowledge health');
+        $this->info('Formely AI knowledge health');
         $this->line('Embedding provider: ' . ($report['embedding_provider'] ?? 'unknown'));
         $this->line('Embedding model: ' . ($report['embedding_model'] ?? 'unknown'));
         $this->line('Embedding URL: ' . ($report['embedding_url'] ?? 'n/a'));
@@ -31,7 +31,7 @@ class KnowledgeHealthCheck extends Command
         $this->line('Latest embedding updated: ' . ($report['latest_embedding_at'] ?? 'n/a'));
 
         if (!($report['embedding_available'] ?? false)) {
-            $this->warn('Embeddings are not reachable. Asistent AI will fall back to lexical ranking.');
+            $this->warn('Embeddings are not reachable. Formely AI Assistant will fall back to lexical ranking.');
             return self::FAILURE;
         }
 

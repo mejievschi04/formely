@@ -12,7 +12,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaCache;
 use Illuminate\Support\Str;
 
 class AIKnowledgeService
@@ -21,11 +21,11 @@ class AIKnowledgeService
     {
         $embeddingModel = $this->getEmbeddingModel();
         $embeddingUrl = $this->getEmbeddingUrl();
-        $sampleVector = $embeddingModel ? $this->getEmbedding('Formely AI knowledge health check') : null;
+        $sampleVector = $embeddingModel ? $this->getEmbedding('Formely Formely AI knowledge health check') : null;
         $tablesReady = $this->knowledgeTablesReady();
 
         return [
-            'embedding_provider' => env('AI_EMBEDDING_PROVIDER', env('AI_PROVIDER', 'groq')),
+            'embedding_provider' => $this->getEmbeddingProvider() ?? 'none (căutare pe cuvinte cheie)',
             'embedding_model' => $embeddingModel,
             'embedding_url' => $embeddingUrl,
             'tables_ready' => $tablesReady,
@@ -340,17 +340,6 @@ class AIKnowledgeService
         }, $chunks));
     }
 
-    public function cachePromptResponse(string $contextHash, string $response, int $ttlSeconds = 3600): void
-    {
-        Cache::put("ai_response:{$contextHash}", $response, now()->addSeconds($ttlSeconds));
-    }
-
-    public function getCachedPromptResponse(string $contextHash): ?string
-    {
-        $cached = Cache::get("ai_response:{$contextHash}");
-        return is_string($cached) && $cached !== '' ? $cached : null;
-    }
-
     public function getRankedChunksForTutor(
         string $question,
         ?int $courseId = null,
@@ -398,7 +387,7 @@ class AIKnowledgeService
             $query->where('course_id', $courseId);
         }
 
-        if (!$canSeeDrafts && Schema::hasColumn('courses', 'status')) {
+        if (!$canSeeDrafts && SchemaCache::hasColumn('courses', 'status')) {
             $query->whereHas('course', function ($courseQuery) {
                 $courseQuery->where('status', 'published');
             });
@@ -520,26 +509,6 @@ class AIKnowledgeService
         return $chunks;
     }
 
-    private function storeEmbeddingForChunk(AiChunk $chunk): void
-    {
-        $vector = $this->getEmbedding($chunk->content);
-        if (empty($vector)) {
-            return;
-        }
-
-        AiEmbedding::updateOrCreate(
-            [
-                'ai_chunk_id' => $chunk->id,
-                'model' => $this->getEmbeddingModel(),
-            ],
-            [
-                'dimensions' => count($vector),
-                'vector' => $vector,
-                'vector_hash' => hash('sha256', json_encode($vector)),
-            ]
-        );
-    }
-
     private function syncEmbeddingForChunk(AiChunk $chunk): string
     {
         $model = $this->getEmbeddingModel();
@@ -640,47 +609,64 @@ class AIKnowledgeService
         }
     }
 
+    /**
+     * Furnizorul de embedding-uri sau null dacă nu există unul utilizabil.
+     * Groq nu oferă embedding-uri: fără AI_EMBEDDING_PROVIDER, ele sunt active doar cu AI_PROVIDER=openai.
+     */
+    private function getEmbeddingProvider(): ?string
+    {
+        $provider = strtolower(trim((string) config('ai.embedding.provider', '')));
+        if ($provider === '') {
+            $provider = strtolower((string) config('ai.provider', 'groq')) === 'openai' ? 'openai' : '';
+        }
+
+        return match ($provider) {
+            'openai' => 'openai',
+            '', 'none', 'groq' => null,
+            default => 'custom',
+        };
+    }
+
     private function getEmbeddingUrl(): ?string
     {
-        $provider = env('AI_EMBEDDING_PROVIDER', env('AI_PROVIDER', 'groq'));
+        $provider = $this->getEmbeddingProvider();
         if ($provider === 'openai') {
-            return rtrim(env('OPENAI_API_URL', 'https://api.openai.com/v1'), '/') . '/embeddings';
+            return rtrim((string) config('ai.openai.api_url', 'https://api.openai.com/v1'), '/') . '/embeddings';
         }
 
-        if ($provider === 'groq') {
-            return rtrim(env('GROQ_API_URL', 'https://api.groq.com/openai/v1'), '/') . '/embeddings';
+        if ($provider === 'custom') {
+            $custom = trim((string) config('ai.embedding.api_url', ''));
+            return $custom !== '' ? rtrim($custom, '/') : null;
         }
 
-        $custom = trim((string) env('AI_EMBEDDING_API_URL', ''));
-        return $custom !== '' ? rtrim($custom, '/') : null;
+        return null;
     }
 
     private function getEmbeddingModel(): ?string
     {
-        $provider = env('AI_EMBEDDING_PROVIDER', env('AI_PROVIDER', 'groq'));
+        $provider = $this->getEmbeddingProvider();
+        $model = trim((string) config('ai.embedding.model', ''));
         if ($provider === 'openai') {
-            return env('AI_EMBEDDING_MODEL', env('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small'));
+            return $model !== '' ? $model : (string) config('ai.embedding.openai_model', 'text-embedding-3-small');
         }
 
-        if ($provider === 'groq') {
-            return env('AI_EMBEDDING_MODEL', 'text-embedding-3-small');
+        if ($provider === 'custom') {
+            return $model !== '' ? $model : null;
         }
 
-        return env('AI_EMBEDDING_MODEL');
+        return null;
     }
 
     private function getEmbeddingApiKey(): ?string
     {
-        $provider = env('AI_EMBEDDING_PROVIDER', env('AI_PROVIDER', 'groq'));
-        if ($provider === 'openai') {
-            return env('OPENAI_API_KEY');
+        $key = trim((string) config('ai.embedding.api_key', ''));
+        if ($key !== '') {
+            return $key;
         }
 
-        if ($provider === 'groq') {
-            return env('GROQ_API_KEY');
-        }
-
-        return env('AI_EMBEDDING_API_KEY');
+        return $this->getEmbeddingProvider() === 'openai'
+            ? ((string) config('ai.openai.api_key', '') ?: null)
+            : null;
     }
 
     private function calculateSimilarity(string $question, string $content, ?array $questionEmbedding = null, array $chunk = []): float
@@ -956,9 +942,9 @@ class AIKnowledgeService
     private function knowledgeTablesReady(): bool
     {
         try {
-            return Schema::hasTable('ai_chunks') && Schema::hasTable('ai_embeddings');
+            return SchemaCache::hasTable('ai_chunks') && SchemaCache::hasTable('ai_embeddings');
         } catch (\Throwable $e) {
-            Log::warning('AI knowledge table check failed', [
+            Log::warning('Formely AI knowledge table check failed', [
                 'error' => $e->getMessage(),
             ]);
             return false;

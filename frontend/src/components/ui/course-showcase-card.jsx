@@ -1,12 +1,14 @@
+import { COURSE_SHOWCASE_FALLBACK_IMAGE } from './course-showcase-cardShared.js';
 import * as React from 'react';
 import { ArrowRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/cn';
 import { toImageUrl } from '../../utils/imageUrl';
-import courseMapPlaceholder from '../../assets/course-map-placeholder.svg';
+import '../../assets/course-map-placeholder.svg';
 import './course-showcase-card.css';
+import { courseProgressLabel } from '../../utils/courseProgressLabel.js';
 
 /** Copertă implicită când lipsește URL-ul sau încărcarea eșuează. */
-export const COURSE_SHOWCASE_FALLBACK_IMAGE = courseMapPlaceholder;
+
 
 function resolveCardImageUrl(value) {
 	if (value == null || value === '') return null;
@@ -34,6 +36,7 @@ const CourseShowcaseCard = React.forwardRef(
 			progress,
 			topLeftSlot,
 			topRightSlot,
+			footerExtraSlot,
 			showAccentRibbon = false,
 			density = 'default',
 			style,
@@ -49,8 +52,7 @@ const CourseShowcaseCard = React.forwardRef(
 		}, [resolved]);
 
 		const showUrl = resolved && !coverBroken ? resolved : COURSE_SHOWCASE_FALLBACK_IMAGE;
-		const hasProgress = progress != null && progress !== '';
-		const normalizedProgress = hasProgress && Number.isFinite(Number(progress))
+		const normalizedProgress = Number.isFinite(Number(progress))
 			? Math.min(100, Math.max(0, Number(progress)))
 			: null;
 
@@ -74,6 +76,8 @@ const CourseShowcaseCard = React.forwardRef(
 					tabIndex={0}
 					onClick={onOpen}
 					onKeyDown={(e) => {
+						// doar când cardul are focusul: tastele de pe butoanele din card (ex. mutare) nu îl deschid
+						if (e.target !== e.currentTarget) return;
 						if (e.key === 'Enter' || e.key === ' ') {
 							e.preventDefault();
 							onOpen();
@@ -101,18 +105,23 @@ const CourseShowcaseCard = React.forwardRef(
 					</div>
 					<div className="course-showcase-card__inner va-card-content">
 						<h3 className="course-showcase-card__title va-card-title">{title}</h3>
-						{subtitle ? <p className="course-showcase-card__subtitle va-card-subtitle">{subtitle}</p> : null}
+						<p className="course-showcase-card__subtitle va-card-subtitle">{subtitle}</p>
 						{normalizedProgress !== null ? (
 							<div className="course-showcase-card__progress va-card-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={normalizedProgress}>
 								<div className="course-showcase-card__progress-track va-card-progress-track">
 									<div className="course-showcase-card__progress-fill va-card-progress-fill" style={{ width: `${normalizedProgress}%` }} />
 								</div>
-								<span className="course-showcase-card__progress-value va-card-progress-value">{normalizedProgress}%</span>
+								<span className="course-showcase-card__progress-value va-card-progress-value">{courseProgressLabel(normalizedProgress)}</span>
 							</div>
 						) : null}
 						<div className="course-showcase-card__footer va-card-footer">
-							<span className="course-showcase-card__cta-label va-card-cta-label">{ctaLabel}</span>
-							<ArrowRight size={18} weight="bold" className="course-showcase-card__cta-icon va-card-cta-icon" aria-hidden />
+							{footerExtraSlot ? (
+								<div className="course-showcase-card__footer-extra">{footerExtraSlot}</div>
+							) : null}
+							<div className="course-showcase-card__footer-cta">
+								<span className="course-showcase-card__cta-label va-card-cta-label">{ctaLabel}</span>
+								<ArrowRight size={18} weight="bold" className="course-showcase-card__cta-icon va-card-cta-icon" aria-hidden />
+							</div>
 						</div>
 					</div>
 					{topLeftSlot ? <div className="course-showcase-card__tl">{topLeftSlot}</div> : null}

@@ -1,0 +1,149 @@
+/* Biblioteca media (Conținut → Fișiere media) */
+
+.admin-media-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	gap: 14px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.admin-media-card {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	overflow: hidden;
+	border: 1px solid var(--border-primary);
+	border-radius: 12px;
+	background: var(--bg-elevated);
+}
+
+.admin-media-card__preview {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	aspect-ratio: 16 / 10;
+	background: var(--bg-secondary);
+	color: var(--text-secondary);
+}
+
+.admin-media-card__preview img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.admin-media-card__body {
+	padding: 10px 12px 0;
+	min-width: 0;
+}
+
+.admin-media-card__name {
+	margin: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 0.88rem;
+	font-weight: 600;
+	color: var(--text-primary);
+}
+
+.admin-media-card__meta {
+	margin: 4px 0 0;
+	font-size: 0.78rem;
+	color: var(--text-secondary);
+}
+
+.admin-media-card__actions {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: auto;
+	padding: 10px 12px 12px;
+}
+
+.admin-media-card__delete {
+	padding: 0 10px;
+}
+
+.admin-media-pagination {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	font-size: 0.85rem;
+	color: var(--text-secondary);
+}
+
+.admin-media-in-use {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 20px;
+	max-width: 480px;
+}
+
+.admin-media-in-use h3 {
+	margin: 0;
+	color: var(--text-primary);
+}
+
+.admin-media-in-use p {
+	margin: 0;
+	color: var(--text-secondary);
+}
+
+.admin-media-in-use ul {
+	margin: 0;
+	padding-left: 20px;
+}
+
+.admin-media-in-use__actions {
+	display: flex;
+	justify-content: flex-end;
+}
+
+/* Pe telefon: card orizontal (previzualizare mică), ca lista să nu ocupe câte un ecran per fișier */
+@media (max-width: 600px) {
+	.admin-media-grid {
+		grid-template-columns: 1fr;
+		gap: 10px;
+	}
+
+	.admin-media-card {
+		display: grid;
+		grid-template-columns: 72px 1fr;
+		grid-template-areas:
+			'preview body'
+			'preview actions';
+		align-items: center;
+	}
+
+	.admin-media-card__preview {
+		grid-area: preview;
+		width: 72px;
+		height: 100%;
+		min-height: 72px;
+		aspect-ratio: auto;
+	}
+
+	.admin-media-card__body {
+		grid-area: body;
+		padding: 10px 12px 0;
+	}
+
+	.admin-media-card .admin-media-card__actions {
+		grid-area: actions;
+		justify-content: flex-start;
+		padding: 8px 12px 10px;
+	}
+
+	/* regulile generale de pe telefon întind butoanele pe toată lățimea */
+	.admin-media-card .admin-media-card__actions > * {
+		flex: 0 0 auto;
+		width: auto;
+		min-width: 0;
+	}
+}

@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use App\Casts\SafeJsonArray;
 use App\Models\Concerns\BelongsToCompany;
+use App\Casts\SafeJsonArray;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -76,7 +76,8 @@ class Exam extends Model
 
     /**
      * Vizibilitate pentru elevi (catalog / acces fără curs).
-     * Setări din admin: access_mode + selected_students.
+     * all_students și selected_students rămân pentru examenele salvate înainte de echipe.
+     * teams: membru al unei echipe alese și absent din excluded_student_ids.
      */
     public function isVisibleToLearner(User $user): bool
     {
@@ -86,6 +87,19 @@ class Exam extends Model
             $ids = array_map('intval', (array) ($settings['selected_students'] ?? []));
 
             return in_array((int) $user->id, $ids, true);
+        }
+
+        if ($mode === 'teams') {
+            $teamIds = array_values(array_filter(array_map('intval', (array) ($settings['team_ids'] ?? []))));
+            if ($teamIds === []) {
+                return false;
+            }
+            $excluded = array_map('intval', (array) ($settings['excluded_student_ids'] ?? []));
+            if (in_array((int) $user->id, $excluded, true)) {
+                return false;
+            }
+
+            return $user->teams()->whereIn('teams.id', $teamIds)->exists();
         }
 
         return true;

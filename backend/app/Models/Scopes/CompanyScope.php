@@ -21,6 +21,6 @@ class CompanyScope implements Scope
             return;
         }
 
-        $builder->where($model->getTable() . '.company_id', TenantContext::companyId());
+        TenantContext::constrain($builder, $model->getTable() . '.company_id');
     }
 }

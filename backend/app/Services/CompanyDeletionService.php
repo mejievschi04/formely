@@ -6,7 +6,6 @@ use App\Models\Company;
 use App\Models\Course;
 use App\Models\Lead;
 use App\Models\User;
-use App\Models\UserInvitation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -33,16 +32,14 @@ class CompanyDeletionService
         'departments',
         'learning_paths',
         'user_invitations',
+        'registration_invitations',
+        'guide_items',
     ];
 
     public function deletePermanently(Company $company): void
     {
         DB::transaction(function () use ($company) {
             $companyId = (int) $company->id;
-
-            UserInvitation::withoutGlobalScopes()
-                ->where('company_id', $companyId)
-                ->delete();
 
             if (Schema::hasTable('leads') && Schema::hasColumn('leads', 'company_id')) {
                 Lead::query()->where('company_id', $companyId)->update(['company_id' => null]);
@@ -139,6 +136,26 @@ class CompanyDeletionService
             DB::table('media_assets')->whereIn('course_id', $courseIds)->delete();
         }
 
+        // Lecțiile fără modul (Volta) și indexul de cunoștințe AI sunt legate direct de curs.
+        if (Schema::hasTable('lessons') && Schema::hasColumn('lessons', 'course_id')) {
+            $rootLessonIds = DB::table('lessons')->whereIn('course_id', $courseIds)->pluck('id');
+            if ($rootLessonIds->isNotEmpty()) {
+                if (Schema::hasTable('content_blocks')) {
+                    DB::table('content_blocks')->whereIn('lesson_id', $rootLessonIds)->delete();
+                }
+                if (Schema::hasTable('lesson_progress')) {
+                    DB::table('lesson_progress')->whereIn('lesson_id', $rootLessonIds)->delete();
+                }
+            }
+        }
+        if (Schema::hasTable('ai_chunks')) {
+            $chunkIds = DB::table('ai_chunks')->whereIn('course_id', $courseIds)->pluck('id');
+            if ($chunkIds->isNotEmpty() && Schema::hasTable('ai_embeddings')) {
+                DB::table('ai_embeddings')->whereIn('ai_chunk_id', $chunkIds)->delete();
+            }
+            DB::table('ai_chunks')->whereIn('course_id', $courseIds)->delete();
+        }
+
         if (Schema::hasTable('modules')) {
             $moduleIds = DB::table('modules')->whereIn('course_id', $courseIds)->pluck('id');
             if ($moduleIds->isNotEmpty() && Schema::hasTable('lessons')) {
@@ -154,6 +171,10 @@ class CompanyDeletionService
                 }
             }
             DB::table('modules')->whereIn('course_id', $courseIds)->delete();
+        }
+
+        if (Schema::hasTable('lessons') && Schema::hasColumn('lessons', 'course_id')) {
+            DB::table('lessons')->whereIn('course_id', $courseIds)->delete();
         }
 
         if (Schema::hasTable('courses')) {

@@ -3,6 +3,7 @@
 # Folosire: cd /var/www/app/formely && chmod +x scripts/deploy-vps.sh && ./scripts/deploy-vps.sh
 # Opțional: DEPLOY_PRUNE=1 ./scripts/deploy-vps.sh
 # Opțional: DEPLOY_SEED=1 ./scripts/deploy-vps.sh
+# Opțional: DEPLOY_NO_CACHE=1 ./scripts/deploy-vps.sh  → rebuild complet al imaginilor
 
 set -eo pipefail
 
@@ -43,7 +44,11 @@ if ! command -v docker &> /dev/null; then
 fi
 
 echo ">>> build (backend, academy, website, backoffice)"
-"${COMPOSE[@]}" build --no-cache
+BUILD_ARGS=()
+if [ "${DEPLOY_NO_CACHE:-0}" = "1" ]; then
+  BUILD_ARGS+=(--no-cache)
+fi
+"${COMPOSE[@]}" build "${BUILD_ARGS[@]}"
 
 echo ">>> pornire servicii"
 "${COMPOSE[@]}" up -d

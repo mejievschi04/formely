@@ -36,7 +36,7 @@ export const BuilderWizardFooter = ({
 				{backLabel}
 			</button>
 			{onNext && (
-				<button type="button" className="admin-btn admin-btn-primary" onClick={onNext} disabled={disableNext}>
+				<button type="button" className="admin-btn lms-btn-primary" onClick={onNext} disabled={disableNext}>
 					{nextLabel}
 				</button>
 			)}

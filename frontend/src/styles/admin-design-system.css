@@ -1,0 +1,444 @@
+/*
+ * Admin controls follow design-system.css.
+ * --ds-* only aliases those tokens so older admin rules stay on the same scale.
+ * Selectors use `html body` + doubled classes so they win over page CSS.
+ */
+
+:root {
+	--ds-accent: var(--color-brand-primary);
+	--ds-accent-strong: var(--color-brand-hover);
+	--ds-accent-soft: var(--color-brand-soft);
+	--ds-ink: var(--text-primary);
+	--ds-ink-2: var(--bg-sidebar-toggle);
+	--ds-surface: var(--bg-elevated);
+	--ds-surface-soft: var(--bg-primary);
+	--ds-border: var(--border-primary);
+	--ds-muted: var(--text-secondary);
+	--ds-faint: var(--text-disabled);
+	--ds-danger: var(--color-error);
+	--ds-danger-strong: var(--color-error);
+	--ds-radius-sm: var(--btn-desktop-radius);
+	--ds-radius: var(--radius-lg);
+	--ds-radius-lg: var(--radius-xl);
+	--ds-shadow: var(--shadow-sm);
+	--ds-shadow-hover: var(--shadow-md);
+}
+
+/* ---------- Segmented tabs (horizontal) ---------- */
+
+html body .qb-hero-actions.qb-hero-actions,
+html body .admin-users-view-tabs.admin-users-view-tabs,
+html body .admin-statistics-tests-tabs.admin-statistics-tests-tabs {
+	display: inline-flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	padding: 6px;
+	border: 1px solid var(--ds-border);
+	border-radius: var(--ds-radius-lg);
+	background: var(--ds-surface);
+	box-shadow: none;
+}
+
+html body .qb-tab-button.qb-tab-button,
+html body .admin-users-view-tab.admin-users-view-tab,
+html body .admin-settings-tab.admin-settings-tab,
+html body .admin-test-builder-section-tab.admin-test-builder-section-tab,
+html body .admin-statistics-tests-tab.admin-statistics-tests-tab,
+html body .test-stats__nav-btn.test-stats__nav-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--btn-desktop-gap);
+	height: var(--btn-desktop-min-height);
+	min-height: var(--btn-desktop-min-height);
+	padding: 0 var(--space-4);
+	border: 1px solid var(--btn-outline-border) !important;
+	border-radius: var(--btn-desktop-radius) !important;
+	background: var(--bg-elevated) !important;
+	color: var(--text-primary) !important;
+	box-shadow: none !important;
+	font-size: var(--btn-desktop-font-size);
+	font-weight: var(--font-weight-semibold);
+	line-height: 1;
+	white-space: nowrap;
+	cursor: pointer;
+	transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+html body .qb-tab-button.qb-tab-button svg,
+html body .admin-users-view-tab.admin-users-view-tab svg,
+html body .admin-settings-tab.admin-settings-tab svg,
+html body .admin-test-builder-section-tab.admin-test-builder-section-tab svg,
+html body .test-stats__nav-btn.test-stats__nav-btn svg {
+	color: var(--text-primary) !important;
+}
+
+html body .qb-tab-button.qb-tab-button span,
+html body .admin-users-view-tab.admin-users-view-tab span,
+html body .admin-settings-tab.admin-settings-tab span,
+html body .admin-test-builder-section-tab.admin-test-builder-section-tab span {
+	color: inherit !important;
+}
+
+html body .qb-tab-button.qb-tab-button:hover:not(.is-active),
+html body .admin-users-view-tab.admin-users-view-tab:hover:not(.active),
+html body .admin-settings-tab.admin-settings-tab:hover:not(.active),
+html body .admin-test-builder-section-tab.admin-test-builder-section-tab:hover:not(.is-active),
+html body .admin-statistics-tests-tab.admin-statistics-tests-tab:hover:not(.is-active),
+html body .test-stats__nav-btn.test-stats__nav-btn:hover:not(.is-active) {
+	border-color: var(--btn-outline-border-hover) !important;
+	background: var(--bg-secondary) !important;
+	color: var(--text-primary) !important;
+}
+
+html body .qb-tab-button.qb-tab-button.is-active,
+html body .admin-users-view-tab.admin-users-view-tab.active,
+html body .admin-settings-tab.admin-settings-tab.active,
+html body .admin-test-builder-section-tab.admin-test-builder-section-tab.is-active,
+html body .admin-statistics-tests-tab.admin-statistics-tests-tab.is-active,
+html body .test-stats__nav-btn.test-stats__nav-btn.is-active {
+	border-color: var(--btn-primary-border) !important;
+	background: var(--btn-primary-bg) !important;
+	color: var(--btn-primary-text) !important;
+}
+
+html body .qb-tab-button.qb-tab-button.is-active svg,
+html body .admin-users-view-tab.admin-users-view-tab.active svg,
+html body .admin-settings-tab.admin-settings-tab.active svg,
+html body .admin-test-builder-section-tab.admin-test-builder-section-tab.is-active svg,
+html body .test-stats__nav-btn.test-stats__nav-btn.is-active svg {
+	color: var(--btn-primary-text) !important;
+}
+
+/* ---------- Vertical nav (statistics sidebar) ---------- */
+
+html body .admin-statistics-hub-nav .admin-statistics-hub-nav-btn.admin-statistics-hub-nav-btn {
+	min-height: 42px;
+	align-items: flex-start;
+	gap: 4px;
+	padding: var(--space-3) var(--space-4);
+	border: 1px solid var(--btn-outline-border) !important;
+	border-radius: var(--btn-desktop-radius) !important;
+	background: var(--bg-elevated) !important;
+	color: var(--text-primary) !important;
+	box-shadow: none !important;
+	font-weight: var(--font-weight-semibold);
+}
+
+html body .admin-statistics-hub-nav .admin-statistics-hub-nav-btn .admin-statistics-hub-nav-detail {
+	color: var(--text-secondary) !important;
+	font-weight: var(--font-weight-medium);
+}
+
+html body .admin-statistics-hub-nav .admin-statistics-hub-nav-btn.admin-statistics-hub-nav-btn:hover:not(.is-active) {
+	border-color: var(--btn-outline-border-hover) !important;
+	background: var(--bg-secondary) !important;
+	box-shadow: none !important;
+}
+
+html body .admin-statistics-hub-nav .admin-statistics-hub-nav-btn.admin-statistics-hub-nav-btn.is-active {
+	border-color: var(--btn-primary-border) !important;
+	background: var(--btn-primary-bg) !important;
+	color: var(--btn-primary-text) !important;
+	box-shadow: none !important;
+	font-weight: var(--font-weight-semibold);
+}
+
+html body .admin-statistics-hub-nav .admin-statistics-hub-nav-btn.is-active .admin-statistics-hub-nav-detail {
+	color: var(--btn-primary-text) !important;
+}
+
+html body .admin-statistics-team-filter select,
+html body .admin-container .va-input,
+html body .test-stats__filters select,
+html body .test-stats__filters input {
+	min-height: var(--btn-desktop-min-height);
+	border: 1px solid var(--border-secondary) !important;
+	border-radius: var(--btn-desktop-radius) !important;
+	background: var(--bg-elevated) !important;
+	color: var(--text-primary) !important;
+	font-weight: var(--font-weight-medium);
+	box-shadow: none !important;
+}
+
+/* ---------- Surface actions (same shape as tabs; primary stays yellow) ---------- */
+
+html body .qb-overview-refresh.qb-overview-refresh,
+html body .admin-exams-section-refresh-btn.admin-exams-section-refresh-btn,
+html body .test-stats__refresh.test-stats__refresh,
+html body .admin-excel-export-btn.admin-excel-export-btn,
+html body .admin-container .lms-btn-secondary.lms-btn-secondary:not(.va-btn-danger),
+html body .admin-btn-secondary.admin-btn-secondary {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--btn-desktop-gap);
+	min-height: var(--btn-desktop-min-height);
+	padding: 0 var(--space-4);
+	border: 1px solid var(--btn-outline-border) !important;
+	border-radius: var(--btn-desktop-radius) !important;
+	background: var(--bg-elevated) !important;
+	color: var(--text-primary) !important;
+	box-shadow: none !important;
+	font-size: var(--btn-desktop-font-size);
+	font-weight: var(--font-weight-semibold);
+	white-space: nowrap;
+	cursor: pointer;
+	transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+html body .qb-overview-refresh.qb-overview-refresh svg,
+html body .admin-exams-section-refresh-btn.admin-exams-section-refresh-btn svg,
+html body .test-stats__refresh.test-stats__refresh svg,
+html body .admin-container .lms-btn-secondary.lms-btn-secondary:not(.va-btn-danger) svg,
+html body .admin-container .lms-btn-primary.lms-btn-primary svg {
+	color: currentColor !important;
+}
+
+html body .qb-overview-refresh.qb-overview-refresh:hover,
+html body .admin-exams-section-refresh-btn.admin-exams-section-refresh-btn:hover:not(:disabled),
+html body .test-stats__refresh.test-stats__refresh:hover:not(:disabled),
+html body .admin-excel-export-btn.admin-excel-export-btn:hover:not(:disabled),
+html body .admin-container .lms-btn-secondary.lms-btn-secondary:not(.va-btn-danger):hover,
+html body .admin-btn-secondary.admin-btn-secondary:hover:not(:disabled) {
+	border-color: var(--btn-outline-border-hover) !important;
+	background: var(--bg-secondary) !important;
+	color: var(--text-primary) !important;
+	transform: none;
+}
+
+html body .admin-container .lms-btn-primary.lms-btn-primary {
+	min-height: var(--btn-desktop-min-height);
+	border: 1px solid var(--btn-primary-border) !important;
+	border-radius: var(--btn-desktop-radius) !important;
+	background: var(--btn-primary-bg) !important;
+	color: var(--btn-primary-text) !important;
+	box-shadow: none !important;
+	font-size: var(--btn-desktop-font-size);
+	font-weight: var(--font-weight-semibold);
+}
+
+html body .admin-container .lms-btn-primary.lms-btn-primary:hover {
+	background: var(--btn-primary-hover) !important;
+	border-color: var(--btn-primary-border) !important;
+	color: var(--btn-primary-text) !important;
+	transform: none;
+}
+
+/* ---------- Page hero ---------- */
+
+html body .qb-page-eyebrow.qb-page-eyebrow {
+	color: var(--ds-muted) !important;
+	letter-spacing: 0.06em;
+}
+
+html body .qb-page-hero.qb-page-hero h1 {
+	color: var(--ds-ink);
+	font-weight: 800;
+	letter-spacing: -0.02em;
+}
+
+/* ---------- Stat cards ---------- */
+
+html body .qb-overview-item.qb-overview-item {
+	gap: 12px;
+	min-height: 68px;
+	padding: 12px 16px;
+	border: 1px solid var(--ds-border);
+	border-radius: var(--ds-radius);
+	background: var(--ds-surface);
+	box-shadow: var(--ds-shadow);
+}
+
+html body .qb-overview-item.qb-overview-item > svg {
+	box-sizing: content-box;
+	width: 18px;
+	height: 18px;
+	padding: 11px;
+	border-radius: var(--ds-radius-sm);
+	background: var(--ds-ink);
+	color: var(--ds-accent) !important;
+}
+
+html body .qb-overview-item.qb-overview-item strong {
+	color: var(--ds-ink);
+	font-size: 1.3rem;
+	font-weight: 800;
+}
+
+html body .qb-overview-item.qb-overview-item span {
+	color: var(--ds-muted) !important;
+	font-size: 0.8rem;
+	font-weight: 600;
+}
+
+/* ---------- Workspace surface ---------- */
+
+html body .qb-workspace.qb-workspace {
+	border: 1px solid var(--ds-border);
+	border-radius: var(--ds-radius-lg);
+	background: var(--ds-surface);
+	box-shadow: var(--ds-shadow);
+}
+
+/* ---------- Catalog tiles (maps, tests, folders) ---------- */
+
+html body .qb-catalog-grid.qb-catalog-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+	gap: 12px;
+	align-items: stretch;
+}
+
+html body .qb-catalog-tile.qb-catalog-tile {
+	display: flex;
+	align-items: center;
+	border: 1px solid var(--ds-border);
+	border-radius: var(--ds-radius-lg);
+	background: var(--ds-surface);
+	box-shadow: var(--ds-shadow);
+	transform: none;
+}
+
+html body .qb-catalog-tile.qb-catalog-tile:hover {
+	border-color: var(--ds-accent-strong);
+	transform: translateY(-2px);
+	box-shadow: var(--ds-shadow-hover);
+}
+
+html body .qb-catalog-tile.qb-catalog-tile .qb-catalog-tile-main {
+	flex: 1 1 auto;
+	min-width: 0;
+	display: grid;
+	grid-template-columns: 44px minmax(0, 1fr) 32px;
+	grid-template-areas:
+		'icon copy go'
+		'icon stats go';
+	align-items: center;
+	gap: 4px 14px;
+	min-height: 88px;
+	height: 100%;
+	padding: 14px 16px !important;
+	border: 0 !important;
+	border-radius: var(--ds-radius-lg) !important;
+	background: transparent !important;
+	box-shadow: none !important;
+	text-align: left;
+}
+
+html body .qb-catalog-tile.qb-catalog-tile .qb-catalog-tile-icon {
+	width: 44px;
+	height: 44px;
+	border-radius: 12px;
+	background: var(--ds-ink);
+	color: var(--ds-accent);
+}
+
+html body .qb-catalog-tile.qb-catalog-tile .qb-catalog-tile-icon svg {
+	color: var(--ds-accent) !important;
+}
+
+html body .qb-catalog-tile.qb-catalog-tile .qb-catalog-tile-copy {
+	align-self: end;
+}
+
+html body .qb-catalog-tile.qb-catalog-tile .qb-catalog-tile-copy strong {
+	display: -webkit-box;
+	-webkit-line-clamp: 1;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	color: var(--ds-ink);
+	font-size: 0.98rem;
+	font-weight: 800;
+	line-height: 1.25;
+}
+
+html body .qb-catalog-tile.qb-catalog-tile .qb-catalog-tile-copy small {
+	color: var(--ds-muted) !important;
+}
+
+html body .qb-catalog-tile.qb-catalog-tile .qb-catalog-tile-stats {
+	align-self: start;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+html body .qb-catalog-tile.qb-catalog-tile .qb-catalog-tile-stats span {
+	min-height: 22px;
+	padding: 0 8px;
+	border: 0;
+	border-radius: 999px;
+	background: var(--ds-surface-soft);
+	color: var(--ds-muted) !important;
+	font-size: 0.72rem;
+	font-weight: 700;
+}
+
+html body .qb-catalog-tile.qb-catalog-tile .qb-catalog-tile-go {
+	width: 32px;
+	height: 32px;
+	border: 1px solid var(--ds-border);
+	background: var(--ds-surface-soft);
+	color: var(--ds-ink);
+}
+
+html body .qb-catalog-tile.qb-catalog-tile:hover .qb-catalog-tile-go {
+	border-color: var(--ds-accent-strong);
+	background: var(--ds-accent);
+	color: var(--ds-ink);
+}
+
+html body .qb-catalog-tile.qb-catalog-tile:has(.qb-catalog-tile-foot) .qb-catalog-tile-main {
+	grid-template-columns: 44px minmax(0, 1fr);
+	grid-template-areas:
+		'icon copy'
+		'icon stats';
+	padding-right: 8px !important;
+}
+
+html body .qb-catalog-tile.qb-catalog-tile:has(.qb-catalog-tile-foot) .qb-catalog-tile-go {
+	display: none;
+}
+
+html body .qb-catalog-tile.qb-catalog-tile .qb-catalog-tile-foot {
+	flex: none;
+	display: flex;
+	align-items: center;
+	padding: 0 16px 0 0;
+}
+
+/* ---------- Search field ---------- */
+
+html body .qb-search-field .qb-search-input,
+html body .qb-search-field input[type='search'] {
+	min-height: 44px;
+	border: 1px solid var(--ds-border) !important;
+	border-radius: var(--ds-radius) !important;
+	background: var(--ds-surface-soft) !important;
+}
+
+html body .qb-search-field .qb-search-input:focus,
+html body .qb-search-field input[type='search']:focus {
+	border-color: var(--ds-accent-strong) !important;
+	background: var(--ds-surface) !important;
+	outline: 2px solid rgba(var(--color-primary-rgb), 0.35) !important;
+	outline-offset: 1px;
+}
+
+/* ---------- Dark theme ---------- */
+
+html[data-theme='dark'] body .qb-hero-actions.qb-hero-actions,
+html[data-theme='dark'] body .admin-users-view-tabs.admin-users-view-tabs,
+html[data-theme='dark'] body .admin-statistics-tests-tabs.admin-statistics-tests-tabs,
+html[data-theme='dark'] body .qb-overview-item.qb-overview-item,
+html[data-theme='dark'] body .qb-workspace.qb-workspace,
+html[data-theme='dark'] body .qb-catalog-tile.qb-catalog-tile {
+	border-color: #374151;
+	background: var(--ds-ink-2);
+}
+
+html[data-theme='dark'] body .qb-overview-item.qb-overview-item strong,
+html[data-theme='dark'] body .qb-catalog-tile.qb-catalog-tile .qb-catalog-tile-copy strong {
+	color: #ffffff;
+}

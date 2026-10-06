@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/api';
 import ProblematicCourses from '../../components/admin/ProblematicCourses';
@@ -32,13 +33,14 @@ const AdminProblematicCoursesPage = () => {
 				<div>
 					<button 
 						onClick={() => navigate('/admin')}
-						className="btn btn-ghost"
+						className="va-btn-back admin-back-btn"
 						style={{ marginBottom: '1rem' }}
 					>
-						← Înapoi la Dashboard
+						<ArrowLeft size={18} aria-hidden />
+						Înapoi la Dashboard
 					</button>
 					<h1 className="admin-page-title">Cursuri Problemice</h1>
-					<p className="admin-page-subtitle">Cursuri Formely cu rată scăzută de finalizare sau engagement redus.</p>
+					<p className="admin-page-subtitle">Cursuri care necesită atenție</p>
 				</div>
 			</div>
 			{error && (

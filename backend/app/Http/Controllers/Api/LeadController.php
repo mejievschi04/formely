@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Mail\UserNotificationMail;
+use App\Mail\VoltaUserNotificationMail;
 use App\Models\Lead;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -53,7 +53,7 @@ class LeadController extends Controller
                     . "Plan: ".($lead->plan_interest ?: '—')."\n"
                     . ($lead->message ? "Mesaj:\n{$lead->message}\n" : '');
 
-                Mail::to($notify)->queue(new UserNotificationMail(
+                Mail::to($notify)->queue(new VoltaUserNotificationMail(
                     'Lead nou: '.$lead->name,
                     $body
                 ));

@@ -3,7 +3,7 @@
 use Illuminate\Support\Str;
 
 // PHP 8.5+ deprecated PDO::MYSQL_ATTR_SSL_CA in favour of Pdo\Mysql::ATTR_SSL_CA
-$pdoMysqlSslCa = class_exists(\Pdo\Mysql::class, false) ? \Pdo\Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA;
+$pdoMysqlSslCa = class_exists(\Pdo\Mysql::class) ? \Pdo\Mysql::ATTR_SSL_CA : 1009;
 
 return [
 

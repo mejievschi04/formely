@@ -56,12 +56,28 @@ class CourseBuilderValidator
             }
 
             foreach ($lessons as $lesson) {
-                $this->validateLesson($lesson, $addError);
+                $this->validateLesson($lesson, $addError, $addWarning);
             }
         }
 
         foreach ($rootLessons as $lesson) {
-            $this->validateLesson($lesson, $addError);
+            $this->validateLesson($lesson, $addError, $addWarning);
+        }
+
+        $course->loadMissing(['courseTests.test.questions', 'courseTests.test.questionBank.questions']);
+        foreach ($course->courseTests ?? [] as $courseTest) {
+            $test = $courseTest->test;
+            if (! $test) {
+                continue;
+            }
+            $questionCount = $this->linkedTestQuestionCount($test);
+            if ((bool) ($courseTest->required ?? false) && $questionCount === 0) {
+                $addError(
+                    'assessment.questions.required',
+                    "course_tests.{$courseTest->id}",
+                    'Testul obligatoriu „' . ($test->title ?: 'fără titlu') . '” nu are întrebări și nu poate fi publicat odată cu cursul.'
+                );
+            }
         }
 
         if ($course->sequential_unlock) {
@@ -118,7 +134,7 @@ class CourseBuilderValidator
 
             if ($textLength === 0) {
                 $emptyLessons++;
-                $addIssue('critical', 'lesson_content', 'Lecție fără conținut', "Lecția „{$lesson->title}” nu are conținut utilizabil.", $path);
+                $addIssue('warning', 'lesson_content', 'Lecție fără text', "Lecția „{$lesson->title}” nu are text. Poate rămâne așa.", $path);
                 continue;
             }
 
@@ -193,22 +209,64 @@ class CourseBuilderValidator
         ];
     }
 
-    protected function validateLesson($lesson, callable $addError): void
+    protected function validateLesson($lesson, callable $addError, callable $addWarning): void
     {
         if (!trim((string) $lesson->title)) {
             $addError('lesson.title.required', "lessons.{$lesson->id}.title", 'Titlul lectiei este obligatoriu.');
         }
 
-        $blocks = $lesson->contentBlocks ?? collect();
-        $hasLegacyContent = trim((string) ($lesson->content ?? '')) !== '';
-
-        if ($blocks->count() === 0 && !$hasLegacyContent) {
-            $addError(
-                'lesson.content.required',
+        $hasUsableContent = $this->lessonHasUsableContent($lesson);
+        if (! $hasUsableContent) {
+            $addWarning(
+                'lesson.content.missing',
                 "lessons.{$lesson->id}.content",
-                'Lectia trebuie sa contina continut (minim un content block sau text).'
+                'Lectia nu are text. Poate fi salvata si publicata si fara continut textual.'
             );
         }
+    }
+
+    protected function lessonHasUsableContent($lesson): bool
+    {
+        if ($this->htmlHasText((string) ($lesson->content ?? ''))) {
+            return true;
+        }
+        if (trim((string) ($lesson->video_url ?? '')) !== '') {
+            return true;
+        }
+
+        foreach ($lesson->contentBlocks ?? collect() as $block) {
+            if (isset($block->visible) && $block->visible === false) {
+                continue;
+            }
+            $type = (string) ($block->type ?? '');
+            $source = trim((string) ($block->source ?? ''));
+            $payload = is_array($block->payload ?? null) ? $block->payload : [];
+            $payloadText = '';
+            foreach (['content', 'text', 'html', 'description', 'transcript', 'instructions'] as $key) {
+                if (!empty($payload[$key]) && is_scalar($payload[$key])) {
+                    $payloadText .= ' ' . $payload[$key];
+                }
+            }
+            if (in_array($type, ['video', 'file', 'image', 'pdf', 'document'], true)) {
+                if ($source !== '' || !empty($payload['url']) || !empty($payload['src']) || !empty($payload['path'])) {
+                    return true;
+                }
+                continue;
+            }
+            if ($source !== '' || $this->htmlHasText($payloadText)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected function htmlHasText(string $html): bool
+    {
+        $text = trim(html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        $text = preg_replace('/\x{00a0}|\s+/u', ' ', $text ?? '') ?? '';
+
+        return trim($text) !== '';
     }
 
     protected function lessonTextLength($lesson): int
@@ -232,5 +290,14 @@ class CourseBuilderValidator
         $text = trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags(implode(' ', $parts)), ENT_QUOTES | ENT_HTML5, 'UTF-8')) ?? '');
 
         return mb_strlen($text);
+    }
+
+    protected function linkedTestQuestionCount($test): int
+    {
+        if (($test->question_source ?? '') === 'bank' && $test->questionBank) {
+            return (int) $test->questionBank->questions->count();
+        }
+
+        return (int) $test->questions->count();
     }
 }

@@ -1,0 +1,43 @@
+/* Butonul de mutare de pe carduri (DragHandle.jsx). Specificitate mărită: straturile globale de butoane nu îl schimbă. */
+html body .va-drag-handle.va-drag-handle {
+	display: inline-flex;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	width: 32px;
+	height: 32px;
+	min-width: 32px;
+	min-height: 32px;
+	padding: 0;
+	border: 1px solid var(--btn-outline-border);
+	border-radius: 8px;
+	/* opac: peste coperțile închise un fundal transparent părea gri */
+	background: var(--bg-elevated);
+	color: var(--text-primary);
+	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.14), 0 2px 8px rgba(15, 23, 42, 0.1);
+	cursor: grab;
+	touch-action: none;
+	user-select: none;
+	transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+html body .va-drag-handle.va-drag-handle:hover {
+	border-color: var(--btn-outline-border-hover);
+	box-shadow: 0 2px 4px rgba(15, 23, 42, 0.16), 0 6px 14px rgba(15, 23, 42, 0.14);
+}
+
+html body .va-drag-handle.va-drag-handle:active {
+	cursor: grabbing;
+	transform: scale(0.94);
+}
+
+html body .va-drag-handle.va-drag-handle:focus-visible {
+	outline: 2px solid var(--border-focus);
+	outline-offset: 2px;
+}
+
+html body .va-drag-handle.va-drag-handle svg {
+	color: inherit;
+	pointer-events: none;
+}

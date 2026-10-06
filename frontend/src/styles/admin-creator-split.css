@@ -16,30 +16,6 @@
    TEST CREATOR SPLIT LAYOUT (Admin)
    Left: settings tabs, Right: questions panel
    ============================================ */
-.admin-test-creator-split {
-	display: grid;
-	grid-template-columns: minmax(520px, 1fr) minmax(420px, 560px);
-	gap: var(--space-6);
-	margin-top: var(--space-4);
-	align-items: start;
-}
-
-.admin-test-creator-left {
-	min-width: 0;
-}
-
-.admin-test-creator-right {
-	position: sticky;
-	top: var(--space-4);
-	height: fit-content;
-	max-height: calc(100vh - 180px);
-	overflow: auto;
-	border-radius: var(--radius-lg);
-}
-
-.admin-test-creator-right .admin-settings-section {
-	margin-bottom: 0;
-}
 
 /* Form Panel */
 .admin-creator-form-panel {
@@ -86,116 +62,6 @@
 }
 
 /* Course Outline (right panel) */
-.admin-creator-outline {
-	margin-top: var(--space-4);
-	padding-top: var(--space-4);
-	border-top: 1px solid var(--border-primary);
-}
-
-.admin-creator-outline-header {
-	font-size: var(--font-size-xs);
-	color: var(--text-secondary);
-	text-transform: uppercase;
-	letter-spacing: 0.04em;
-	margin-bottom: var(--space-2);
-}
-
-.admin-creator-outline-list {
-	display: grid;
-	gap: var(--space-3);
-}
-
-.admin-creator-outline-module {
-	display: grid;
-	gap: var(--space-2);
-}
-
-.admin-creator-outline-module-row {
-	display: grid;
-	grid-template-columns: auto 1fr auto;
-	align-items: baseline;
-	gap: var(--space-2);
-	font-size: var(--font-size-sm);
-	color: var(--text-primary);
-}
-
-.admin-creator-outline-module-index {
-	color: var(--text-secondary);
-	font-variant-numeric: tabular-nums;
-}
-
-.admin-creator-outline-module-title {
-	font-weight: var(--font-weight-semibold);
-	min-width: 0;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.admin-creator-outline-module-meta {
-	color: var(--text-tertiary);
-	font-size: var(--font-size-xs);
-	white-space: nowrap;
-}
-
-.admin-creator-outline-lessons {
-	display: grid;
-	gap: var(--space-1);
-	padding-left: var(--space-3);
-}
-
-.admin-creator-outline-lesson {
-	display: grid;
-	grid-template-columns: auto 1fr auto;
-	gap: var(--space-2);
-	align-items: center;
-	width: 100%;
-	text-align: left;
-	border: 1px solid transparent;
-	background: transparent;
-	padding: var(--space-2) var(--space-3);
-	border-radius: var(--radius-md);
-	color: var(--text-primary);
-	cursor: pointer;
-	transition: all 0.15s ease;
-}
-
-.admin-creator-outline-lesson:hover {
-	background: var(--bg-elevated);
-	border-color: var(--border-primary);
-}
-
-.admin-creator-outline-lesson.is-selected {
-	background: rgba(var(--formely-white-rgb), 0.08);
-	border-color: rgba(var(--formely-white-rgb), 0.3);
-	box-shadow: 0 0 0 1px rgba(var(--formely-white-rgb), 0.15);
-}
-
-.admin-creator-outline-lesson-index {
-	color: var(--text-secondary);
-	font-size: var(--font-size-xs);
-	font-variant-numeric: tabular-nums;
-	white-space: nowrap;
-}
-
-.admin-creator-outline-lesson-title {
-	min-width: 0;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-	font-size: var(--font-size-sm);
-}
-
-.admin-creator-outline-lesson-meta {
-	color: var(--text-tertiary);
-	font-size: var(--font-size-xs);
-	white-space: nowrap;
-}
-
-.admin-creator-outline-empty {
-	color: var(--text-tertiary);
-	font-size: var(--font-size-sm);
-}
 
 /* Module Preview */
 .module-preview-card {
@@ -442,17 +308,7 @@
 		grid-template-columns: 1fr;
 	}
 
-	.admin-test-creator-split {
-		grid-template-columns: 1fr;
-	}
-
 	.admin-creator-preview-panel {
-		position: relative;
-		top: 0;
-		max-height: none;
-	}
-
-	.admin-test-creator-right {
 		position: relative;
 		top: 0;
 		max-height: none;

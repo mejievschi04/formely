@@ -64,43 +64,6 @@
 	border-radius: 8px;
 }
 
-.admin-test-results-table-wrap {
-	overflow-x: auto;
-	border: 1px solid var(--border-primary);
-	border-radius: 8px;
-}
-
-.admin-test-results-table {
-	width: 100%;
-	border-collapse: collapse;
-	font-size: 0.9rem;
-}
-
-.admin-test-results-table th,
-.admin-test-results-table td {
-	padding: 10px 12px;
-	border-bottom: 1px solid var(--border-primary);
-	text-align: left;
-	vertical-align: middle;
-}
-
-.admin-test-results-table th {
-	background: var(--bg-primary);
-	color: var(--text-secondary);
-	font-size: 0.78rem;
-	text-transform: uppercase;
-	letter-spacing: 0.02em;
-}
-
-.admin-test-results-table tbody tr:last-child td {
-	border-bottom: 0;
-}
-
-.admin-test-results-max {
-	color: var(--text-tertiary);
-	font-weight: 500;
-}
-
 .admin-test-results-status {
 	display: inline-flex;
 	padding: 0.2rem 0.55rem;
@@ -188,11 +151,11 @@
 }
 
 .admin-test-breakdown-row.is-correct {
-	border-color: color-mix(in srgb, var(--color-success, #16a34a) 40%, var(--border-primary));
+	border-color: color-mix(in srgb, var(--color-success) 40%, var(--border-primary));
 }
 
 .admin-test-breakdown-row.is-wrong {
-	border-color: color-mix(in srgb, var(--color-danger, #dc2626) 35%, var(--border-primary));
+	border-color: color-mix(in srgb, var(--color-danger, var(--color-error)) 35%, var(--border-primary));
 }
 
 .admin-test-breakdown-row-head {
@@ -220,4 +183,114 @@
 	margin: 6px 0 0;
 	color: var(--text-secondary);
 	font-size: 0.88rem;
+}
+
+.admin-test-results-cards {
+	display: grid;
+	gap: 10px;
+}
+
+.admin-test-result-card {
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	background: var(--bg-elevated);
+	box-shadow: var(--shadow-sm);
+	overflow: hidden;
+}
+
+.admin-test-result-card.is-open {
+	border-color: var(--border-accent);
+	background: var(--bg-elevated);
+}
+
+.admin-test-result-card-toggle {
+	width: 100%;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 12px 14px;
+	border: 0;
+	background: transparent;
+	cursor: pointer;
+	text-align: left;
+	font: inherit;
+	color: inherit;
+}
+
+.admin-test-result-card-name {
+	flex: 1;
+	min-width: 0;
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+}
+
+.admin-test-result-metric {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
+	padding: 6px 10px;
+	border-radius: var(--btn-desktop-radius);
+	border: 1px solid var(--btn-primary-border);
+	background: var(--btn-primary-bg);
+	color: var(--btn-primary-text);
+	font-size: 0.78rem;
+	font-weight: 700;
+	white-space: nowrap;
+}
+
+.admin-test-result-metric strong {
+	font-size: 0.95rem;
+}
+
+.admin-test-result-card-body {
+	display: grid;
+	gap: 10px;
+	padding: 0 14px 14px;
+}
+
+.admin-test-result-card-meta {
+	margin: 0;
+	color: var(--text-secondary);
+	font-size: 0.88rem;
+}
+
+.admin-test-question-mark {
+	flex-shrink: 0;
+	width: 14px;
+	height: 14px;
+	margin-top: 3px;
+	border: 1px solid var(--text-primary);
+	background: var(--color-brand-primary);
+}
+
+.admin-test-question-mark.is-circle {
+	border-radius: 50%;
+}
+
+.admin-test-question-mark.is-square {
+	border-radius: 3px;
+}
+
+.admin-test-breakdown-row.is-correct .admin-test-question-mark {
+	background: var(--color-success);
+}
+
+.admin-test-breakdown-row.is-wrong .admin-test-question-mark {
+	background: var(--color-error);
+}
+
+.admin-test-breakdown-type {
+	margin: 4px 0 0 22px;
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+	color: var(--text-secondary);
+}
+
+.admin-test-breakdown-points {
+	flex-shrink: 0;
+	font-weight: 800;
+	font-size: 0.82rem;
 }

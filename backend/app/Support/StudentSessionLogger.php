@@ -6,7 +6,6 @@ use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\PersonalAccessToken;
 
 /**
@@ -22,7 +21,11 @@ class StudentSessionLogger
             return;
         }
 
-        if (! Schema::hasTable('activity_logs')) {
+        static $activityLogsReady = null;
+        if ($activityLogsReady === null) {
+            $activityLogsReady = SchemaCache::hasTable('activity_logs');
+        }
+        if (! $activityLogsReady) {
             return;
         }
 
@@ -31,8 +34,9 @@ class StudentSessionLogger
             return;
         }
 
-        $dedupeKey = 'formely_student_session:' . $user->id . ':' . $sessionRef;
-        if (Cache::has($dedupeKey)) {
+        $dedupeKey = 'volta_student_session:' . $user->id . ':' . $sessionRef;
+        $ttlMinutes = max(1, (int) config('session.lifetime', 120));
+        if (! Cache::add($dedupeKey, true, now()->addMinutes($ttlMinutes))) {
             return;
         }
 
@@ -49,9 +53,6 @@ class StudentSessionLogger
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
         ]);
-
-        $ttlMinutes = max(1, (int) config('session.lifetime', 120));
-        Cache::put($dedupeKey, true, now()->addMinutes($ttlMinutes));
     }
 
     private static function sessionReference(Request $request): ?string

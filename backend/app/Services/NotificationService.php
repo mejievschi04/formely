@@ -6,7 +6,7 @@ use App\Models\Course;
 use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaCache;
 
 class NotificationService
 {
@@ -21,7 +21,7 @@ class NotificationService
      */
     public function notifyCoursePublished(Course $course, array $teamIds = [], bool $broadcastAllStudentsIfNoTargets = false): int
     {
-        if (! Schema::hasTable('notifications')) {
+        if (! SchemaCache::hasTable('notifications')) {
             return 0;
         }
 
@@ -71,33 +71,52 @@ class NotificationService
     }
 
     /**
-     * Notify a student they enrolled in a course.
+     * Notify a student when an assigned test/course deadline is approaching.
      */
     public function notifyCourseEnrolled(User $student, Course $course): void
     {
-        if (! Schema::hasTable('notifications') || $student->isLearningActivityExempt()) {
+        if (! SchemaCache::hasTable('notifications') || $student->isLearningActivityExempt()) {
             return;
         }
 
-        if ($this->hasRecentNotification($student->id, 'course_enrolled', ['course_id' => $course->id])) {
+        $deadline = $this->resolveCourseDeadline($student, $course);
+        if (! $deadline) {
             return;
         }
 
-        $title = 'Înscriere confirmată';
-        $description = 'Te-ai înscris la cursul "' . $course->title . '".';
+        if ($this->hasRecentNotification($student->id, 'course_deadline', ['course_id' => $course->id])) {
+            return;
+        }
+
+        $title = 'Termenul expiră';
+        $description = 'Cursul "' . $course->title . '" trebuie finalizat până la ' . $deadline . '.';
         $actionUrl = '/courses/' . $course->id;
 
         Notification::create([
             'user_id' => $student->id,
-            'type' => 'course_enrolled',
+            'type' => 'course_deadline',
             'title' => $title,
             'description' => $description,
             'data' => ['course_id' => $course->id],
             'action_url' => $actionUrl,
-            'severity' => 'success',
+            'severity' => 'warning',
         ]);
 
-        $this->emailNotificationService->sendToUser($student, $title, $description, $actionUrl, 'Continuă cursul');
+        $this->emailNotificationService->sendToUser($student, $title, $description, $actionUrl, 'Deschide cursul');
+    }
+
+    private function resolveCourseDeadline(User $student, Course $course): ?string
+    {
+        $settings = is_array($course->settings ?? null) ? $course->settings : [];
+        $raw = $settings['deadline_at'] ?? $course->due_date ?? null;
+        if (! $raw) {
+            return null;
+        }
+        try {
+            return \Carbon\Carbon::parse($raw)->timezone(config('app.timezone'))->format('d.m.Y H:i');
+        } catch (\Throwable) {
+            return is_string($raw) ? $raw : null;
+        }
     }
 
     /**
@@ -105,7 +124,7 @@ class NotificationService
      */
     public function notifyCourseCompleted(User $student, Course $course): void
     {
-        if (! Schema::hasTable('notifications')) {
+        if (! SchemaCache::hasTable('notifications')) {
             return;
         }
 
@@ -149,7 +168,7 @@ class NotificationService
      */
     public function notifyRegistrationRequested(User $user): void
     {
-        if (! Schema::hasTable('notifications')) {
+        if (! SchemaCache::hasTable('notifications')) {
             return;
         }
 
@@ -186,7 +205,7 @@ class NotificationService
     {
         $ids = [];
 
-        if (count($teamIds) > 0 && Schema::hasTable('team_user')) {
+        if (count($teamIds) > 0 && SchemaCache::hasTable('team_user')) {
             $ids = array_merge($ids, DB::table('team_user')
                 ->whereIn('team_id', $teamIds)
                 ->join('users', 'team_user.user_id', '=', 'users.id')
@@ -196,7 +215,7 @@ class NotificationService
                 ->all());
         }
 
-        if (Schema::hasTable('course_user')) {
+        if (SchemaCache::hasTable('course_user')) {
             $enrolled = DB::table('course_user')
                 ->where('course_id', $course->id)
                 ->where('enrolled', true)
@@ -207,7 +226,7 @@ class NotificationService
             $ids = array_merge($ids, $enrolled);
         }
 
-        if (Schema::hasTable('course_team') && Schema::hasTable('team_user')) {
+        if (SchemaCache::hasTable('course_team') && SchemaCache::hasTable('team_user')) {
             $courseTeamIds = DB::table('course_team')
                 ->where('course_id', $course->id)
                 ->pluck('team_id')

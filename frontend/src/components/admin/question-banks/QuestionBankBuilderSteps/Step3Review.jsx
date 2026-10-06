@@ -3,29 +3,28 @@ import React from 'react';
 const getQuestionTypeLabel = (type) => {
 	const labels = {
 		multiple_choice: 'Răspuns multiplu',
+		single_choice: 'Răspuns unic',
 		true_false: 'Adevărat/Fals',
+		yes_no: 'Da / Nu',
 		matching: 'Potrivire',
 		ordering: 'Ordonare',
 	};
 	return labels[type] || type || 'Răspuns multiplu';
 };
 
-const QuestionBankBuilderStep3 = ({ data, onUpdate, errors, bankId, onPublish, loading }) => {
-	// Safety check: ensure data exists
+const QuestionBankBuilderStep3 = ({ data, errors }) => {
 	if (!data) {
 		return (
 			<div className="admin-course-builder-step-content">
 				<h2>Revizuire & Publicare</h2>
 				<p className="admin-course-builder-step-description">
-					Se încarcă datele băncii de întrebări...
+					Se incarca datele bancii de intrebari...
 				</p>
 			</div>
 		);
 	}
 
-	// Ensure errors is always an object
 	const safeErrors = errors || {};
-
 	const questionsCount = data?.questions?.length || 0;
 	const totalPoints = data?.questions?.reduce((sum, q) => sum + (q.points || 1), 0) || 0;
 
@@ -33,7 +32,7 @@ const QuestionBankBuilderStep3 = ({ data, onUpdate, errors, bankId, onPublish, l
 		<div className="admin-course-builder-step-content">
 			<h2>Revizuire & Publicare</h2>
 			<p className="admin-course-builder-step-description">
-				Verifică detaliile băncii de întrebări înainte de publicare
+				Verifica detaliile bancii de intrebari inainte de publicare
 			</p>
 
 			<div className="admin-course-builder-form">
@@ -49,10 +48,9 @@ const QuestionBankBuilderStep3 = ({ data, onUpdate, errors, bankId, onPublish, l
 					</div>
 				)}
 
-				{/* Question Bank Summary */}
 				<div className="admin-form-section">
-					<h3 className="admin-form-section-title">Rezumat Bancă de Întrebări</h3>
-					
+					<h3 className="admin-form-section-title">Rezumatul băncii de întrebări</h3>
+
 					<div className="admin-question-bank-summary-grid">
 						<div className="admin-question-bank-summary-card">
 							<div className="admin-question-bank-summary-label">Titlu</div>
@@ -78,7 +76,7 @@ const QuestionBankBuilderStep3 = ({ data, onUpdate, errors, bankId, onPublish, l
 						</div>
 
 						<div className="admin-question-bank-summary-card">
-							<div className="admin-question-bank-summary-label">Total Puncte</div>
+							<div className="admin-question-bank-summary-label">Total puncte</div>
 							<div className="admin-question-bank-summary-value">
 								{totalPoints}
 							</div>
@@ -86,10 +84,9 @@ const QuestionBankBuilderStep3 = ({ data, onUpdate, errors, bankId, onPublish, l
 					</div>
 				</div>
 
-				{/* Questions Preview */}
 				{data?.questions && data.questions.length > 0 && (
 					<div className="admin-form-section">
-						<h3 className="admin-form-section-title">Previzualizare Întrebări</h3>
+						<h3 className="admin-form-section-title">Previzualizare întrebări</h3>
 						<div className="admin-question-list">
 							{data.questions.slice(0, 5).map((question, index) => (
 								<div
@@ -100,22 +97,21 @@ const QuestionBankBuilderStep3 = ({ data, onUpdate, errors, bankId, onPublish, l
 										#{index + 1}: {question.content || question.text || 'Fără conținut'}
 									</div>
 									<div className="admin-question-item-meta">
-										{question.points || 1} puncte • {getQuestionTypeLabel(question.type)}
+										{question.points || 1} puncte - {getQuestionTypeLabel(question.type)}
 									</div>
 								</div>
 							))}
 							{data.questions.length > 5 && (
 								<div className="admin-question-more">
-									... și încă {data.questions.length - 5} întrebări
+									... si inca {data.questions.length - 5} intrebari
 								</div>
 							)}
 						</div>
 					</div>
 				)}
 
-				{/* Info Box */}
 				<div className="admin-info-box" style={{ marginTop: 'var(--space-6)' }}>
-					<h4 style={{ marginBottom: 'var(--space-2)' }}>📋 Informații</h4>
+					<h4 style={{ marginBottom: 'var(--space-2)' }}>Informatii</h4>
 					<ul style={{ margin: 0, paddingLeft: 'var(--space-6)' }}>
 						<li>După publicare, banca de întrebări poate fi folosită în teste</li>
 						<li>Poți adăuga mai multe întrebări după publicare</li>

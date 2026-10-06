@@ -7,7 +7,7 @@ use App\Models\Module;
 use App\Models\Course;
 use App\Services\CourseBuilderService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaCache;
 
 class ModuleAdminController extends Controller
 {
@@ -17,30 +17,6 @@ class ModuleAdminController extends Controller
     {
         $this->courseBuilderService = $courseBuilderService;
     }
-    public function index(Request $request)
-    {
-        $query = Module::with(['course', 'lessons' => function($q) {
-            $q->orderBy('order');
-        }]);
-
-        if (auth()->user()->isInstructor()) {
-            $query->whereHas('course', fn($q) => $q->where('teacher_id', auth()->id()));
-        }
-        if ($request->has('course_id')) {
-            $query->where('course_id', $request->course_id);
-            if (auth()->user()->isInstructor()) {
-                $c = Course::find($request->course_id);
-                if (!$c || (int) $c->teacher_id !== (int) auth()->id()) {
-                    abort(403, 'Acces interzis.');
-                }
-            }
-        }
-
-        $modules = $query->orderBy('order')->get();
-
-        return response()->json($modules);
-    }
-
     public function show($id)
     {
         $module = Module::with(['course', 'lessons' => function($q) {
@@ -82,7 +58,6 @@ class ModuleAdminController extends Controller
         }
 
         $validated = $request->validate([
-            'course_id' => 'sometimes|required|exists:courses,id',
             'title' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
             'content' => 'nullable|string',
@@ -94,6 +69,12 @@ class ModuleAdminController extends Controller
             'estimated_duration_minutes' => 'nullable|integer|min:0',
         ]);
 
+        if ($request->exists('course_id') && (int) $request->input('course_id') !== (int) $module->course_id) {
+            return response()->json([
+                'message' => 'Mutarea modulului în alt curs nu este permisă pe acest endpoint.',
+            ], 422);
+        }
+
         // Filter to only columns that exist and are fillable
         $updateData = [];
         $allowed = ['course_id', 'title', 'description', 'content', 'order', 'status', 'is_locked',
@@ -102,7 +83,7 @@ class ModuleAdminController extends Controller
             if (!array_key_exists($key, $validated)) {
                 continue;
             }
-            if (Schema::hasColumn('modules', $key)) {
+            if (SchemaCache::hasColumn('modules', $key)) {
                 $updateData[$key] = $validated[$key];
             }
         }
@@ -135,18 +116,4 @@ class ModuleAdminController extends Controller
         ]);
     }
 
-    public function toggleLock($id)
-    {
-        $module = Module::with('course')->findOrFail($id);
-        if (auth()->user()->isInstructor() && (int) $module->course->teacher_id !== (int) auth()->id()) {
-            abort(403, 'Acces interzis.');
-        }
-        $module->is_locked = !$module->is_locked;
-        $module->save();
-
-        return response()->json([
-            'message' => $module->is_locked ? 'Modul blocat' : 'Modul deblocat',
-            'module' => $module->load(['course', 'lessons']),
-        ]);
-    }
 }

@@ -9,8 +9,7 @@ use Illuminate\Support\Facades\Storage;
 
 class MediaAsset extends Model
 {
-    use BelongsToCompany;
-    use HasFactory;
+    use BelongsToCompany, HasFactory;
 
     protected $fillable = [
         'company_id',
@@ -38,13 +37,19 @@ class MediaAsset extends Model
         return $this->belongsTo(User::class, 'uploaded_by_user_id');
     }
 
+    /**
+     * Token for the public preview link /api/builder-media/{courseId}/{mediaId}?token=…
+     */
+    public static function previewToken(int $courseId, int $mediaId): string
+    {
+        return hash_hmac('sha256', "{$courseId}|{$mediaId}", (string) config('app.key'));
+    }
+
     public function getUrlAttribute(): ?string
     {
         $disk = $this->disk ?: 'public';
-        if (! $this->path) {
-            return null;
-        }
-
+        if (!$this->path) return null;
         return Storage::disk($disk)->url($this->path);
     }
 }
+

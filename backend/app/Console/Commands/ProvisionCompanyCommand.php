@@ -4,10 +4,9 @@ namespace App\Console\Commands;
 
 use App\Models\Company;
 use App\Services\PlanEntitlementService;
-use App\Services\UserInvitationService;
+use App\Services\RegistrationInvitationService;
 use App\Support\UserRoles;
 use Illuminate\Console\Command;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -17,13 +16,13 @@ class ProvisionCompanyCommand extends Command
         {name : Company display name}
         {--slug= : URL slug}
         {--plan=instructor : instructor|academie|business}
-        {--owner-email= : Invite company_owner}
+        {--owner-email= : Invite the academy admin}
         {--owner-name= : Owner display name}
         {--status=trial : active|trial|suspended}';
 
     protected $description = 'Provision a tenant company (sales-led SaaS)';
 
-    public function handle(PlanEntitlementService $entitlements, UserInvitationService $invitations): int
+    public function handle(PlanEntitlementService $entitlements, RegistrationInvitationService $invitations): int
     {
         $name = trim((string) $this->argument('name'));
         $slug = Str::slug((string) ($this->option('slug') ?: $name));
@@ -74,15 +73,15 @@ class ProvisionCompanyCommand extends Command
 
         $ownerEmail = $this->option('owner-email');
         if ($ownerEmail) {
-            \App\Support\TenantContext::setCompanyId($company->id);
-            $fakeRequest = Request::create('/');
             $result = $invitations->createAndSend(
                 (string) $ownerEmail,
                 $operator,
                 $this->option('owner-name'),
-                UserRoles::COMPANY_OWNER,
+                UserRoles::ADMIN,
                 null,
-                $fakeRequest
+                (int) config('formely.invitation_expire_days', 7),
+                null,
+                (int) $company->id
             );
             $this->info('Owner invite: '.$result['invite_url']);
         }

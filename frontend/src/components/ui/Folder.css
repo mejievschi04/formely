@@ -162,7 +162,7 @@
 /* Copertă mapă: o singură imagine, se ridică ca un capac (fără dublare) */
 .rb-folder__front--image {
 	overflow: hidden;
-	background: #0f172a;
+	background: var(--bg-elevated);
 	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
 }
 
@@ -215,4 +215,28 @@
 .rb-folder--has-cover.open .rb-paper:nth-child(2):hover,
 .rb-folder--has-cover.open .rb-paper:nth-child(3):hover {
 	transform: translate(-50%, 10%);
+}
+
+@media (max-width: 768px) {
+	.rb-folder,
+	.rb-folder:hover,
+	.rb-folder.open,
+	.rb-folder:not(.rb-folder--has-cover):hover,
+	.rb-folder:not(.rb-folder--has-cover).open,
+	.rb-folder--has-cover:hover,
+	.rb-folder--has-cover.open,
+	.rb-folder:hover .rb-paper,
+	.rb-folder--has-cover:hover .rb-folder__front--lid,
+	.rb-folder--has-cover.open .rb-folder__front--lid,
+	.rb-folder:not(.rb-folder--has-cover):hover .rb-folder__front,
+	.rb-folder:not(.rb-folder--has-cover):hover .right,
+	.rb-folder:not(.rb-folder--has-cover).open .rb-folder__front,
+	.rb-folder:not(.rb-folder--has-cover).open .right {
+		transform: none;
+	}
+
+	.rb-folder--has-cover .rb-folder__back {
+		perspective: none;
+		transform-style: flat;
+	}
 }

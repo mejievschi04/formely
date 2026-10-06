@@ -9,6 +9,7 @@ use App\Models\Exam;
 use App\Models\ExamResult;
 use App\Models\Lesson;
 use App\Models\Module;
+use App\Models\Team;
 use App\Models\Test;
 use App\Models\TestResult;
 use App\Models\User;
@@ -169,6 +170,94 @@ class DashboardMetricsTest extends TestCase
         $this->assertTrue($activities->contains(fn ($description) => str_contains($description, 'Lecție dashboard')));
     }
 
+    public function test_active_users_do_not_count_soft_deleted_students(): void
+    {
+        $admin = User::factory()->create([
+            'name' => 'Admin Counts',
+            'email' => 'admin.counts@example.com',
+            'role' => 'admin',
+        ]);
+        $student = User::factory()->create([
+            'name' => 'Student Alive',
+            'email' => 'student.alive@example.com',
+            'role' => 'student',
+            'last_login_at' => now(),
+        ]);
+        $deleted = User::factory()->create([
+            'name' => 'Student Deleted',
+            'email' => 'student.deleted@example.com',
+            'role' => 'student',
+            'last_login_at' => now(),
+        ]);
+        $deleted->delete();
+
+        $response = $this->actingAs($admin, 'sanctum')->getJson('/api/admin/dashboard?period=all');
+
+        $response->assertOk();
+        $total = (int) $response->json('kpis.total_users.value');
+        $active = (int) str_replace(',', '', (string) $response->json('kpis.active_users.value'));
+
+        $this->assertSame(1, $total);
+        $this->assertSame(1, $active);
+        $this->assertLessThanOrEqual($total, $active);
+        $this->assertTrue($student->exists);
+        $this->assertSoftDeleted($deleted);
+    }
+
+    public function test_enrolled_student_without_app_entry_is_not_active(): void
+    {
+        $admin = User::factory()->create([
+            'name' => 'Admin Entry',
+            'email' => 'admin.entry@example.com',
+            'role' => 'admin',
+        ]);
+        $visitor = User::factory()->create([
+            'name' => 'Student Visitor',
+            'email' => 'student.visitor@example.com',
+            'role' => 'student',
+            'last_login_at' => now()->subHour(),
+        ]);
+        $enrolledOnly = User::factory()->create([
+            'name' => 'Student Enrolled',
+            'email' => 'student.enrolled@example.com',
+            'role' => 'student',
+            'last_login_at' => now()->subDays(40),
+        ]);
+
+        $course = Course::withoutEvents(function () use ($admin) {
+            return Course::create([
+                'title' => 'Curs fără vizită',
+                'description' => 'Înscriere fără deschidere app',
+                'level' => 'beginner',
+                'status' => 'published',
+                'teacher_id' => $admin->id,
+                'reward_points' => 10,
+            ]);
+        });
+
+        DB::table('course_user')->insert([
+            'course_id' => $course->id,
+            'user_id' => $enrolledOnly->id,
+            'is_mandatory' => true,
+            'enrolled' => true,
+            'enrolled_at' => now(),
+            'assigned_at' => now(),
+            'progress_percentage' => 20,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->actingAs($admin, 'sanctum')->getJson('/api/admin/dashboard?period=7d');
+
+        $response->assertOk();
+        $total = (int) $response->json('kpis.total_users.value');
+        $active = (int) str_replace(',', '', (string) $response->json('kpis.active_users.value'));
+
+        $this->assertSame(2, $total);
+        $this->assertSame(1, $active);
+        $this->assertNotNull($visitor->last_login_at);
+    }
+
     public function test_admin_dashboard_omits_revenue_kpis_without_payments_module(): void
     {
         $admin = User::factory()->create([
@@ -224,10 +313,19 @@ class DashboardMetricsTest extends TestCase
             'completed_at' => now()->subMinutes(3),
         ]);
 
+        $team = Team::create([
+            'name' => 'Echipa statistici',
+            'owner_id' => $admin->id,
+        ]);
+        $student->teams()->attach($team->id);
+
         $response = $this->actingAs($admin, 'sanctum')->getJson('/api/admin/statistics/course-test-detail?course_id=' . $course->id);
 
         $response->assertOk();
         $this->assertCount(2, $response->json('test_results'));
+        $response->assertJsonPath('teams.0.name', 'Echipa statistici');
+        $studentPayload = collect($response->json('students'))->firstWhere('id', $student->id);
+        $this->assertSame($team->id, $studentPayload['teams'][0]['id'] ?? null);
 
         $titles = collect($response->json('test_results'))->pluck('test_title');
         $this->assertTrue($titles->contains($test->title));
@@ -340,5 +438,39 @@ class DashboardMetricsTest extends TestCase
         }
 
         return [$student, $course, $test, $exam];
+    }
+
+    public function test_dashboard_lists_course_test_once_across_multiple_modules(): void
+    {
+        [$student, $course, $test] = $this->seedResultsScenario();
+        CourseTest::where('test_id', $test->id)->update(['scope' => 'course', 'scope_id' => null]);
+        Module::withoutEvents(fn () => Module::create([
+            'course_id' => $course->id, 'title' => 'Modulul 2', 'order' => 2, 'status' => 'published',
+        ]));
+        $this->mock(\App\Services\CourseProgressService::class, function ($mock) {
+            $mock->shouldReceive('calculateCourseProgress')->andReturn(0.0);
+            $mock->shouldReceive('getUserAccessStatus')->andReturn(['modules' => []]);
+            $mock->shouldReceive('getNextIncompleteLesson')->andReturn(null);
+            $mock->shouldReceive('isTestUnlocked')->once()->andReturn(true);
+        });
+
+        $this->actingAs($student, 'sanctum')->getJson('/api/student/dashboard')
+            ->assertOk()->assertJsonCount(1, 'pending_exams')
+            ->assertJsonPath('pending_exams.0.id', $test->id)
+            ->assertJsonPath('pending_exams.0.module_id', null);
+    }
+
+    public function test_dashboard_does_not_recommend_a_test_when_unlock_check_fails(): void
+    {
+        [$student] = $this->seedResultsScenario();
+        $this->mock(\App\Services\CourseProgressService::class, function ($mock) {
+            $mock->shouldReceive('calculateCourseProgress')->andReturn(0.0);
+            $mock->shouldReceive('getUserAccessStatus')->andReturn(['modules' => []]);
+            $mock->shouldReceive('getNextIncompleteLesson')->andReturn(null);
+            $mock->shouldReceive('isTestUnlocked')->once()->andThrow(new \RuntimeException('Unavailable'));
+        });
+
+        $this->actingAs($student, 'sanctum')->getJson('/api/student/dashboard')
+            ->assertOk()->assertJsonCount(0, 'pending_exams');
     }
 }

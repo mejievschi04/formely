@@ -79,8 +79,8 @@ export function excelExportDateStamp() {
 export function formatExcelPeriodLabel(periodFrom, periodTo) {
 	if (periodFrom && periodTo) return `${periodFrom} -> ${periodTo}`;
 	if (periodFrom) return `De la ${periodFrom}`;
-	if (periodTo) return `Pana la ${periodTo}`;
-	return 'Toata perioada (fara filtru date in export)';
+	if (periodTo) return `Până la ${periodTo}`;
+	return 'Toată perioada (fără filtru de date în export)';
 }
 
 export function buildStructuredExcelRows({
@@ -145,21 +145,6 @@ export function downloadStructuredExcel(filename, sheetLabel, rows) {
 		worksheet['!autofilter'] = { ref: XLSX.utils.encode_range(tableRange) };
 	}
 
-	XLSX.utils.book_append_sheet(workbook, worksheet, safeSheetName(sheetLabel));
-	downloadWorkbook(filename, workbook);
-}
-
-export function downloadSimpleExcel(filename, sheetLabel, headers, rows) {
-	const normalizedRows = [headers, ...rows].map((row) => row.map(normalizeCell));
-	const workbook = XLSX.utils.book_new();
-	const worksheet = XLSX.utils.aoa_to_sheet(normalizedRows);
-	worksheet['!cols'] = computeColumnWidths(normalizedRows);
-	worksheet['!autofilter'] = {
-		ref: XLSX.utils.encode_range({
-			s: { r: 0, c: 0 },
-			e: { r: Math.max(normalizedRows.length - 1, 0), c: Math.max(headers.length - 1, 0) },
-		}),
-	};
 	XLSX.utils.book_append_sheet(workbook, worksheet, safeSheetName(sheetLabel));
 	downloadWorkbook(filename, workbook);
 }

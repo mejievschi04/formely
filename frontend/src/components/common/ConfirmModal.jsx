@@ -1,11 +1,12 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useId } from 'react';
 import Modal from './Modal';
+import { DeleteButton } from '../ui/ActionButtons';
 import './ConfirmModal.css';
 
 /**
  * Modal de confirmare reutilizabil (înlocuiește window.confirm).
  * @param {boolean} open - vizibil
- * @param {function} onClose - la Anulare / Escape / backdrop
+ * @param {function} onClose - la Anulare / buton explicit
  * @param {function} onConfirm - la confirmare (ex. Șterge)
  * @param {string} title - titlu (ex. "Confirmă ștergerea")
  * @param {string} message - mesaj (ex. "Ești sigur că vrei să ștergi?")
@@ -27,6 +28,8 @@ function ConfirmModal({
 }) {
 	const cancelBtnRef = useRef(null);
 	const confirmBtnRef = useRef(null);
+	const titleId = useId();
+	const descId = useId();
 
 	useEffect(() => {
 		if (!open) return;
@@ -54,15 +57,16 @@ function ConfirmModal({
 			isOpen={open}
 			onClose={onClose}
 			closeOnBackdropClick={!loading}
-			ariaLabelledby="confirm-modal-title"
-			ariaDescribedby="confirm-modal-desc"
+			closeOnEscape={!loading}
+			ariaLabelledby={titleId}
+			ariaDescribedby={descId}
 			className="confirm-modal-overlay"
 		>
 			<div className="confirm-modal">
-				<h2 id="confirm-modal-title" className="confirm-modal-title">
+				<h2 id={titleId} className="confirm-modal-title">
 					{title}
 				</h2>
-				<p id="confirm-modal-desc" className="confirm-modal-message">
+				<p id={descId} className="confirm-modal-message">
 					{message}
 				</p>
 				<div className="confirm-modal-actions">
@@ -77,16 +81,27 @@ function ConfirmModal({
 					>
 						{cancelLabel}
 					</button>
-					<button
-						ref={confirmBtnRef}
-						type="button"
-						className={variant === 'danger' ? 'lms-btn-secondary va-btn-danger' : 'lms-btn-primary'}
-						onClick={handleConfirm}
-						disabled={loading}
-						aria-label={confirmLabel}
-					>
-						{loading ? 'Se procesează...' : confirmLabel}
-					</button>
+					{variant === 'danger' ? (
+						<DeleteButton
+							ref={confirmBtnRef}
+							onClick={handleConfirm}
+							disabled={loading}
+							aria-label={confirmLabel}
+						>
+							{loading ? 'Se procesează...' : confirmLabel}
+						</DeleteButton>
+					) : (
+						<button
+							ref={confirmBtnRef}
+							type="button"
+							className="lms-btn-primary"
+							onClick={handleConfirm}
+							disabled={loading}
+							aria-label={confirmLabel}
+						>
+							{loading ? 'Se procesează...' : confirmLabel}
+						</button>
+					)}
 				</div>
 			</div>
 		</Modal>

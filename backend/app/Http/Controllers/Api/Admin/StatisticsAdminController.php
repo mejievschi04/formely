@@ -5,11 +5,12 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Course;
+use App\Models\Team;
 use App\Models\TestResult;
-use App\Support\TenantQuery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaCache;
+use App\Support\TenantQuery;
 use Carbon\Carbon;
 
 class StatisticsAdminController extends Controller
@@ -21,9 +22,11 @@ class StatisticsAdminController extends Controller
         }
     }
 
+    private array $columns = [];
+
     private function hasColumn(string $table, string $column): bool
     {
-        return Schema::hasTable($table) && Schema::hasColumn($table, $column);
+        return $this->columns[$table . "." . $column] ??= SchemaCache::hasTable($table) && SchemaCache::hasColumn($table, $column);
     }
 
     private function selectOrNull(string $table, string $column, ?string $alias = null, string $fallback = 'NULL'): mixed
@@ -44,7 +47,7 @@ class StatisticsAdminController extends Controller
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array{courses:\Illuminate\Support\Collection,students:\Illuminate\Support\Collection,enrollments:array,test_results:array,course_tests:array,meta:array}
      */
     public function buildCourseTestDetailData(Request $request): array
     {
@@ -70,10 +73,9 @@ class StatisticsAdminController extends Controller
             }
         }
 
-        $allowedCourseIds = Course::query()->pluck('id');
         $testCourseMap = [];
-        if (Schema::hasTable('course_test')) {
-            foreach (DB::table('course_test')->select('test_id', 'course_id')->whereIn('course_id', $allowedCourseIds)->get() as $ct) {
+        if (SchemaCache::hasTable('course_test')) {
+            foreach (DB::table('course_test')->select('test_id', 'course_id')->when($courseId, fn ($q) => $q->where('course_id', (int) $courseId))->get() as $ct) {
                 if (!isset($testCourseMap[(int) $ct->test_id])) {
                     $testCourseMap[(int) $ct->test_id] = (int) $ct->course_id;
                 }
@@ -86,16 +88,15 @@ class StatisticsAdminController extends Controller
             ->get();
 
         $enrollments = [];
-        if (Schema::hasTable('course_user')) {
+        if (SchemaCache::hasTable('course_user')) {
             $courseUserHasEnrolled = $this->hasColumn('course_user', 'enrolled');
             $courseUserHasEnrolledAt = $this->hasColumn('course_user', 'enrolled_at');
             $courseUserHasCompletedAt = $this->hasColumn('course_user', 'completed_at');
             $courseUserHasUpdatedAt = $this->hasColumn('course_user', 'updated_at');
-            $query = TenantQuery::constrainUsers(
-                DB::table('course_user')
-                    ->join('users', 'users.id', '=', 'course_user.user_id')
-                    ->where('users.role', 'student')
-            )
+            $query = DB::table('course_user')
+                ->join('users', 'users.id', '=', 'course_user.user_id')
+                ->tap(fn ($q) => TenantQuery::constrainUsers($q))
+                ->where('users.role', 'student')
                 ->select(
                     'course_user.user_id',
                     'course_user.course_id',
@@ -145,7 +146,7 @@ class StatisticsAdminController extends Controller
             ])->all();
         }
 
-        $learningKeyed = $this->getLearningAggregatesByUserCourse();
+        $learningKeyed = $this->getLearningAggregatesByUserCourse($courseId, $userId);
 
         foreach ($enrollments as &$e) {
             $k = $e['user_id'] . ':' . $e['course_id'];
@@ -156,19 +157,18 @@ class StatisticsAdminController extends Controller
         unset($e);
 
         $testResults = [];
-        if (Schema::hasTable('test_results')) {
-            $hasTestsTable = Schema::hasTable('tests');
-            $hasCourseTestTable = Schema::hasTable('course_test');
+        if (SchemaCache::hasTable('test_results')) {
+            $hasTestsTable = SchemaCache::hasTable('tests');
+            $hasCourseTestTable = SchemaCache::hasTable('course_test');
             $hasTestIdColumn = $this->hasColumn('test_results', 'test_id');
             $testCompletedColumn = $this->hasColumn('test_results', 'completed_at')
                 ? 'completed_at'
                 : ($this->hasColumn('test_results', 'created_at') ? 'created_at' : null);
 
-            $query = TenantQuery::constrainUsers(
-                DB::table('test_results')
-                    ->join('users', 'users.id', '=', 'test_results.user_id')
-                    ->where('users.role', 'student')
-            );
+            $query = DB::table('test_results')
+                ->join('users', 'users.id', '=', 'test_results.user_id')
+                ->tap(fn ($q) => TenantQuery::constrainUsers($q))
+                ->where('users.role', 'student');
 
             if ($hasTestsTable && $hasTestIdColumn) {
                 $query->leftJoin('tests', 'tests.id', '=', 'test_results.test_id');
@@ -228,8 +228,8 @@ class StatisticsAdminController extends Controller
             $testResults = array_merge($testResults, $results);
         }
 
-        if (Schema::hasTable('exam_results')) {
-            $hasExamsTable = Schema::hasTable('exams');
+        if (SchemaCache::hasTable('exam_results')) {
+            $hasExamsTable = SchemaCache::hasTable('exams');
             $hasExamIdColumn = $this->hasColumn('exam_results', 'exam_id');
             $examCompletedColumn = $this->hasColumn('exam_results', 'completed_at')
                 ? 'completed_at'
@@ -238,11 +238,10 @@ class StatisticsAdminController extends Controller
                 ? 'exam_results.total_points as max_score'
                 : $this->selectOrNull('exam_results', 'max_score');
 
-            $query = TenantQuery::constrainUsers(
-                DB::table('exam_results')
-                    ->join('users', 'users.id', '=', 'exam_results.user_id')
-                    ->where('users.role', 'student')
-            );
+            $query = DB::table('exam_results')
+                ->join('users', 'users.id', '=', 'exam_results.user_id')
+                ->tap(fn ($q) => TenantQuery::constrainUsers($q))
+                ->where('users.role', 'student');
 
             if ($hasExamsTable && $hasExamIdColumn) {
                 $query->leftJoin('exams', 'exams.id', '=', 'exam_results.exam_id');
@@ -324,6 +323,7 @@ class StatisticsAdminController extends Controller
             ->values();
 
         $studentsQuery = User::select('id', 'name', 'email', 'created_at')
+            ->with(['teams:id,name'])
             ->where('role', 'student')
             ->when($userId, fn ($q) => $q->where('id', (int) $userId));
 
@@ -338,9 +338,8 @@ class StatisticsAdminController extends Controller
         }
 
         $courseTests = [];
-        if (Schema::hasTable('course_test')) {
-            $query = DB::table('course_test')->select('course_id', 'test_id')
-                ->whereIn('course_id', $allowedCourseIds);
+        if (SchemaCache::hasTable('course_test')) {
+            $query = DB::table('course_test')->select('course_id', 'test_id');
             if ($courseId) {
                 $query->where('course_id', (int) $courseId);
             }
@@ -351,9 +350,14 @@ class StatisticsAdminController extends Controller
             'total_learning_seconds' => (int) collect($learningKeyed)->sum(fn ($row) => (int) ($row->time_spent_seconds ?? 0)),
         ];
 
+        $teams = SchemaCache::hasTable('teams')
+            ? Team::query()->orderBy('name')->get(['id', 'name'])
+            : collect();
+
         return [
             'courses' => $courses,
             'students' => $students,
+            'teams' => $teams,
             'enrollments' => $enrollments,
             'test_results' => $testResults,
             'course_tests' => $courseTests,
@@ -361,6 +365,8 @@ class StatisticsAdminController extends Controller
                 'date_from' => $from?->toDateString(),
                 'date_to' => $to?->toDateString(),
                 'total_learning_seconds' => $totals['total_learning_seconds'],
+                // lesson_progress stores cumulative time, not daily time slices.
+                'learning_time_scope' => 'all_time_for_selected_course_and_user',
             ],
         ];
     }
@@ -368,15 +374,15 @@ class StatisticsAdminController extends Controller
     /**
      * @return array<string, object{user_id:int,course_id:int,time_spent_seconds:int,lessons_completed:int}>
      */
-    private function getLearningAggregatesByUserCourse(): array
+    private function getLearningAggregatesByUserCourse($courseId = null, $userId = null): array
     {
-        if (!Schema::hasTable('lesson_progress') || !Schema::hasTable('lessons')) {
+        if (!SchemaCache::hasTable('lesson_progress') || !SchemaCache::hasTable('lessons')) {
             return [];
         }
 
         $lessonHasCourseId = $this->hasColumn('lessons', 'course_id');
         $lessonHasModuleId = $this->hasColumn('lessons', 'module_id');
-        $moduleHasCourseId = Schema::hasTable('modules') && $this->hasColumn('modules', 'course_id');
+        $moduleHasCourseId = SchemaCache::hasTable('modules') && $this->hasColumn('modules', 'course_id');
 
         if (! $lessonHasCourseId && ! ($lessonHasModuleId && $moduleHasCourseId)) {
             return [];
@@ -392,11 +398,11 @@ class StatisticsAdminController extends Controller
             ? 'SUM(CASE WHEN lp.completed THEN 1 ELSE 0 END)'
             : '0';
 
-        $query = TenantQuery::constrainUsers(
-            DB::table('lesson_progress as lp')
-                ->join('users', 'users.id', '=', 'lp.user_id')
-                ->where('users.role', 'student')
-        )->join('lessons as l', 'l.id', '=', 'lp.lesson_id');
+        $query = DB::table('lesson_progress as lp')
+            ->join('users', 'users.id', '=', 'lp.user_id')
+            ->tap(fn ($q) => TenantQuery::constrainUsers($q))
+            ->where('users.role', 'student')
+            ->join('lessons as l', 'l.id', '=', 'lp.lesson_id');
 
         if ($lessonHasModuleId && $moduleHasCourseId) {
             $query->leftJoin('modules as m', 'm.id', '=', 'l.module_id');
@@ -410,6 +416,8 @@ class StatisticsAdminController extends Controller
                 DB::raw($completedExpr . ' as lessons_completed')
             )
             ->whereRaw($courseExpr . ' IS NOT NULL')
+            ->when($courseId, fn ($q) => $q->whereRaw($courseExpr . ' = ?', [(int) $courseId]))
+            ->when($userId, fn ($q) => $q->where('lp.user_id', (int) $userId))
             ->groupBy('lp.user_id', DB::raw($courseExpr))
             ->get();
 

@@ -1,11 +1,76 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { X } from '@phosphor-icons/react';
 import { adminService } from '../../../services/api';
-import { teamAccentNeutral } from '../../../utils/teamAccent';
+import { teamAccent } from '../../../utils/teamAccent';
+import {
+	clearPublishDraft,
+	groupPublishIssues,
+	readPublishDraft,
+	writePublishDraft,
+} from '../../../utils/publishCourseIssues';
+import Modal from '../../common/Modal';
 
-const PublishCourseModal = ({ open, onClose, course, courseId: courseIdProp, onPublished, validationReport, onValidate }) => {
-	const courseId = course?.id ?? courseIdProp;
+function normalizeTeams(raw) {
+	return Array.isArray(raw) ? raw : raw?.data || [];
+}
+
+function extractAssignedUsers(courseData) {
+	if (!courseData || typeof courseData !== 'object') return [];
+	const users = courseData.assigned_users || courseData.assignedUsers || [];
+	return Array.isArray(users) ? users : [];
+}
+
+function extractTeamIds(courseData, fallbackCourse) {
+	const teams = courseData?.teams || fallbackCourse?.teams || [];
+	return (Array.isArray(teams) ? teams : []).map((t) => t.id).filter(Boolean);
+}
+
+function PublishIssueList({ errors, onFixIssue }) {
+	const groups = groupPublishIssues(errors);
+	if (!groups.length) return null;
+
+	return (
+		<div role="alert" className="admin-form-error-inline publish-course-error-block">
+			<div className="publish-course-error-block-title">Cursul nu este pregătit pentru publicare</div>
+			{groups.map((group) => (
+				<div key={group.key} className="publish-course-error-group">
+					<h3 className="publish-course-error-group-title">{group.label}</h3>
+					<ul className="publish-course-error-list">
+						{group.items.map((issue, i) => (
+							<li key={`${issue.path}-${i}`}>
+								<span>{issue.message}</span>
+								{issue.actionLabel && typeof onFixIssue === 'function' ? (
+									<button
+										type="button"
+										className="publish-course-error-action"
+										onClick={() => onFixIssue(issue)}
+									>
+										{issue.actionLabel}
+									</button>
+								) : null}
+							</li>
+						))}
+					</ul>
+				</div>
+			))}
+		</div>
+	);
+}
+
+const PublishCourseModal = ({
+	open,
+	onClose,
+	course,
+	onPublished,
+	validationReport,
+	onValidate,
+	onFixIssue,
+}) => {
+	const courseId = course?.id;
 	const [teams, setTeams] = useState([]);
+	const [audience, setAudience] = useState('all');
 	const [selectedTeamIds, setSelectedTeamIds] = useState([]);
+	const [assignedUsers, setAssignedUsers] = useState([]);
 	const [catalogOutsideMap, setCatalogOutsideMap] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [loadingTeams, setLoadingTeams] = useState(true);
@@ -16,20 +81,72 @@ const PublishCourseModal = ({ open, onClose, course, courseId: courseIdProp, onP
 	const hasErrors = validationReport && !validationReport.ok;
 	const errors = Array.isArray(validationReport?.errors) ? validationReport.errors : [];
 	const backendErrors = Array.isArray(publishErrorReport?.errors) ? publishErrorReport.errors : [];
-	const canPublish = validationReport?.ok && !loading;
+	const displayErrors = backendErrors.length > 0 ? backendErrors : errors;
+	const teamsRequired = audience === 'teams';
+	const missingTeams = teamsRequired && selectedTeamIds.length === 0;
+	const canPublish = Boolean(validationReport?.ok) && !loading && !loadingTeams && !missingTeams;
+
+	const persistDraft = (next) => {
+		if (!courseId) return;
+		writePublishDraft(courseId, next);
+	};
 
 	useEffect(() => {
-		if (open) {
-			setError(null);
-			setPublishErrorReport(null);
-			setCatalogOutsideMap(Boolean(course?.settings?.catalog_outside_map));
-			setLoadingTeams(true);
-			adminService.getTeams().then((data) => {
-				setTeams(Array.isArray(data) ? data : data?.data || []);
-				setSelectedTeamIds([]);
-			}).catch(() => setTeams([])).finally(() => setLoadingTeams(false));
-		}
-	}, [open, course?.id, course?.settings?.catalog_outside_map]);
+		if (!open || !courseId) return;
+
+		let cancelled = false;
+		setError(null);
+		setPublishErrorReport(null);
+		setLoadingTeams(true);
+
+		(async () => {
+			try {
+				const [teamsData, courseData] = await Promise.all([
+					adminService.getTeams(),
+					adminService.getCourse(courseId),
+				]);
+				if (cancelled) return;
+
+				const fullCourse = courseData?.course || courseData;
+				const existingTeamIds = extractTeamIds(fullCourse, course);
+				const users = extractAssignedUsers(fullCourse);
+				const saved = readPublishDraft(courseId);
+				const nextAudience = saved?.audience === 'teams' || saved?.audience === 'all'
+					? saved.audience
+					: existingTeamIds.length > 0
+						? 'teams'
+						: 'all';
+				const nextTeamIds = Array.isArray(saved?.selectedTeamIds)
+					? saved.selectedTeamIds
+					: existingTeamIds;
+				const nextCatalog = typeof saved?.catalogOutsideMap === 'boolean'
+					? saved.catalogOutsideMap
+					: Boolean(fullCourse?.settings?.catalog_outside_map ?? course?.settings?.catalog_outside_map);
+
+				setTeams(normalizeTeams(teamsData));
+				setAudience(nextAudience);
+				setSelectedTeamIds(nextTeamIds);
+				setAssignedUsers(users);
+				setCatalogOutsideMap(nextCatalog);
+				writePublishDraft(courseId, {
+					audience: nextAudience,
+					selectedTeamIds: nextTeamIds,
+					catalogOutsideMap: nextCatalog,
+				});
+			} catch {
+				if (cancelled) return;
+				setTeams([]);
+				setSelectedTeamIds(extractTeamIds(null, course));
+				setAssignedUsers([]);
+			} finally {
+				if (!cancelled) setLoadingTeams(false);
+			}
+		})();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [open, courseId]);
 
 	const handleValidateClick = async () => {
 		if (!onValidate) return;
@@ -42,12 +159,20 @@ const PublishCourseModal = ({ open, onClose, course, courseId: courseIdProp, onP
 	};
 
 	const handlePublish = async () => {
-		if (!canPublish || !courseId) return;
+		if (!courseId || missingTeams) return;
 		setError(null);
 		setLoading(true);
 		try {
-			const res = await adminService.builderPublishCourse(courseId, selectedTeamIds, { catalogOutsideMap });
-			onPublished?.(res, { catalogOutsideMap });
+			if (onValidate) {
+				const report = await onValidate();
+				if (report && report.ok === false) {
+					return;
+				}
+			}
+			const teamIds = audience === 'teams' ? selectedTeamIds : [];
+			const res = await adminService.builderPublishCourse(courseId, teamIds, { catalogOutsideMap });
+			clearPublishDraft(courseId);
+			onPublished?.(res, { catalogOutsideMap, teamIds, audience });
 			onClose?.();
 		} catch (e) {
 			console.error('Publish failed:', e);
@@ -64,19 +189,39 @@ const PublishCourseModal = ({ open, onClose, course, courseId: courseIdProp, onP
 	};
 
 	const toggleTeam = (id) => {
-		setSelectedTeamIds((prev) =>
-			prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-		);
+		setSelectedTeamIds((prev) => {
+			const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+			persistDraft({ audience, selectedTeamIds: next, catalogOutsideMap });
+			return next;
+		});
 	};
 
-	if (!open) return null;
+	const publishLabel = audience === 'teams' ? 'Publică pentru echipe' : 'Publică';
+	const blockedReason = !validationReport
+		? 'Verifică mai întâi.'
+		: hasErrors
+			? 'Remediază blocajele, apoi verifică din nou.'
+			: missingTeams
+				? 'Alege cel puțin o echipă.'
+				: null;
 
 	return (
-		<div className="admin-team-modal-overlay publish-course-modal-overlay" onClick={onClose}>
-			<div className="admin-team-modal" onClick={(e) => e.stopPropagation()}>
+		<Modal
+			isOpen={open}
+			onClose={onClose}
+			closeOnBackdropClick={!loading}
+			closeOnEscape={!loading}
+			unstyledContent
+			ariaLabelledby="publish-course-modal-title"
+			className="publish-course-modal-overlay"
+			contentClassName="publish-course-modal-shell"
+		>
+			<div className="admin-team-modal publish-course-modal-panel">
 				<div className="admin-team-modal-header">
-					<h2 className="admin-team-modal-title">Publicare curs</h2>
-					<button type="button" className="admin-team-modal-close" onClick={onClose} aria-label="Închide">×</button>
+					<h2 id="publish-course-modal-title" className="admin-team-modal-title">
+						Publicare curs
+					</h2>
+					<button type="button" className="admin-team-modal-close va-close-btn" onClick={onClose} aria-label="Închide"><X size={18} weight="bold" aria-hidden="true" /></button>
 				</div>
 				<div className="admin-team-modal-body">
 					{error && (
@@ -85,110 +230,136 @@ const PublishCourseModal = ({ open, onClose, course, courseId: courseIdProp, onP
 						</p>
 					)}
 
-					{publishErrorReport && backendErrors.length > 0 && (
-						<div role="alert" className="admin-form-error-inline publish-course-error-block">
-							<div className="publish-course-error-block-title">Serverul a respins publicarea: cursul are erori de validare</div>
-							<ul className="publish-course-error-list">
-								{backendErrors.slice(0, 5).map((err, i) => (
-									<li key={i}>{err.message || err}</li>
-								))}
-								{backendErrors.length > 5 && <li className="publish-course-error-more">... și încă {backendErrors.length - 5} erori</li>}
-							</ul>
-							<p className="publish-course-error-hint">
-								Apasă „Verifică acum” mai sus sau închide și folosește „Verifică” în tab-ul Workflow, remediază erorile, apoi încearcă din nou.
-							</p>
-						</div>
-					)}
-
-					{!validationReport && (
-						<div className="admin-form-section publish-course-validate-section">
-							<p className="publish-course-validate-text">
-								Rulează validarea pentru a verifica că cursul este complet înainte de publicare.
-							</p>
+					<section className="publish-course-section">
+						<h3 className="publish-course-section-title">Este cursul pregătit?</h3>
+						{!validationReport && (
+							<div className="admin-form-section publish-course-validate-section">
+								<button
+									type="button"
+									className="admin-btn admin-btn-secondary"
+									onClick={handleValidateClick}
+									disabled={validating}
+								>
+									{validating ? 'Se verifică...' : 'Verifică acum'}
+								</button>
+							</div>
+						)}
+						{validationReport?.ok && displayErrors.length === 0 && (
+							<p className="publish-course-ready" role="status">Pregătit de publicare.</p>
+						)}
+						<PublishIssueList errors={displayErrors} onFixIssue={onFixIssue} />
+						{validationReport && (
 							<button
 								type="button"
 								className="admin-btn admin-btn-secondary"
 								onClick={handleValidateClick}
 								disabled={validating}
 							>
-								{validating ? 'Se verifică...' : 'Verifică acum'}
+								{validating ? 'Se verifică...' : 'Verifică din nou'}
 							</button>
-						</div>
-					)}
+						)}
+					</section>
 
-					{hasErrors && errors.length > 0 && (
-						<div role="alert" className="admin-form-error-inline publish-course-error-block">
-							<div className="publish-course-error-block-title">Cursul are erori de validare</div>
-							<ul className="publish-course-error-list">
-								{errors.slice(0, 5).map((err, i) => (
-									<li key={i}>{err.message || err}</li>
-								))}
-								{errors.length > 5 && <li className="publish-course-error-more">... și încă {errors.length - 5} erori</li>}
-							</ul>
-							<p className="publish-course-error-hint">
-								Închide modalul, apasă „Verifică” în tab-ul Workflow și remediază erorile, apoi încearcă din nou să publici.
-							</p>
-						</div>
-					)}
-
-					<div className="admin-form-group publish-course-catalog-option">
-						<label className="publish-course-team-item publish-course-catalog-option__label">
+					<fieldset className="publish-course-section">
+						<legend className="publish-course-section-title">Cine primește acces?</legend>
+						<label className="publish-course-choice">
 							<input
-								type="checkbox"
-								checked={catalogOutsideMap}
-								onChange={(e) => setCatalogOutsideMap(e.target.checked)}
+								type="radio"
+								name="publish-audience"
+								checked={audience === 'all'}
+								onChange={() => {
+									setAudience('all');
+									persistDraft({ audience: 'all', selectedTeamIds, catalogOutsideMap });
+								}}
 							/>
-							<span>Publică în catalog, fără mapă</span>
+							<span><strong>Toți cursanții</strong></span>
 						</label>
-						<p className="publish-course-teams-muted publish-course-catalog-option__hint">
-							Elevii vor vedea cursul direct pe pagina Cursuri, nu doar într-o mapă. Poți adăuga cursul într-o mapă oricând, separat.
-						</p>
-					</div>
-
-					<div className="admin-form-group">
-						<label className="admin-settings-label">Echipe (opțional)</label>
-						{loadingTeams ? (
-							<p className="publish-course-teams-muted">Se încarcă echipele...</p>
-						) : teams.length === 0 ? (
-							<p className="publish-course-teams-muted">Nu există echipe. Cursul va fi pentru toți studenții.</p>
-						) : (
-							<div className="publish-course-teams-list">
-								{teams.map((t) => (
-									<label key={t.id} className="publish-course-team-item">
-										<input
-											type="checkbox"
-											checked={selectedTeamIds.includes(t.id)}
-											onChange={() => toggleTeam(t.id)}
-										/>
-										<span
-											className="publish-course-team-swatch"
-											style={{ background: teamAccentNeutral(t) }}
-											aria-hidden
-										/>
-										<span>{t.name}</span>
-									</label>
-								))}
+						<label className="publish-course-choice">
+							<input
+								type="radio"
+								name="publish-audience"
+								checked={audience === 'teams'}
+								onChange={() => {
+									setAudience('teams');
+									persistDraft({ audience: 'teams', selectedTeamIds, catalogOutsideMap });
+								}}
+							/>
+							<span><strong>Echipe selectate</strong></span>
+						</label>
+						{audience === 'teams' && (
+							<div className="admin-form-group">
+								{loadingTeams ? (
+									<p className="publish-course-teams-muted">Se încarcă echipele...</p>
+								) : teams.length === 0 ? (
+									<p className="publish-course-teams-muted">Nu există echipe.</p>
+								) : (
+									<div className="publish-course-teams-list">
+										{teams.map((t) => (
+											<label key={t.id} className="publish-course-team-item">
+												<input
+													type="checkbox"
+													checked={selectedTeamIds.includes(t.id)}
+													onChange={() => toggleTeam(t.id)}
+												/>
+												<span
+													className="publish-course-team-swatch"
+													style={{ background: teamAccent(t) }}
+													aria-hidden
+												/>
+												<span>{t.name}</span>
+											</label>
+										))}
+									</div>
+								)}
+								{missingTeams && (
+									<p className="admin-form-error-inline" role="alert">Selectează cel puțin o echipă.</p>
+								)}
 							</div>
 						)}
-					</div>
+						{assignedUsers.length > 0 && (
+							<div className="admin-form-group publish-course-assigned-users">
+								<p className="admin-settings-label">Atribuiți direct</p>
+								<ul className="publish-course-assigned-users-list">
+									{assignedUsers.map((user) => (
+										<li key={user.id}>
+											<strong>{user.name}</strong>
+											{user.email ? <span>{user.email}</span> : null}
+										</li>
+									))}
+								</ul>
+							</div>
+						)}
+					</fieldset>
+
+					<fieldset className="publish-course-section">
+						<legend className="publish-course-section-title">Unde apare cursul?</legend>
+						<p className="publish-course-section-hint">
+							Cursanții îl văd în mapele în care e pus. Dacă nu e în nicio mapă, apare direct în pagina Cursuri.
+						</p>
+					</fieldset>
+
+					{blockedReason && (
+						<p id="publish-blocked-reason" className="publish-course-blocked-reason" role="status">{blockedReason}</p>
+					)}
+
 					<div className="publish-course-actions">
 						<button type="button" className="admin-btn admin-btn-secondary" onClick={onClose}>
-							Anulează
+							Anulare
 						</button>
 						<button
 							type="button"
-							className="admin-btn admin-btn-primary"
+							className="admin-btn lms-btn-primary"
 							onClick={handlePublish}
-							disabled={loading || !canPublish}
+							disabled={!canPublish}
 							aria-busy={loading}
-							title={!validationReport ? 'Rulează mai întâi validarea' : hasErrors ? 'Remediază erorile de validare' : undefined}
+							aria-describedby={blockedReason ? 'publish-blocked-reason' : undefined}
 						>
-							{loading ? 'Se publică...' : 'Publică'}
+							{loading ? 'Se publică...' : publishLabel}
 						</button>
 					</div>
 				</div>
 			</div>
-		</div>
+		</Modal>
 	);
 };
 

@@ -56,6 +56,29 @@ class TenantContext
         return self::$companyId !== null && ! self::$bypassScope && ! self::$denyTenantData;
     }
 
+    /**
+     * Rândurile fără company_id (create fără tenant, date dinainte de multi-tenant)
+     * aparțin academiei implicite.
+     */
+    public static function includesUnassigned(): bool
+    {
+        return self::shouldScope() && self::$companyId === DefaultCompany::id();
+    }
+
+    /** where company_id = tenant (+ IS NULL pentru academia implicită). */
+    public static function constrain($query, string $column): void
+    {
+        if (self::includesUnassigned()) {
+            $query->where(function ($q) use ($column) {
+                $q->where($column, self::$companyId)->orWhereNull($column);
+            });
+
+            return;
+        }
+
+        $query->where($column, self::$companyId);
+    }
+
     public static function clear(): void
     {
         self::$companyId = null;

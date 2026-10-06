@@ -3,13 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
-use App\Models\ActivityLog;
 use App\Models\CourseTest;
-use App\Models\Exam;
-use App\Models\User;
 use App\Support\CourseCatalog;
 use App\Support\CourseViews;
 use App\Support\LearningVisibility;
+use App\Services\PublishedCourseView;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -27,11 +25,16 @@ class CourseController extends Controller
                 }
             ]);
 
-            // For non-admin users (students), only show published courses
+            // For non-admin users (students), only show published courses.
+            // Cursanții văd doar cursurile atribuite lor.
             $user = $request->user();
             $isAdmin = LearningVisibility::isStaff($user);
-            if (!$isAdmin && \Illuminate\Support\Facades\Schema::hasColumn('courses', 'status')) {
+            if (!$isAdmin && \App\Support\SchemaCache::hasColumn('courses', 'status')) {
                 $query->where('status', 'published');
+            }
+            $assignedIds = LearningVisibility::assignedCourseIdsForLearner($user);
+            if ($assignedIds !== null) {
+                $query->whereIn('id', $assignedIds);
             }
 
             $courses = $query->get()
@@ -89,7 +92,7 @@ class CourseController extends Controller
             
             return response()->json([
                 'error' => 'Nu s-au putut încărca cursurile',
-                'message' => $e->getMessage(),
+                'message' => (config('app.debug') ? $e->getMessage() : null),
             ], 500);
         }
     }
@@ -114,8 +117,8 @@ class CourseController extends Controller
                 'modules.lessons' => function ($q) use ($isStaff) {
                     LearningVisibility::publishedLessonScope($q, $isStaff);
                 },
-                'modules.courseTests' => function ($q) use ($id) {
-                    $q->where('course_id', $id)->orderBy('order');
+                'modules.courseTests' => function($q) {
+                    $q->orderBy('order');
                 },
                 'modules.courseTests.test' => function($q) {
                     $q->select('id', 'title', 'description', 'type', 'status');
@@ -125,9 +128,28 @@ class CourseController extends Controller
                 }
             ])->findOrFail($id);
 
+            $user = $request->user();
+            if (
+                $user
+                && ($user->role ?? '') === 'student'
+                && ! LearningVisibility::isEnrolledInCourse($user, (int) $course->id)
+            ) {
+                return response()->json([
+                    'error' => 'Cursul nu îți este atribuit.',
+                ], 403);
+            }
+
+            $publishedView = app(PublishedCourseView::class);
+            $liveSnapshot = $publishedView->shouldServeSnapshot($course, $request)
+                ? $publishedView->latestPublishedSnapshot((int) $course->id)
+                : null;
+            if ($liveSnapshot) {
+                $publishedView->filterCourseLessons($course, $liveSnapshot);
+            }
+            $liveTestIds = $publishedView->liveTestIds($course, $request);
+
             CourseViews::recordView($course, $isStaff);
 
-            $user = $request->user();
             // Draft tests only when staff explicitly asks (builder/admin tools), not on learner course pages.
             $showDraftLinkedTests = $isStaff && $request->boolean('include_draft_tests');
 
@@ -144,8 +166,11 @@ class CourseController extends Controller
             foreach ($course->modules as $module) {
                 foreach ($module->lessons as $lesson) {
                     $rows = $lessonScopeRows->get($lesson->id, collect());
-                    $lesson->setAttribute('course_tests', $rows->map(function ($courseTest) use ($course, $showDraftLinkedTests) {
+                    $lesson->setAttribute('course_tests', $rows->map(function ($courseTest) use ($course, $showDraftLinkedTests, $liveTestIds) {
                         if (!$courseTest->test) {
+                            return null;
+                        }
+                        if ($liveTestIds !== null && ! in_array((int) $courseTest->test_id, $liveTestIds, true)) {
                             return null;
                         }
                         if (!$showDraftLinkedTests && $courseTest->test->status !== 'published') {
@@ -172,8 +197,11 @@ class CourseController extends Controller
 
             foreach ($course->lessons as $lesson) {
                 $rows = $lessonScopeRows->get($lesson->id, collect());
-                $lesson->setAttribute('course_tests', $rows->map(function ($courseTest) use ($course, $showDraftLinkedTests) {
+                $lesson->setAttribute('course_tests', $rows->map(function ($courseTest) use ($course, $showDraftLinkedTests, $liveTestIds) {
                     if (!$courseTest->test) {
+                        return null;
+                    }
+                    if ($liveTestIds !== null && ! in_array((int) $courseTest->test_id, $liveTestIds, true)) {
                         return null;
                     }
                     if (!$showDraftLinkedTests && $courseTest->test->status !== 'published') {
@@ -199,7 +227,10 @@ class CourseController extends Controller
             
             // Transform courseTests to exams format for frontend compatibility (doar Test / course_test)
             foreach ($course->modules as $module) {
-                $moduleExams = $module->courseTests->map(function ($courseTest) use ($course, $showDraftLinkedTests) {
+                $moduleExams = $module->courseTests->map(function ($courseTest) use ($course, $showDraftLinkedTests, $liveTestIds) {
+                    if ($liveTestIds !== null && ! in_array((int) $courseTest->test_id, $liveTestIds, true)) {
+                        return null;
+                    }
                     if ($courseTest->test && ($showDraftLinkedTests || $courseTest->test->status === 'published')) {
                         return [
                             'id' => $courseTest->test->id,
@@ -237,6 +268,9 @@ class CourseController extends Controller
                     ->get();
                 
                 foreach ($courseLevelTests as $courseTest) {
+                    if ($liveTestIds !== null && ! in_array((int) $courseTest->test_id, $liveTestIds, true)) {
+                        continue;
+                    }
                     if ($courseTest->test && ($showDraftLinkedTests || $courseTest->test->status === 'published')) {
                         $allExams[] = [
                             'id' => $courseTest->test->id,
@@ -258,45 +292,9 @@ class CourseController extends Controller
                     'error' => $e->getMessage(),
                 ]);
             }
-
-            // Doar teste (course_test) în structura cursului — examenele (model Exam) sunt în tab-ul Examene, nu în curs.
+            
+            // Set course.exams array
             $course->exams = $allExams;
-
-            $courseLevelCourseTests = CourseTest::where('course_id', $course->id)
-                ->where('scope', 'course')
-                ->with(['test' => function ($q) {
-                    $q->select('id', 'title', 'description', 'type', 'status');
-                }])
-                ->orderBy('order')
-                ->get()
-                ->map(function ($courseTest) use ($showDraftLinkedTests) {
-                    if (! $courseTest->test) {
-                        return null;
-                    }
-                    if (! $showDraftLinkedTests && $courseTest->test->status !== 'published') {
-                        return null;
-                    }
-
-                    return [
-                        'id' => $courseTest->id,
-                        'test_id' => $courseTest->test_id,
-                        'required' => (bool) ($courseTest->required ?? false),
-                        'passing_score' => $courseTest->passing_score ?? 70,
-                        'order' => $courseTest->order ?? 0,
-                        'test' => [
-                            'id' => $courseTest->test->id,
-                            'title' => $courseTest->test->title,
-                            'description' => $courseTest->test->description,
-                            'type' => $courseTest->test->type,
-                            'status' => $courseTest->test->status,
-                        ],
-                    ];
-                })
-                ->filter()
-                ->values()
-                ->all();
-
-            $course->setAttribute('course_tests', $courseLevelCourseTests);
 
             // Add user progress if user is authenticated
             if ($user) {
@@ -324,6 +322,8 @@ class CourseController extends Controller
                 }
             }
             
+            $this->redactRestrictedLessonBodies($course, $user);
+
             return response()->json($course);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             throw $e;
@@ -336,67 +336,8 @@ class CourseController extends Controller
 
             return response()->json([
                 'error' => 'Nu s-a putut încărca cursul',
-                'message' => $e->getMessage(),
+                'message' => (config('app.debug') ? $e->getMessage() : null),
             ], 500);
-        }
-    }
-
-    /**
-     * Examene create în admin (model Exam) — elevii le văd în curs, nu doar Test/course_test.
-     *
-     * @param  array<int, array<string, mixed>>  $allExams
-     */
-    protected function appendLegacyExamsForLearners(
-        Course $course,
-        array &$allExams,
-        bool $showDraftLinkedTests,
-        ?User $user,
-        bool $isStaff
-    ): void {
-        $legacyQuery = Exam::query()->where('course_id', $course->id);
-        if (! $showDraftLinkedTests) {
-            $legacyQuery->where('status', 'published');
-        }
-
-        $existingIds = array_map('intval', array_column($allExams, 'id'));
-
-        foreach ($legacyQuery->orderBy('id')->get() as $legacyExam) {
-            if ($user && ! $isStaff && ! $legacyExam->isVisibleToLearner($user)) {
-                continue;
-            }
-
-            if (in_array((int) $legacyExam->id, $existingIds, true)) {
-                continue;
-            }
-
-            $entry = [
-                'id' => $legacyExam->id,
-                'title' => $legacyExam->title,
-                'description' => $legacyExam->description,
-                'type' => 'final',
-                'status' => $legacyExam->status ?? 'draft',
-                'module_id' => $legacyExam->module_id,
-                'course_id' => $course->id,
-                'required' => (bool) ($legacyExam->is_required ?? false),
-                'passing_score' => $legacyExam->passing_score,
-                'order' => 1000 + (int) $legacyExam->id,
-                'legacy_exam' => true,
-            ];
-
-            if ($legacyExam->module_id) {
-                foreach ($course->modules as $module) {
-                    if ((int) $module->id !== (int) $legacyExam->module_id) {
-                        continue;
-                    }
-                    $moduleExams = is_array($module->exams ?? null) ? $module->exams : [];
-                    $moduleExams[] = $entry;
-                    $module->exams = $moduleExams;
-                    break;
-                }
-            }
-
-            $allExams[] = $entry;
-            $existingIds[] = (int) $legacyExam->id;
         }
     }
 
@@ -407,7 +348,12 @@ class CourseController extends Controller
     {
         try {
             $user = $request->user();
-            $courses = CourseCatalog::standalonePublishedQuery()
+            $coursesQuery = CourseCatalog::standalonePublishedQuery();
+            $assignedIds = LearningVisibility::assignedCourseIdsForLearner($user);
+            if ($assignedIds !== null) {
+                $coursesQuery->whereIn('id', $assignedIds);
+            }
+            $courses = $coursesQuery
                 ->with([
                     'teacher:id,name',
                     'modules:id,course_id,estimated_duration_minutes',
@@ -448,7 +394,7 @@ class CourseController extends Controller
 
             return response()->json([
                 'error' => 'Nu s-au putut încărca cursurile',
-                'message' => $e->getMessage(),
+                'message' => (config('app.debug') ? $e->getMessage() : null),
             ], 500);
         }
     }
@@ -480,14 +426,37 @@ class CourseController extends Controller
         return $progress;
     }
 
-    /**
-     * @deprecated Use POST /api/courses/{courseId}/finish (auth required).
-     */
-    public function complete(Request $request, $courseId)
+    private function redactRestrictedLessonBodies(Course $course, $user): void
     {
-        return app(\App\Http\Controllers\Api\CourseProgressController::class)
-            ->finishCourse($courseId);
+        // Înscrierea e aceeași pentru toate lecțiile cursului: o verificăm o singură dată, nu per lecție.
+        $enrolled = LearningVisibility::isEnrolledInCourse($user, (int) $course->id);
+        $redact = function ($lesson) use ($user, $course, $enrolled) {
+            if (! $lesson || LearningVisibility::learnerMaySeeLessonBody($user, $lesson, $course, $enrolled)) {
+                return;
+            }
+            $lesson->content = null;
+            $lesson->video_url = null;
+            $lesson->setRelation('contentBlocks', collect());
+            $lesson->setAttribute('content_restricted', true);
+        };
+
+        if ($course->relationLoaded('lessons')) {
+            foreach ($course->lessons as $lesson) {
+                $redact($lesson);
+            }
+        }
+        if ($course->relationLoaded('modules')) {
+            foreach ($course->modules as $module) {
+                if (! $module->relationLoaded('lessons')) {
+                    continue;
+                }
+                foreach ($module->lessons as $lesson) {
+                    $redact($lesson);
+                }
+            }
+        }
     }
+
 }
 
 

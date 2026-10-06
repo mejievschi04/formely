@@ -7,7 +7,7 @@ use App\Models\Question;
 use App\Models\QuestionBank;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaCache;
 
 /**
  * TestBuilderService
@@ -26,16 +26,18 @@ class TestBuilderService
         $insert = [
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
-            'type' => 'final',
-            'status' => $data['status'] ?? 'draft',
+            'type' => $data['type'] ?? 'final',
+            'status' => 'draft',
             'time_limit_minutes' => $data['time_limit_minutes'] ?? null,
-            'max_attempts' => $data['max_attempts'] ?? 1,
+            'max_attempts' => array_key_exists('max_attempts', $data)
+                ? ($data['max_attempts'] === null || $data['max_attempts'] === '' ? null : (int) $data['max_attempts'])
+                : null,
             'passing_score' => isset($data['passing_score']) ? (int) $data['passing_score'] : 70,
             'randomize_questions' => (bool)($data['randomize_questions'] ?? false),
             'randomize_answers' => (bool)($data['randomize_answers'] ?? false),
             'show_results_immediately' => (bool)($data['show_results_immediately'] ?? true),
-            'show_correct_answers' => (bool)($data['show_correct_answers'] ?? false),
-            'show_only_submitted_answers' => (bool)($data['show_only_submitted_answers'] ?? false),
+            'show_correct_answers' => $this->resolveShowCorrectAnswers($data),
+            'show_only_submitted_answers' => $this->resolveShowOnlySubmittedAnswers($data),
             'allow_review' => (bool)($data['allow_review'] ?? true),
             'requires_manual_verification' => (bool)($data['requires_manual_verification'] ?? false),
             'question_source' => $data['question_source'] ?? 'direct',
@@ -44,7 +46,7 @@ class TestBuilderService
             'version' => $data['version'] ?? '1.0.0',
         ];
 
-        if (Schema::hasColumn('tests', 'question_selection')) {
+        if (SchemaCache::hasColumn('tests', 'question_selection')) {
             $insert['question_selection'] = isset($data['question_selection'])
                 ? $this->normalizeQuestionSelection($data['question_selection'])
                 : null;
@@ -55,6 +57,10 @@ class TestBuilderService
         // Add questions if provided
         if (isset($data['questions']) && is_array($data['questions'])) {
             $this->addQuestionsToTest($test, $data['questions']);
+        }
+
+        if (($data['status'] ?? 'draft') === 'published') {
+            return $this->publishTest($test->fresh());
         }
 
         return $test;
@@ -84,7 +90,7 @@ class TestBuilderService
         $table = $test->getTable();
         $updateData = [];
         foreach ($data as $key => $value) {
-            if (Schema::hasColumn($table, $key)) {
+            if (SchemaCache::hasColumn($table, $key)) {
                 if ($key === 'question_selection') {
                     $value = $this->normalizeQuestionSelection($value);
                 }
@@ -192,38 +198,21 @@ class TestBuilderService
      */
     public function publishTest(Test $test): Test
     {
-        // Validate test has questions
-        if ($test->question_source === 'direct' && $test->questions()->count() === 0) {
+        $source = $test->question_source ?: 'direct';
+
+        if ($source === 'direct' && $test->questions()->count() === 0) {
             throw new \Exception('Cannot publish test without questions');
         }
 
-        if ($test->question_source === 'bank' && !$test->questionBank) {
+        if ($source === 'bank' && !$test->questionBank) {
             throw new \Exception('Cannot publish test without question bank');
         }
 
-        if ($test->question_source === 'bank' && $test->questionBank->questions()->count() === 0) {
+        if ($source === 'bank' && $test->questionBank->questions()->count() === 0) {
             throw new \Exception('Cannot publish test with empty question bank');
         }
 
         $test->update(['status' => 'published']);
-        return $test->fresh();
-    }
-
-    /**
-     * Unpublish a test
-     */
-    public function unpublishTest(Test $test): Test
-    {
-        // Check if test is linked to courses
-        $usageCount = DB::table('course_test')
-            ->where('test_id', $test->id)
-            ->count();
-
-        if ($usageCount > 0) {
-            throw new \Exception('Cannot unpublish test that is linked to courses. Unlink it first.');
-        }
-
-        $test->update(['status' => 'draft']);
         return $test->fresh();
     }
 
@@ -235,7 +224,7 @@ class TestBuilderService
     public function deleteTest(Test $test): bool
     {
         return DB::transaction(function () use ($test) {
-            if (Schema::hasTable('course_test')) {
+            if (SchemaCache::hasTable('course_test')) {
                 DB::table('course_test')->where('unlock_after_test_id', $test->id)->update(['unlock_after_test_id' => null]);
                 DB::table('course_test')->where('test_id', $test->id)->delete();
             }
@@ -282,36 +271,6 @@ class TestBuilderService
                 'metadata' => $questionData['metadata'] ?? null,
             ]);
         }
-    }
-
-    /**
-     * Create a new version of a test
-     */
-    public function createTestVersion(Test $test, User $creator): Test
-    {
-        $newTest = $test->replicate();
-        $newTest->title = $test->title . ' (v' . $test->version . ')';
-        $newTest->status = 'draft';
-        $newTest->version = $this->incrementVersion($test->version);
-        $newTest->created_by = $creator->id;
-        $newTest->save();
-
-        // Copy questions if direct
-        if ($test->question_source === 'direct') {
-            foreach ($test->questions as $question) {
-                $newQuestion = $question->replicate();
-                $newQuestion->test_id = $newTest->id;
-                $newQuestion->question_bank_id = null;
-                $newQuestion->type = $this->normalizeQuestionType($newQuestion->type ?? 'multiple_choice');
-                $newQuestion->save();
-            }
-        } else {
-            // Link to same question bank
-            $newTest->question_set_id = $test->question_set_id;
-            $newTest->save();
-        }
-
-        return $newTest;
     }
 
     /**
@@ -401,9 +360,14 @@ class TestBuilderService
     protected function normalizeQuestionType(?string $type): string
     {
         $type = strtolower(trim((string) $type));
-        $allowed = ['multiple_choice', 'single_choice', 'true_false', 'matching', 'ordering'];
+        $allowed = ['multiple_choice', 'single_choice', 'true_false', 'yes_no', 'matching', 'ordering'];
 
         return in_array($type, $allowed, true) ? $type : 'multiple_choice';
+    }
+
+    public function normalizeQuestionAnswersForType(?string $questionType, array $answers): array
+    {
+        return $this->normalizeAnswersForType($questionType, $answers);
     }
 
     protected function normalizeAnswersForType(?string $questionType, array $answers): array
@@ -449,6 +413,54 @@ class TestBuilderService
             ];
         }
 
+        if ($type === 'yes_no') {
+            $noIsCorrect = false;
+            foreach ($normalized as $answer) {
+                $text = mb_strtolower(trim((string) ($answer['text'] ?? '')));
+                if (! empty($answer['is_correct']) && in_array($text, ['nu', 'no', 'fals', 'false'], true)) {
+                    $noIsCorrect = true;
+                    break;
+                }
+            }
+
+            return [
+                ['text' => 'Da', 'is_correct' => ! $noIsCorrect, 'order' => 0],
+                ['text' => 'Nu', 'is_correct' => $noIsCorrect, 'order' => 1],
+            ];
+        }
+
+        if (in_array($type, ['single_choice', 'true_false', 'yes_no'], true)) {
+            $correctIndex = null;
+            foreach ($normalized as $idx => $answer) {
+                if (! empty($answer['is_correct'])) {
+                    $correctIndex = $idx;
+                    break;
+                }
+            }
+            $correctIndex ??= 0;
+            foreach ($normalized as $idx => $answer) {
+                $normalized[$idx]['is_correct'] = $idx === $correctIndex;
+            }
+        }
+
         return $normalized;
+    }
+
+    private function resolveShowOnlySubmittedAnswers(array $data): bool
+    {
+        if (array_key_exists('show_only_submitted_answers', $data)) {
+            return (bool) $data['show_only_submitted_answers'];
+        }
+
+        return ! (bool) ($data['show_correct_answers'] ?? false);
+    }
+
+    private function resolveShowCorrectAnswers(array $data): bool
+    {
+        if ($this->resolveShowOnlySubmittedAnswers($data)) {
+            return false;
+        }
+
+        return (bool) ($data['show_correct_answers'] ?? false);
     }
 }

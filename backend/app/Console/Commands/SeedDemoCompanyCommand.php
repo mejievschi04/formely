@@ -6,7 +6,6 @@ use App\Models\Company;
 use App\Models\Course;
 use App\Models\CourseMap;
 use App\Models\CourseTest;
-use App\Models\Department;
 use App\Models\Event;
 use App\Models\Lesson;
 use App\Models\LibraryItem;
@@ -60,8 +59,7 @@ class SeedDemoCompanyCommand extends Command
 
         $staff = $this->ensureStaff($company, $password);
         $students = $this->ensureStudents($company, $password);
-        $departments = $this->ensureDepartments($company, $staff);
-        $teams = $this->ensureTeams($company, $staff, $students, $departments);
+        $teams = $this->ensureTeams($company, $staff, $students);
 
         if ($this->option('fresh')) {
             $this->purgeDemoContent($company);
@@ -85,7 +83,6 @@ class SeedDemoCompanyCommand extends Command
                 ['Instructori', 'instructor01@…, instructor02@…'],
                 ['Staff', 'hr@…, manager@…, analyst@…'],
                 ['Cursanți', count($students).' × studentNN@'.self::EMAIL_DOMAIN],
-                ['Departamente', collect($departments)->pluck('name')->implode(', ')],
                 ['Echipe', collect($teams)->pluck('name')->implode(', ')],
                 ['Cursuri', collect($coursesBundle['courses'])->pluck('title')->implode('; ')],
                 ['Bănci', collect($banks)->map(fn (QuestionBank $b) => $b->title.' ('.$b->questions()->count().')')->implode('; ')],
@@ -127,8 +124,7 @@ class SeedDemoCompanyCommand extends Command
     {
         $owner = $this->upsertUser($company, 'owner@'.self::EMAIL_DOMAIN, [
             'name' => 'Alexandra Popa',
-            'job_title' => 'Head of Learning',
-            'role' => UserRoles::COMPANY_OWNER,
+            'role' => UserRoles::ADMIN,
             'password' => $password,
             'points' => 420,
             'level' => 5,
@@ -137,7 +133,6 @@ class SeedDemoCompanyCommand extends Command
         $instructors = [
             $this->upsertUser($company, 'instructor01@'.self::EMAIL_DOMAIN, [
                 'name' => 'Mihai Dragomir',
-                'job_title' => 'Senior L&D Trainer',
                 'role' => UserRoles::INSTRUCTOR,
                 'password' => $password,
                 'points' => 310,
@@ -145,7 +140,6 @@ class SeedDemoCompanyCommand extends Command
             ]),
             $this->upsertUser($company, 'instructor02@'.self::EMAIL_DOMAIN, [
                 'name' => 'Ioana Marinescu',
-                'job_title' => 'Compliance Trainer',
                 'role' => UserRoles::INSTRUCTOR,
                 'password' => $password,
                 'points' => 280,
@@ -155,21 +149,18 @@ class SeedDemoCompanyCommand extends Command
 
         $hr = $this->upsertUser($company, 'hr@'.self::EMAIL_DOMAIN, [
             'name' => 'Andreea Stoica',
-            'job_title' => 'HR Business Partner',
-            'role' => UserRoles::HR_ADMIN,
+            'role' => UserRoles::ADMIN,
             'password' => $password,
         ]);
 
         $manager = $this->upsertUser($company, 'manager@'.self::EMAIL_DOMAIN, [
             'name' => 'Radu Enache',
-            'job_title' => 'People Manager',
-            'role' => UserRoles::MANAGER,
+            'role' => UserRoles::ANALYST,
             'password' => $password,
         ]);
 
         $analyst = $this->upsertUser($company, 'analyst@'.self::EMAIL_DOMAIN, [
             'name' => 'Laura Niculescu',
-            'job_title' => 'Learning Analyst',
             'role' => UserRoles::ANALYST,
             'password' => $password,
         ]);
@@ -206,11 +197,9 @@ class SeedDemoCompanyCommand extends Command
         $students = [];
         foreach ($roster as $index => [$name, $title]) {
             $num = str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT);
-            // role=student: EnrollmentAssignmentService verifică explicit 'student'
-            $students[] = $this->upsertUser($company, "student{$num}@".self::EMAIL_DOMAIN, [
+                        $students[] = $this->upsertUser($company, "student{$num}@".self::EMAIL_DOMAIN, [
                 'name' => $name,
-                'job_title' => $title,
-                'role' => UserRoles::LEGACY_STUDENT,
+                'role' => UserRoles::STUDENT,
                 'password' => $password,
                 'points' => random_int(20, 380),
                 'level' => random_int(1, 4),
@@ -246,55 +235,25 @@ class SeedDemoCompanyCommand extends Command
 
     /**
      * @param  array{owner: User, instructors: array<int, User>, hr: User, manager: User, analyst: User}  $staff
-     * @return array<int, Department>
-     */
-    private function ensureDepartments(Company $company, array $staff): array
-    {
-        $defs = [
-            ['Learning & Development', 'Proiecte de formare și onboarding', '#0f766e', $staff['owner']],
-            ['Operațiuni', 'Echipe de teren și suport', '#2563eb', $staff['manager']],
-            ['Product & Engineering', 'Echipele de produs', '#7c3aed', $staff['instructors'][0]],
-        ];
-
-        $out = [];
-        foreach ($defs as $i => [$name, $desc, $color, $owner]) {
-            $out[] = Department::updateOrCreate(
-                ['company_id' => $company->id, 'name' => $name],
-                [
-                    'description' => $desc,
-                    'owner_id' => $owner->id,
-                    'sort_order' => $i + 1,
-                    'accent_color' => $color,
-                ]
-            );
-        }
-
-        return $out;
-    }
-
-    /**
-     * @param  array{owner: User, instructors: array<int, User>, hr: User, manager: User, analyst: User}  $staff
      * @param  array<int, User>  $students
-     * @param  array<int, Department>  $departments
      * @return array<int, Team>
      */
-    private function ensureTeams(Company $company, array $staff, array $students, array $departments): array
+    private function ensureTeams(Company $company, array $staff, array $students): array
     {
         $chunks = [
-            ['Echipa Sales', 'Pipeline Q3 + playbook', '#0891b2', $departments[0], array_slice($students, 0, 5), $staff['manager']],
-            ['Echipa Customer Care', 'CS + Support', '#2563eb', $departments[1], array_slice($students, 5, 5), $staff['hr']],
-            ['Echipa Product', 'Design & Engineering', '#7c3aed', $departments[2], array_slice($students, 10, 5), $staff['instructors'][0]],
-            ['Echipa Ops', 'Finanțe + logistică', '#ea580c', $departments[1], array_slice($students, 15, 3), $staff['owner']],
+            ['Echipa Sales', 'Pipeline Q3 + playbook', '#0891b2', array_slice($students, 0, 5), $staff['manager']],
+            ['Echipa Customer Care', 'CS + Support', '#2563eb', array_slice($students, 5, 5), $staff['hr']],
+            ['Echipa Product', 'Design & Engineering', '#7c3aed', array_slice($students, 10, 5), $staff['instructors'][0]],
+            ['Echipa Ops', 'Finanțe + logistică', '#ea580c', array_slice($students, 15, 3), $staff['owner']],
         ];
 
         $teams = [];
-        foreach ($chunks as $i => [$name, $desc, $color, $dept, $members, $owner]) {
+        foreach ($chunks as $i => [$name, $desc, $color, $members, $owner]) {
             $team = Team::updateOrCreate(
                 ['company_id' => $company->id, 'name' => $name],
                 [
                     'description' => $desc,
                     'owner_id' => $owner->id,
-                    'department_id' => $dept->id,
                     'sort_order' => $i + 1,
                     'accent_color' => $color,
                 ]

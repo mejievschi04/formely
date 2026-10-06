@@ -128,7 +128,7 @@
 }
 
 .va-notif-drawer-tab.is-active {
-	color: var(--color-primary);
+	color: var(--text-accent);
 	border-bottom-color: var(--color-primary);
 }
 
@@ -171,7 +171,7 @@
 .va-notif-drawer-toolbar-btn {
 	font-size: var(--font-size-xs);
 	font-weight: var(--font-weight-semibold);
-	color: var(--color-primary);
+	color: var(--text-accent);
 	background: var(--bg-secondary);
 	border: 1px solid var(--border-primary);
 	border-radius: var(--radius-md);
@@ -233,7 +233,7 @@
 
 .va-notif-drawer-row--action:hover {
 	border-color: var(--color-primary);
-	box-shadow: 0 4px 14px rgba(var(--formely-white-rgb), 0.12);
+	box-shadow: 0 4px 14px rgba(var(--color-primary-rgb), 0.12);
 }
 
 .va-notif-drawer-row--static {
@@ -305,7 +305,7 @@
 .va-notif-drawer-link {
 	font-size: var(--font-size-xs);
 	font-weight: var(--font-weight-semibold);
-	color: var(--color-primary);
+	color: var(--text-accent);
 	text-decoration: none;
 }
 
@@ -327,6 +327,13 @@
 
 .va-notif-drawer-delete:hover {
 	background: rgba(239, 68, 68, 0.12);
+}
+
+@media (max-width: 768px) {
+	html:has(.student-mobile-tabs) .va-notif-drawer-panel {
+		top: var(--app-header-height, 56px);
+		bottom: var(--student-tab-height, 0px);
+	}
 }
 
 @media (max-width: 480px) {

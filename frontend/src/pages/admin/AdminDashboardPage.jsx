@@ -162,11 +162,11 @@ const AdminDashboardPage = () => {
 
 	const funnelBarData = useMemo(() => ([
 		{ key: 'enrolled', label: 'Înscrieri active', short: 'Înscrieri', count: readMetricValue(learningFunnel.enrolled), fill: '#64748b' },
-		{ key: 'started', label: 'Cu început înregistrat', short: 'Început', count: readMetricValue(learningFunnel.started), fill: '#38bdf8' },
-		{ key: 'p25', label: 'Progres ≥ 25%', short: '≥25%', count: readMetricValue(learningFunnel.progress_25), fill: '#22d3ee' },
-		{ key: 'p50', label: 'Progres ≥ 50%', short: '≥50%', count: readMetricValue(learningFunnel.progress_50), fill: '#0891b2' },
-		{ key: 'p75', label: 'Progres ≥ 75%', short: '≥75%', count: readMetricValue(learningFunnel.progress_75), fill: '#0e7490' },
-		{ key: 'completed', label: 'Finalizat curs', short: 'Finalizat', count: readMetricValue(learningFunnel.completed), fill: '#10b981' },
+		{ key: 'started', label: 'Cu început înregistrat', short: 'Început', count: readMetricValue(learningFunnel.started), fill: '#3b82f6' },
+		{ key: 'p25', label: 'Progres ≥ 25%', short: '≥25%', count: readMetricValue(learningFunnel.progress_25), fill: '#8b5cf6' },
+		{ key: 'p50', label: 'Progres ≥ 50%', short: '≥50%', count: readMetricValue(learningFunnel.progress_50), fill: '#ca8a04' },
+		{ key: 'p75', label: 'Progres ≥ 75%', short: '≥75%', count: readMetricValue(learningFunnel.progress_75), fill: '#f97316' },
+		{ key: 'completed', label: 'Finalizat curs', short: 'Finalizat', count: readMetricValue(learningFunnel.completed), fill: '#22c55e' },
 	]), [learningFunnel]);
 
 	const funnelTotal = useMemo(
@@ -240,7 +240,7 @@ const AdminDashboardPage = () => {
 					<strong>{numberFormatter.format(Number(row.sesiuni || 0))}</strong>
 				</p>
 				<p className="dashboard-chart-tooltip-row">
-					<span>Elevi unici</span>
+					<span>Utilizatori unici</span>
 					<strong>{numberFormatter.format(Number(row.elevi || 0))}</strong>
 				</p>
 			</div>
@@ -264,7 +264,7 @@ const AdminDashboardPage = () => {
 				<div>
 					<h1 className="admin-dashboard-clean-title">Panou de control</h1>
 					<p className="admin-dashboard-clean-subtitle">
-						Vedere de ansamblu Formely — elevi, cursuri, teste și activitate reală din platformă.
+						Metrici conectate la elevi, cursuri, teste și activitate reală din platformă.
 					</p>
 					<p className="admin-dashboard-clean-meta">
 						Utilizatori noi: <strong>{formatNumber(newUsers)}</strong> · Cursuri în sistem: <strong>{formatNumber(totalCourses)}</strong>
@@ -277,24 +277,24 @@ const AdminDashboardPage = () => {
 
 			<section className="admin-dashboard-clean-hero">
 				<article className="hero-stat">
-					<p className="hero-stat-label">Total elevi</p>
+					<p className="hero-stat-label">Total utilizatori</p>
 					<p className="hero-stat-value">{formatNumber(totalUsersNum)}</p>
-					<p className="hero-stat-meta">Înregistrați în Formely</p>
+					<p className="hero-stat-meta">Înregistrați în platformă</p>
 				</article>
 				<article className="hero-stat">
-					<p className="hero-stat-label">Elevi activi</p>
+					<p className="hero-stat-label">Utilizatori activi</p>
 					<p className="hero-stat-value">{formatNumber(activeUsersNum)}</p>
 					<p className="hero-stat-meta">Au deschis aplicația în {periodLabel.toLowerCase()}</p>
 				</article>
 				<article className="hero-stat hero-stat-green">
 					<p className="hero-stat-label">Cursuri publicate</p>
 					<p className="hero-stat-value">{formatNumber(publishedCourses)}</p>
-					<p className="hero-stat-meta">Total: {formatNumber(totalCourses)} · Draft: {formatNumber(draftCourses)}</p>
+					<p className="hero-stat-meta">Total: {formatNumber(totalCourses)} · Ciornă: {formatNumber(draftCourses)}</p>
 				</article>
 				<article className="hero-stat">
 					<p className="hero-stat-label">Teste publicate</p>
 					<p className="hero-stat-value">{formatNumber(publishedTests)}</p>
-					<p className="hero-stat-meta">Total: {formatNumber(totalTests)} · Draft: {formatNumber(draftTests)}</p>
+					<p className="hero-stat-meta">Total: {formatNumber(totalTests)} · Ciornă: {formatNumber(draftTests)}</p>
 				</article>
 				<article className="hero-stat hero-stat-cyan">
 					<p className="hero-stat-label">Rată finalizare</p>
@@ -317,7 +317,7 @@ const AdminDashboardPage = () => {
 			<section className="admin-dashboard-clean-grid">
 				<article className="clean-card">
 					<header className="clean-card-header">
-						<h2>Total elevi în platformă</h2>
+						<h2>Total utilizatori în platformă</h2>
 						<span>{periodLabel}</span>
 					</header>
 					<div className="chart-modern-line">
@@ -334,7 +334,7 @@ const AdminDashboardPage = () => {
 									<XAxis dataKey="label" tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }} tickLine={false} axisLine={false} />
 									<YAxis tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }} tickLine={false} axisLine={false} width={44} />
 									<Tooltip content={renderTooltip} />
-									<Area type="monotone" dataKey="totalUsers" stroke="var(--color-primary)" strokeWidth={2.2} fill="url(#overviewAreaFill)" name="Total elevi" />
+									<Area type="monotone" dataKey="totalUsers" stroke="var(--color-primary)" strokeWidth={2.2} fill="url(#overviewAreaFill)" name="Total utilizatori" />
 								</AreaChart>
 							</ResponsiveContainer>
 						</div>
@@ -395,14 +395,14 @@ const AdminDashboardPage = () => {
 						<div className="funnel-kpi-foot">
 							<span>Rată finalizare KPI: <strong>{completionRate}</strong></span>
 							<span className="funnel-kpi-foot-sep" aria-hidden>·</span>
-							<span>Total elevi: <strong>{formatNumber(totalUsersNum)}</strong></span>
+							<span>Total utilizatori: <strong>{formatNumber(totalUsersNum)}</strong></span>
 						</div>
 					</div>
 				</article>
 
 				<article className="clean-card">
 					<header className="clean-card-header">
-						<h2>Activitate elevi</h2>
+						<h2>Activitate utilizatori</h2>
 						<span>{periodLabel}</span>
 					</header>
 					<div className="chart-modern-line chart-modern-line-multi">
@@ -413,8 +413,8 @@ const AdminDashboardPage = () => {
 									<XAxis dataKey="label" tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={28} />
 									<YAxis tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }} tickLine={false} axisLine={false} width={38} />
 									<Tooltip content={renderTooltip} />
-									<Line type="monotone" dataKey="activeUsers" name="Elevi activi" stroke="var(--color-primary)" strokeWidth={2.6} dot={false} activeDot={{ r: 4 }} />
-									<Line type="monotone" dataKey="newUsers" name="Elevi noi" stroke="var(--text-secondary)" strokeWidth={2.1} dot={false} activeDot={{ r: 3.5 }} />
+									<Line type="monotone" dataKey="activeUsers" name="Utilizatori activi" stroke="var(--color-primary)" strokeWidth={2.6} dot={false} activeDot={{ r: 4 }} />
+									<Line type="monotone" dataKey="newUsers" name="Utilizatori noi" stroke="var(--text-secondary)" strokeWidth={2.1} dot={false} activeDot={{ r: 3.5 }} />
 									<Line type="monotone" dataKey="enrollments" name="Înscrieri noi" stroke="var(--color-success)" strokeWidth={2.1} dot={false} activeDot={{ r: 3.5 }} />
 								</LineChart>
 							</ResponsiveContainer>
@@ -424,8 +424,8 @@ const AdminDashboardPage = () => {
 							<span>{lastLabel}</span>
 						</div>
 						<div className="chart-modern-legend">
-							<span><i className="legend-dot legend-users" />Elevi activi</span>
-							<span><i className="legend-dot legend-active" />Elevi noi</span>
+							<span><i className="legend-dot legend-users" />Utilizatori activi</span>
+							<span><i className="legend-dot legend-active" />Utilizatori noi</span>
 							<span><i className="legend-dot legend-success" />Înscrieri noi</span>
 						</div>
 						{!hasChartData ? <p className="chart-modern-empty">Nu există date pentru perioada selectată.</p> : null}

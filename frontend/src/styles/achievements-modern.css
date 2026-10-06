@@ -27,13 +27,6 @@
 	letter-spacing: -0.02em;
 }
 
-.student-achievements-subtitle {
-	font-size: var(--font-size-sm);
-	color: var(--text-tertiary);
-	margin: 0;
-	opacity: 0.7;
-}
-
 /* ============================================
    2. STATS CARDS
    ============================================ */
@@ -69,7 +62,7 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: linear-gradient(135deg, var(--color-primary) 0%, rgba(var(--formely-white-rgb), 0.6) 100%);
+	background: linear-gradient(135deg, var(--color-primary) 0%, rgba(var(--color-primary-rgb), 0.6) 100%);
 	border-radius: var(--radius-lg);
 	flex-shrink: 0;
 }
@@ -111,398 +104,33 @@
 /* ============================================
    4. CERTIFICATES GRID - Professional Design
    ============================================ */
-.student-certificates-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-	gap: var(--space-4);
-}
-
-.student-certificate-card {
-	background-color: var(--bg-elevated);
-	border-radius: var(--radius-lg);
-	border: 1px solid var(--border-primary);
-	box-shadow: var(--shadow-sm);
-	overflow: hidden;
-	transition: all var(--transition-base);
-	transition: all var(--transition-base);
-	position: relative;
-}
-
-.student-certificate-card::before {
-	content: '';
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	height: 4px;
-	background: linear-gradient(90deg, var(--color-primary) 0%, rgba(var(--formely-white-rgb), 0.8) 100%);
-}
-
-.student-certificate-card:hover {
-	box-shadow: var(--shadow-md);
-	border-color: var(--border-secondary);
-	transform: translateY(-2px);
-}
-
-.student-certificate-thumbnail {
-	width: 100%;
-	height: 180px;
-	object-fit: cover;
-	background: linear-gradient(135deg, var(--color-primary) 0%, rgba(var(--formely-white-rgb), 0.6) 100%);
-}
-
-.student-certificate-content {
-	padding: var(--space-4);
-}
-
-.student-certificate-title {
-	font-size: var(--font-size-lg);
-	font-weight: var(--font-weight-semibold);
-	color: var(--text-primary);
-	margin: 0 0 var(--space-2) 0;
-	line-height: var(--line-height-tight);
-}
-
-.student-certificate-category {
-	font-size: var(--font-size-xs);
-	color: var(--text-tertiary);
-	margin: 0 0 var(--space-3) 0;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-}
-
-.student-certificate-meta {
-	display: flex;
-	flex-direction: column;
-	gap: var(--space-2);
-	margin-bottom: var(--space-4);
-	padding: var(--space-3);
-	background-color: var(--bg-secondary);
-	border-radius: var(--radius-md);
-}
-
-.student-certificate-date {
-	font-size: var(--font-size-xs);
-	color: var(--text-secondary);
-	display: flex;
-	align-items: center;
-	gap: var(--space-2);
-}
-
-.student-certificate-date::before {
-	content: '📅';
-	font-size: var(--font-size-sm);
-}
-
-.student-certificate-id {
-	font-size: var(--font-size-xs);
-	color: var(--text-tertiary);
-	font-family: 'Courier New', monospace;
-	display: flex;
-	align-items: center;
-	gap: var(--space-2);
-}
-
-.student-certificate-id::before {
-	content: '🔑';
-	font-size: var(--font-size-sm);
-}
-
-.student-certificate-download-btn {
-	width: 100%;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: var(--space-2);
-	padding: var(--space-3) var(--space-4);
-	background: linear-gradient(135deg, var(--color-primary) 0%, rgba(var(--formely-white-rgb), 0.8) 100%);
-	color: var(--text-inverse);
-	border: none;
-	border-radius: var(--radius-md);
-	font-size: var(--font-size-sm);
-	font-weight: var(--font-weight-semibold);
-	cursor: pointer;
-	transition: all var(--transition-base);
-	box-shadow: 0 2px 8px rgba(var(--formely-white-rgb), 0.3);
-}
-
-.student-certificate-download-btn:hover {
-	transform: translateY(-2px);
-	box-shadow: 0 4px 12px rgba(var(--formely-white-rgb), 0.4);
-}
-
-.student-certificate-download-btn:active {
-	transform: translateY(0);
-}
 
 /* ============================================
    5. BADGES GRID - Premium Design
    ============================================ */
-.student-badges-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-	gap: var(--space-4);
-}
-
-.student-badge-card {
-	background-color: var(--bg-elevated);
-	border-radius: var(--radius-lg);
-	padding: var(--space-6);
-	border: 1px solid var(--border-primary);
-	box-shadow: var(--shadow-sm);
-	transition: all var(--transition-base);
-	text-align: center;
-	transition: all var(--transition-base);
-	position: relative;
-	overflow: hidden;
-}
-
-.student-badge-card::before {
-	content: '';
-	position: absolute;
-	top: -50%;
-	left: -50%;
-	width: 200%;
-	height: 200%;
-	background: radial-gradient(circle, rgba(var(--formely-white-rgb), 0.1) 0%, transparent 70%);
-	opacity: 0;
-	transition: opacity var(--transition-base);
-}
-
-.student-badge-card:hover {
-	box-shadow: var(--shadow-md);
-	border-color: var(--border-secondary);
-	transform: translateY(-2px);
-}
-
-.student-badge-card:hover::before {
-	opacity: 1;
-}
-
-.student-badge-icon {
-	font-size: 4rem;
-	margin-bottom: var(--space-3);
-	position: relative;
-	z-index: 1;
-	filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
-	transition: transform var(--transition-base);
-}
-
-.student-badge-card:hover .student-badge-icon {
-	transform: scale(1.1) rotate(5deg);
-}
-
-.student-badge-title {
-	font-size: var(--font-size-base);
-	font-weight: var(--font-weight-semibold);
-	color: var(--text-primary);
-	margin: 0 0 var(--space-2) 0;
-	position: relative;
-	z-index: 1;
-}
-
-.student-badge-description {
-	font-size: var(--font-size-sm);
-	color: var(--text-secondary);
-	margin: 0 0 var(--space-3) 0;
-	line-height: var(--line-height-relaxed);
-	position: relative;
-	z-index: 1;
-}
-
-.student-badge-date {
-	font-size: var(--font-size-xs);
-	color: var(--text-tertiary);
-	padding: var(--space-2) var(--space-3);
-	background-color: var(--bg-secondary);
-	border-radius: var(--radius-full);
-	display: inline-block;
-	position: relative;
-	z-index: 1;
-}
 
 /* ============================================
    6. CERTIFICATE PREVIEW MODAL
    ============================================ */
-.certificate-preview-overlay {
-	position: fixed;
-	inset: 0;
-	background-color: rgba(0, 0, 0, 0.8);
-	backdrop-filter: blur(8px);
-	z-index: var(--z-modal-backdrop);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	padding: var(--space-6);
-	animation: fadeIn var(--transition-base);
-}
-
-.certificate-preview-modal {
-	background-color: var(--bg-elevated);
-	border-radius: var(--radius-xl);
-	box-shadow: var(--shadow-2xl);
-	max-width: 800px;
-	width: 100%;
-	max-height: 90vh;
-	overflow: hidden;
-	z-index: var(--z-modal);
-	animation: slideUp var(--transition-smooth);
-	border: 1px solid var(--border-primary);
-	display: flex;
-	flex-direction: column;
-}
-
-.certificate-preview-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: var(--space-4);
-	border-bottom: 1px solid var(--border-primary);
-	flex-shrink: 0;
-}
-
-.certificate-preview-title {
-	font-size: var(--font-size-lg);
-	font-weight: var(--font-weight-semibold);
-	color: var(--text-primary);
-	margin: 0;
-}
-
-.certificate-preview-close {
-	width: 32px;
-	height: 32px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	border: none;
-	background: transparent;
-	color: var(--text-secondary);
-	border-radius: var(--radius-md);
-	cursor: pointer;
-	transition: all var(--transition-base);
-}
-
-.certificate-preview-close:hover {
-	background-color: var(--bg-secondary);
-	color: var(--text-primary);
-}
-
-.certificate-preview-body {
-	padding: var(--space-4);
-	overflow-y: auto;
-	flex: 1;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.certificate-preview-content {
-	width: 100%;
-	background: var(--bg-elevated);
-	border-radius: var(--radius-lg);
-	padding: var(--space-6);
-	box-shadow: var(--shadow-lg);
-	border: 2px solid var(--border-primary);
-	transform: scale(0.7);
-	transform-origin: top center;
-}
-
-.certificate-preview-actions {
-	display: flex;
-	align-items: center;
-	justify-content: flex-end;
-	gap: var(--space-3);
-	padding: var(--space-4);
-	border-top: 1px solid var(--border-primary);
-	flex-shrink: 0;
-}
 
 /* ============================================
    7. EMPTY STATES
    ============================================ */
-.student-achievements-empty {
-	padding: var(--space-8);
-	text-align: center;
-	background-color: var(--bg-elevated);
-	border-radius: var(--radius-lg);
-	border: 1px dashed var(--border-primary);
-}
-
-.student-achievements-empty p {
-	font-size: var(--font-size-base);
-	color: var(--text-tertiary);
-	margin: 0 0 var(--space-4) 0;
-}
-
-.student-achievements-empty-link {
-	display: inline-flex;
-	align-items: center;
-	gap: var(--space-2);
-	padding: var(--space-3) var(--space-6);
-	background: linear-gradient(135deg, var(--color-primary) 0%, rgba(var(--formely-white-rgb), 0.8) 100%);
-	color: var(--text-inverse);
-	border-radius: var(--radius-md);
-	text-decoration: none;
-	font-size: var(--font-size-sm);
-	font-weight: var(--font-weight-semibold);
-	transition: all var(--transition-base);
-	box-shadow: 0 2px 8px rgba(var(--formely-white-rgb), 0.3);
-}
-
-.student-achievements-empty-link:hover {
-	transform: translateY(-2px);
-	box-shadow: 0 4px 12px rgba(var(--formely-white-rgb), 0.4);
-}
 
 /* Light theme - dark background for better contrast */
-[data-theme="light"] .student-achievements-empty-link {
-	background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-primary) 100%);
-	color: var(--color-white);
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-[data-theme="light"] .student-achievements-empty-link:hover {
-	background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-primary) 100%);
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
 
 /* ============================================
    8. RESPONSIVE DESIGN
    ============================================ */
-@media (max-width: 1024px) {
-	.student-certificates-grid {
-		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-	}
-
-	.student-badges-grid {
-		grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-	}
-}
-
-@media (max-width: 1200px) {
-	.certificate-preview-content {
-		transform: scale(0.85);
-	}
-}
 
 @media (max-width: 768px) {
 	.student-achievements-page {
 		overflow-x: clip;
-		padding: var(--space-4) var(--space-4) calc(var(--space-8) + env(safe-area-inset-bottom, 0));
+		padding: var(--space-4);
 	}
 
 	.student-achievements-header h1 {
 		font-size: clamp(1.35rem, 5vw, 1.75rem);
-	}
-
-	.student-certificates-grid {
-		grid-template-columns: 1fr;
-		gap: var(--space-4);
-	}
-
-	.student-badges-grid {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: var(--space-3);
 	}
 
 	.student-achievements-stats {
@@ -510,26 +138,12 @@
 		gap: var(--space-3);
 	}
 
-	.student-achievements-stat-card,
-	.student-certificate-card,
-	.student-badge-card {
+	.student-achievements-stat-card {
 		min-height: 44px;
-	}
-
-	.certificate-preview-content {
-		transform: scale(0.72);
-	}
-
-	.certificate-preview-modal {
-		width: min(100vw - var(--space-4), 100%);
-		margin: var(--space-2);
 	}
 }
 
 @media (max-width: 480px) {
-	.student-badges-grid {
-		grid-template-columns: 1fr;
-	}
 
 	.student-achievements-stats {
 		grid-template-columns: 1fr;
@@ -540,56 +154,8 @@
    LIGHT THEME - CERTIFICATE PREVIEW IMPROVEMENTS
    ============================================ */
 
-[data-theme="light"] .certificate-preview-overlay {
-	background-color: rgba(0, 0, 0, 0.6);
-}
-
-[data-theme="light"] .certificate-preview-modal {
-	background-color: var(--bg-secondary);
-	border-color: var(--border-primary);
-	box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-}
-
-[data-theme="light"] .certificate-preview-header {
-	border-bottom-color: var(--border-primary);
-	background-color: var(--bg-secondary);
-}
-
-[data-theme="light"] .certificate-preview-title {
-	color: var(--text-primary);
-}
-
-[data-theme="light"] .certificate-preview-close {
-	color: var(--text-secondary);
-}
-
-[data-theme="light"] .certificate-preview-close:hover {
-	background-color: var(--bg-tertiary);
-	color: var(--text-primary);
-}
-
-[data-theme="light"] .certificate-preview-content {
-	background: var(--bg-secondary);
-	border-color: var(--border-primary);
-	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-}
-
-[data-theme="light"] .certificate-preview-actions {
-	border-top-color: var(--border-primary);
-	background-color: var(--bg-secondary);
-}
-
-[data-theme="light"] .student-achievements-page {
-	background-color: var(--bg-tertiary);
-}
-
 [data-theme="light"] .student-achievements-title {
 	color: var(--text-primary);
-}
-
-[data-theme="light"] .student-achievements-subtitle {
-	color: var(--text-secondary);
-	opacity: 1;
 }
 
 [data-theme="light"] .student-achievements-stat-card {
@@ -615,34 +181,58 @@
 	color: var(--text-primary);
 }
 
-[data-theme="light"] .student-certificate-card {
-	background-color: var(--bg-secondary);
-	border-color: var(--border-primary);
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+/* Cronologia de etape (25% / 50% / 75% din curs) */
+.student-milestones-timeline {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
 }
 
-[data-theme="light"] .student-certificate-card:hover {
-	border-color: var(--text-primary);
-	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+.student-milestone-item {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--space-3);
+	padding: var(--space-4);
+	background-color: var(--bg-elevated);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
 }
 
-[data-theme="light"] .student-certificate-title {
+.student-milestone-icon {
+	display: inline-grid;
+	place-items: center;
+	width: 40px;
+	height: 40px;
+	flex-shrink: 0;
+	border-radius: var(--radius-full);
+	background: var(--bg-secondary);
+	font-size: 1.25rem;
+}
+
+.student-milestone-content {
+	flex: 1;
+	min-width: 0;
+}
+
+.student-milestone-title {
+	font-weight: 600;
 	color: var(--text-primary);
+	overflow-wrap: anywhere;
 }
 
-[data-theme="light"] .student-certificate-meta {
+.student-milestone-description {
+	margin-top: var(--space-1);
+	font-size: var(--font-size-sm);
 	color: var(--text-secondary);
 }
 
-[data-theme="light"] .student-certificate-download-btn {
-	background: var(--text-primary);
-	color: var(--color-white);
-	border: 1px solid var(--text-primary);
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+.student-milestone-date {
+	margin-top: var(--space-1);
+	font-size: var(--font-size-xs);
+	color: var(--text-tertiary);
 }
 
-[data-theme="light"] .student-certificate-download-btn:hover {
-	background: var(--text-primary);
-	border-color: var(--text-primary);
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+.student-achievements-stat-icon,
+.student-achievements-stat-icon svg {
+	color: var(--btn-primary-text, #111);
 }

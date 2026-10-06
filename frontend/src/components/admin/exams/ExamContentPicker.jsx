@@ -1,10 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowLeft, FolderOpen, ListChecks, Search, X } from 'lucide-react';
+import { ArrowLeft, FolderOpen, ListChecks, Search, Star, X } from 'lucide-react';
 import { adminService } from '../../../services/api';
-import { useToast } from '../../../contexts/ToastContext';
+import { useToast } from '../../../contexts/ToastContextShared.js';
 import QuestionCatalogByMap, { CatalogGroupCard } from '../question-banks/QuestionCatalogByMap';
 import QuestionRow from '../question-banks/QuestionRow';
+import QuestionBuilderEditor from '../question-banks/QuestionBuilderEditor';
 import Drawer from '../question-banks/Drawer';
+import Modal from '../../common/Modal';
+import { X as PhX } from '@phosphor-icons/react';
 import '../../../pages/admin/AdminQuestionBanksPage.css';
 import './ExamContentPicker.css';
 
@@ -16,6 +19,7 @@ const QUESTION_TYPE_LABELS = {
   single_choice: 'Răspuns unic',
   multiple_choice: 'Răspuns multiplu',
   true_false: 'Adevărat/Fals',
+  yes_no: 'Da / Nu',
   matching: 'Potrivire',
   ordering: 'Ordonare',
   fill_in_blank: 'Completare spații',
@@ -28,6 +32,7 @@ export default function ExamContentPicker({
   onToggleQuestion,
   onAddQuestions,
   onClearQuestions,
+  onPatchSelectedQuestion,
   canMutate = true,
   contentBanks,
   contentBanksLoading,
@@ -53,6 +58,10 @@ export default function ExamContentPicker({
   const [folderError, setFolderError] = useState('');
   const [drawerQuestion, setDrawerQuestion] = useState(null);
   const [addingFolderId, setAddingFolderId] = useState(null);
+  const [starringId, setStarringId] = useState(null);
+  const [editorQuestion, setEditorQuestion] = useState(null);
+  const [editorSaving, setEditorSaving] = useState(false);
+  const [poolSearch, setPoolSearch] = useState('');
 
   const selectedIds = useMemo(
     () => (Array.isArray(examSettings.selectedQuestionIds) ? examSettings.selectedQuestionIds.map(Number) : []),
@@ -69,6 +78,17 @@ export default function ExamContentPicker({
     [folderQuestions, folderQuery],
   );
   const folderPool = selectedFolders.reduce((sum, bank) => sum + Number(bank.questions_count || 0), 0);
+  const poolQuery = poolSearch.trim().toLowerCase();
+  const visiblePoolItems = useMemo(() => {
+    const rows = selectedQuestionItems.map((item, index) => ({ item, index }));
+    if (!poolQuery) return rows;
+    return rows.filter(({ item }) => {
+      const text = stripHtml(item.content || '').toLowerCase();
+      const type = (QUESTION_TYPE_LABELS[item.type] || item.type || '').toLowerCase();
+      const origin = String(item.origin || '').toLowerCase();
+      return text.includes(poolQuery) || type.includes(poolQuery) || origin.includes(poolQuery);
+    });
+  }, [selectedQuestionItems, poolQuery]);
   const examCount = Math.min(
     Math.max(1, Number(examSettings.questionCount || 1)),
     Math.max(1, selectionMode === 'questions' ? selectedIds.length || 1 : Number(examSettings.questionCount || 1)),
@@ -111,22 +131,6 @@ export default function ExamContentPicker({
     setFolderSearch('');
   };
 
-  const toggleFolderQuestionStar = async (questionId) => {
-    if (!canMutate) return;
-    try {
-      const response = await adminService.toggleQuestionStar(questionId);
-      const starred = Boolean(response?.question?.is_starred);
-      setFolderQuestions((prev) =>
-        prev.map((q) => (Number(q.id) === Number(questionId) ? { ...q, is_starred: starred } : q))
-      );
-      setDrawerQuestion((prev) =>
-        prev && Number(prev.id) === Number(questionId) ? { ...prev, is_starred: starred } : prev
-      );
-    } catch {
-      error('Nu am putut modifica steaua.');
-    }
-  };
-
   const addQuestions = (rows, origin) => {
     if (onAddQuestions) {
       onAddQuestions(rows, origin);
@@ -164,6 +168,81 @@ export default function ExamContentPicker({
     addQuestions(visibleFolderQuestions, activeFolder?.title || 'Folder');
   };
 
+  const toggleStar = async (item) => {
+    if (!canMutate || starringId) return;
+    setStarringId(item.id);
+    try {
+      const updated = await adminService.toggleQuestionStar(item.id);
+      const starred = Boolean(updated?.question?.is_starred);
+      onPatchSelectedQuestion?.(item.id, { is_starred: starred });
+    } catch {
+      error('Nu am putut schimba steaua.');
+    } finally {
+      setStarringId(null);
+    }
+  };
+
+  const openSelectedQuestion = async (item) => {
+    setEditorSaving(false);
+    setEditorQuestion({
+      id: item.id,
+      type: item.type || 'single_choice',
+      content: item.content || '',
+      explanation: '',
+      points: 1,
+      answers: [],
+    });
+    try {
+      const payload = await adminService.listQuestions({ ids: String(item.id), per_page: 1 });
+      const rows = Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []);
+      const question = rows.find((row) => Number(row.id) === Number(item.id)) || rows[0];
+      if (!question) {
+        error('Nu am găsit întrebarea.');
+        setEditorQuestion(null);
+        return;
+      }
+      const answers = Array.isArray(question.answers) ? question.answers : [];
+      setEditorQuestion({
+        id: question.id,
+        type: question.type || 'single_choice',
+        content: question.content || '',
+        explanation: question.explanation || '',
+        points: Number(question.points) > 0 ? Number(question.points) : 1,
+        answers,
+      });
+    } catch {
+      error('Nu am putut deschide întrebarea.');
+      setEditorQuestion(null);
+    }
+  };
+
+  const saveEditorQuestion = async () => {
+    if (!editorQuestion?.content?.trim()) {
+      error('Întrebarea este obligatorie.');
+      return;
+    }
+    setEditorSaving(true);
+    try {
+      await adminService.updateQuestion(editorQuestion.id, {
+        type: editorQuestion.type,
+        content: editorQuestion.content,
+        explanation: editorQuestion.explanation || null,
+        answers: editorQuestion.answers || [],
+        points: Number(editorQuestion.points) > 0 ? Number(editorQuestion.points) : 1,
+      });
+      onPatchSelectedQuestion?.(editorQuestion.id, {
+        content: editorQuestion.content,
+        type: editorQuestion.type,
+      });
+      success('Întrebarea a fost salvată. Salvează selecția ca să intre în examen.');
+      setEditorQuestion(null);
+    } catch (saveError) {
+      error(saveError?.response?.data?.message || 'Nu am putut salva întrebarea.');
+    } finally {
+      setEditorSaving(false);
+    }
+  };
+
   const toggleFolder = (bank) => {
     setExamSettings((prev) => {
       const exists = prev.selectedFolderIds.includes(bank.id);
@@ -181,7 +260,7 @@ export default function ExamContentPicker({
           <p className="exam-picker-kicker">Conținut examen</p>
           <h3>Ce întrebări intră în examen?</h3>
           <p className="exam-picker-lead">
-            Alegi pool-ul. Fiecare elev primește numărul setat; întrebările cu stea apar la toți, restul se trag random.
+            Alegi întrebările din care se formează testul. Steaua o pui pe întrebările deja selectate: cele cu stea apar la toți, restul se trag random. Click pe o întrebare o deschide aici, ca să o editezi.
           </p>
         </div>
         <div className="exam-picker-head-count" aria-live="polite">
@@ -241,6 +320,7 @@ export default function ExamContentPicker({
                 {questionBrowse === 'catalog' ? (
                   <QuestionCatalogByMap
                     selectable={canMutate}
+                    showStar={false}
                     selectedIds={selectedIds}
                     onToggleSelect={(question, origin) => onToggleQuestion(question, origin || question?.test?.title || 'Catalog')}
                     onAddMany={canMutate ? onAddQuestions : undefined}
@@ -249,7 +329,7 @@ export default function ExamContentPicker({
                   <div className="exam-picker-folder-browser">
                     {folderLevel === 'questions' ? (
                       <div className="qb-catalog-nav">
-                        <button type="button" className="lms-btn-secondary" onClick={closeFolder}>
+                        <button type="button" className="va-btn-back admin-back-btn" onClick={closeFolder}>
                           <ArrowLeft size={16} aria-hidden />
                           Înapoi la foldere
                         </button>
@@ -347,8 +427,9 @@ export default function ExamContentPicker({
                             selected={selectedSet.has(Number(question.id))}
                             readOnly
                             selectable={canMutate}
+                            showStar={false}
                             onToggleSelect={() => onToggleQuestion(question, activeFolder?.title || 'Folder')}
-                            onToggleStar={canMutate ? toggleFolderQuestionStar : undefined}
+                            onToggleStar={() => {}}
                             onOpenDrawer={setDrawerQuestion}
                           />
                         ))}
@@ -369,7 +450,7 @@ export default function ExamContentPicker({
                 <p className="exam-picker-step">Bifează folderele din care se trag întrebările</p>
               </div>
               <div className="exam-picker-random-tools">
-                <label className="exam-picker-tool exam-picker-tool--count">
+                <label>
                   Câte întrebări în examen
                   <input
                     className="admin-form-input"
@@ -385,7 +466,7 @@ export default function ExamContentPicker({
                   <span>Cele cu stea apar la toți</span>
                 </label>
                 <div className="qb-search-field exam-picker-tool-search">
-                  <Search size={14} aria-hidden />
+                  <Search size={18} aria-hidden />
                   <input
                     className="admin-form-input qb-search-input"
                     type="search"
@@ -394,7 +475,7 @@ export default function ExamContentPicker({
                     onChange={(e) => setContentSearch(e.target.value)}
                   />
                 </div>
-                <label className="exam-picker-tool exam-picker-tool--sort">
+                <label>
                   Sortare
                   <select className="admin-form-input" value={contentSort} onChange={(e) => setContentSort(e.target.value)}>
                     <option value="questions_desc">Cele mai multe întrebări</option>
@@ -456,15 +537,15 @@ export default function ExamContentPicker({
             <>
               <div className="exam-picker-tray-top">
                 <div className="exam-picker-tray-head">
-                  <h4>Pool · {selectedQuestionItems.length}</h4>
+                  <h4>Întrebări selectate · {selectedQuestionItems.length}</h4>
                   {selectedQuestionItems.length > 0 && canMutate ? (
-                    <button type="button" className="lms-btn-secondary" onClick={onClearQuestions}>
+                    <button type="button" className="va-btn-delete exam-picker-clear-danger" onClick={onClearQuestions}>
                       Golește
                     </button>
                   ) : null}
                 </div>
                 <div className="exam-picker-random-tools exam-picker-random-tools--compact">
-                  <label className="exam-picker-tool exam-picker-tool--count">
+                  <label>
                     Câte întrebări primește elevul
                     <input
                       className="admin-form-input"
@@ -491,19 +572,48 @@ export default function ExamContentPicker({
                 </div>
                 {selectedIds.length > 0 && Number(examSettings.questionCount || 0) > selectedIds.length ? (
                   <p className="exam-picker-warning">
-                    Ai cerut {examSettings.questionCount} întrebări, dar pool-ul are doar {selectedIds.length}.
+                    Ai cerut {examSettings.questionCount} întrebări, dar ai selectat doar {selectedIds.length}.
                   </p>
+                ) : null}
+                {selectedQuestionItems.length > 0 ? (
+                  <div className="qb-search-field exam-picker-pool-search">
+                    <Search size={18} aria-hidden />
+                    <input
+                      className="admin-form-input qb-search-input"
+                      type="search"
+                      placeholder="Caută în întrebările selectate"
+                      value={poolSearch}
+                      onChange={(e) => setPoolSearch(e.target.value)}
+                    />
+                  </div>
                 ) : null}
               </div>
               {selectedQuestionItems.length ? (
+                visiblePoolItems.length ? (
                 <ul className="exam-picker-tray-list">
-                  {selectedQuestionItems.map((item, index) => (
-                    <li key={item.id}>
+                  {visiblePoolItems.map(({ item, index }) => (
+                    <li key={item.id} className="is-question">
                       <span className="exam-picker-tray-index">{index + 1}</span>
-                      <span className="exam-picker-tray-copy">
+                      {canMutate ? (
+                        <button
+                          type="button"
+                          className={`qb-star-btn ${item.is_starred ? 'is-starred' : ''}`}
+                          onClick={() => toggleStar(item)}
+                          disabled={starringId === item.id}
+                          title={item.is_starred ? 'Scoate steaua' : 'Marchează cu stea. Apare la toți elevii.'}
+                          aria-label={item.is_starred ? 'Scoate steaua' : 'Marchează cu stea'}
+                        >
+                          <Star size={18} fill={item.is_starred ? 'currentColor' : 'none'} aria-hidden />
+                        </button>
+                      ) : (
+                        <span className={`qb-star-btn ${item.is_starred ? 'is-starred' : ''}`} aria-hidden>
+                          <Star size={18} fill={item.is_starred ? 'currentColor' : 'none'} />
+                        </span>
+                      )}
+                      <button type="button" className="exam-picker-tray-open" onClick={() => openSelectedQuestion(item)}>
                         <strong>{stripHtml(item.content) || `Întrebarea ${item.id}`}</strong>
-                        <small>{QUESTION_TYPE_LABELS[item.type] || item.type || 'Întrebare'} · {item.origin || 'Selectată'}</small>
-                      </span>
+                        <small>{QUESTION_TYPE_LABELS[item.type] || item.type || 'Întrebare'} · {item.origin || 'Selectată'} · Editează</small>
+                      </button>
                       {canMutate ? (
                         <button type="button" className="lms-btn-secondary" onClick={() => onToggleQuestion(item, item.origin)}>
                           <X size={14} aria-hidden />
@@ -513,6 +623,9 @@ export default function ExamContentPicker({
                     </li>
                   ))}
                 </ul>
+                ) : (
+                  <p className="exam-picker-tray-empty">Nicio întrebare nu se potrivește cu „{poolSearch.trim()}”.</p>
+                )
               ) : (
                 <p className="exam-picker-tray-empty">
                   Nicio întrebare încă. Intră într-un test și bifează, sau apasă „Adaugă toate”.
@@ -526,7 +639,7 @@ export default function ExamContentPicker({
                 {selectedFolders.length > 0 && canMutate ? (
                   <button
                     type="button"
-                    className="lms-btn-secondary"
+                    className="va-btn-delete exam-picker-clear-danger"
                     onClick={() => setExamSettings((prev) => ({ ...prev, selectedFolderIds: [], contentBankId: null }))}
                   >
                     Golește
@@ -562,7 +675,7 @@ export default function ExamContentPicker({
 
           <button
             type="button"
-            className="lms-btn-primary exam-picker-confirm"
+            className="va-btn-save lms-btn-primary exam-picker-confirm"
             onClick={onConfirm}
             disabled={!canSave}
           >
@@ -579,6 +692,36 @@ export default function ExamContentPicker({
       </div>
 
       <Drawer open={Boolean(drawerQuestion)} question={drawerQuestion} onClose={() => setDrawerQuestion(null)} />
+      <Modal
+        isOpen={Boolean(editorQuestion)}
+        onClose={() => !editorSaving && setEditorQuestion(null)}
+        closeOnEscape
+        ariaLabelledby="exam-question-editor-title"
+        className="va-dialog-overlay"
+        unstyledContent
+      >
+        <div className="va-dialog va-qe-dialog">
+          <header className="va-dialog__header">
+            <h2 id="exam-question-editor-title" className="va-dialog__title">Editează întrebarea</h2>
+            <button type="button" className="va-close-btn" onClick={() => setEditorQuestion(null)} disabled={editorSaving} aria-label="Închide">
+              <PhX size={18} weight="bold" aria-hidden="true" />
+            </button>
+          </header>
+          <div className="va-dialog__body">
+            {editorQuestion ? (
+              <QuestionBuilderEditor question={editorQuestion} onChange={setEditorQuestion} />
+            ) : null}
+          </div>
+          <footer className="va-dialog__footer">
+            <button type="button" className="lms-btn-secondary" onClick={() => setEditorQuestion(null)} disabled={editorSaving}>
+              Anulează
+            </button>
+            <button type="button" className="va-btn-save lms-btn-primary" onClick={saveEditorQuestion} disabled={editorSaving || !editorQuestion?.content}>
+              {editorSaving ? 'Se salvează...' : 'Salvează'}
+            </button>
+          </footer>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -10,10 +10,13 @@ import {
 	X,
 } from '@phosphor-icons/react';
 import { adminService } from '../../../services/api';
-import { useToast } from '../../../contexts/ToastContext';
+
+import { useToast } from '../../../contexts/ToastContextShared.js';
 import { logger } from '../../../utils/logger';
 import Modal from '../../common/Modal';
-import { formatSeatCap } from '../../../utils/entitlements';
+
+// Reîncărcare cât timp emailurile de invitație sunt încă în coadă; oprită când tab-ul e ascuns.
+const INVITATION_STATUS_POLL_MS = 8000;
 
 const ROLE_LABELS = {
 	student: 'Utilizator',
@@ -46,15 +49,9 @@ const AdminUserInvitationsPanel = ({ teams = [], modalOpen, onModalOpenChange })
 	const [copiedId, setCopiedId] = useState(null);
 	const [inviteForm, setInviteForm] = useState(emptyInviteForm);
 	const [createdLink, setCreatedLink] = useState(null);
-	const [liveEntitlements, setLiveEntitlements] = useState(null);
 
 	const showModal = modalOpen ?? internalModalOpen;
 	const setShowModal = onModalOpenChange ?? setInternalModalOpen;
-	const invitingLearner = inviteForm.role === 'employee' || inviteForm.role === 'student';
-	const seatPool = invitingLearner
-		? liveEntitlements?.seats?.learners
-		: liveEntitlements?.seats?.staff;
-	const seatBlocked = seatPool?.available === false;
 
 	const fetchInvitations = useCallback(async (silent = false) => {
 		try {
@@ -75,24 +72,10 @@ const AdminUserInvitationsPanel = ({ teams = [], modalOpen, onModalOpenChange })
 	}, [fetchInvitations]);
 
 	useEffect(() => {
-		if (!showModal) return undefined;
-		let cancelled = false;
-		(async () => {
-			try {
-				const data = await adminService.getCompanyEntitlements();
-				if (!cancelled && data?.entitlements) setLiveEntitlements(data.entitlements);
-			} catch {
-				/* keep last known */
-			}
-		})();
-		return () => {
-			cancelled = true;
-		};
-	}, [showModal]);
-
-	useEffect(() => {
 		if (!stats.pending_email) return undefined;
-		const timer = window.setInterval(() => fetchInvitations(true), 3000);
+		const timer = window.setInterval(() => {
+			if (!document.hidden) fetchInvitations(true);
+		}, INVITATION_STATUS_POLL_MS);
 		return () => window.clearInterval(timer);
 	}, [stats.pending_email, fetchInvitations]);
 
@@ -123,10 +106,6 @@ const AdminUserInvitationsPanel = ({ teams = [], modalOpen, onModalOpenChange })
 
 	const handleSendInvitation = async (e) => {
 		e.preventDefault();
-		if (seatBlocked) {
-			showError('Nu mai sunt locuri disponibile pe acest plan pentru rolul selectat.');
-			return;
-		}
 		setInviteLoading(true);
 		try {
 			const result = await adminService.sendUserInvitation({
@@ -148,12 +127,6 @@ const AdminUserInvitationsPanel = ({ teams = [], modalOpen, onModalOpenChange })
 			}
 			showSuccess(result.message || 'Invitație creată.');
 			setInviteForm(emptyInviteForm);
-			try {
-				const data = await adminService.getCompanyEntitlements();
-				if (data?.entitlements) setLiveEntitlements(data.entitlements);
-			} catch {
-				/* ignore */
-			}
 		} catch (err) {
 			showError(
 				err.response?.data?.message
@@ -172,7 +145,8 @@ const AdminUserInvitationsPanel = ({ teams = [], modalOpen, onModalOpenChange })
 			if (result.invitation) {
 				setInvitations((prev) => prev.map((inv) => (inv.id === id ? result.invitation : inv)));
 			}
-			showSuccess(result.message || 'Email retrimis.');
+			showSuccess(result.message || 'Emailul se retrimite în fundal.');
+			await fetchInvitations(true);
 		} catch (err) {
 			showError(err.response?.data?.message || 'Nu s-a putut retrimite emailul.');
 		} finally {
@@ -291,7 +265,7 @@ const AdminUserInvitationsPanel = ({ teams = [], modalOpen, onModalOpenChange })
 										</td>
 										<td className="admin-users-table-cell-center">
 											<div className="admin-users-actions admin-invitation-actions">
-												<button
+												<button title="Copiază linkul invitației" aria-label={`Copiază linkul invitației: ${invitation.email}`}
 													type="button"
 													className="lms-btn-secondary lms-btn-sm admin-users-action-compact"
 													disabled={busy}
@@ -304,9 +278,9 @@ const AdminUserInvitationsPanel = ({ teams = [], modalOpen, onModalOpenChange })
 													) : (
 														<Copy size={14} aria-hidden />
 													)}
-													<span>{copiedId === invitation.id ? 'Copiat' : 'Copiază link'}</span>
+
 												</button>
-												<button
+												<button title="Retrimite emailul" aria-label={`Retrimite emailul: ${invitation.email}`}
 													type="button"
 													className="lms-btn-secondary lms-btn-sm admin-users-action-compact"
 													disabled={busy}
@@ -317,11 +291,11 @@ const AdminUserInvitationsPanel = ({ teams = [], modalOpen, onModalOpenChange })
 													) : (
 														<ArrowClockwise size={14} weight="bold" aria-hidden />
 													)}
-													<span>Retrimite email</span>
+
 												</button>
-												<button
+												<button title="Anulează invitația" aria-label={`Anulează invitația: ${invitation.email}`}
 													type="button"
-													className="lms-btn-secondary lms-btn-sm va-btn-danger admin-users-action-compact"
+													className="lms-btn-secondary lms-btn-sm va-btn-delete va-btn-danger admin-users-action-compact"
 													disabled={busy}
 													onClick={() => handleCancel(invitation.id)}
 												>
@@ -330,7 +304,7 @@ const AdminUserInvitationsPanel = ({ teams = [], modalOpen, onModalOpenChange })
 													) : (
 														<Trash size={14} weight="bold" aria-hidden />
 													)}
-													<span>Anulează</span>
+
 												</button>
 											</div>
 										</td>
@@ -358,8 +332,8 @@ const AdminUserInvitationsPanel = ({ teams = [], modalOpen, onModalOpenChange })
 								{createdLink ? 'Invitație creată' : 'Invitație nouă'}
 							</h2>
 						</div>
-						<button type="button" className="admin-users-modal-close" onClick={closeModal} aria-label="Închide">
-							<X size={18} weight="bold" aria-hidden />
+						<button type="button" className="admin-users-modal-close va-close-btn" onClick={closeModal} aria-label="Închide">
+							<X size={18} weight="bold" aria-hidden="true" />
 						</button>
 					</div>
 
@@ -405,18 +379,7 @@ const AdminUserInvitationsPanel = ({ teams = [], modalOpen, onModalOpenChange })
 							<div className="admin-users-modal-body">
 								<p className="admin-invite-intro">
 									Utilizatorul primește un link pe email pentru a-și crea contul. Poți copia linkul imediat după creare.
-									{seatPool ? (
-										<>
-											{' '}
-											Locuri {invitingLearner ? 'cursanți' : 'staff'}: {seatPool.used ?? 0}/{formatSeatCap(seatPool.max)}
-										</>
-									) : null}
 								</p>
-								{seatBlocked ? (
-									<p className="admin-invite-seat-warning" role="status">
-										Nu mai sunt locuri disponibile pe acest plan pentru rolul selectat.
-									</p>
-								) : null}
 								<form id="admin-invite-form" onSubmit={handleSendInvitation} className="admin-invite-form">
 									<div className="admin-form-group">
 										<label className="admin-form-label" htmlFor="invite-email">Email</label>
@@ -477,7 +440,7 @@ const AdminUserInvitationsPanel = ({ teams = [], modalOpen, onModalOpenChange })
 								<button type="button" className="lms-btn-secondary" onClick={closeModal}>
 									Anulează
 								</button>
-								<button type="submit" form="admin-invite-form" className="lms-btn-primary" disabled={inviteLoading || seatBlocked}>
+								<button type="submit" form="admin-invite-form" className="lms-btn-primary" disabled={inviteLoading}>
 									{inviteLoading ? (
 										<>
 											<CircleNotch size={16} className="va-spin" aria-hidden />

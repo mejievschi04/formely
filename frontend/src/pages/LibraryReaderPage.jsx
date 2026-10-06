@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { libraryService } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../contexts/ToastContext';
+
+import { useAuth } from '../contexts/AuthContextShared.js';
+
+import { useToast } from '../contexts/ToastContextShared.js';
 import { scrollAppToTop } from '../utils/scrollToTop';
 import { toImageUrl } from '../utils/imageUrl';
+import RichTextHtml from '../components/RichTextHtml';
 import '../styles/library-reader-page.css';
+import '../components/admin/lessons/callout/LessonCallout.css';
 
 function isPdfItem(item) {
 	const mimeType = String(item?.mime_type || '').toLowerCase();
@@ -116,10 +120,8 @@ const LibraryReaderPage = () => {
 	const isPdf = isPdfItem(item);
 	const isText = isTextItem(item);
 	const canEditItem =
-		user?.role !== 'student' &&
 		isText &&
-		(actualRole === 'admin' || actualRole === 'company_owner'
-			|| (actualRole === 'instructor' && item?.uploader?.id === user?.id));
+		(actualRole === 'admin' || (actualRole === 'instructor' && item?.uploader?.id === user?.id));
 
 	const handleDownload = async () => {
 		if (!item) return;
@@ -161,7 +163,7 @@ const LibraryReaderPage = () => {
 					<div className="library-reader-empty-icon">PDF</div>
 					<h1>Material indisponibil</h1>
 					<p>{error || 'Materialul nu a fost găsit.'}</p>
-					<button type="button" className="library-reader-btn library-reader-btn-primary" onClick={() => navigate('/library')}>
+					<button type="button" className="library-reader-btn lms-btn-primary library-reader-btn-primary" onClick={() => navigate('/library')}>
 						Înapoi la bibliotecă
 					</button>
 				</div>
@@ -201,10 +203,9 @@ const LibraryReaderPage = () => {
 					) : null}
 					<h1 className="library-reader-article-title">{item.title}</h1>
 					{item.description ? <p className="library-reader-article-lead">{item.description}</p> : null}
-					<div
-						className="library-reader-article-body lesson-preview-content"
-						dangerouslySetInnerHTML={{ __html: item.body || '' }}
-					/>
+					<div className="library-reader-article-body lesson-preview-content">
+						<RichTextHtml html={item.body || ''} />
+					</div>
 				</article>
 			</div>
 		);
@@ -227,7 +228,7 @@ const LibraryReaderPage = () => {
 						<div className="library-reader-empty-icon">PDF</div>
 						<h1>Acest material nu este PDF</h1>
 						<p>Fișierul poate fi descărcat din bibliotecă.</p>
-						<button type="button" className="library-reader-btn library-reader-btn-primary" onClick={handleDownload}>
+						<button type="button" className="library-reader-btn lms-btn-primary library-reader-btn-primary" onClick={handleDownload}>
 							Descarcă fișierul
 						</button>
 					</div>
@@ -241,7 +242,7 @@ const LibraryReaderPage = () => {
 						<div className="library-reader-empty-icon">PDF</div>
 						<h1>Nu am putut deschide PDF-ul</h1>
 						<p>{pdfError}</p>
-						<button type="button" className="library-reader-btn library-reader-btn-primary" onClick={handleDownload}>
+						<button type="button" className="library-reader-btn lms-btn-primary library-reader-btn-primary" onClick={handleDownload}>
 							Descarcă documentul
 						</button>
 					</div>

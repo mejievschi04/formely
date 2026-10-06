@@ -54,7 +54,7 @@ class CompanyBrandingController extends Controller
     public function update(Request $request)
     {
         $user = Auth::user();
-        if (! $user?->canManagePlatformSettings()) {
+        if (! $user?->isAdmin()) {
             abort(403, 'Nu ai drepturi pentru branding-ul companiei.');
         }
 
@@ -91,7 +91,7 @@ class CompanyBrandingController extends Controller
     public function uploadLogo(Request $request)
     {
         $user = Auth::user();
-        if (! $user?->canManagePlatformSettings()) {
+        if (! $user?->isAdmin()) {
             abort(403, 'Nu ai drepturi pentru branding-ul companiei.');
         }
 
@@ -125,7 +125,7 @@ class CompanyBrandingController extends Controller
     public function deleteLogo()
     {
         $user = Auth::user();
-        if (! $user?->canManagePlatformSettings()) {
+        if (! $user?->isAdmin()) {
             abort(403, 'Nu ai drepturi pentru branding-ul companiei.');
         }
 

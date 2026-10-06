@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\Company;
 use App\Models\User;
-use App\Models\UserInvitation;
+use App\Models\RegistrationInvitation;
 use App\Models\Scopes\CompanyScope;
 use App\Support\UserRoles;
 use Illuminate\Support\Facades\Schema;
@@ -129,7 +129,7 @@ class PlanEntitlementService
     {
         return User::withoutGlobalScope(CompanyScope::class)
             ->where('company_id', $company->id)
-            ->whereIn('role', [UserRoles::EMPLOYEE, UserRoles::LEGACY_STUDENT])
+            ->whereIn('role', UserRoles::learnerRoles())
             ->when(
                 Schema::hasColumn('users', 'status'),
                 fn ($q) => $q->where(function ($q2) {
@@ -141,14 +141,7 @@ class PlanEntitlementService
 
     public function countStaff(Company $company): int
     {
-        $staffRoles = [
-            UserRoles::COMPANY_OWNER,
-            UserRoles::HR_ADMIN,
-            UserRoles::MANAGER,
-            UserRoles::INSTRUCTOR,
-            UserRoles::ANALYST,
-            UserRoles::LEGACY_ADMIN,
-        ];
+        $staffRoles = UserRoles::staffRoles();
 
         return User::withoutGlobalScope(CompanyScope::class)
             ->where('company_id', $company->id)
@@ -164,7 +157,7 @@ class PlanEntitlementService
 
     public function pendingInvitationCount(Company $company, bool $staff, ?int $excludeInvitationId = null): int
     {
-        $query = UserInvitation::withoutGlobalScopes()
+        $query = RegistrationInvitation::withoutGlobalScope(CompanyScope::class)
             ->where('company_id', $company->id)
             ->whereNull('accepted_at')
             ->where('expires_at', '>', now());
@@ -173,16 +166,7 @@ class PlanEntitlementService
             $query->where('id', '!=', $excludeInvitationId);
         }
 
-        $roles = $staff
-            ? [
-                UserRoles::COMPANY_OWNER,
-                UserRoles::HR_ADMIN,
-                UserRoles::MANAGER,
-                UserRoles::INSTRUCTOR,
-                UserRoles::ANALYST,
-                UserRoles::LEGACY_ADMIN,
-            ]
-            : [UserRoles::EMPLOYEE, UserRoles::LEGACY_STUDENT];
+        $roles = $staff ? UserRoles::staffRoles() : UserRoles::learnerRoles();
 
         return $query->whereIn('role', $roles)->count();
     }
@@ -234,7 +218,7 @@ class PlanEntitlementService
         }
 
         if ($this->isStaffRole($role)
-            && UserRoles::normalize($role) === UserRoles::ANALYST
+            && $role === UserRoles::ANALYST
             && ! $this->companyCan($company, 'analyst_role')
         ) {
             throw ValidationException::withMessages([
@@ -245,23 +229,12 @@ class PlanEntitlementService
 
     public function isStaffRole(string $role): bool
     {
-        $normalized = UserRoles::normalize($role);
-
-        return in_array($normalized, [
-            UserRoles::COMPANY_OWNER,
-            UserRoles::HR_ADMIN,
-            UserRoles::MANAGER,
-            UserRoles::INSTRUCTOR,
-            UserRoles::ANALYST,
-            UserRoles::LEGACY_ADMIN,
-        ], true);
+        return in_array($role, UserRoles::staffRoles(), true);
     }
 
     public function isLearnerRole(string $role): bool
     {
-        $normalized = UserRoles::normalize($role);
-
-        return $normalized === UserRoles::EMPLOYEE;
+        return in_array($role, UserRoles::learnerRoles(), true);
     }
 
     /**

@@ -2,10 +2,7 @@
  * Extrage textul din PDF păstrând stiluri (bold, italic, mărime font, paragrafe/liniuțe).
  * Folosește pdfjs-dist (Mozilla PDF.js).
  */
-import { getDocument } from 'pdfjs-dist';
-import { configurePdfWorker } from './pdfWorker';
-
-configurePdfWorker();
+import { openPdfFromData } from './pdfDocument';
 
 function escapeHtml(text) {
 	if (typeof text !== 'string') return '';
@@ -55,7 +52,7 @@ export async function extractPdfTextAsHtml(file) {
 	const arrayBuffer = await file.arrayBuffer();
 	let pdf;
 	try {
-		pdf = await getDocument({ data: arrayBuffer }).promise;
+		pdf = await openPdfFromData(arrayBuffer);
 	} catch (err) {
 		if (err?.name === 'InvalidPDFException' || err?.message?.includes('Invalid PDF')) {
 			throw new Error(
@@ -198,7 +195,7 @@ export async function estimatePdfContentPreviewHeight(file) {
 
 	try {
 		const arrayBuffer = await file.arrayBuffer();
-		const pdf = await getDocument({ data: arrayBuffer }).promise;
+		const pdf = await openPdfFromData(arrayBuffer);
 		const pageCount = Number(pdf?.numPages || 1);
 		const firstPage = await pdf.getPage(1);
 		const viewport = firstPage.getViewport({ scale: 1 });

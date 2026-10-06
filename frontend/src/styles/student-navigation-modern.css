@@ -64,7 +64,7 @@
 
 .va-shell-topnav .modern-topnav-left .va-logo-text:hover .va-logo-icon-img,
 .va-shell-topnav .va-topnav-brand .va-logo-text:hover .va-logo-icon-img {
-	filter: drop-shadow(0 4px 8px rgba(var(--formely-white-rgb), 0.3));
+	filter: drop-shadow(0 4px 8px rgba(var(--color-primary-rgb), 0.3));
 }
 
 .va-shell-topnav .modern-topnav-right {
@@ -83,6 +83,49 @@
 	justify-content: center;
 }
 
+.student-more-menu-wrap {
+	position: relative;
+}
+
+.student-more-menu {
+	position: absolute;
+	top: calc(100% + 8px);
+	right: 0;
+	z-index: 80;
+	min-width: 230px;
+	padding: 8px;
+	display: grid;
+	gap: 4px;
+	border: 1px solid var(--border-primary);
+	border-radius: 12px;
+	background: var(--bg-elevated);
+	box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+}
+
+.student-more-menu-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-height: 42px;
+	padding: 8px 12px;
+	border-radius: 8px;
+	color: var(--text-primary);
+	text-decoration: none;
+	font-size: 0.92rem;
+	font-weight: 700;
+}
+
+.student-more-menu-item:hover,
+.student-more-menu-item.active {
+	background: color-mix(in srgb, var(--color-brand-primary) 32%, var(--bg-primary));
+	color: var(--btn-primary-text);
+}
+
+html[data-theme='dark'] .student-more-menu-item:hover,
+html[data-theme='dark'] .student-more-menu-item.active {
+	color: var(--text-primary);
+}
+
 .va-shell-topnav .modern-topnav-item,
 .va-shell-topnav .va-topnav-btn {
 	display: flex;
@@ -99,6 +142,7 @@
 	border: none;
 	background: transparent;
 	cursor: pointer;
+	font-family: inherit;
 }
 
 .va-shell-topnav .modern-topnav-item::after,
@@ -138,10 +182,10 @@
 .va-shell-topnav .modern-topnav-item.is-active,
 .va-shell-topnav .va-topnav-btn.active,
 .va-shell-topnav .va-topnav-btn.is-active {
-	color: var(--color-primary);
+	color: var(--text-accent);
 	font-weight: var(--font-weight-semibold);
-	background: linear-gradient(135deg, rgba(var(--formely-white-rgb), 0.25) 0%, rgba(230, 214, 0, 0.15) 100%);
-	box-shadow: 0 2px 8px rgba(var(--formely-white-rgb), 0.3);
+	background: linear-gradient(135deg, rgba(var(--color-primary-rgb), 0.25) 0%, rgba(230, 214, 0, 0.15) 100%);
+	box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.3);
 }
 
 /* Light theme - yellow background with black text */
@@ -160,7 +204,7 @@
 .va-shell-topnav .va-topnav-btn.is-active::after {
 	width: 80%;
 	height: 3px;
-	box-shadow: 0 0 8px rgba(var(--formely-white-rgb), 0.5);
+	box-shadow: 0 0 8px rgba(var(--color-primary-rgb), 0.5);
 }
 
 .va-shell-topnav .modern-topnav-item-icon,
@@ -204,7 +248,6 @@
 	white-space: nowrap;
 }
 
-
 /* Student Top Nav Controls */
 /* Admin view switcher → admin-view-switcher.css (încărcat global din App.jsx) */
 
@@ -225,7 +268,7 @@
 .va-shell-topnav .admin-topnav-user:hover {
 	border-color: var(--color-primary);
 	background: transparent;
-	box-shadow: 0 4px 12px rgba(var(--formely-white-rgb), 0.15);
+	box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.15);
 	transform: translateY(-1px);
 }
 
@@ -241,7 +284,7 @@
 	font-weight: var(--font-weight-bold);
 	font-size: var(--font-size-sm);
 	flex-shrink: 0;
-	box-shadow: 0 2px 8px rgba(var(--formely-white-rgb), 0.3);
+	box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.3);
 	border: 2px solid rgba(255, 255, 255, 0.1);
 	overflow: hidden;
 }
@@ -270,7 +313,7 @@
 
 .va-shell-topnav .admin-topnav-user-role {
 	font-size: var(--font-size-xs);
-	color: var(--text-tertiary);
+	color: var(--text-secondary);
 	margin: 0;
 }
 
@@ -295,46 +338,6 @@
 	color: var(--color-error);
 	box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
 	transform: translateY(-1px);
-}
-
-/* ============================================
-   STUDENT CALENDAR (topnav) — același limbaj vizual ca notificările / admin
-   (clasa e partajată cu AdminTopNavControls; CSS-ul admin nu se încarcă pentru studenți)
-   ============================================ */
-.va-shell-topnav .admin-topnav-calendar-btn {
-	width: 40px;
-	height: 40px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	flex-shrink: 0;
-	padding: 0;
-	margin: 0;
-	background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-elevated) 100%);
-	border: 1px solid var(--border-primary);
-	border-radius: var(--radius-lg);
-	color: var(--text-secondary);
-	cursor: pointer;
-	transition: all var(--transition-base);
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.va-shell-topnav .admin-topnav-calendar-btn:hover {
-	background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-secondary) 100%);
-	border-color: var(--color-primary);
-	color: var(--color-primary);
-	box-shadow: 0 4px 12px rgba(var(--formely-white-rgb), 0.15);
-	transform: translateY(-1px);
-}
-
-.va-shell-topnav .admin-topnav-calendar-btn:focus-visible {
-	outline: 2px solid var(--color-primary);
-	outline-offset: 2px;
-}
-
-.va-shell-topnav .admin-topnav-calendar-btn svg {
-	flex-shrink: 0;
-	display: block;
 }
 
 /* ============================================
@@ -364,8 +367,8 @@
 .va-shell-topnav .admin-topnav-notification-btn:hover {
 	background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-secondary) 100%);
 	border-color: var(--color-primary);
-	color: var(--color-primary);
-	box-shadow: 0 4px 12px rgba(var(--formely-white-rgb), 0.2);
+	color: var(--text-accent);
+	box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.2);
 	transform: translateY(-1px);
 }
 
@@ -389,147 +392,11 @@
 	animation: pulse 2s infinite;
 }
 
-.va-shell-topnav .va-topnav-notifications-dropdown,
-.va-shell-topnav .admin-topnav-notifications-dropdown {
-	position: absolute;
-	top: calc(100% + var(--space-2));
-	right: 0;
-	width: 360px;
-	background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-secondary) 100%);
-	border: 1px solid var(--border-primary);
-	border-radius: var(--radius-lg);
-	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
-	z-index: var(--z-dropdown);
-	overflow: hidden;
-	animation: slideDown 0.2s ease-out;
-	backdrop-filter: blur(20px) saturate(180%);
-	-webkit-backdrop-filter: blur(20px) saturate(180%);
-}
-
-.va-shell-topnav .admin-topnav-notifications-header {
-	padding: var(--space-4) var(--space-6);
-	border-bottom: 1px solid var(--border-primary);
-}
-
-.va-shell-topnav .admin-topnav-notifications-header h3 {
-	font-size: var(--font-size-base);
-	font-weight: var(--font-weight-semibold);
-	color: var(--text-primary);
-	margin: 0;
-}
-
-.va-shell-topnav .va-topnav-notifications-header-row {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: var(--space-3);
-}
-
-.va-shell-topnav .va-topnav-notifications-header-actions {
-	display: flex;
-	align-items: center;
-	gap: var(--space-2);
-	flex-shrink: 0;
-}
-
-.va-shell-topnav .va-topnav-notifications-see-all {
-	font-size: var(--font-size-xs);
-	font-weight: var(--font-weight-semibold);
-	color: var(--color-primary);
-	text-decoration: none;
-	white-space: nowrap;
-}
-
-.va-shell-topnav .va-topnav-notifications-see-all:hover {
-	text-decoration: underline;
-}
-
-.va-shell-topnav .va-topnav-notifications-clear-btn {
-	flex-shrink: 0;
-	padding: var(--space-1) var(--space-3);
-	font-size: var(--font-size-xs);
-	font-weight: var(--font-weight-medium);
-	color: var(--text-secondary);
-	background: var(--bg-secondary);
-	border: 1px solid var(--border-primary);
-	border-radius: var(--radius-md);
-	cursor: pointer;
-	transition: background var(--transition-base), color var(--transition-base);
-}
-
-.va-shell-topnav .va-topnav-notifications-clear-btn:hover {
-	color: var(--text-primary);
-	background: var(--bg-tertiary);
-}
-
-.va-shell-topnav .va-topnav-notification-item-plain {
-	width: 100%;
-	text-align: left;
-	font: inherit;
-	background: none;
-	border: none;
-}
-
-.va-shell-topnav .admin-topnav-notifications-list {
-	max-height: 400px;
-	overflow-y: auto;
-}
-
-.va-shell-topnav .admin-topnav-notification-item {
-	display: flex;
-	gap: var(--space-3);
-	padding: var(--space-4) var(--space-6);
-	border-bottom: 1px solid var(--border-primary);
-	transition: all var(--transition-base);
-	cursor: pointer;
-	text-decoration: none;
-	color: inherit;
-}
-
-.va-shell-topnav .admin-topnav-notification-item:hover {
-	background-color: var(--bg-secondary);
-}
-
-.va-shell-topnav .admin-topnav-notification-item:last-child {
-	border-bottom: none;
-}
-
-.va-shell-topnav .admin-topnav-notification-icon {
-	width: 24px;
-	height: 24px;
-	flex-shrink: 0;
-	color: var(--color-primary);
-}
-
-.va-shell-topnav .admin-topnav-notification-content {
-	flex: 1;
-	min-width: 0;
-}
-
-.va-shell-topnav .admin-topnav-notification-title {
-	font-size: var(--font-size-sm);
-	font-weight: var(--font-weight-medium);
-	color: var(--text-primary);
-	margin-bottom: var(--space-1);
-}
-
-.va-shell-topnav .admin-topnav-notification-time {
-	font-size: var(--font-size-xs);
-	color: var(--text-tertiary);
-}
-
-.va-shell-topnav .admin-topnav-notifications-empty {
-	padding: var(--space-8) var(--space-6);
-	text-align: center;
-	color: var(--text-tertiary);
-	font-size: var(--font-size-sm);
-}
-
 /* ============================================
    2. STUDENT MAIN CONTENT AREA
    ============================================ */
 .va-shell-topnav .va-shell-main {
-	padding-top: 64px;
+	padding-top: var(--app-header-height, 64px);
 	padding-bottom: 0 !important;
 	margin-top: 0;
 	height: 100vh;
@@ -538,7 +405,7 @@
 	min-height: 100dvh;
 	overflow-y: auto;
 	-webkit-overflow-scrolling: touch;
-	background-color: var(--bg-primary) !important;
+	background-color: var(--bg-primary);
 	box-sizing: border-box;
 }
 
@@ -546,13 +413,13 @@
 	padding-bottom: 0 !important;
 	height: 100%;
 	min-height: 100%;
-	background-color: var(--bg-primary) !important;
+	background-color: var(--bg-primary);
 }
 
 /* va-shell - fill viewport, același background */
 .va-shell.va-shell-topnav {
 	min-height: 100vh;
-	background-color: var(--bg-primary) !important;
+	background-color: var(--bg-primary);
 }
 
 /* ============================================
@@ -575,7 +442,6 @@
 }
 
 /* Courses page - scrollable (only if many courses) */
-.va-shell-topnav .courses-page,
 .va-shell-topnav .courses-page-modern {
 	padding: var(--space-2) var(--space-8) var(--space-8);
 	max-width: 1600px;
@@ -591,7 +457,8 @@
 .va-shell-topnav .exam-results-page,
 .va-shell-topnav .unified-course-page,
 .va-shell-topnav .student-achievements-page,
-.va-shell-topnav .events-page {
+.va-shell-topnav .events-page,
+.va-shell-topnav .monthly-tests-page {
 	padding: var(--space-2) var(--space-8) var(--space-8);
 	height: 100%;
 	overflow-y: auto; /* Allow scroll within container */
@@ -608,27 +475,6 @@
 	margin: 0 auto;
 }
 
-/* Messages page - full viewport width, fixed below topnav */
-.va-shell-topnav .va-main:has(.messages-page) {
-	padding: 0;
-	max-width: none;
-	margin: 0;
-	width: 100%;
-}
-
-.va-shell-topnav .messages-page {
-	position: fixed;
-	top: 64px; /* Below fixed topnav */
-	left: 0 !important;
-	right: 0 !important;
-	bottom: 0;
-	width: 100vw !important;
-	max-width: none !important;
-	height: calc(100vh - 64px);
-	padding: 0;
-	margin: 0;
-}
-
 /* Unified course page - special handling */
 .va-shell-topnav .unified-course-page {
 	padding-top: 0; /* Already handled */
@@ -638,8 +484,7 @@
 }
 
 /* Legacy pages - scrollable content, scrollbar hidden */
-.va-shell-topnav .lesson-detail-page,
-.va-shell-topnav .course-detail-page {
+.va-shell-topnav .lesson-detail-page {
 	padding-top: var(--space-4);
 	height: 100%;
 	overflow-y: auto;
@@ -649,8 +494,7 @@
 	scrollbar-width: none;
 	-ms-overflow-style: none;
 }
-.va-shell-topnav .lesson-detail-page::-webkit-scrollbar,
-.va-shell-topnav .course-detail-page::-webkit-scrollbar {
+.va-shell-topnav .lesson-detail-page::-webkit-scrollbar {
 	display: none;
 }
 
@@ -694,48 +538,7 @@
 	}
 }
 
-/* Pagina test — mobile: body scroll, footer fix în shell */
-@media (max-width: 768px) {
-	.va-shell-topnav:has(.student-exam-page) .va-shell-main,
-	.va-shell-topnav:has(.student-exam-page) .va-main {
-		display: flex !important;
-		flex-direction: column !important;
-		height: 100dvh !important;
-		max-height: 100dvh !important;
-		min-height: 0 !important;
-		padding-top: 64px !important;
-		padding-bottom: 0 !important;
-		box-sizing: border-box !important;
-		overflow: hidden !important;
-	}
-
-	.va-shell-topnav:has(.student-exam-page) .student-exam-page {
-		display: flex;
-		flex-direction: column;
-		flex: 1 1 auto;
-		width: 100%;
-		max-width: 1600px;
-		margin: 0 auto;
-		min-height: 0;
-		max-height: 100%;
-		overflow: hidden;
-		box-sizing: border-box;
-	}
-
-	.va-shell-topnav:has(.student-exam-page) .student-exam-body {
-		flex: 1 1 0;
-		min-height: 0;
-		overflow-x: clip;
-		overflow-y: auto;
-		-webkit-overflow-scrolling: touch;
-	}
-
-	.va-shell-topnav:has(.student-exam-page) .student-exam-footer {
-		flex-shrink: 0;
-	}
-}
-
-
+/* Pagina test — mobile: conținutul scrollează între header și footer, fără overlap */
 /* ============================================
    4. RESPONSIVE DESIGN
    ============================================ */
@@ -743,17 +546,17 @@
 	.va-shell-topnav .modern-topnav,
 	.va-shell-topnav .va-topnav {
 		padding: 0 var(--space-4);
-		height: 56px;
-		display: flex !important;
-		visibility: visible !important;
-		opacity: 1 !important;
+		height: var(--app-header-height, 56px);
+		display: flex;
+		visibility: visible;
+		opacity: 1;
 	}
 
 	/* Logo always visible */
 	.va-shell-topnav .modern-topnav-left,
 	.va-shell-topnav .va-topnav-brand {
-		display: flex !important;
-		visibility: visible !important;
+		display: flex;
+		visibility: visible;
 	}
 
 	/* Logo doar în drawer (.sidebar-mobile-header), nu în topnav */
@@ -763,59 +566,41 @@
 	}
 
 	.va-shell-topnav .va-shell-main {
-		padding-top: 56px !important; /* Mobile topnav height */
+		margin-top: var(--app-header-height, 56px);
+		padding-top: 0 !important; /* Mobile topnav height */
+		overflow-y: auto !important;
+		-webkit-overflow-scrolling: touch;
+		overscroll-behavior-y: contain;
 	}
 
-	/* Messages page - mobile topnav 56px, full viewport */
-	.va-shell-topnav:has(.messages-page) .va-shell-main,
-	.va-shell-topnav:has(.messages-page) .va-main {
-		height: 100dvh !important;
-		min-height: 100dvh !important;
-		padding-top: 56px !important;
-		padding-bottom: 0 !important;
-		box-sizing: border-box !important;
+	.va-shell-topnav:has(.student-exam-page) .va-shell-main {
+		margin-top: 0;
+		padding-top: var(--app-header-height, 56px) !important;
 		overflow: hidden !important;
 	}
 
-	.va-shell-topnav .messages-page {
-		position: fixed !important;
-		top: 56px !important;
-		left: 0 !important;
-		right: 0 !important;
-		bottom: 0 !important;
-		width: 100% !important;
-		max-width: 100% !important;
+	.va-shell.va-shell-topnav:has(.student-mobile-tabs) .courses-page-modern,
+	.va-shell.va-shell-topnav:has(.student-mobile-tabs) .courses-page-student-main,
+	.va-shell.va-shell-topnav:has(.student-mobile-tabs) .courses-page-content,
+	.va-shell.va-shell-topnav:has(.student-mobile-tabs) .course-map-page,
+	.va-shell.va-shell-topnav:has(.student-mobile-tabs) .events-page,
+	.va-shell.va-shell-topnav:has(.student-mobile-tabs) .monthly-tests-page,
+	.va-shell.va-shell-topnav:has(.student-mobile-tabs) .lessons-page {
 		height: auto !important;
-		min-height: 0 !important;
-		margin: 0 !important;
-		border-left: none !important;
+		max-height: none;
+		min-height: 0;
+		overflow: visible;
 	}
 
-	/* Pagina test pe mobile — 100dvh cu padding topnav (box-sizing) */
-	.va-shell-topnav:has(.student-exam-page) .va-shell-main,
-	.va-shell-topnav:has(.student-exam-page) .va-main {
-		height: 100dvh !important;
-		max-height: 100dvh !important;
-		padding-top: 56px !important;
-	}
+	/* Messages: fill the shell (already below header and above tabs).
+	   margin-top only on the shell main — applying it to .va-main too left a blank band. */
 
-	.va-shell-topnav:has(.student-exam-page) .student-exam-page {
-		padding: 0 !important;
-	}
-
-	.va-shell-topnav:has(.student-exam-page) .student-exam-body {
-		padding: var(--space-3) var(--space-4) !important;
-	}
-
-	.va-shell-topnav:has(.student-exam-page) .student-exam-footer {
-		padding-left: var(--space-4) !important;
-		padding-right: var(--space-4) !important;
-	}
+	/* Pagina test pe mobile — același crom ca restul aplicației */
 
 	/* Nav principal e în drawer; topnav = hamburger + titlu + acțiuni */
 	.va-shell-topnav .modern-topnav-nav.desktop-only,
 	.va-shell-topnav .va-topnav-nav.desktop-only {
-		display: none !important;
+		display: none;
 	}
 
 	.va-shell-topnav .modern-topnav-right {
@@ -824,20 +609,14 @@
 
 	/* Courses page - padding redus pe mobile, fără suprapunere */
 	.va-shell-topnav .courses-page-modern {
-		padding: 2px var(--space-4) var(--space-6) !important;
+		padding: var(--space-2) var(--space-4) var(--space-6);
 	}
 
 	.va-shell-topnav .exam-results-page {
-		padding: 2px var(--space-4) var(--space-6) !important;
+		padding: var(--space-3) var(--space-4) var(--space-6);
 	}
 
 	.va-shell-topnav .va-profile-container {
-		padding: 2px var(--space-4) calc(var(--space-8) + 56px + env(safe-area-inset-bottom, 0px)) !important;
-	}
-
-	/* Lecție / examen: hamburgerul global se ciocnește cu „Lecții” și cu fluxul de răspuns */
-	body.student-lesson-player .va-shell-topnav .mobile-sidebar-toggle,
-	body.student-exam-player .va-shell-topnav .mobile-sidebar-toggle {
-		display: none !important;
+		padding: var(--space-3) var(--space-4) var(--space-6);
 	}
 }

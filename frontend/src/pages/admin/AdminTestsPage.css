@@ -1,35 +1,3 @@
-.admin-tests-exams-notice {
-	margin: 0;
-	padding: 12px 14px;
-	border-radius: 8px;
-	border: 1px solid color-mix(in srgb, var(--color-primary) 28%, var(--border-primary));
-	background: color-mix(in srgb, var(--color-primary) 6%, var(--bg-elevated));
-	font-size: 0.9rem;
-	line-height: 1.5;
-	color: var(--text-secondary);
-}
-
-.admin-tests-exams-notice strong {
-	color: var(--text-primary);
-}
-
-.admin-tests-type-glossary,
-.admin-course-builder-test-type-glossary,
-.step4-type-glossary {
-	margin: 0;
-	padding: 10px 12px;
-	border-radius: 8px;
-	border: 1px solid var(--border-primary);
-	background: var(--bg-elevated);
-	font-size: 0.85rem;
-	line-height: 1.45;
-	color: var(--text-muted);
-}
-
-.admin-tests-type-glossary {
-	margin-top: -8px;
-}
-
 .admin-tests-page {
 	display: flex;
 	flex-direction: column;
@@ -59,225 +27,7 @@
 	font-size: 0.95rem;
 }
 
-.admin-tests-pending-pill {
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
-	padding: 8px 12px !important;
-	border-radius: 999px;
-	border: 1px solid color-mix(in srgb, var(--color-primary) 35%, var(--border-primary));
-	background: color-mix(in srgb, var(--color-primary) 8%, var(--bg-elevated));
-	font-weight: 600;
-}
-
-.admin-tests-pending-dot {
-	width: 8px;
-	height: 8px;
-	border-radius: 50%;
-	background: var(--color-primary);
-	box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 25%, transparent);
-}
-
-.admin-tests-primary-btn {
-	border: 0;
-	border-radius: 10px;
-	background: var(--color-primary);
-	color: var(--text-inverse);
-	padding: 10px 14px;
-	font-weight: 700;
-	cursor: pointer;
-}
-
-.admin-tests-header-actions {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	flex-wrap: wrap;
-}
-
-.admin-tests-secondary-link {
-	font-size: 0.9rem;
-	font-weight: 600;
-	color: var(--color-primary);
-	text-decoration: none;
-	padding: 8px 4px;
-}
-
-.admin-tests-secondary-link:hover {
-	text-decoration: underline;
-}
-
-.admin-tests-search input {
-	width: min(420px, 100%);
-	border: 1px solid var(--border-primary);
-	background: var(--bg-elevated);
-	color: var(--text-primary);
-	border-radius: 10px;
-	padding: 10px 12px;
-}
-
-.admin-tests-empty {
-	min-height: 220px;
-	border: 1px dashed var(--border-primary);
-	border-radius: 12px;
-	display: grid;
-	place-content: center;
-	color: var(--text-muted);
-}
-
 /* Grid pe pagina Teste — aliniat la examene (detaliile card în AdminExamsPage.css) */
-.admin-tests-page.admin-exams-modern-page .admin-tests-grid.admin-exams-modern-grid {
-	gap: 12px;
-}
-
-.admin-tests-page.admin-exams-modern-page .admin-tests-card.admin-exams-modern-card {
-	padding: 0;
-	display: flex;
-	gap: 0;
-	border-top-width: 3px;
-	border-top-style: solid;
-}
-
-.admin-tests-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
-	gap: 14px;
-}
-
-.admin-tests-card {
-	border: 1px solid var(--border-primary);
-	border-top: 3px solid var(--color-primary);
-	border-radius: 4px;
-	background: var(--bg-elevated);
-	padding: 12px;
-	display: grid;
-	gap: 8px;
-}
-
-.admin-tests-card-head {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 8px;
-}
-
-.admin-tests-card-head h3 {
-	margin: 0;
-	font-size: 1rem;
-	line-height: 1.35;
-	display: -webkit-box;
-	-webkit-line-clamp: 2;
-	-webkit-box-orient: vertical;
-	overflow: hidden;
-}
-
-.admin-tests-card .status {
-	border-radius: 999px;
-	padding: 4px 9px;
-	font-size: 12px;
-	text-transform: capitalize;
-	border: 1px solid transparent;
-}
-
-.admin-tests-card .status.published {
-	background: rgba(var(--color-success-rgb, 34, 197, 94), 0.14);
-	color: var(--color-success);
-}
-
-.admin-tests-card .status.draft {
-	background: rgba(var(--color-warning-rgb, 245, 158, 11), 0.14);
-	color: var(--color-warning);
-}
-
-.admin-tests-card p {
-	margin: 0;
-	color: var(--text-secondary);
-	font-size: 0.9rem;
-}
-
-.admin-tests-meta {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-	font-size: 0.8rem;
-	color: var(--text-muted);
-}
-
-.admin-tests-card-footer {
-	margin-top: 12px;
-	padding-top: 12px;
-	border-top: 1px solid var(--border-primary);
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-}
-
-.admin-tests-actions-primary {
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: 8px;
-}
-
-.admin-tests-actions-primary button {
-	border: 1px solid var(--border-primary);
-	border-radius: 10px;
-	background: var(--bg-secondary);
-	color: var(--text-primary);
-	font-weight: 700;
-	padding: 10px 12px;
-	cursor: pointer;
-}
-
-.admin-tests-actions-primary button:disabled {
-	opacity: 0.6;
-	cursor: not-allowed;
-}
-
-.admin-tests-actions-primary .is-wide {
-	border: 0;
-	background: var(--color-primary);
-	color: var(--text-inverse);
-}
-
-.admin-tests-actions-primary .is-wide:disabled {
-	opacity: 0.6;
-	cursor: not-allowed;
-}
-
-.admin-tests-actions-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
-	gap: 8px;
-}
-
-.admin-tests-actions-grid button {
-	border: 1px solid var(--border-primary);
-	background: var(--bg-secondary);
-	color: var(--text-primary);
-	border-radius: 9px;
-	padding: 8px 10px;
-	font-size: 0.8rem;
-	font-weight: 600;
-	cursor: pointer;
-}
-
-.admin-tests-actions-grid button:disabled {
-	opacity: 0.55;
-	cursor: not-allowed;
-}
-
-.admin-tests-actions-grid button.is-emphasis {
-	background: rgba(var(--color-success-rgb, 34, 197, 94), 0.14);
-	color: var(--color-success);
-	border-color: color-mix(in srgb, var(--color-success) 30%, var(--border-primary));
-}
-
-.admin-tests-actions-grid button.is-danger-outline {
-	border-color: color-mix(in srgb, var(--color-error, #ef4444) 40%, var(--border-primary));
-	background: color-mix(in srgb, var(--color-error, #ef4444) 8%, transparent);
-	color: var(--color-error, #dc2626);
-	font-weight: 700;
-}
 
 .admin-tests-delete-dialog {
 	width: min(100%, 420px);
@@ -328,7 +78,7 @@
 }
 
 .admin-tests-delete-actions .is-danger-solid {
-	background: var(--color-error, #dc2626);
+	background: var(--color-error, var(--color-error));
 	color: #fff;
 	border: 0;
 	font-weight: 700;
@@ -384,12 +134,6 @@
 	color: var(--text-primary);
 }
 
-.admin-tests-modal-grid {
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: 10px;
-}
-
 .admin-tests-modal-actions {
 	display: flex;
 	justify-content: flex-end;
@@ -403,6 +147,18 @@
 	cursor: pointer;
 	background: var(--bg-secondary);
 	color: var(--text-primary);
+}
+
+.admin-tests-modal-actions .is-primary {
+	background: var(--color-primary);
+	color: var(--text-inverse);
+	font-weight: 700;
+}
+
+@media (max-width: 900px) {
+	.admin-tests-header {
+		flex-direction: column;
+	}
 }
 
 .admin-tests-compartments {
@@ -430,6 +186,7 @@
 	color: var(--text-primary);
 }
 
+/* Statistics compartment — split layout */
 .admin-tests-stats-layout {
 	display: grid;
 	grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
@@ -523,8 +280,26 @@
 	text-align: center;
 }
 
-.admin-tests-stats-main {
-	min-width: 0;
+.admin-content-list-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+}
+
+.admin-content-list-empty p {
+	margin: 0;
+}
+
+.admin-test-create-overlay .admin-test-create-panel {
+	width: min(420px, calc(100vw - 32px));
+}
+
+.admin-test-create-panel .admin-modal-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	padding: 12px 16px 16px;
 }
 
 @media (max-width: 960px) {
@@ -539,21 +314,5 @@
 
 	.admin-tests-stats-sidebar-list {
 		max-height: 220px;
-	}
-}
-
-.admin-tests-modal-actions .is-primary {
-	background: var(--color-primary);
-	color: var(--text-inverse);
-	font-weight: 700;
-}
-
-@media (max-width: 900px) {
-	.admin-tests-header {
-		flex-direction: column;
-	}
-
-	.admin-tests-modal-grid {
-		grid-template-columns: 1fr;
 	}
 }

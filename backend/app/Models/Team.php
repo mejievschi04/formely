@@ -15,7 +15,6 @@ class Team extends Model
         'name',
         'description',
         'owner_id',
-        'department_id',
         'sort_order',
         'accent_color',
     ];
@@ -27,11 +26,6 @@ class Team extends Model
     public function owner()
     {
         return $this->belongsTo(User::class, 'owner_id');
-    }
-
-    public function department()
-    {
-        return $this->belongsTo(Department::class);
     }
 
     public function users()

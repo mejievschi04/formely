@@ -1,6 +1,7 @@
 import React from 'react';
 import { PencilSimple } from '@phosphor-icons/react';
 import { isCoursePublished } from '../../../hooks/useCoursePublishFromCard';
+import { PublishSwitch } from '../../ui/PublishSwitch';
 import './CourseShowcaseQuickActions.css';
 
 export function CourseShowcasePublishToggle({
@@ -11,28 +12,13 @@ export function CourseShowcasePublishToggle({
 	const isPublished = isCoursePublished(course);
 
 	return (
-		<div className="admin-courses-showcase-publish" onClick={(e) => e.stopPropagation()}>
-			<span
-				className={`admin-courses-showcase-publish__label ${isPublished ? 'is-published' : 'is-draft'}`}
-			>
-				{isPublished ? 'Publicat' : 'Ciornă'}
-			</span>
-			<button
-				type="button"
-				role="switch"
-				aria-checked={isPublished}
-				className={`admin-courses-showcase-publish__switch ${isPublished ? 'is-on' : ''}`}
-				onClick={(e) => {
-					e.stopPropagation();
-					onStatusClick?.(course);
-				}}
-				disabled={statusBusy}
-				title={isPublished ? 'Publicat — oprește pentru ciornă' : 'Ciornă — activează pentru publicare'}
-				aria-label={isPublished ? 'Curs publicat' : 'Curs în ciornă'}
-			>
-				<span className="admin-courses-showcase-publish__thumb" aria-hidden="true" />
-			</button>
-		</div>
+		<PublishSwitch
+			className="admin-courses-showcase-publish"
+			published={isPublished}
+			disabled={statusBusy}
+			onToggle={() => onStatusClick?.(course)}
+			aria-label={isPublished ? 'Curs publicat' : 'Curs în ciornă'}
+		/>
 	);
 }
 

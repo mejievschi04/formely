@@ -12,14 +12,13 @@ class StudentActivityApiTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_student_sees_only_own_progress_activity(): void
+    public function test_student_cannot_view_activity_log(): void
     {
         if (! Schema::hasTable('activity_logs')) {
             $this->markTestSkipped('activity_logs table missing');
         }
 
         $student = User::factory()->create(['role' => 'student']);
-        $other = User::factory()->create(['role' => 'student']);
 
         ActivityLog::create([
             'user_id' => $student->id,
@@ -30,31 +29,12 @@ class StudentActivityApiTest extends TestCase
             'new_values' => ['course_id' => 1, 'course_title' => 'Test Course'],
         ]);
 
-        ActivityLog::create([
-            'user_id' => $other->id,
-            'action' => 'enrolled_course',
-            'model_type' => 'Course',
-            'model_id' => 2,
-            'description' => 'Other enrolled',
-            'new_values' => ['course_id' => 2, 'course_title' => 'Other'],
-        ]);
-
-        ActivityLog::create([
-            'user_id' => $student->id,
-            'action' => 'telemetry.learner_focus_seconds',
-            'description' => 'Noise',
-            'new_values' => ['seconds' => 120],
-        ]);
-
-        $response = $this->actingAs($student, 'sanctum')->getJson('/api/student/activity');
-
-        $response->assertOk()
-            ->assertJsonPath('pagination.total', 1)
-            ->assertJsonPath('data.0.action', 'enrolled_course')
-            ->assertJsonPath('data.0.link', '/courses/1');
+        $this->actingAs($student, 'sanctum')
+            ->getJson('/api/student/activity')
+            ->assertForbidden();
     }
 
-    public function test_auth_scope_includes_login_events(): void
+    public function test_student_cannot_view_auth_activity_scope(): void
     {
         if (! Schema::hasTable('activity_logs')) {
             $this->markTestSkipped('activity_logs table missing');
@@ -70,12 +50,9 @@ class StudentActivityApiTest extends TestCase
             'description' => 'Logged in',
         ]);
 
-        $response = $this->actingAs($student, 'sanctum')
-            ->getJson('/api/student/activity?scope=auth');
-
-        $response->assertOk()
-            ->assertJsonPath('pagination.total', 1)
-            ->assertJsonPath('data.0.action', 'logged_in');
+        $this->actingAs($student, 'sanctum')
+            ->getJson('/api/student/activity?scope=auth')
+            ->assertForbidden();
     }
 
     public function test_requires_authentication(): void

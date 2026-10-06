@@ -4,13 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\Course;
 use App\Models\CourseTest;
-use App\Models\Exam;
-use App\Models\ExamResult;
 use App\Models\Question;
 use App\Models\Test;
 use App\Models\TestResult;
 use App\Models\User;
-use App\Services\TestAttemptAnswerOrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -91,6 +88,12 @@ class ExamResultsApiTest extends TestCase
 
         $this->assertCount(2, $results);
         $this->assertSame($secondCourse->id, $results->first()['course_id']);
+        $this->assertArrayNotHasKey('questions', $results->first()['exam'] ?? []);
+
+        $cards = $this->actingAs($student, 'sanctum')->getJson('/api/exam-results?view=cards')->assertOk()->json();
+        $this->assertCount(1, $cards);
+        $this->assertSame($latest->id, $cards[0]['id']);
+        $this->assertIsArray($cards[0]['exam']['questions'] ?? null);
         $this->assertSame('Curs B', $results->first()['exam']['course']['title']);
         $this->assertTrue($results->contains(fn ($row) => $row['course_id'] === $firstCourse->id && $row['exam']['course']['title'] === 'Curs A'));
 
@@ -141,113 +144,100 @@ class ExamResultsApiTest extends TestCase
             ->assertJsonPath('exam.questions.0.answers.0.is_correct', true);
     }
 
-    public function test_submit_review_questions_align_with_shuffled_display_order(): void
+    public function test_submitted_only_results_keep_correctness_without_revealing_the_key(): void
     {
         $student = User::factory()->create(['role' => 'student']);
-        $owner = User::factory()->create(['role' => 'instructor']);
-        $course = Course::factory()->published()->create(['teacher_id' => $owner->id]);
+        $owner = User::factory()->create(['role' => 'teacher']);
         $test = Test::factory()->published()->create([
             'created_by' => $owner->id,
-            'randomize_answers' => true,
-            'question_selection' => ['seed' => 'shuffle-test', 'variant_pool_size' => 1],
-            'passing_score' => 70,
+            'randomize_answers' => false,
+            'show_only_submitted_answers' => true,
+            'show_correct_answers' => false,
         ]);
         $question = Question::factory()->create([
             'test_id' => $test->id,
-            'type' => 'single_choice',
-            'content' => 'Întrebare shuffle',
-            'points' => 10,
+            'content' => 'Alege varianta',
+            'points' => 1,
             'answers' => [
-                ['text' => 'Răspuns corect', 'is_correct' => true],
-                ['text' => 'Greșit 1', 'is_correct' => false],
-                ['text' => 'Greșit 2', 'is_correct' => false],
+                ['text' => 'corect', 'is_correct' => true, 'order' => 0],
+                ['text' => 'gresit', 'is_correct' => false, 'order' => 1],
             ],
         ]);
+        $result = TestResult::create([
+            'test_id' => $test->id,
+            'user_id' => $student->id,
+            'score' => 0,
+            'max_score' => 1,
+            'percentage' => 0,
+            'passed' => false,
+            'attempt_number' => 1,
+            'answers' => [(string) $question->id => 1],
+            'completed_at' => now(),
+            'status' => 'completed',
+        ]);
 
+        $response = $this->actingAs($student, 'sanctum')->getJson("/api/exam-results/{$result->id}?type=test");
+
+        $response->assertOk()
+            ->assertJsonPath('show_only_submitted_answers', true)
+            ->assertJsonPath('exam.questions.0.is_correct', false)
+            ->assertJsonPath('exam.questions.0.answers.1.is_selected', true)
+            ->assertJsonPath('exam.questions.0.answers.1.is_correct', false)
+            ->assertJsonMissingPath('exam.questions.0.answers.0.is_correct')
+            ->assertJsonMissingPath('exam.questions.0.correct_answer_index')
+            ->assertJsonMissingPath('exam.questions.0.correct_answer_indices');
+    }
+
+    public function test_exam_results_list_excludes_pending_manual_review(): void
+    {
+        $student = User::factory()->create(['role' => 'student']);
+        $owner = User::factory()->create(['role' => 'teacher']);
+        $course = Course::factory()->published()->create(['teacher_id' => $owner->id]);
+        $test = Test::factory()->published()->create(['created_by' => $owner->id]);
         CourseTest::create([
             'course_id' => $course->id,
             'test_id' => $test->id,
-            'scope' => 'module',
-            'scope_id' => null,
+            'scope' => 'course',
+            'scope_id' => $course->id,
             'required' => true,
             'passing_score' => 70,
             'order' => 1,
         ]);
 
-        $orderService = new TestAttemptAnswerOrderService();
-        $order = $orderService->resolveChoiceOrderForAttempt($test, $question, $student->id, 1);
-        $correctDisplay = $order['correct_display_indices'][0] ?? null;
-        $this->assertNotNull($correctDisplay, 'Expected a display slot for the correct original answer');
-
-        $submit = $this->actingAs($student, 'sanctum')->postJson("/api/exams/{$test->id}/submit", [
-            'course_id' => $course->id,
-            'started_at' => now()->subMinute()->toIso8601String(),
-            'answers' => [
-                (string) $question->id => $correctDisplay,
-            ],
-        ]);
-
-        $submit->assertOk()
-            ->assertJsonPath('result.correct_answers_count', 1)
-            ->assertJsonPath('result.total_questions', 1)
-            ->assertJsonPath('result.percentage', 100)
-            ->assertJsonPath('result.review_questions.0.is_correct', true)
-            ->assertJsonPath('result.review_questions.0.user_answer_index', $correctDisplay)
-            ->assertJsonPath('result.review_questions.0.user_answer_labels.0', 'Răspuns corect');
-
-        $reload = $this->actingAs($student, 'sanctum')->getJson("/api/exams/{$test->id}?course_id={$course->id}");
-        $reload->assertOk()
-            ->assertJsonPath('questions.0.is_correct', true)
-            ->assertJsonPath('questions.0.user_answer_index', $correctDisplay);
-    }
-
-    public function test_exam_results_index_excludes_standalone_exam_attempts(): void
-    {
-        $student = User::factory()->create(['role' => 'student']);
-        $owner = User::factory()->create(['role' => 'teacher']);
-        $exam = Exam::create([
-            'title' => 'Examen catalog',
-            'status' => 'published',
-            'created_by' => $owner->id,
-            'course_id' => null,
-            'passing_score' => 70,
-        ]);
-        ExamResult::create([
-            'exam_id' => $exam->id,
-            'user_id' => $student->id,
-            'score' => 80,
-            'total_points' => 100,
-            'percentage' => 80,
-            'passed' => true,
-            'attempt_number' => 1,
-            'answers' => [],
-            'completed_at' => now(),
-        ]);
-
-        $test = Test::factory()->published()->create([
-            'title' => 'Test modul',
-            'created_by' => $owner->id,
-        ]);
         TestResult::create([
             'test_id' => $test->id,
+            'course_id' => $course->id,
             'user_id' => $student->id,
-            'score' => 60,
-            'max_score' => 100,
-            'percentage' => 60,
+            'score' => 0,
+            'max_score' => 10,
+            'percentage' => 0,
             'passed' => false,
             'attempt_number' => 1,
-            'answers' => [],
+            'answers' => ['1' => 'text'],
+            'completed_at' => now(),
+            'status' => 'pending_review',
+            'needs_manual_review' => true,
+        ]);
+
+        $visible = TestResult::create([
+            'test_id' => $test->id,
+            'course_id' => $course->id,
+            'user_id' => $student->id,
+            'score' => 80,
+            'max_score' => 100,
+            'percentage' => 80,
+            'passed' => true,
+            'attempt_number' => 2,
+            'answers' => ['1' => 0],
             'completed_at' => now(),
             'status' => 'completed',
+            'needs_manual_review' => false,
         ]);
 
         $response = $this->actingAs($student, 'sanctum')->getJson('/api/exam-results');
-
         $response->assertOk();
-        $results = collect($response->json());
-        $this->assertCount(1, $results);
-        $this->assertSame('test', $results->first()['type']);
-        $this->assertSame($test->id, $results->first()['test_id']);
-        $this->assertFalse($results->contains(fn ($row) => ($row['type'] ?? null) === 'exam'));
+        $ids = collect($response->json())->pluck('id')->all();
+        $this->assertContains($visible->id, $ids);
+        $this->assertCount(1, $ids);
     }
 }

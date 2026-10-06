@@ -1,24 +1,16 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { emptyEventForm, DEFAULT_DURATION_MINUTES } from './AdminEventFormModalShared.js';
+import { X } from '@phosphor-icons/react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { adminService } from '../../../services/api';
-import { useToast } from '../../../contexts/ToastContext';
+
+import { useToast } from '../../../contexts/ToastContextShared.js';
 import { useScrollResetOnOpen } from '../../../hooks/useScrollResetOnOpen';
 
 const DEFAULT_TIMEZONE = 'Europe/Chisinau';
-const DEFAULT_DURATION_MINUTES = 60;
+
 const TIME_24H_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
-export const emptyEventForm = () => ({
-	title: '',
-	description: '',
-	type: 'live_online',
-	event_date: '',
-	start_time: '09:00',
-	duration_minutes: DEFAULT_DURATION_MINUTES,
-	location: '',
-	live_link: '',
-	audience_type: 'all',
-	team_ids: [],
-});
+
 
 const trimOrNull = (v) => {
 	const t = typeof v === 'string' ? v.trim() : '';
@@ -74,20 +66,58 @@ const calculateDurationMinutes = (startDate, endDate) => {
  * @param {{ event_date?: string, start_time?: string } | null} props.prefill
  * @param {() => void} props.onSaved
  */
-const AdminEventFormModal = ({ open, onClose, editingEvent, prefill, onSaved }) => {
+function initialEventForm(editingEvent, prefill) {
+		if (editingEvent) {
+			let eventDate = '';
+			let startTime = '09:00';
+			if (editingEvent.start_date) {
+				const match = editingEvent.start_date.match(/(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2}):?(\d{2})?/);
+				if (match) {
+					const [, year, month, day, hour, minute] = match;
+					eventDate = `${year}-${month}-${day}`;
+					startTime = `${hour}:${minute}`;
+				}
+			}
+			const rawType = editingEvent.type || 'live_online';
+			const formType = rawType === 'physical' ? 'physical' : 'live_online';
+			return {
+				title: editingEvent.title || '',
+				description: editingEvent.description || '',
+				type: formType,
+				event_date: eventDate,
+				start_time: startTime,
+				duration_minutes: calculateDurationMinutes(editingEvent.start_date, editingEvent.end_date),
+				location: formType === 'physical' ? (editingEvent.location || '') : '',
+				live_link: formType === 'live_online' ? (editingEvent.live_link || '') : '',
+				audience_type: editingEvent.audience_type === 'teams' ? 'teams' : 'all',
+				team_ids: Array.isArray(editingEvent.team_ids)
+					? editingEvent.team_ids
+					: (editingEvent.teams || []).map((t) => t.id),
+			};
+		}
+		if (prefill?.event_date) {
+			return {
+				...emptyEventForm(),
+				event_date: prefill.event_date,
+				start_time: prefill.start_time || '09:00',
+				duration_minutes: DEFAULT_DURATION_MINUTES,
+			};
+		} else {
+			return emptyEventForm();
+		}
+
+}
+
+const AdminEventFormModal = (props) => props.open ? <EventForm key={props.editingEvent?.id ?? "new"} {...props} /> : null;
+
+const EventForm = ({ open, onClose, editingEvent, prefill, onSaved }) => {
 	const { success: showSuccess, error: showError } = useToast();
-	const [formData, setFormData] = useState(emptyEventForm);
+	const [formData, setFormData] = useState(() => initialEventForm(editingEvent, prefill));
 	const [errors, setErrors] = useState({});
 	const [touched, setTouched] = useState({});
 	const [teams, setTeams] = useState([]);
 	const bodyRef = useRef(null);
 	useScrollResetOnOpen(open, bodyRef);
-
-	const resetForm = useCallback(() => {
-		setFormData(emptyEventForm());
-		setErrors({});
-		setTouched({});
-	}, []);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -102,52 +132,13 @@ const AdminEventFormModal = ({ open, onClose, editingEvent, prefill, onSaved }) 
 		return () => { cancelled = true; };
 	}, []);
 
-	useEffect(() => {
-		if (!open) return;
-		if (editingEvent) {
-			let eventDate = '';
-			let startTime = '09:00';
-			if (editingEvent.start_date) {
-				const match = editingEvent.start_date.match(/(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2}):?(\d{2})?/);
-				if (match) {
-					const [, year, month, day, hour, minute] = match;
-					eventDate = `${year}-${month}-${day}`;
-					startTime = `${hour}:${minute}`;
-				}
-			}
-			const rawType = editingEvent.type || 'live_online';
-			const formType = rawType === 'physical' ? 'physical' : 'live_online';
-			setFormData({
-				title: editingEvent.title || '',
-				description: editingEvent.description || '',
-				type: formType,
-				event_date: eventDate,
-				start_time: startTime,
-				duration_minutes: calculateDurationMinutes(editingEvent.start_date, editingEvent.end_date),
-				location: formType === 'physical' ? (editingEvent.location || '') : '',
-				live_link: formType === 'live_online' ? (editingEvent.live_link || '') : '',
-				audience_type: editingEvent.audience_type === 'teams' ? 'teams' : 'all',
-				team_ids: Array.isArray(editingEvent.team_ids)
-					? editingEvent.team_ids
-					: (editingEvent.teams || []).map((t) => t.id),
-			});
-			setErrors({});
-			setTouched({});
-			return;
-		}
-		if (prefill?.event_date) {
-			setFormData({
-				...emptyEventForm(),
-				event_date: prefill.event_date,
-				start_time: prefill.start_time || '09:00',
-				duration_minutes: DEFAULT_DURATION_MINUTES,
-			});
-		} else {
-			setFormData(emptyEventForm());
-		}
+	const resetForm = useCallback(() => {
+		setFormData(emptyEventForm());
 		setErrors({});
 		setTouched({});
-	}, [open, editingEvent, prefill]);
+	}, []);
+
+
 
 	const validate = useCallback(() => {
 		const newErrors = {};
@@ -193,7 +184,6 @@ const AdminEventFormModal = ({ open, onClose, editingEvent, prefill, onSaved }) 
 		if (!validate()) {
 			setTouched({
 				title: true,
-				description: true,
 				event_date: true,
 				start_time: true,
 				duration_minutes: true,
@@ -272,12 +262,6 @@ const AdminEventFormModal = ({ open, onClose, editingEvent, prefill, onSaved }) 
 	return (
 		<div
 			className="admin-event-modal-overlay va-cal-event-modal-overlay"
-			onClick={(e) => {
-				if (e.target === e.currentTarget) {
-					onClose();
-					resetForm();
-				}
-			}}
 			role="presentation"
 		>
 			<div className="admin-event-modal" role="dialog" aria-modal="true" aria-labelledby="va-evt-modal-title">
@@ -287,14 +271,15 @@ const AdminEventFormModal = ({ open, onClose, editingEvent, prefill, onSaved }) 
 					</h2>
 					<button
 						type="button"
-						className="admin-event-modal-close"
+						className="admin-event-modal-close va-close-btn"
 						onClick={() => {
 							onClose();
 							resetForm();
 						}}
 						title="Închide"
+						aria-label="Închide"
 					>
-						×
+						<X size={18} weight="bold" aria-hidden="true" />
 					</button>
 				</div>
 				<div ref={bodyRef} className="admin-event-modal-body">
@@ -566,7 +551,7 @@ const AdminEventFormModal = ({ open, onClose, editingEvent, prefill, onSaved }) 
 							>
 								Anulează
 							</button>
-							<button type="submit" className="admin-event-btn-primary">
+							<button type="submit" className="va-btn-save lms-btn-primary admin-event-btn-primary">
 								{editingEvent ? 'Salvează modificările' : 'Creează evenimentul'}
 							</button>
 						</div>

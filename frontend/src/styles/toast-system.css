@@ -24,7 +24,7 @@
 @media (max-width: 768px) {
 	.toast-container,
 	.va-toast-container {
-		bottom: max(var(--space-4), env(safe-area-inset-bottom));
+		bottom: calc(var(--student-tab-height, 0px) + var(--space-4));
 		left: 50%;
 		right: auto;
 		transform: translateX(-50%);
@@ -34,8 +34,7 @@
 	}
 
 	/* Toast items adaptate pe mobile - lățime completă în container */
-	.toast-container .toast,
-	.va-toast-container .va-toast {
+	.toast-container .toast {
 		width: 100% !important;
 		min-width: 0 !important;
 		max-width: 100% !important;
@@ -46,141 +45,23 @@
    2. TOAST BASE
    ============================================ */
 
-.va-toast {
-	background-color: var(--bg-elevated);
-	border: 1px solid var(--border-primary);
-	border-radius: var(--radius-lg);
-	padding: var(--space-4);
-	box-shadow: var(--shadow-lg);
-	display: flex;
-	align-items: flex-start;
-	gap: var(--space-3);
-	pointer-events: auto;
-	animation: slideInRight var(--transition-smooth);
-	position: relative;
-	overflow: hidden;
-}
-
-.va-toast::before {
-	content: '';
-	position: absolute;
-	left: 0;
-	top: 0;
-	bottom: 0;
-	width: 4px;
-	background-color: var(--color-primary);
-}
-
 /* Toast Icon */
-.va-toast-icon {
-	width: 20px;
-	height: 20px;
-	flex-shrink: 0;
-	margin-top: 2px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
 
 /* Toast Content */
-.va-toast-content {
-	flex: 1;
-	min-width: 0;
-}
-
-.va-toast-title {
-	font-size: var(--font-size-sm);
-	font-weight: var(--font-weight-semibold);
-	color: var(--text-primary);
-	margin: 0 0 var(--space-1) 0;
-	line-height: var(--line-height-tight);
-}
-
-.va-toast-message {
-	font-size: var(--font-size-sm);
-	color: var(--text-secondary);
-	margin: 0;
-	line-height: var(--line-height-normal);
-}
 
 /* Toast Close Button */
-.va-toast-close {
-	width: 20px;
-	height: 20px;
-	flex-shrink: 0;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	background-color: transparent;
-	border: none;
-	color: var(--text-tertiary);
-	cursor: pointer;
-	border-radius: var(--radius-sm);
-	transition: all var(--transition-fast);
-	padding: 0;
-	margin-top: 2px;
-}
-
-.va-toast-close:hover {
-	background-color: var(--bg-secondary);
-	color: var(--text-primary);
-}
 
 /* ============================================
    3. TOAST VARIANTS
    ============================================ */
 
 /* Success Toast */
-.va-toast-success {
-	border-left-color: var(--color-success);
-}
-
-.va-toast-success::before {
-	background-color: var(--color-success);
-}
-
-.va-toast-success .va-toast-icon {
-	color: var(--color-success);
-}
 
 /* Error Toast */
-.va-toast-error {
-	border-left-color: var(--color-error);
-}
-
-.va-toast-error::before {
-	background-color: var(--color-error);
-}
-
-.va-toast-error .va-toast-icon {
-	color: var(--color-error);
-}
 
 /* Warning Toast */
-.va-toast-warning {
-	border-left-color: var(--color-warning);
-}
-
-.va-toast-warning::before {
-	background-color: var(--color-warning);
-}
-
-.va-toast-warning .va-toast-icon {
-	color: var(--color-warning);
-}
 
 /* Info Toast */
-.va-toast-info {
-	border-left-color: var(--color-info);
-}
-
-.va-toast-info::before {
-	background-color: var(--color-info);
-}
-
-.va-toast-info .va-toast-icon {
-	color: var(--color-info);
-}
 
 /* ============================================
    4. TOAST ANIMATIONS
@@ -208,29 +89,9 @@
 	}
 }
 
-.va-toast-exit {
-	animation: slideOutRight var(--transition-base);
-}
-
 /* ============================================
    5. TOAST PROGRESS BAR (Optional)
    ============================================ */
-
-.va-toast-progress {
-	position: absolute;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	height: 2px;
-	background-color: var(--bg-secondary);
-	overflow: hidden;
-}
-
-.va-toast-progress-bar {
-	height: 100%;
-	background-color: var(--color-primary);
-	animation: toastProgress linear;
-}
 
 @keyframes toastProgress {
 	from {
@@ -244,62 +105,3 @@
 /* ============================================
    LIGHT THEME - IMPROVED CONTRAST & VISIBILITY
    ============================================ */
-
-[data-theme="light"] .va-toast {
-	background-color: var(--bg-elevated);
-	border-color: var(--border-primary);
-	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-}
-
-[data-theme="light"] .va-toast::before {
-	background-color: var(--color-primary);
-}
-
-[data-theme="light"] .va-toast-title {
-	color: var(--text-primary);
-}
-
-[data-theme="light"] .va-toast-message {
-	color: var(--text-secondary);
-}
-
-[data-theme="light"] .va-toast-close {
-	color: var(--text-secondary);
-}
-
-[data-theme="light"] .va-toast-close:hover {
-	color: var(--text-primary);
-	background-color: var(--bg-secondary);
-}
-
-[data-theme="light"] .va-toast.success {
-	border-left-color: var(--color-success);
-}
-
-[data-theme="light"] .va-toast.success::before {
-	background-color: var(--color-success);
-}
-
-[data-theme="light"] .va-toast.error {
-	border-left-color: var(--color-error);
-}
-
-[data-theme="light"] .va-toast.error::before {
-	background-color: var(--color-error);
-}
-
-[data-theme="light"] .va-toast.warning {
-	border-left-color: var(--color-warning);
-}
-
-[data-theme="light"] .va-toast.warning::before {
-	background-color: var(--color-warning);
-}
-
-[data-theme="light"] .va-toast.info {
-	border-left-color: var(--color-primary);
-}
-
-[data-theme="light"] .va-toast.info::before {
-	background-color: var(--color-primary);
-}

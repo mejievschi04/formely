@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { adminService } from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
-import { useAuth } from '../../contexts/AuthContext';
-import RichTextEditor from '../../components/RichTextEditor';
+
+import { useToast } from '../../contexts/ToastContextShared.js';
+
+import { useAuth } from '../../contexts/AuthContextShared.js';
+import LessonTipTapEditor from '../../components/admin/lessons/LessonTipTapEditor';
 
 // Template blocks for lessons
 const lessonBlocks = [
@@ -206,7 +209,7 @@ const LessonCreatorPage = () => {
 		// Links
 		html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
 		// Lists
-		html = html.replace(/^\- (.+)$/gim, '<li>$1</li>');
+		html = html.replace(/^- (.+)$/gim, '<li>$1</li>');
 		html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
 		// Line breaks
 		html = html.replace(/\n/g, '<br>');
@@ -233,11 +236,6 @@ const LessonCreatorPage = () => {
 		if (!formData.title || formData.title.trim().length < 3) {
 			newErrors.title = 'Titlul trebuie să aibă minim 3 caractere';
 		}
-		// Strip HTML tags for validation
-		const textContent = formData.content ? formData.content.replace(/<[^>]*>/g, '').trim() : '';
-		if (!formData.content || textContent.length < 20) {
-			newErrors.content = 'Conținutul trebuie să aibă minim 20 caractere';
-		}
 		setErrors(newErrors);
 		return Object.keys(newErrors).length === 0;
 	};
@@ -245,11 +243,9 @@ const LessonCreatorPage = () => {
 	// Calculate form completion percentage
 	const completionPercentage = () => {
 		let completed = 0;
-		const total = 3;
+		const total = 2;
 		if (formData.course_id) completed++;
 		if (formData.title && formData.title.trim().length >= 3) completed++;
-		const textContent = formData.content ? formData.content.replace(/<[^>]*>/g, '').trim() : '';
-		if (textContent.length >= 20) completed++;
 		return Math.round((completed / total) * 100);
 	};
 
@@ -305,11 +301,11 @@ const LessonCreatorPage = () => {
 							{id && id !== 'new' ? 'Editează Lecție' : 'Creează Lecție Nouă'}
 						</h1>
 						<p className="admin-page-subtitle">
-							Lecție în cursul Formely — {id && id !== 'new' ? 'actualizează' : 'completează'} conținutul și setările.
+							Completează informațiile pentru {id && id !== 'new' ? 'actualizarea' : 'crearea'} lecției
 						</p>
 					</div>
 					<button 
-						className="admin-btn admin-btn-secondary" 
+						className="va-btn-back admin-back-btn" 
 						onClick={() => {
 							if (formData.course_id) {
 								navigate(`/admin/courses/${formData.course_id}`);
@@ -318,7 +314,8 @@ const LessonCreatorPage = () => {
 							}
 						}}
 					>
-						← Înapoi
+						<ArrowLeft size={18} aria-hidden />
+						Înapoi
 					</button>
 				</div>
 
@@ -419,14 +416,14 @@ const LessonCreatorPage = () => {
 							<div className="admin-form-group-header">
 								<label className="admin-label admin-label-with-icon">
 									<span>📄</span>
-									<span>Conținut Lecție <span className="admin-form-required">*</span></span>
+									<span>Conținut Lecție</span>
 									{formData.content && formData.content.replace(/<[^>]*>/g, '').trim().length >= 20 && (
 										<span className="admin-form-check">✓</span>
 									)}
 								</label>
 								<button
 									type="button"
-									className="admin-btn admin-btn-sm admin-btn-primary"
+									className="admin-btn admin-btn-sm lms-btn-primary"
 									onClick={() => setShowBlockSelector(!showBlockSelector)}
 								>
 									<span>➕</span>
@@ -456,7 +453,7 @@ const LessonCreatorPage = () => {
 							)}
 
 							<div className={`admin-form-editor-wrapper ${errors.content ? 'has-error' : ''} ${formData.content && formData.content.replace(/<[^>]*>/g, '').trim().length >= 20 ? 'has-value' : ''}`}>
-								<RichTextEditor
+								<LessonTipTapEditor
 									value={formData.content}
 									onChange={(value) => {
 										setFormData({ ...formData, content: value });
@@ -474,13 +471,10 @@ const LessonCreatorPage = () => {
 							)}
 							{formData.content && (() => {
 								const textContent = formData.content.replace(/<[^>]*>/g, '').trim();
+								if (!textContent) return null;
 								return (
-									<p className={`admin-form-help-text ${textContent.length >= 20 ? 'success' : ''}`}>
-										{textContent.length >= 20 ? (
-											<>✓ {textContent.length} caractere</>
-										) : (
-											<>💡 Minim 20 caractere necesare ({textContent.length}/20)</>
-										)}
+									<p className="admin-form-help-text success">
+										✓ {textContent.length} caractere
 									</p>
 								);
 							})()}
@@ -506,7 +500,7 @@ const LessonCreatorPage = () => {
 							</button>
 							<button
 								type="submit"
-								className={`admin-btn admin-btn-primary ${completionPercentage() < 100 ? 'disabled' : ''}`}
+								className={`admin-btn lms-btn-primary ${completionPercentage() < 100 ? 'disabled' : ''}`}
 								disabled={loading || completionPercentage() < 100}
 							>
 								{loading ? (

@@ -7,7 +7,6 @@ use App\Models\ExamAnswer;
 use App\Models\ExamQuestion;
 use App\Models\Question;
 use App\Models\QuestionBank;
-use App\Models\Test;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -26,9 +25,6 @@ class ExamBankQuestionSyncService
         if ($this->selectionMode($settings) === 'questions') {
             return array_key_exists('question_ids', $settings);
         }
-        if (($settings['selection_mode'] ?? '') === 'tags') {
-            return $this->normalizeTags($settings['tags'] ?? []) !== [];
-        }
 
         return $this->normalizeIds($settings['folder_ids'] ?? []) !== [];
     }
@@ -43,18 +39,9 @@ class ExamBankQuestionSyncService
             return 0;
         }
 
-        $mode = (string) ($settings['selection_mode'] ?? 'folders');
-        if ($mode === 'questions') {
-            $selected = $this->poolFromQuestionIds($this->normalizeIds($settings['question_ids'] ?? []), $actor);
-        } elseif ($mode === 'tags') {
-            $folderIds = $this->normalizeIds($settings['folder_ids'] ?? []);
-            $pool = $folderIds !== []
-                ? $this->basePool($folderIds, $actor)
-                : $this->basePool([], $actor);
-            $selected = $this->filterByTags($pool, $this->normalizeTags($settings['tags'] ?? []));
-        } else {
-            $selected = $this->poolFromFolders($settings, $exam, $actor);
-        }
+        $selected = $this->selectionMode($settings) === 'questions'
+            ? $this->poolFromQuestionIds($this->normalizeIds($settings['question_ids'] ?? []), $actor)
+            : $this->poolFromFolders($settings, $exam, $actor);
 
         if ($selected->isEmpty()) {
             return DB::transaction(function () use ($exam) {
@@ -65,14 +52,31 @@ class ExamBankQuestionSyncService
         }
 
         return DB::transaction(function () use ($exam, $selected) {
-            ExamQuestion::where('exam_id', $exam->id)->delete();
+            $existing = ExamQuestion::where('exam_id', $exam->id)->get();
+            $bySource = $existing
+                ->filter(fn (ExamQuestion $question) => (int) ($question->payload['source_question_id'] ?? 0) > 0)
+                ->keyBy(fn (ExamQuestion $question) => (int) $question->payload['source_question_id']);
 
+            $keptIds = [];
             $order = 0;
             foreach ($selected as $q) {
-                $examQ = $this->createExamQuestionFromBank($exam, $q, $order);
-                $this->createAnswersFromBank($examQ, $q);
+                $current = $bySource->get((int) $q->id);
+                if ($current) {
+                    $this->updateExamQuestionFromBank($current, $q, $order);
+                    $keptIds[] = (int) $current->id;
+                } else {
+                    $created = $this->createExamQuestionFromBank($exam, $q, $order);
+                    $this->createAnswersFromBank($created, $q);
+                    $keptIds[] = (int) $created->id;
+                }
                 $order++;
             }
+
+            $remove = ExamQuestion::where('exam_id', $exam->id);
+            if ($keptIds !== []) {
+                $remove->whereNotIn('id', $keptIds);
+            }
+            $remove->delete();
 
             return $order;
         });
@@ -86,83 +90,6 @@ class ExamBankQuestionSyncService
     protected function normalizeIds(array $raw): array
     {
         return array_values(array_unique(array_filter(array_map('intval', $raw))));
-    }
-
-    public function materializeFromTest(Test $test, Exam $exam, ?User $actor = null): int
-    {
-        if ($test->question_source === 'bank') {
-            $settings = $this->examSettingsFromTest($test);
-            if ($this->shouldSync($settings)) {
-                return $this->syncFromSettings($exam, $settings, $actor);
-            }
-        }
-
-        $questions = $test->questions()->orderBy('order')->get();
-        if ($questions->isEmpty()) {
-            return 0;
-        }
-
-        return DB::transaction(function () use ($exam, $questions) {
-            ExamQuestion::where('exam_id', $exam->id)->delete();
-
-            $order = 0;
-            foreach ($questions as $q) {
-                $examQ = $this->createExamQuestionFromBank($exam, $q, $order);
-                $this->createAnswersFromBank($examQ, $q);
-                $order++;
-            }
-
-            return $order;
-        });
-    }
-
-    protected function examSettingsFromTest(Test $test): array
-    {
-        $selection = is_array($test->question_selection) ? $test->question_selection : [];
-        $folderIds = array_values(array_filter(array_map('intval', (array) ($selection['folder_ids'] ?? []))));
-        if ($folderIds === [] && $test->question_set_id) {
-            $folderIds = [(int) $test->question_set_id];
-        }
-
-        $directCount = $test->relationLoaded('questions')
-            ? $test->questions->count()
-            : $test->questions()->count();
-
-        return [
-            'question_count' => max(1, (int) ($selection['count'] ?? $directCount ?: 10)),
-            'selection_mode' => (string) ($selection['mode'] ?? 'folders'),
-            'folder_ids' => $folderIds,
-            'tags' => is_array($selection['tags'] ?? null) ? $selection['tags'] : [],
-            'include_starred' => ! array_key_exists('include_starred', $selection) || (bool) $selection['include_starred'],
-        ];
-    }
-
-    protected function normalizeTags($raw): array
-    {
-        if (! is_array($raw)) {
-            return [];
-        }
-
-        return array_values(array_unique(array_filter(array_map(function ($t) {
-            return mb_strtolower(trim((string) $t));
-        }, $raw))));
-    }
-
-    protected function filterByTags(Collection $pool, array $tagList): Collection
-    {
-        return $pool->filter(function ($q) use ($tagList) {
-            $meta = is_array($q->metadata) ? $q->metadata : [];
-            $qTags = $meta['tags'] ?? [];
-            if (is_string($qTags)) {
-                $qTags = array_map('trim', explode(',', $qTags));
-            }
-            if (! is_array($qTags)) {
-                $qTags = [];
-            }
-            $qTags = array_values(array_filter(array_map(fn ($t) => mb_strtolower(trim((string) $t)), $qTags)));
-
-            return $tagList !== [] && count(array_intersect($tagList, $qTags)) > 0;
-        })->values();
     }
 
     protected function poolFromFolders(array $settings, Exam $exam, ?User $actor): Collection
@@ -195,8 +122,8 @@ class ExamBankQuestionSyncService
             $starredIds = $this->liveStarredSourceIds($pool);
             $isStarred = function ($question) use ($starredIds) {
                 $sourceId = (int) (($question->payload['source_question_id'] ?? 0));
-                if ($sourceId > 0 && isset($starredIds[$sourceId])) {
-                    return true;
+                if ($sourceId > 0) {
+                    return isset($starredIds[$sourceId]);
                 }
 
                 return (bool) ($question->payload['is_starred'] ?? false);
@@ -270,22 +197,21 @@ class ExamBankQuestionSyncService
 
     protected function basePool(array $folderIds, ?User $actor): Collection
     {
+        if ($folderIds === []) {
+            return collect();
+        }
+
         $query = Question::query()
+            ->whereIn('question_bank_id', $folderIds)
             ->orderBy('question_bank_id')
             ->orderBy('order');
 
-        if ($folderIds !== []) {
-            $query->whereIn('question_bank_id', $folderIds);
-        } else {
-            $query->whereNotNull('question_bank_id');
-        }
-
         if ($actor && $actor->isInstructor()) {
-            $allowedBankIds = QuestionBank::query()->where('created_by', $actor->id);
-            if ($folderIds !== []) {
-                $allowedBankIds->whereIn('id', $folderIds);
-            }
-            $query->whereIn('question_bank_id', $allowedBankIds->pluck('id'));
+            $allowedBankIds = QuestionBank::query()
+                ->where('created_by', $actor->id)
+                ->whereIn('id', $folderIds)
+                ->pluck('id');
+            $query->whereIn('question_bank_id', $allowedBankIds);
         }
 
         return $query->get();
@@ -301,7 +227,7 @@ class ExamBankQuestionSyncService
     protected function mapQuestionType(?string $type): string
     {
         $t = strtolower((string) $type);
-        $allowed = ['multiple_choice', 'single_choice', 'true_false', 'matching', 'ordering'];
+        $allowed = ['multiple_choice', 'single_choice', 'true_false', 'yes_no', 'matching', 'ordering'];
         if (in_array($t, $allowed, true)) {
             return $t;
         }
@@ -317,6 +243,7 @@ class ExamBankQuestionSyncService
             'source_bank_id' => $q->question_bank_id,
             'source_test_id' => $q->test_id,
             'is_starred' => (bool) $q->is_starred,
+            'explanation' => $q->explanation,
         ];
         if ($questionType === 'matching') {
             $payload['pairs'] = $this->extractMatchingPairs($q);
@@ -332,6 +259,34 @@ class ExamBankQuestionSyncService
             'order' => $order,
             'payload' => $payload,
         ]);
+    }
+
+    protected function updateExamQuestionFromBank(ExamQuestion $examQ, Question $q, int $order): void
+    {
+        $questionType = $this->mapQuestionType($q->type);
+        $payload = [
+            'source_question_id' => $q->id,
+            'source_bank_id' => $q->question_bank_id,
+            'source_test_id' => $q->test_id,
+            'is_starred' => (bool) $q->is_starred,
+            'explanation' => $q->explanation,
+        ];
+        if ($questionType === 'matching') {
+            $payload['pairs'] = $this->extractMatchingPairs($q);
+        } elseif ($questionType === 'ordering') {
+            $payload['items'] = $this->extractOrderingItems($q);
+        }
+
+        $examQ->update([
+            'question_text' => $q->content ?? '',
+            'question_type' => $questionType,
+            'points' => (int) ($q->points ?? 1),
+            'order' => $order,
+            'payload' => $payload,
+        ]);
+
+        ExamAnswer::where('exam_question_id', $examQ->id)->delete();
+        $this->createAnswersFromBank($examQ, $q);
     }
 
     protected function createAnswersFromBank(ExamQuestion $examQ, Question $q): void

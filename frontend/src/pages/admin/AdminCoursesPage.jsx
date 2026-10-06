@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
 	DndContext,
@@ -16,7 +16,8 @@ import {
 	rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { DragGripIcon } from '../../components/common/DragGripIcon';
+import { Plus } from '@phosphor-icons/react';
+import { DragHandle } from '../../components/common/DragHandle';
 import {
 	CourseShowcaseEditButton,
 	CourseShowcasePublishToggle,
@@ -24,12 +25,13 @@ import {
 import { useCoursePublishFromCard } from '../../hooks/useCoursePublishFromCard';
 import { adminService } from '../../services/api';
 import BuildCourseModal from '../../components/admin/courses/BuildCourseModal';
-import AICourseChat from '../../components/admin/ai/AICourseChat';
-import { canUseAiFeature, isAiEnabled } from '../../utils/aiAvailability';
 import { courseCoverSrc } from '../../utils/imageUrl';
-import { useAuth } from '../../contexts/AuthContext';
-import { useToast } from '../../contexts/ToastContext';
-import { CourseShowcaseCard, COURSE_SHOWCASE_FALLBACK_IMAGE } from '../../components/ui/course-showcase-card';
+
+import { useAuth } from '../../contexts/AuthContextShared.js';
+
+import { useToast } from '../../contexts/ToastContextShared.js';
+import { CourseShowcaseCard } from '../../components/ui/course-showcase-card';
+import { COURSE_SHOWCASE_FALLBACK_IMAGE } from '../../components/ui/course-showcase-cardShared.js';
 import { hexToHslSpace } from '../../lib/hexToHsl';
 import './AdminCoursesPage.css';
 
@@ -62,20 +64,7 @@ function SortableAdminCourseCard({
 	};
 	const imageUrl = coverSrc || COURSE_SHOWCASE_FALLBACK_IMAGE;
 	const dragHandle = canMutate ? (
-		<span
-			className="course-showcase-dnd-handle va-card-icon-btn"
-			{...attributes}
-			{...listeners}
-			aria-label="Trage pentru a reordona cursul"
-			title="Reordonare"
-			onClick={(e) => e.stopPropagation()}
-			onKeyDown={(e) => {
-				e.stopPropagation();
-				if (e.key === 'Enter' || e.key === ' ') e.preventDefault();
-			}}
-		>
-			<DragGripIcon size={14} />
-		</span>
+		<DragHandle attributes={attributes} listeners={listeners} label="Trage pentru a reordona cursul" />
 	) : null;
 
 	return (
@@ -87,7 +76,7 @@ function SortableAdminCourseCard({
 			<CourseShowcaseCard
 				imageUrl={imageUrl}
 				title={course.title || 'Curs fără titlu'}
-				subtitle={`${course.modules_count || 0} module • ${course.enrollments_count || 0} elevi`}
+				subtitle={`${course.modules_count || 0} module • ${course.enrollments_count || 0} utilizatori`}
 				themeHsl={accentHsl}
 				onOpen={onOpen}
 				ctaLabel="Deschide"
@@ -108,14 +97,25 @@ function SortableAdminCourseCard({
 	);
 }
 
-function StaticAdminCourseCard({ course, coverSrc, accentHsl, statusLabel, canMutate, canEditCourse, onOpen, onEdit, onStatusClick, statusBusy }) {
+function StaticAdminCourseCard({
+	course,
+	coverSrc,
+	accentHsl,
+	statusLabel,
+	canMutate,
+	canEditCourse,
+	onOpen,
+	onEdit,
+	onStatusClick,
+	statusBusy,
+}) {
 	const imageUrl = coverSrc || COURSE_SHOWCASE_FALLBACK_IMAGE;
 	return (
 		<article className="admin-courses-clean-card--showcase-wrap">
 			<CourseShowcaseCard
 				imageUrl={imageUrl}
 				title={course.title || 'Curs fără titlu'}
-				subtitle={`${course.modules_count || 0} module • ${course.enrollments_count || 0} elevi`}
+				subtitle={`${course.modules_count || 0} module • ${course.enrollments_count || 0} utilizatori`}
 				themeHsl={accentHsl}
 				onOpen={onOpen}
 				ctaLabel="Deschide"
@@ -136,7 +136,7 @@ function StaticAdminCourseCard({ course, coverSrc, accentHsl, statusLabel, canMu
 }
 
 const AdminCoursesPage = () => {
-	const { canMutateInAdminArea, canEditCoursesAsStaff, user } = useAuth();
+	const { canMutateInAdminArea, canEditCoursesAsStaff } = useAuth();
 	const { showToast } = useToast();
 	const navigate = useNavigate();
 	const [courses, setCourses] = useState([]);
@@ -145,10 +145,7 @@ const AdminCoursesPage = () => {
 	const [creating, setCreating] = useState(false);
 	const [error, setError] = useState(null);
 	const [search, setSearch] = useState('');
-	const [showCreateMenu, setShowCreateMenu] = useState(false);
 	const [showBuildModal, setShowBuildModal] = useState(false);
-	const [showAiCourseChat, setShowAiCourseChat] = useState(false);
-	const createMenuRef = useRef(null);
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -180,16 +177,6 @@ const AdminCoursesPage = () => {
 	useEffect(() => {
 		fetchCourses();
 	}, [fetchCourses]);
-
-	useEffect(() => {
-		const handleOutsideClick = (event) => {
-			if (createMenuRef.current && !createMenuRef.current.contains(event.target)) {
-				setShowCreateMenu(false);
-			}
-		};
-		document.addEventListener('mousedown', handleOutsideClick);
-		return () => document.removeEventListener('mousedown', handleOutsideClick);
-	}, []);
 
 	const handleBuildSubmit = async ({ title, description, image, pdfFile }) => {
 		setCreating(true);
@@ -237,14 +224,6 @@ const AdminCoursesPage = () => {
 		}
 	};
 
-	const handleAiCourseGenerated = (course) => {
-		if (course?.id) {
-			setShowAiCourseChat(false);
-			fetchCourses();
-			navigate(`/admin/courses/${course.id}/builder`);
-		}
-	};
-
 	const filteredCourses = useMemo(() => {
 		const query = search.trim().toLowerCase();
 		if (!query) return orderedCourses;
@@ -254,18 +233,18 @@ const AdminCoursesPage = () => {
 	/** Butonul „Editează” pe card nu depinde de modul admin/student (preview); doar de rolul real. */
 	const canEditCourseFromShowcase = canEditCoursesAsStaff;
 
+	const dndEnabled = canMutateInAdminArea && !search.trim();
+
 	const patchCourseInLists = useCallback((courseId, patch) => {
-		const merge = (c) => (Number(c.id) === Number(courseId) ? { ...c, ...patch } : c);
-		setCourses((rows) => rows.map(merge));
-		setOrderedCourses((rows) => rows.map(merge));
+		const apply = (row) => (Number(row.id) === Number(courseId) ? { ...row, ...patch } : row);
+		setCourses((prev) => prev.map(apply));
+		setOrderedCourses((prev) => prev.map(apply));
 	}, []);
 
 	const { handleCourseStatusQuick, statusBusyId, publishModal } = useCoursePublishFromCard({
 		onCoursePatched: patchCourseInLists,
 		showToast,
 	});
-
-	const dndEnabled = canMutateInAdminArea && !search.trim();
 
 	const handleCoursesDragEnd = async (event) => {
 		if (!dndEnabled) return;
@@ -308,47 +287,21 @@ const AdminCoursesPage = () => {
 					loading={creating}
 				/>
 			)}
-			{showAiCourseChat && canMutateInAdminArea && canUseAiFeature(user, 'ai_creator') && (
-				<div className="ai-chat-modal-overlay" onClick={() => setShowAiCourseChat(false)}>
-					<div className="ai-chat-modal" onClick={(e) => e.stopPropagation()}>
-						<AICourseChat
-							onCourseGenerated={handleAiCourseGenerated}
-							onClose={() => setShowAiCourseChat(false)}
-						/>
-					</div>
-				</div>
-			)}
 			<header className="admin-courses-clean-header">
 				<div>
-					<h1>Cursuri</h1>
-					<p>Catalogul Formely — creează, publică și urmărește progresul elevilor.</p>
+					<h1>Toate cursurile</h1>
+					<p>Creează și administrează conținutul academiei într-un mod simplu.</p>
 				</div>
 				<div className="admin-courses-clean-right">
 					{canMutateInAdminArea && (
-					<div className="admin-courses-create-wrap" ref={createMenuRef}>
-						<button type="button" className="admin-courses-create-btn" onClick={() => setShowCreateMenu((prev) => !prev)}>
-							+ Creează curs
+						<button type="button" className="lms-btn-primary admin-courses-create-btn" onClick={() => navigate('/admin/courses/new')}>
+							<Plus size={18} weight="bold" aria-hidden="true" />
+							Creează curs
 						</button>
-						{showCreateMenu && (
-							<div className="admin-courses-create-menu">
-								<button type="button" onClick={() => { setShowCreateMenu(false); navigate('/admin/courses/new'); }}>
-									Curs nou
-								</button>
-								{canUseAiFeature(user, 'ai_creator') ? (
-								<button type="button" onClick={() => {
-									setShowCreateMenu(false);
-									setShowAiCourseChat(true);
-								}}>
-									Curs cu Formely AI
-								</button>
-								) : null}
-							</div>
-						)}
-					</div>
 					)}
 					<div className="admin-courses-top-links">
 					{canMutateInAdminArea && (
-						<button type="button" onClick={() => navigate('/admin/content?tab=courses&view=maps&new=1')}>
+						<button type="button" className="lms-btn-secondary" onClick={() => navigate('/admin/content?tab=courses&view=maps&new=1')}>
 							Creează mapă
 						</button>
 						)}
@@ -384,8 +337,8 @@ const AdminCoursesPage = () => {
 						<div className="admin-courses-clean-grid">
 							{orderedCourses.map((course) => {
 								const coverSrc = courseCoverSrc(course);
-								const statusLabel = String(course.status || 'draft').toLowerCase() === 'published' ? 'Publicat' : 'Draft';
-								const accentColor = course.card_color || '#0891b2';
+								const statusLabel = String(course.status || 'draft').toLowerCase() === 'published' ? 'Publicat' : 'Ciornă';
+								const accentColor = course.card_color || '#6366f1';
 								return (
 									<SortableAdminCourseCard
 										key={course.id}
@@ -409,8 +362,8 @@ const AdminCoursesPage = () => {
 				<div className="admin-courses-clean-grid">
 					{filteredCourses.map((course) => {
 						const coverSrc = courseCoverSrc(course);
-						const statusLabel = String(course.status || 'draft').toLowerCase() === 'published' ? 'Publicat' : 'Draft';
-						const accentColor = course.card_color || '#0891b2';
+						const statusLabel = String(course.status || 'draft').toLowerCase() === 'published' ? 'Publicat' : 'Ciornă';
+						const accentColor = course.card_color || '#6366f1';
 						return (
 							<StaticAdminCourseCard
 								key={course.id}

@@ -6,6 +6,12 @@
 	padding: clamp(1rem, 2.5vw, 2rem);
 }
 
+/* În cadrul de admin „body.admin-view .va-main” scoate spațierea (paginile admin o au din .admin-container);
+   Biblioteca și Ghidurile sunt și .va-main, deci conținutul ajungea lipit de meniul lateral. */
+body.admin-view .va-main.library-page {
+	padding: clamp(1rem, 2.5vw, 2rem);
+}
+
 .library-page-header {
 	display: flex;
 	align-items: flex-start;
@@ -15,10 +21,8 @@
 	padding: 1.35rem 1.5rem;
 	border: 1px solid var(--border-primary);
 	border-radius: var(--radius-3xl, 24px);
-	background:
-		radial-gradient(ellipse 80% 50% at 100% 0%, var(--color-primary-alpha-15), transparent 52%),
-		linear-gradient(145deg, var(--bg-elevated), var(--bg-secondary));
-	box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+	background: var(--bg-elevated);
+	box-shadow: var(--shadow-sm);
 }
 
 .library-page-header-copy {
@@ -31,6 +35,8 @@
 	align-items: flex-start;
 	justify-content: flex-end;
 	flex-shrink: 0;
+	gap: 0.5rem;
+	flex-wrap: wrap;
 }
 
 .library-page-title {
@@ -39,13 +45,6 @@
 	color: var(--text-primary);
 	margin: 0 0 var(--space-2, 0.5rem);
 	letter-spacing: -0.02em;
-}
-
-.library-page-lead {
-	color: var(--text-secondary);
-	margin: 0;
-	line-height: 1.55;
-	font-size: var(--font-size-sm, 0.875rem);
 }
 
 .library-section-title {
@@ -123,16 +122,6 @@
 	box-shadow: inset -2px 0 4px rgba(0, 0, 0, 0.35);
 }
 
-.library-book-card--pdf .library-book-spine {
-	width: 12px;
-	background: linear-gradient(
-		90deg,
-		rgba(15, 23, 42, 0.9) 0%,
-		rgba(255, 255, 255, 0.12) 40%,
-		rgba(15, 23, 42, 0.75) 100%
-	);
-}
-
 /* Copertă */
 .library-book-cover {
 	position: relative;
@@ -143,7 +132,7 @@
 	border-radius: 2px 14px 14px 2px;
 	overflow: hidden;
 	background:
-		linear-gradient(155deg, var(--lib-cover-a, var(--formely-bg)) 0%, var(--lib-cover-b, #059669) 48%, color-mix(in srgb, var(--lib-cover-b, #059669) 65%, #000) 100%);
+		linear-gradient(155deg, var(--lib-cover-a, var(--bg-elevated)) 0%, var(--lib-cover-b, var(--color-success)) 48%, color-mix(in srgb, var(--lib-cover-b, var(--color-success)) 65%, #000) 100%);
 	box-shadow:
 		inset 0 0 0 1px rgba(255, 255, 255, 0.1),
 		inset 0 -30px 50px rgba(0, 0, 0, 0.2),
@@ -171,14 +160,6 @@
 		0 0 24px rgba(0, 0, 0, 0.85),
 		0 2px 12px rgba(0, 0, 0, 0.9),
 		0 1px 2px rgba(0, 0, 0, 0.5);
-}
-
-.library-book-card--pdf .library-book-cover {
-	box-shadow:
-		inset 0 0 0 1px rgba(255, 255, 255, 0.12),
-		inset 3px 0 0 rgba(255, 255, 255, 0.06),
-		inset 0 -40px 60px rgba(0, 0, 0, 0.25),
-		6px 16px 36px rgba(0, 0, 0, 0.4);
 }
 
 /* Reflexie + grain */
@@ -225,7 +206,7 @@
 	font-weight: 800;
 	letter-spacing: 0.14em;
 	text-transform: uppercase;
-	color: var(--lib-cover-accent, #67e8f9);
+	color: var(--lib-cover-accent, #fde68a);
 	text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
 	padding: 0.28rem 0.55rem;
 	border-radius: 6px;
@@ -269,7 +250,7 @@
 	z-index: 4;
 	width: 22px;
 	height: 44px;
-	background: linear-gradient(180deg, var(--formely-white) 0%, #c9a900 100%);
+	background: linear-gradient(180deg, var(--color-brand-primary) 0%, var(--color-brand-hover) 100%);
 	border-radius: 0 0 4px 4px;
 	box-shadow:
 		0 4px 12px rgba(0, 0, 0, 0.35),
@@ -296,29 +277,6 @@
 	flex: 1;
 }
 
-.library-book-author {
-	margin: 0;
-	font-size: 0.75rem;
-	font-weight: 600;
-	color: var(--text-secondary);
-}
-
-.library-book-meta-chips {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.4rem;
-	font-size: 0.68rem;
-	color: var(--text-tertiary);
-}
-
-.library-book-meta-chips span {
-	padding: 0.2rem 0.45rem;
-	border-radius: 6px;
-	background: var(--bg-tertiary);
-	border: 1px solid var(--border-primary);
-	color: var(--text-tertiary);
-}
-
 .library-book-filename {
 	margin: 0;
 	font-size: 0.72rem;
@@ -326,17 +284,6 @@
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
-}
-
-.library-book-desc {
-	margin: 0.15rem 0 0;
-	font-size: 0.8rem;
-	line-height: 1.45;
-	color: var(--text-secondary);
-	display: -webkit-box;
-	-webkit-line-clamp: 2;
-	-webkit-box-orient: vertical;
-	overflow: hidden;
 }
 
 .library-book-actions {
@@ -481,7 +428,7 @@
 }
 
 .library-dropzone__icon {
-	color: var(--color-primary);
+	color: var(--text-accent);
 	margin-bottom: 0.65rem;
 }
 
@@ -546,19 +493,6 @@
 	transition: background 0.15s, border-color 0.15s, transform 0.12s, color 0.15s, filter 0.15s;
 }
 
-.library-btn--primary {
-	background: var(--btn-primary-bg);
-	color: var(--btn-primary-text);
-	border-color: var(--btn-primary-border);
-	box-shadow: var(--shadow-sm);
-}
-
-.library-btn--primary:hover:not(:disabled) {
-	background: var(--btn-primary-hover);
-	filter: brightness(1.02);
-	transform: translateY(-1px);
-}
-
 .library-btn--secondary {
 	background: transparent;
 	color: var(--text-primary);
@@ -590,11 +524,16 @@
 	min-width: 160px;
 }
 
+/* Aceeași stare goală ca în restul aplicației (card cu bordură punctată, text de mărime normală) */
 .library-empty {
+	margin: 0;
+	padding: var(--space-12, 3rem) var(--space-6, 1.5rem);
+	border: 1px dashed var(--border-primary);
+	border-radius: var(--radius-lg, 12px);
+	background: var(--bg-elevated);
 	text-align: center;
-	padding: var(--space-8, 2rem);
 	color: var(--text-secondary);
-	font-size: var(--font-size-sm, 0.875rem);
+	font-size: var(--font-size-base, 1rem);
 }
 
 .library-pagination {
@@ -686,30 +625,17 @@
 /* Fallback fără color-mix (browsere vechi) */
 @supports not (background: color-mix(in srgb, red 50%, blue)) {
 	.library-book-cover {
-		background: linear-gradient(155deg, var(--lib-cover-a, var(--formely-bg)) 0%, var(--lib-cover-b, #059669) 100%);
+		background: linear-gradient(155deg, var(--lib-cover-a, var(--bg-elevated)) 0%, var(--lib-cover-b, var(--color-success)) 100%);
 	}
 }
 
 /* light-theme-wcag: p/span/div → text-primary; refacem ierarhia pe zona bibliotecii */
-[data-theme="light"] .library-page p.library-page-lead,
 [data-theme="light"] .library-page p.library-empty,
 [data-theme="light"] .library-page p.library-hint {
 	color: var(--text-secondary) !important;
 }
 
-[data-theme="light"] .library-page .library-book-info p.library-book-author {
-	color: var(--text-secondary) !important;
-}
-
 [data-theme="light"] .library-page .library-book-info p.library-book-filename {
-	color: var(--text-tertiary) !important;
-}
-
-[data-theme="light"] .library-page .library-book-info p.library-book-desc {
-	color: var(--text-secondary) !important;
-}
-
-[data-theme="light"] .library-page .library-book-meta-chips span {
 	color: var(--text-tertiary) !important;
 }
 
@@ -745,25 +671,20 @@
 @media (max-width: 768px) {
 	.library-page {
 		overflow-x: clip;
-		padding: 0.75rem 1rem calc(1.5rem + 56px + env(safe-area-inset-bottom, 0px));
-		text-align: center;
+		padding-bottom: 0;
 	}
 
 	.library-page-header {
 		flex-direction: column;
-		align-items: center;
-		text-align: center;
+		align-items: stretch;
 		gap: var(--space-4);
-		padding: var(--space-5) var(--space-4);
+		padding: var(--space-4);
 	}
 
-	.library-page-header-copy {
-		width: 100%;
-	}
-
-	.library-page-lead {
-		max-width: 40ch;
-		margin-inline: auto;
+	/* <section> primește spațiere laterală din regulile globale de pe telefon: aliniem secțiunile cu antetul */
+	.library-page > section {
+		padding-left: 0;
+		padding-right: 0;
 	}
 
 	.library-page-title {
@@ -772,16 +693,6 @@
 
 	.library-page-header-actions {
 		width: 100%;
-		max-width: 22rem;
-		flex-direction: column;
-		align-items: stretch;
-		justify-content: center;
-		gap: 0.5rem;
-	}
-
-	.library-section-title {
-		text-align: center;
-		margin-bottom: 1rem;
 	}
 
 	.library-upload-trigger,
@@ -796,63 +707,32 @@
 
 	.library-book-grid {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 0.85rem;
-		padding: 0;
-		justify-content: center;
-		max-width: 28rem;
-		margin-inline: auto;
+		gap: var(--space-4);
+		padding: 0 var(--space-4) var(--space-6);
+		justify-content: stretch;
 	}
 
 	.library-book-card {
 		touch-action: manipulation;
-		max-width: 100%;
 	}
 
 	.library-book-card:active {
 		transform: scale(0.98);
 	}
 
-	.library-book-info {
-		align-items: center;
-		text-align: center;
-	}
-
-	.library-book-filename {
-		width: 100%;
-		text-align: center;
-	}
-
-	.library-book-actions {
-		width: 100%;
-		justify-content: center;
-	}
-
 	.library-book-cover {
-		min-height: 148px;
+		min-height: 140px;
 		max-height: none;
 	}
 
 	.library-book-cover-body {
-		min-height: 148px;
-		align-items: center;
-		text-align: center;
-	}
-
-	.library-book-cover-type {
-		align-self: center;
-	}
-
-	.library-pagination {
-		flex-wrap: wrap;
-		max-width: 28rem;
-		margin-inline: auto;
+		min-height: 140px;
 	}
 
 	.library-upload-modal {
 		width: min(100%, 28rem);
 		padding: var(--space-4);
 		margin: var(--space-4);
-		text-align: left;
 	}
 
 	.library-upload-modal-header {
@@ -871,8 +751,8 @@
 	}
 }
 
-@media (max-width: 360px) {
+@media (max-width: 480px) {
 	.library-book-grid {
-		grid-template-columns: minmax(0, 220px);
+		grid-template-columns: 1fr;
 	}
 }

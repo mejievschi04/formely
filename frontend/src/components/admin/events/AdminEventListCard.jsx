@@ -140,7 +140,7 @@ export default function AdminEventListCard({
 						</button>
 						<button
 							type="button"
-							className="admin-btn admin-btn-sm admin-btn-danger"
+							className="admin-btn admin-btn-sm va-btn-delete admin-btn-danger"
 							aria-label="Șterge evenimentul"
 							onClick={(e) => {
 								e.stopPropagation();

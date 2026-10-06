@@ -65,7 +65,7 @@
 	border-color: color-mix(in srgb, var(--color-primary) 75%, var(--border-primary) 25%);
 	background: color-mix(in srgb, var(--color-primary) 16%, var(--bg-primary));
 	color: var(--text-primary);
-	box-shadow: 0 0 0 2px rgba(var(--formely-white-rgb), 0.20);
+	box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.20);
 	transform: translateY(-1px);
 }
 

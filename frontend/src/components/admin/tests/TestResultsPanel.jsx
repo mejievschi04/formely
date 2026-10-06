@@ -1,11 +1,53 @@
+import { rowMatchesResultFilters } from './TestResultsPanelShared.js';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { adminService } from '../../../services/api';
-import { useToast } from '../../../contexts/ToastContext';
-import { useAuth } from '../../../contexts/AuthContext';
+
+import { useToast } from '../../../contexts/ToastContextShared.js';
+
+import { useAuth } from '../../../contexts/AuthContextShared.js';
 import Modal from '../../common/Modal';
 import RichTextHtml from '../../RichTextHtml';
 import './TestResultsPanel.css';
+
+function QuestionBreakdownList({ questions }) {
+	if (!questions?.length) {
+		return <div className="admin-test-results-empty">Nu există întrebări pentru această încercare.</div>;
+	}
+	return (
+		<div className="admin-test-breakdown-list">
+			{questions.map((q, idx) => {
+				const mark = questionTypeMark(q.question_type);
+				return (
+					<div key={q.question_id || idx} className={`admin-test-breakdown-row${q.is_correct === true ? ' is-correct' : q.is_correct === false ? ' is-wrong' : ''}`}>
+						<div className="admin-test-breakdown-row-head">
+							<span
+								className={`admin-test-question-mark is-${mark.shape}`}
+								title={mark.label}
+								aria-label={mark.label}
+							/>
+							<strong className="admin-test-breakdown-question">
+								<span>{idx + 1}. </span>
+								<RichTextHtml
+									html={q.question_text}
+									as="span"
+									fallback={<span>Întrebare</span>}
+								/>
+							</strong>
+							<span className="admin-test-breakdown-points">{q.points_earned ?? 0}/{q.points ?? 1}</span>
+						</div>
+						<p className="admin-test-breakdown-type">{mark.label}</p>
+						<p className="admin-test-breakdown-answer">
+							{q.has_answer
+								? (q.user_answer_summary || 'Răspuns trimis')
+								: 'Fără răspuns'}
+						</p>
+					</div>
+				);
+			})}
+		</div>
+	);
+}
 
 function formatDate(iso) {
 	if (!iso) return '—';
@@ -31,26 +73,26 @@ function maxScoreForRow(row, kind) {
 	return Number(row?.max_score) || 1;
 }
 
-export function rowMatchesResultFilters(row, { statusFilter = 'all', dateFrom = '', dateTo = '' } = {}) {
-	if (statusFilter === 'passed' && !row?.passed) return false;
-	if (statusFilter === 'failed' && (row?.passed || row?.needs_manual_review || row?.status === 'pending_review')) return false;
-	if (statusFilter === 'pending' && !(row?.needs_manual_review || row?.status === 'pending' || row?.status === 'pending_review')) {
-		return false;
-	}
-	if (dateFrom || dateTo) {
-		if (!row?.completed_at) return false;
-		const completed = new Date(row.completed_at);
-		if (dateFrom) {
-			const from = new Date(`${dateFrom}T00:00:00`);
-			if (completed < from) return false;
-		}
-		if (dateTo) {
-			const to = new Date(`${dateTo}T23:59:59`);
-			if (completed > to) return false;
-		}
-	}
-	return true;
+const SINGLE_ANSWER_TYPES = new Set(['single_choice', 'true_false', 'yes_no']);
+
+const QUESTION_TYPE_LABELS = {
+	single_choice: 'Un singur răspuns',
+	multiple_choice: 'Mai multe răspunsuri',
+	true_false: 'Adevărat / Fals',
+	yes_no: 'Da / Nu',
+	matching: 'Asociere',
+	ordering: 'Ordonare',
+};
+
+function questionTypeMark(type) {
+	const single = SINGLE_ANSWER_TYPES.has(type);
+	return {
+		shape: single ? 'circle' : 'square',
+		label: QUESTION_TYPE_LABELS[type] || 'Întrebare',
+	};
 }
+
+
 
 /**
  * @param {{ kind?: 'test' | 'exam', entityId: number, entityTitle?: string, showBreakdown?: boolean, embedded?: boolean, statusFilter?: string, dateFrom?: string, dateTo?: string }} props
@@ -76,6 +118,9 @@ export default function TestResultsPanel({
 	const [editScore, setEditScore] = useState('');
 	const [editNote, setEditNote] = useState('');
 	const [saving, setSaving] = useState(false);
+	const [expandedId, setExpandedId] = useState(null);
+	const [breakdownById, setBreakdownById] = useState({});
+	const [breakdownLoadingId, setBreakdownLoadingId] = useState(null);
 	const [breakdownTarget, setBreakdownTarget] = useState(null);
 	const [breakdownData, setBreakdownData] = useState(null);
 	const [breakdownLoading, setBreakdownLoading] = useState(false);
@@ -168,20 +213,44 @@ export default function TestResultsPanel({
 
 	const maxForEdit = editTarget ? maxScoreForRow(editTarget, kind) : 1;
 
-	const openBreakdown = async (row) => {
-		setBreakdownTarget(row);
-		setBreakdownData(null);
-		setBreakdownLoading(true);
+	const loadBreakdown = async (row) => {
+		if (breakdownById[row.id]) return breakdownById[row.id];
+		setBreakdownLoadingId(row.id);
 		try {
 			const data = await adminService.getTestResultBreakdown(row.id);
-			setBreakdownData(data);
+			setBreakdownById((prev) => ({ ...prev, [row.id]: data }));
+			return data;
 		} catch (e) {
 			console.error('Failed to load attempt breakdown:', e);
 			showError('Nu s-au putut încărca detaliile încercării.');
-			setBreakdownTarget(null);
+			return null;
 		} finally {
-			setBreakdownLoading(false);
+			setBreakdownLoadingId(null);
 		}
+	};
+
+	const toggleRow = async (row) => {
+		if (expandedId === row.id) {
+			setExpandedId(null);
+			return;
+		}
+		setExpandedId(row.id);
+		if (showBreakdown && kind === 'test') {
+			await loadBreakdown(row);
+		}
+	};
+
+	const openBreakdown = async (row) => {
+		setBreakdownTarget(row);
+		setBreakdownData(breakdownById[row.id] || null);
+		setBreakdownLoading(!breakdownById[row.id]);
+		const data = await loadBreakdown(row);
+		if (!data) {
+			setBreakdownTarget(null);
+			return;
+		}
+		setBreakdownData(data);
+		setBreakdownLoading(false);
 	};
 
 	const closeBreakdown = () => {
@@ -224,62 +293,65 @@ export default function TestResultsPanel({
 						: 'Niciun rezultat pentru căutare.'}
 				</div>
 			) : (
-				<div className="admin-test-results-table-wrap">
-					<table className="admin-test-results-table">
-						<thead>
-							<tr>
-								<th>Elev</th>
-								<th>Email</th>
-								<th>Încercare</th>
-								<th>Punctaj</th>
-								<th>Procent</th>
-								<th>Stare</th>
-								<th>Finalizat</th>
-								{(canMutateInAdminArea || (showBreakdown && kind === 'test')) ? <th aria-label="Acțiuni" /> : null}
-							</tr>
-						</thead>
-						<tbody>
-							{filteredRows.map((row) => {
-								const rowMax = maxScoreForRow(row, kind);
-								return (
-									<tr key={row.id}>
-										<td>
-										{row.user?.id ? (
-											<Link to={`/admin/users/${row.user.id}/profile`}>{row.user.name || '—'}</Link>
-										) : (row.user?.name || '—')}
-									</td>
-										<td>{row.user?.email || '—'}</td>
-										<td>#{row.attempt_number ?? '—'}</td>
-										<td>
-											<strong>{row.score ?? 0}</strong>
-											<span className="admin-test-results-max"> / {rowMax}</span>
-										</td>
-										<td>{row.percentage != null ? `${row.percentage}%` : '—'}</td>
-										<td>
-											<span className={`admin-test-results-status ${row.passed ? 'is-passed' : row.needs_manual_review ? 'is-pending' : 'is-failed'}`}>
-												{statusLabel(row)}
-											</span>
-										</td>
-										<td>{formatDate(row.completed_at)}</td>
-										{(canMutateInAdminArea || (showBreakdown && kind === 'test')) ? (
-											<td className="admin-test-results-actions">
-												{showBreakdown && kind === 'test' ? (
-													<button type="button" className="admin-btn admin-btn-secondary admin-test-results-edit" onClick={() => openBreakdown(row)}>
-														Detalii
-													</button>
-												) : null}
-												{canMutateInAdminArea ? (
-													<button type="button" className="admin-btn admin-btn-secondary admin-test-results-edit" onClick={() => openEdit(row)}>
-														Modifică punctaj
-													</button>
-												) : null}
-											</td>
+				<div className="admin-test-results-cards">
+					{filteredRows.map((row) => {
+						const rowMax = maxScoreForRow(row, kind);
+						const open = expandedId === row.id;
+						const breakdown = breakdownById[row.id];
+						const percent = row.percentage != null ? `${row.percentage}%` : '—';
+						const attempt = row.attempt_number != null ? `#${row.attempt_number}` : '—';
+						return (
+							<article key={row.id} className={`admin-test-result-card${open ? ' is-open' : ''}`}>
+								<button
+									type="button"
+									className="admin-test-result-card-toggle"
+									aria-expanded={open}
+									onClick={() => toggleRow(row)}
+								>
+									<span className="admin-test-result-card-name">
+										{row.user?.name || row.user?.email || 'Elev'}
+									</span>
+									<span className={`admin-test-results-status ${row.passed ? 'is-passed' : row.needs_manual_review ? 'is-pending' : 'is-failed'}`}>
+										{statusLabel(row)}
+									</span>
+									<span className="admin-test-result-metric" title="Procent, încercare și punctaj">
+										<strong>{percent}</strong>
+										<span>încercarea {attempt}</span>
+										<span>{row.score ?? 0}/{rowMax}</span>
+									</span>
+								</button>
+								{open ? (
+									<div className="admin-test-result-card-body">
+										<p className="admin-test-result-card-meta">
+											{row.user?.id ? (
+												<Link to={`/admin/users/${row.user.id}/profile`}>{row.user.email || 'Profil'}</Link>
+											) : (row.user?.email || '—')}
+											<span> · {formatDate(row.completed_at)}</span>
+										</p>
+										<div className="admin-test-results-actions">
+											{showBreakdown && kind === 'test' ? (
+												<button type="button" className="admin-btn admin-btn-secondary admin-test-results-edit" onClick={() => openBreakdown(row)}>
+													Detalii
+												</button>
+											) : null}
+											{canMutateInAdminArea ? (
+												<button type="button" className="admin-btn admin-btn-secondary admin-test-results-edit" onClick={() => openEdit(row)}>
+													Modifică punctaj
+												</button>
+											) : null}
+										</div>
+										{showBreakdown && kind === 'test' ? (
+											breakdownLoadingId === row.id && !breakdown ? (
+												<div className="admin-test-results-empty">Se încarcă răspunsurile…</div>
+											) : (
+												<QuestionBreakdownList questions={breakdown?.questions || []} />
+											)
 										) : null}
-									</tr>
-								);
-							})}
-						</tbody>
-					</table>
+									</div>
+								) : null}
+							</article>
+						);
+					})}
 				</div>
 			)}
 
@@ -287,7 +359,7 @@ export default function TestResultsPanel({
 				<div className="admin-test-results-modal">
 					<h3 id="admin-test-score-modal-title">Modifică punctajul</h3>
 					<p className="admin-test-results-modal-sub">
-						{editTarget?.user?.name || editTarget?.user?.email || 'Elev'} · încercarea #{editTarget?.attempt_number ?? '—'}
+						{editTarget?.user?.name || editTarget?.user?.email || 'Utilizator'} · încercarea #{editTarget?.attempt_number ?? '—'}
 					</p>
 					<label className="admin-test-results-field">
 						Punctaj obținut (0–{maxForEdit})
@@ -308,7 +380,7 @@ export default function TestResultsPanel({
 						<button type="button" className="admin-btn admin-btn-secondary" onClick={closeEdit} disabled={saving}>
 							Anulează
 						</button>
-						<button type="button" className="admin-btn admin-btn-primary" onClick={handleSaveScore} disabled={saving}>
+						<button type="button" className="va-btn-save admin-btn lms-btn-primary" onClick={handleSaveScore} disabled={saving}>
 							{saving ? 'Se salvează…' : 'Salvează punctajul'}
 						</button>
 					</div>
@@ -319,37 +391,13 @@ export default function TestResultsPanel({
 				<div className="admin-test-results-modal admin-test-breakdown-modal">
 					<h3 id="admin-test-breakdown-modal-title">Detalii încercare</h3>
 					<p className="admin-test-results-modal-sub">
-						{breakdownTarget?.user?.name || breakdownTarget?.user?.email || 'Elev'} · încercarea #{breakdownTarget?.attempt_number ?? '—'}
+						{breakdownTarget?.user?.name || breakdownTarget?.user?.email || 'Utilizator'} · încercarea #{breakdownTarget?.attempt_number ?? '—'}
 						{breakdownTarget?.percentage != null ? ` · ${breakdownTarget.percentage}%` : ''}
 					</p>
 					{breakdownLoading ? (
 						<div className="admin-test-results-empty">Se încarcă răspunsurile…</div>
 					) : (
-						<div className="admin-test-breakdown-list">
-							{(breakdownData?.questions || []).map((q, idx) => (
-								<div key={q.question_id || idx} className={`admin-test-breakdown-row${q.is_correct === true ? ' is-correct' : q.is_correct === false ? ' is-wrong' : ''}`}>
-									<div className="admin-test-breakdown-row-head">
-										<strong className="admin-test-breakdown-question">
-											<span>{idx + 1}. </span>
-											<RichTextHtml
-												html={q.question_text}
-												as="span"
-												fallback={<span>Întrebare</span>}
-											/>
-										</strong>
-										<span>{q.points_earned ?? 0} / {q.points ?? 1} puncte</span>
-									</div>
-									<p className="admin-test-breakdown-answer">
-										{q.has_answer
-											? (q.user_answer_summary || 'Răspuns trimis')
-											: 'Fără răspuns'}
-									</p>
-								</div>
-							))}
-							{!breakdownData?.questions?.length ? (
-								<div className="admin-test-results-empty">Nu există întrebări pentru această încercare.</div>
-							) : null}
-						</div>
+						<QuestionBreakdownList questions={breakdownData?.questions || []} />
 					)}
 					<div className="admin-test-results-modal-actions">
 						<button type="button" className="admin-btn admin-btn-secondary" onClick={closeBreakdown} disabled={breakdownLoading}>

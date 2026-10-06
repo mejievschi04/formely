@@ -1,49 +1,50 @@
 import React, { lazy, Suspense, useState, useEffect, useLayoutEffect, useContext, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { BrowserRouter as Router, Routes, Route, NavLink, Link, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
-import { AuthProvider, useAuth, AuthContext } from './contexts/AuthContext';
-import { CompanyBrandingProvider, useCompanyBranding } from './contexts/CompanyBrandingContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth, AuthContext } from './contexts/AuthContextShared.js';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import AdminRoute from './components/AdminRoute';
 import UserRoute from './components/UserRoute';
-import FeatureRoute from './components/FeatureRoute';
 import ChangePasswordModal from './components/ChangePasswordModal';
 import LoadingOverlay from './components/LoadingOverlay';
-import { authExperienceElement } from './components/auth/AuthExperience';
+const SplashScreen = lazy(() => import('./components/SplashScreen'));
 import GlobalSearch from './components/GlobalSearch';
+import { isVoltEnabled } from './utils/voltAvailability';
+import { filterNavByPlan } from './utils/entitlements';
+import FeatureRoute from './components/FeatureRoute';
 import AdminTopNavControls from './components/admin/AdminTopNavControls';
 import AdminViewSwitcher from './components/admin/AdminViewSwitcher';
 import StudentTopNavNotifications from './components/student/StudentTopNavNotifications';
 import AdminStylesLoader from './components/AdminStylesLoader';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import ScrollToTop from './components/common/ScrollToTop';
-import AdminOnboardingBanner from './components/admin/AdminOnboardingBanner';
-import StudentBottomNav from './components/student/StudentBottomNav';
 import { prefetchRoute } from './utils/prefetch';
 import { toImageUrl } from './utils/imageUrl';
-import { isStaffAdminRole, getRoleLabel } from './constants/staffRoles';
+import { isStaffAdminRole } from './constants/staffRoles';
+import { BackButton } from './components/ui/ActionButtons';
+import { adminService } from './services/api';
 import {
-	ArrowLeft,
 	BookOpenText,
 	Books,
 	CalendarDots,
 	CaretDown,
 	ChartLineUp,
 	CheckCircle,
+	ClipboardText,
+	Compass,
+	DotsThree,
 	GearSix,
 	House,
 	ListBullets,
-	Medal,
 	SignOut,
 	X,
 	SquaresFour,
-	TreeStructure,
 	Users,
+	UsersThree,
 	UserCircle,
 } from '@phosphor-icons/react';
-import { companyHasFeature, isPlatformAdmin } from './utils/entitlements';
-import { canUseAiFeature } from './utils/aiAvailability';
 /* Modern Design System - Unified & Standardized */
 import './styles/design-system.css';
 import './styles/light-theme-wcag.css';
@@ -51,53 +52,47 @@ import './styles/dark-theme.css';
 import './styles/unified-cards.css';
 import './styles/components.css';
 import './styles/button-modern.css';
-import './styles/common-patterns.css';
 import './styles/micro-interactions.css';
-import './styles/empty-states.css';
 import './styles/loading-states.css';
 import './styles/toast-system.css';
 import './styles/layout.css';
 import './styles/pages.css';
 import './styles/ui-components.css';
 import './styles/additional-pages.css';
-import './styles/exam-results-modern.css';
-import './styles/profile-modern.css';
-import './styles/student-settings.css';
+// Shared LMS buttons and loading states are also used outside the dashboard.
 import './styles/lms-dashboard-enterprise.css';
-import './styles/achievements-modern.css';
-import './styles/library-page.css';
-import './styles/library-reader-page.css';
-import './styles/library-compose-page.css';
-import './components/SplashScreen.css';
 /* Student styles - loaded after shared to ensure proper cascade */
 import './styles/student-navigation-modern.css';
 import './styles/admin-view-switcher.css';
 import './styles/student-components.css';
 import './styles/student-overrides.css';
 import './styles/common-components.css';
-import './styles/auth-modern.css';
-import './styles/course-detail-modern.css';
 import './styles/builder-overrides.css';
-import './styles/rte-rich-content.css';
-import './components/auth/AuthExperience.css';
+import './components/SplashScreen.css';
 /* Mobile optimizations must be last to override base styles */
 import './styles/mobile-optimizations.css';
+/* One control style, after every other global sheet. */
+import './styles/control-system.css';
+import './styles/dialog-system.css';
+import formelyLogo from './assets/Formely logo.png';
+import { nameInitials } from './utils/initials';
 
 // Lazy load pages for code splitting
-const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const VoltAssistantWidget = lazy(() => import('./components/ai/VoltAssistantWidget'));
 const CoursesPage = lazy(() => import('./pages/CoursesPage'));
 const CourseMapPage = lazy(() => import('./pages/CourseMapPage'));
-const QuizPage = lazy(() => import('./pages/QuizPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const ExamPage = lazy(() => import('./pages/ExamPage'));
 const AchievementsPage = lazy(() => import('./pages/AchievementsPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const StudentActivityPage = lazy(() => import('./pages/StudentActivityPage'));
 const StudentSettingsPage = lazy(() => import('./pages/StudentSettingsPage'));
 const EventsPage = lazy(() => import('./pages/EventsPage'));
-const EventDetailPage = lazy(() => import('./pages/EventDetailPage'));
+const MonthlyTestsPage = lazy(() => import('./pages/MonthlyTestsPage'));
 const ExamResultsPage = lazy(() => import('./pages/ExamResultsPage'));
-const CatalogExamResultsPage = lazy(() => import('./pages/CatalogExamResultsPage'));
-const AiAssistantWidget = lazy(() => import('./components/ai/AiAssistantWidget'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const InviteRegisterPage = lazy(() => import('./pages/InviteRegisterPage'));
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
 const AdminAnalyticsPage = lazy(() => import('./pages/admin/AdminAnalyticsPage'));
 const AdminCoursesPage = lazy(() => import('./pages/admin/AdminCoursesPage'));
@@ -105,7 +100,6 @@ const AdminCourseDetailPage = lazy(() => import('./pages/admin/AdminCourseDetail
 const AdminEventsPage = lazy(() => import('./pages/admin/AdminEventsPage'));
 const AdminTeamsPage = lazy(() => import('./pages/admin/AdminTeamsPage'));
 const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
-const AdminInviteUsersPage = lazy(() => import('./pages/admin/AdminInviteUsersPage'));
 const AdminActivityLogsPage = lazy(() => import('./pages/admin/AdminActivityLogsPage'));
 const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'));
 const AdminStatisticsHubPage = lazy(() => import('./pages/admin/AdminStatisticsHubPage'));
@@ -116,8 +110,6 @@ const AdminTasksPage = lazy(() => import('./pages/admin/AdminTasksPage'));
 const AdminActivityPage = lazy(() => import('./pages/admin/AdminActivityPage'));
 const ModuleCreatorPage = lazy(() => import('./pages/admin/ModuleCreatorPage'));
 const LessonCreatorPage = lazy(() => import('./pages/admin/LessonCreatorPage'));
-// const CourseCreatorPage = lazy(() => import('./pages/admin/CourseCreatorPage')); // Removed - will be rebuilt from scratch
-// const AdminCourseEditPage = lazy(() => import('./pages/admin/AdminCourseEditPage')); // Removed - will be rebuilt from scratch
 const CourseCreationPage = lazy(() => import('./pages/admin/CourseCreationPage'));
 const AdminCourseBuilderPage = lazy(() => import('./pages/admin/AdminCourseBuilderPage'));
 const AdminQuestionBanksPage = lazy(() => import('./pages/admin/AdminQuestionBanksPage'));
@@ -125,14 +117,14 @@ const AdminQuestionBankFolderDetailsPage = lazy(() => import('./pages/admin/Admi
 const AdminContentPage = lazy(() => import('./pages/admin/AdminContentPage'));
 const AdminTestsPendingReviewsPage = lazy(() => import('./pages/admin/AdminTestsPendingReviewsPage'));
 const AdminTestBuilderPage = lazy(() => import('./pages/admin/AdminTestBuilderPage'));
-// const AdminQuestionBankQuestionsPage = lazy(() => import('./pages/admin/AdminQuestionBankQuestionsPage')); // Removed - will be rebuilt from scratch
 const QuestionBankBuilder = lazy(() => import('./components/admin/question-banks/QuestionBankBuilder'));
 const CompletedCoursesPage = lazy(() => import('./pages/CompletedCoursesPage'));
 const LessonsPage = lazy(() => import('./pages/LessonsPage'));
 const LessonPage = lazy(() => import('./pages/LessonPage'));
 const LibraryPage = lazy(() => import('./pages/LibraryPage'));
-const LibraryComposePage = lazy(() => import('./pages/LibraryComposePage'));
 const LibraryReaderPage = lazy(() => import('./pages/LibraryReaderPage'));
+const LibraryComposePage = lazy(() => import('./pages/LibraryComposePage'));
+const GuidesPage = lazy(() => import('./pages/GuidesPage'));
 
 // Loading component (post-login: no full-screen overlay)
 const PageLoader = () => (
@@ -141,18 +133,11 @@ const PageLoader = () => (
 	</div>
 );
 
-function ProtectedRoute({ children }) {
-	const { user, loading } = useAuth();
-
-	if (loading) {
-		return null;
-	}
-
-	if (!user) {
-		return <Navigate to="/login" replace />;
-	}
-
-	return children;
+/** Formely: linkurile de invitație trimise înainte de aliniere (/accept-invite?token=). */
+function LegacyAcceptInviteRedirect() {
+	const { search } = useLocation();
+	const token = new URLSearchParams(search).get('token');
+	return <Navigate to={token ? `/register/invite/${encodeURIComponent(token)}` : '/login'} replace />;
 }
 
 function RedirectDetailToCourse() {
@@ -160,22 +145,23 @@ function RedirectDetailToCourse() {
 	return <Navigate to={`/courses/${courseId}`} replace />;
 }
 
-function isStudentLessonPath(pathname) {
-	return /^\/courses\/(?!map(?:\/|$))[^/]+$/.test(pathname);
-}
-
 /** Rolul afișat în badge-ul din topnav (cont real, nu modul de vizualizare admin/student). */
 function getTopnavStaffRoleLabel(user, isStudentPreviewMode) {
 	if (!user) return '';
-	if (isStudentPreviewMode) return 'Cursant';
-	return getRoleLabel(user.actualRole ?? user.role);
-}
-
-/** Compat Volta: /register/invite/:token → fluxul Formely /accept-invite?token= */
-function RedirectInviteRegister() {
-	const { token } = useParams();
-	const query = token ? `?token=${encodeURIComponent(token)}` : '';
-	return <Navigate to={`/accept-invite${query}`} replace />;
+	if (isStudentPreviewMode) return 'Utilizator';
+	const ar = user.actualRole ?? user.role ?? 'student';
+	switch (ar) {
+		case 'analyst':
+			return 'Analist';
+		case 'instructor':
+			return 'Instructor';
+		case 'admin':
+			return 'Administrator';
+		case 'student':
+			return 'Utilizator';
+		default:
+			return ar;
+	}
 }
 
 function Layout({ children }) {
@@ -189,65 +175,68 @@ function Layout({ children }) {
 			</div>
 		);
 	}
-	const { user, logout, setAdminViewMode, adminViewMode } = authContext;
-	const { branding } = useCompanyBranding();
-	const companyName = branding?.name || 'Formely';
+	return <AuthenticatedLayout authContext={authContext}>{children}</AuthenticatedLayout>;
+}
+
+function AuthenticatedLayout({ children, authContext }) {
+	const { user, logout, setAdminViewMode } = authContext;
 	const navigate = useNavigate();
 	const location = useLocation();
-
-	if (isPlatformAdmin(user)) {
-		window.location.href = import.meta.env.VITE_BACKOFFICE_URL || 'http://localhost:5180';
-		return (
-			<div className="va-main" style={{ display: 'grid', placeItems: 'center', minHeight: '100vh' }}>
-				<p>Redirecționare către backoffice…</p>
-			</div>
-		);
-	}
 	const isAdminContentSubmenuChildActive = React.useCallback(
 		(child) => {
+			const childParams = new URLSearchParams(child.search || '');
+			const childTab = childParams.get('tab');
+			const childView = childParams.get('view') || '';
 			if (location.pathname.startsWith('/admin/maps/')) {
-				if (child.path !== '/admin/content') return false;
-				const childParams = new URLSearchParams(child.search || '');
-				if (childParams.get('tab') !== 'courses') return false;
-				const childView = childParams.get('view');
-				if (childView === 'maps') return true;
-				if (!childView && user?.actualRole === 'instructor') return true;
-				return false;
+				return child.path === '/admin/content' && childTab === 'courses' && childView === 'maps';
 			}
-			const childTab = child.search ? new URLSearchParams(child.search).get('tab') : null;
-			const currentTab = new URLSearchParams(location.search).get('tab');
-			return location.pathname === child.path && (!childTab || currentTab === childTab);
+			if (location.pathname !== child.path) return false;
+			const currentTab = new URLSearchParams(location.search).get('tab') || 'courses';
+			const currentView = new URLSearchParams(location.search).get('view') || '';
+			if (!childTab || currentTab !== childTab) return false;
+			if (childTab !== 'courses') return true;
+			const showingMaps = currentView === 'maps' || (currentView === '' && user?.actualRole !== 'instructor');
+			if (childView === 'maps') return showingMaps;
+			if (childView === 'list') return !showingMaps;
+			return currentView === childView;
 		},
 		[location.pathname, location.search, user?.actualRole]
 	);
-	const isTrueAdminAccount = ['admin', 'company_owner'].includes(
-		user?.actualRole ?? user?.role
-	);
+	const isTrueAdminAccount = user?.actualRole === 'admin';
 	const hasStaffAdminShell = isStaffAdminRole(user?.actualRole);
-	const isAdmin = ['admin', 'company_owner'].includes(user?.role);
+	const isAdmin = user?.role === 'admin';
 	
-	const isLibraryPage = location.pathname === '/library'
-		|| location.pathname.startsWith('/library/items/')
-		|| location.pathname.startsWith('/library/compose');
-	const isLibraryReaderPage = location.pathname.startsWith('/library/items/');
+	// Check if we're on a user page (not admin pages)
+	const isLibraryPage =
+		location.pathname === '/library' ||
+		location.pathname.startsWith('/library/items/') ||
+		location.pathname.startsWith('/library/compose');
+	const isGuidesPage = location.pathname === '/guides';
+	const isLibraryReaderPage =
+		location.pathname.startsWith('/library/items/') && !location.pathname.includes('/edit');
 	const isAdminPage = location.pathname.startsWith('/admin');
-	const isStaffLibraryPage = isLibraryPage
-		&& hasStaffAdminShell
-		&& user?.role !== 'student'
-		&& adminViewMode !== 'student';
+	const isStaffLibraryPage = (isLibraryPage || isGuidesPage) && hasStaffAdminShell && user?.role !== 'student';
 	const isAdminShellPage = isAdminPage || isStaffLibraryPage;
+	
 	const isUserPage = !isAdminShellPage;
+	
+	// For regular users (students): always show user layout
+	// For admin: 
+	//   - If on admin pages: use admin layout
+	//   - If on other user pages: use user layout (student interface)
 	const isStudent = !isAdmin || (user?.role === 'student' || !user?.role || user?.role === '');
 	// Cont admin + mod student: shell admin cât timp URL e /admin* (evită topnav peste conținut admin înainte de redirect).
 	const showUserLayout = !hasStaffAdminShell
 		? isStudent
 			? true
 			: !isAdminShellPage
-		: !isAdminShellPage;
+		: user?.actualRole === 'admin' && user?.role === 'student'
+			? !isAdminShellPage
+			: !isAdminShellPage;
 
 	// Overlay doar în mod admin efectiv (nu resetăm „ready” la trecere student pe același frame).
 	const requiresAdminChromePaintHold =
-		isTrueAdminAccount && ['admin', 'company_owner'].includes(user?.actualRole ?? user?.role) && !showUserLayout;
+		isTrueAdminAccount && user?.role === 'admin' && !showUserLayout;
 	const [adminChromePaintReady, setAdminChromePaintReady] = React.useState(
 		!requiresAdminChromePaintHold
 	);
@@ -259,11 +248,18 @@ function Layout({ children }) {
 		}
 	}, [requiresAdminChromePaintHold]);
 	
-	// State for admin view toggle (active when on admin page or messages from admin)
+	// State for admin view toggle (active when on admin page)
+	const [, setIsAdminView] = React.useState(!isUserPage && isAdmin);
+	
+	// State for sidebar expanded/collapsed
 	const [isSidebarExpanded, setIsSidebarExpanded] = React.useState(() => {
+		if (window.innerWidth <= 768) return false;
 		const saved = localStorage.getItem('sidebarExpanded');
 		return saved !== null ? saved === 'true' : false;
 	});
+	const [moreMenuOpen, setMoreMenuOpen] = React.useState(false);
+	const [pendingReviewCount, setPendingReviewCount] = React.useState(0);
+
 	const prevShowUserLayoutRef = React.useRef(null);
 	React.useEffect(() => {
 		const prev = prevShowUserLayoutRef.current;
@@ -327,26 +323,51 @@ function Layout({ children }) {
 	}, [contentSubmenuOpen, isSidebarExpanded]);
 
 	// Detect mobile viewport
-	const [isMobile, setIsMobile] = React.useState(() =>
-		typeof window !== 'undefined' ? window.matchMedia('(max-width: 768px)').matches : false
-	);
+	const [isMobile, setIsMobile] = React.useState(() => window.innerWidth <= 768);
 	const [adminTopnavContext, setAdminTopnavContext] = React.useState(null);
-	const [lessonCourseTitle, setLessonCourseTitle] = React.useState('');
 	
 	React.useEffect(() => {
-		const mq = window.matchMedia('(max-width: 768px)');
-		const handleChange = () => setIsMobile(mq.matches);
-		handleChange();
-		mq.addEventListener('change', handleChange);
-		return () => mq.removeEventListener('change', handleChange);
+		const handleResize = () => {
+			setIsMobile(window.innerWidth <= 768);
+		};
+		window.addEventListener('resize', handleResize);
+		return () => window.removeEventListener('resize', handleResize);
 	}, []);
 
+	// Keep the mobile drawer's scroll and keyboard focus inside the menu.
 	React.useEffect(() => {
-		if (isMobile) {
-			setIsSidebarExpanded(false);
-			document.body.classList.remove('sidebar-expanded');
-		}
-	}, [isMobile, location.pathname]);
+		if (!isMobile || !isSidebarExpanded) return;
+		const drawer = document.querySelector('.va-sidebar');
+		const previousFocus = document.activeElement;
+		const previousOverflow = document.body.style.overflow;
+		document.body.style.overflow = 'hidden';
+		const getControls = () => [...drawer.querySelectorAll('a[href], button:not([disabled]), [tabindex="0"]')]
+			.filter(element => element.getClientRects().length > 0);
+		getControls()[0]?.focus();
+		const handleKey = (event) => {
+			if (event.key === 'Escape') {
+				event.preventDefault();
+				setIsSidebarExpanded(false);
+			}
+			if (event.key !== 'Tab') return;
+			const controls = getControls();
+			const first = controls[0];
+			const last = controls[controls.length - 1];
+			if (!drawer.contains(document.activeElement) || (event.shiftKey && document.activeElement === first)) {
+				event.preventDefault();
+				(event.shiftKey ? last : first)?.focus();
+			} else if (!event.shiftKey && document.activeElement === last) {
+				event.preventDefault();
+				first?.focus();
+			}
+		};
+		document.addEventListener('keydown', handleKey);
+		return () => {
+			document.body.style.overflow = previousOverflow;
+			document.removeEventListener('keydown', handleKey);
+			if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
+		};
+	}, [isMobile, isSidebarExpanded]);
 
 	React.useEffect(() => {
 		const handleTopnavContextEvent = (event) => {
@@ -362,46 +383,64 @@ function Layout({ children }) {
 	}, []);
 
 	React.useEffect(() => {
-		const handleLessonCourseTitle = (event) => {
-			setLessonCourseTitle(typeof event?.detail === 'string' ? event.detail : '');
-		};
-		window.addEventListener('formely-lesson-course-title', handleLessonCourseTitle);
-		return () => window.removeEventListener('formely-lesson-course-title', handleLessonCourseTitle);
-	}, []);
-
-	React.useEffect(() => {
-		if (!/^\/courses\/(?!map(?:\/|$))[^/]+$/.test(location.pathname)) {
-			setLessonCourseTitle('');
-		}
-	}, [location.pathname]);
-
-	React.useEffect(() => {
 		if (!location.pathname.startsWith('/admin/course-builder')) {
 			setAdminTopnavContext(null);
 		}
 	}, [location.pathname]);
 
-	const isStudentPreviewMode = isTrueAdminAccount
-		&& showUserLayout
-		&& (adminViewMode === 'student' || sessionStorage.getItem('studentPreviewFromAdmin') === 'true');
+	const loadPendingReviewCount = React.useCallback(async () => {
+		if (!user || !isStaffAdminRole(user?.actualRole)) {
+			setPendingReviewCount(0);
+			return;
+		}
+		try {
+			const [testCount, examCount] = await Promise.all([
+				adminService.getPendingTestReviewsCount(),
+				adminService.getPendingExamReviewsCount(),
+			]);
+			setPendingReviewCount(testCount + examCount);
+		} catch {
+			/* keep last count */
+		}
+	}, [user]);
+
+	React.useEffect(() => {
+		if (!user || !isStaffAdminRole(user?.actualRole)) {
+			setPendingReviewCount(0);
+			return;
+		}
+		loadPendingReviewCount();
+		const intervalId = window.setInterval(loadPendingReviewCount, 60000);
+		return () => clearInterval(intervalId);
+	}, [loadPendingReviewCount, user]);
+
+
+	// Student preview mode: admin viewing as student - no admin UI, 100% student experience
+	const isStudentPreviewMode = isTrueAdminAccount && showUserLayout && sessionStorage.getItem('studentPreviewFromAdmin') === 'true';
 
 	const topnavStaffRoleLabel = getTopnavStaffRoleLabel(user, isStudentPreviewMode);
 
 	const handleAdminViewSwitch = useCallback(() => {
 		if (isUserPage) {
-			sessionStorage.removeItem('studentPreviewFromAdmin');
 			setAdminViewMode('admin');
 			navigate('/admin', { replace: true });
 		} else {
-			sessionStorage.setItem('studentPreviewFromAdmin', 'true');
 			setAdminViewMode('student');
 			navigate('/courses', { replace: true });
 		}
 	}, [isUserPage, setAdminViewMode, navigate]);
 	
+	// Update toggle state when location changes
+	React.useEffect(() => {
+		if (hasStaffAdminShell) {
+			// Admin view is active when on admin pages
+			setIsAdminView(!isUserPage && isAdmin);
+		}
+	}, [location.pathname, hasStaffAdminShell, isUserPage, isAdmin]);
+	
 	// Save sidebar state to localStorage and update body class
 	React.useEffect(() => {
-		localStorage.setItem('sidebarExpanded', isSidebarExpanded.toString());
+		if (!isMobile) localStorage.setItem('sidebarExpanded', isSidebarExpanded.toString());
 		// Add class to body for CSS targeting
 		if (isSidebarExpanded) {
 			document.body.classList.add('sidebar-expanded');
@@ -411,7 +450,7 @@ function Layout({ children }) {
 		return () => {
 			document.body.classList.remove('sidebar-expanded');
 		};
-	}, [isSidebarExpanded]);
+	}, [isSidebarExpanded, isMobile]);
 
 	// Admin-only layout styling hooks (avoid impacting student UI)
 	React.useEffect(() => {
@@ -421,14 +460,6 @@ function Layout({ children }) {
 			document.body.classList.remove('admin-view');
 		};
 	}, [showUserLayout, hasStaffAdminShell]);
-
-	React.useEffect(() => {
-		const useBottomNav = Boolean(showUserLayout && isMobile && user);
-		document.body.classList.toggle('student-has-bottom-nav', useBottomNav);
-		return () => {
-			document.body.classList.remove('student-has-bottom-nav');
-		};
-	}, [showUserLayout, isMobile, user]);
 	
 	// Check must_change_password - handle boolean, number, or string values
 	const mustChangePassword = user?.must_change_password === true || 
@@ -439,93 +470,104 @@ function Layout({ children }) {
 	
 	// Determine courses path based on user role and current view
 	// All users use /courses (which redirects appropriately based on role)
-	const coursesPath = '/courses';
 
-	/* Ordine aliniată cu LMS Pro (Formely): Cursuri → Evenimente → … → Profil la final */
-	const navItems = [
-		{ 
-			path: '/courses', 
+	// Formely: shell-ul poartă numele și logo-ul academiei utilizatorului.
+	const brandName = user?.company?.name || 'Formely';
+	const brandLogo = user?.company?.logo_url ? toImageUrl(user.company.logo_url) : formelyLogo;
+
+	const navItems = filterNavByPlan(user, [
+		{
+			path: '/courses',
 			label: 'Cursuri',
-			title: 'Mape (parcursuri) și examene independente pe aceeași pagină. Testele din curs se deschid din curs.',
+			title: 'Mape și cursuri. Testele din curs se deschid din curs.',
 			icon: (
 				<BookOpenText size={20} weight="duotone" aria-hidden />
 			)
 		},
 		{
-			path: '/exam-results',
-			label: 'Rezultate',
-			title: 'Rezultate teste din cursuri și examene din catalog',
-			matchPaths: ['/exam-results', '/catalog-exam-results'],
-			prefetchPaths: ['/exam-results', '/catalog-exam-results'],
+			path: '/monthly-tests',
+			label: 'Teste lunare',
+			mobileLabel: 'Teste',
+			title: 'Examenele pe care le poți susține',
 			icon: (
-				<CheckCircle size={20} weight="duotone" aria-hidden />
-			),
+				<ClipboardText size={20} weight="duotone" aria-hidden />
+			)
 		},
-		...(companyHasFeature(user, 'events')
-			? [{
-				path: '/events',
-				label: 'Evenimente',
-				icon: (
-					<CalendarDots size={20} weight="duotone" aria-hidden />
-				),
-			}]
-			: []),
-		...(companyHasFeature(user, 'library')
-			? [{
-				path: '/library',
-				label: 'Bibliotecă',
-				title: 'Materiale partajate: cărți, PDF-uri și documente',
-				icon: (
-					<Books size={20} weight="duotone" aria-hidden />
-				),
-			}]
-			: []),
-		{ 
-			path: '/profile', 
-			label: 'Profil', 
+		{
+			path: '/events',
+			label: 'Evenimente',
+			icon: (
+				<CalendarDots size={20} weight="duotone" aria-hidden />
+			)
+		},
+		{
+			path: '/profile',
+			label: 'Profil',
 			icon: (
 				<UserCircle size={20} weight="duotone" aria-hidden />
 			)
 		},
+	]);
+
+	const moreNavItems = filterNavByPlan(user, [
+		{
+			path: '/exam-results',
+			label: 'Rezultate teste',
+			icon: <CheckCircle size={20} weight="duotone" aria-hidden />,
+		},
+		{
+			path: '/library',
+			label: 'Bibliotecă',
+			title: 'Materiale partajate: cărți, PDF-uri și documente',
+			icon: <Books size={20} weight="duotone" aria-hidden />,
+		},
+		{
+			path: '/guides',
+			label: 'Ghiduri',
+			title: 'Linkuri utile și resurse externe recomandate',
+			icon: <Compass size={20} weight="duotone" aria-hidden />,
+		},
 		{
 			path: '/settings',
 			label: 'Setări',
-			icon: (
-				<GearSix size={20} weight="duotone" aria-hidden />
-			)
+			icon: <GearSix size={20} weight="duotone" aria-hidden />,
 		},
-	];
+	]);
 
-	const isStudentNavItemActive = useCallback((item, pathname, linkActive) => {
-		if (item.path === '/exam-results' || item.matchPaths?.includes('/exam-results')) {
-			return pathname === '/exam-results'
-				|| pathname.startsWith('/exam-results/')
-				|| pathname === '/catalog-exam-results'
-				|| pathname.startsWith('/catalog-exam-results/');
-		}
-		if (item.path === '/courses') {
-			return pathname === '/courses' || pathname.startsWith('/courses/map');
-		}
-		if (item.matchPaths?.length) {
-			return item.matchPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
-		}
-		if (linkActive) return true;
-		return pathname === item.path || pathname.startsWith(`${item.path}/`);
-	}, []);
+	const moreMenuActive = moreNavItems.some((item) => (
+		location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)
+	));
+	const mobileMoreNavItems = [
+		navItems.find((item) => item.path === '/profile'),
+		...moreNavItems,
+	].filter(Boolean);
+	const mobileMoreMenuActive = mobileMoreNavItems.some((item) => (
+		location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)
+	));
 
-	const mobileTopnavTitle = React.useMemo(() => {
+	const mobileTopnavTitle = (() => {
 		const pathname = location.pathname;
-		const navMatch = navItems.find((item) => isStudentNavItemActive(item, pathname, false));
+		const navMatch = navItems.find((item) => {
+			if (item.path === '/courses') {
+				return pathname === '/courses' || pathname.startsWith('/courses/map');
+			}
+			return pathname === item.path || pathname.startsWith(`${item.path}/`);
+		});
 		if (navMatch) return navMatch.label;
-		if (/^\/courses\/(?!map(?:\/|$))[^/]+$/.test(pathname)) return lessonCourseTitle || 'Curs';
-		if (pathname.startsWith('/lessons') || /\/lesson(s)?(\/|$)/.test(pathname)) return lessonCourseTitle || 'Lecții';
-		if (pathname.startsWith('/exams/')) return 'Test';
+		if (pathname.startsWith('/lessons') || /\/lesson(s)?(\/|$)/.test(pathname)) return 'Lecții';
+		if (pathname.startsWith('/monthly-tests')) return 'Teste lunare';
+		if (pathname.startsWith('/exam-results')) return 'Rezultate teste';
+		if (pathname.startsWith('/library')) return 'Bibliotecă';
+		if (pathname.startsWith('/guides')) return 'Ghiduri';
+		if (pathname.startsWith('/settings')) return 'Setări';
+		if (pathname.startsWith('/exams/') || /^\/courses\/[^/]+\/exams\//.test(pathname)) return 'Test';
 		if (pathname.startsWith('/achievements')) return 'Realizări';
-		return companyName;
-	}, [location.pathname, companyName, lessonCourseTitle, navItems]);
+		if (pathname.startsWith('/completed-courses')) return 'Cursuri finalizate';
+		return brandName;
+	})();
 
-	/* Admin academie: conținut & evenimente, apoi oameni, activitate, analize, setări */
-	const academyAdminNavItemsAll = [
+	/* Admin: același flux ca Pro — conținut & evenimente sus, apoi oameni, activitate, analize, setări */
+	const adminNavItemsAll = filterNavByPlan(user, [
 		{
 			path: '/admin',
 			label: 'Panou',
@@ -535,36 +577,37 @@ function Layout({ children }) {
 		},
 		{
 			path: '/admin/content',
-			label: 'Content',
+			label: 'Conținut',
 			icon: (
 				<SquaresFour size={18} weight="duotone" aria-hidden />
 			),
 			children:
 				user?.actualRole === 'instructor'
 					? [
-						{ path: '/admin/content', search: '?tab=courses', label: 'Cursuri' },
+						{ path: '/admin/content', search: '?tab=courses&view=list', label: 'Toate cursurile' },
 						{ path: '/admin/content', search: '?tab=tests', label: 'Teste' },
 						{ path: '/admin/content', search: '?tab=exams', label: 'Examene' },
-						{ path: '/admin/content', search: '?tab=manual-review', label: 'Verificare manuală' },
+						{ path: '/admin/content', search: '?tab=manual-review', label: 'De corectat', badge: pendingReviewCount },
 						{ path: '/admin/content', search: '?tab=banks', label: 'Întrebări' },
+						{ path: '/admin/content', search: '?tab=media', label: 'Fișiere media' },
 					]
 					: [
-						{ path: '/admin/content', search: '?tab=courses&view=maps', label: 'Cursuri' },
+						{ path: '/admin/content', search: '?tab=courses&view=list', label: 'Toate cursurile' },
+						{ path: '/admin/content', search: '?tab=courses&view=maps', label: 'Mape' },
 						{ path: '/admin/content', search: '?tab=tests', label: 'Teste' },
 						{ path: '/admin/content', search: '?tab=exams', label: 'Examene' },
-						{ path: '/admin/content', search: '?tab=manual-review', label: 'Verificare manuală' },
+						{ path: '/admin/content', search: '?tab=manual-review', label: 'De corectat', badge: pendingReviewCount },
 						{ path: '/admin/content', search: '?tab=banks', label: 'Întrebări' },
+						{ path: '/admin/content', search: '?tab=media', label: 'Fișiere media' },
 					],
 		},
-		...(companyHasFeature(user, 'events')
-			? [{
-				path: '/admin/events',
-				label: 'Evenimente',
-				icon: (
-					<CalendarDots size={18} weight="duotone" aria-hidden />
-				)
-			}]
-			: []),
+		{
+			path: '/admin/events',
+			label: 'Evenimente',
+			icon: (
+				<CalendarDots size={18} weight="duotone" aria-hidden />
+			)
+		},
 		{
 			path: '/admin/users',
 			label: 'Utilizatori',
@@ -573,15 +616,15 @@ function Layout({ children }) {
 			)
 		},
 		{
-			path: '/admin/teams',
-			label: 'Organizație',
+			path: '/admin/team-members',
+			label: 'Echipe',
 			icon: (
-				<TreeStructure size={18} weight="duotone" aria-hidden />
+				<UsersThree size={18} weight="duotone" aria-hidden />
 			)
 		},
 		{
 			path: '/admin/activity-logs',
-			label: 'Activitate elevi',
+			label: 'Activitate utilizatori',
 			icon: (
 				<ListBullets size={18} weight="duotone" aria-hidden />
 			)
@@ -593,15 +636,20 @@ function Layout({ children }) {
 				<ChartLineUp size={18} weight="duotone" aria-hidden />
 			)
 		},
-		...(companyHasFeature(user, 'library')
-			? [{
-				path: '/library',
-				label: 'Bibliotecă',
-				icon: (
-					<Books size={18} weight="duotone" aria-hidden />
-				),
-			}]
-			: []),
+		{
+			path: '/library',
+			label: 'Bibliotecă',
+			icon: (
+				<Books size={18} weight="duotone" aria-hidden />
+			),
+		},
+		{
+			path: '/guides',
+			label: 'Ghiduri',
+			icon: (
+				<Compass size={18} weight="duotone" aria-hidden />
+			),
+		},
 		{
 			path: '/admin/settings',
 			label: 'Setări',
@@ -609,11 +657,10 @@ function Layout({ children }) {
 				<GearSix size={18} weight="duotone" aria-hidden />
 			)
 		},
-	];
-	const adminNavItemsAll = academyAdminNavItemsAll;
+	]);
 	const instructorHiddenAdminNavPaths = new Set([
 		'/admin/events',
-		'/admin/teams',
+		'/admin/team-members',
 		'/admin/users',
 		'/admin/activity-logs',
 		'/admin/statistics',
@@ -624,6 +671,64 @@ function Layout({ children }) {
 			? adminNavItemsAll.filter((item) => !instructorHiddenAdminNavPaths.has(item.path))
 			: adminNavItemsAll;
 	const adminContentSubmenuChildren = adminNavItems.find((i) => i.children)?.children ?? [];
+
+	React.useEffect(() => {
+		setMoreMenuOpen(false);
+	}, [location.pathname]);
+
+	React.useEffect(() => {
+		if (!moreMenuOpen) return undefined;
+		const onPointerDown = (event) => {
+			if (!event.target.closest('.student-more-menu-wrap')) setMoreMenuOpen(false);
+		};
+		const onKeyDown = (event) => {
+			if (event.key === 'Escape') setMoreMenuOpen(false);
+		};
+		document.addEventListener('pointerdown', onPointerDown);
+		document.addEventListener('keydown', onKeyDown);
+		return () => {
+			document.removeEventListener('pointerdown', onPointerDown);
+			document.removeEventListener('keydown', onKeyDown);
+		};
+	}, [moreMenuOpen]);
+
+	const renderMoreMenu = (placement) => (
+		<div className={`student-more-menu-wrap student-more-menu-wrap--${placement}`}>
+			<button
+				type="button"
+				className={[
+					placement === 'desktop' ? 'modern-topnav-item va-topnav-btn' : 'student-mobile-tab',
+					moreMenuOpen || (placement === 'mobile' ? mobileMoreMenuActive : moreMenuActive) ? 'active is-active' : '',
+				].join(' ').trim()}
+				aria-expanded={moreMenuOpen}
+				aria-haspopup="menu"
+				onClick={() => setMoreMenuOpen((open) => !open)}
+			>
+				<span className={placement === 'desktop' ? 'modern-topnav-item-icon va-topnav-icon' : 'student-mobile-tab-icon'}>
+					<DotsThree size={placement === 'desktop' ? 20 : 23} weight="bold" aria-hidden />
+				</span>
+				<span className={placement === 'desktop' ? 'modern-topnav-item-label va-topnav-label' : 'student-mobile-tab-label'}>Mai multe</span>
+			</button>
+			{moreMenuOpen ? (
+				<div className="student-more-menu" role="menu">
+					{(placement === 'mobile' ? mobileMoreNavItems : moreNavItems).map((item) => (
+						<NavLink
+							key={item.path}
+							to={item.path}
+							role="menuitem"
+							title={item.title || item.label}
+							className={({ isActive }) => `student-more-menu-item${isActive ? ' active' : ''}`}
+							onMouseEnter={() => prefetchRoute(item.path)}
+							onClick={() => setMoreMenuOpen(false)}
+						>
+							{item.icon}
+							<span>{item.label}</span>
+						</NavLink>
+					))}
+				</div>
+			) : null}
+		</div>
+	);
 
 	if (isLibraryReaderPage) {
 		return (
@@ -671,6 +776,7 @@ function Layout({ children }) {
 					)}
 					
 					<aside
+						inert={isMobile && !isSidebarExpanded ? '' : undefined}
 						className={['modern-sidebar', 'va-sidebar', isSidebarExpanded ? 'expanded open' : ''].filter(Boolean).join(' ')}
 					>
 						<div className="modern-sidebar-brand va-sidebar-brand">
@@ -682,14 +788,18 @@ function Layout({ children }) {
 								aria-expanded={isSidebarExpanded}
 								aria-label={isSidebarExpanded ? 'Restrânge meniul' : 'Extinde meniul'}
 							>
-								<img
-									className="modern-sidebar-logo-img"
-									src="/logo.png"
-									alt="Formely"
-								/>
+								<span className="modern-sidebar-logo va-logo-text">
+									<img 
+										src={brandLogo} 
+										alt="" 
+										aria-hidden="true"
+										className="va-logo-icon-img"
+										style={{ width: '32px', height: '32px', objectFit: 'contain' }}
+									/>
+								</span>
 							</button>
 							{isSidebarExpanded && (
-								<span className="modern-sidebar-brand-text">{companyName}</span>
+								<span className="modern-sidebar-brand-text">{brandName}</span>
 							)}
 						</div>
 
@@ -750,10 +860,17 @@ function Layout({ children }) {
 																	onMouseEnter={() => prefetchRoute(child.path)}
 																	onClick={() => {
 																		setContentSubmenuOpen(false);
-																		if (window.matchMedia('(max-width: 768px)').matches) setIsSidebarExpanded(false);
+																		if (window.innerWidth <= 768) setIsSidebarExpanded(false);
 																	}}
 																>
-																	<span className="modern-nav-item-label va-nav-label">{child.label}</span>
+																	<span className="va-nav-label-row">
+																		<span className="modern-nav-item-label va-nav-label">{child.label}</span>
+																		{child.badge > 0 ? (
+																			<span className="messages-menu-badge" aria-label={`${child.badge} lucrări de corectat`}>
+																				{child.badge > 99 ? '99+' : child.badge}
+																			</span>
+																		) : null}
+																	</span>
 																</Link>
 															);
 														})}
@@ -767,10 +884,10 @@ function Layout({ children }) {
 												title={!isSidebarExpanded ? item.label : undefined}
 												data-tooltip={!isSidebarExpanded ? item.label : undefined}
 												className={({ isActive }) => ['modern-nav-item', 'va-nav-btn', isActive ? 'active is-active' : ''].join(' ').trim()}
-												end={item.path === '/admin' || item.path === '/admin/platform'}
+												end={item.path === '/admin'}
 												onMouseEnter={() => prefetchRoute(item.path)}
 												onClick={() => {
-													if (window.matchMedia('(max-width: 768px)').matches) setIsSidebarExpanded(false);
+													if (window.innerWidth <= 768) setIsSidebarExpanded(false);
 												}}
 											>
 												<span className="modern-nav-item-icon va-nav-icon">{item.icon}</span>
@@ -793,7 +910,7 @@ function Layout({ children }) {
 												end={false}
 												onMouseEnter={() => prefetchRoute(item.path)}
 												onClick={() => {
-													if (window.matchMedia('(max-width: 768px)').matches) setIsSidebarExpanded(false);
+													if (window.innerWidth <= 768) setIsSidebarExpanded(false);
 												}}
 											>
 												<span className="modern-nav-item-icon va-nav-icon">{item.icon}</span>
@@ -812,7 +929,7 @@ function Layout({ children }) {
 									ref={adminContentFlyoutPortalRef}
 									className="admin-content-submenu-portal"
 									role="menu"
-									aria-label="Content"
+									aria-label="Conținut"
 									style={{
 										position: 'fixed',
 										top: contentFlyoutPos.top,
@@ -838,10 +955,17 @@ function Layout({ children }) {
 												onMouseEnter={() => prefetchRoute(child.path)}
 												onClick={() => {
 													setContentSubmenuOpen(false);
-													if (window.matchMedia('(max-width: 768px)').matches) setIsSidebarExpanded(false);
+													if (window.innerWidth <= 768) setIsSidebarExpanded(false);
 												}}
 											>
-												<span className="modern-nav-item-label va-nav-label">{child.label}</span>
+												<span className="va-nav-label-row">
+													<span className="modern-nav-item-label va-nav-label">{child.label}</span>
+													{child.badge > 0 ? (
+														<span className="messages-menu-badge" aria-label={`${child.badge} lucrări de corectat`}>
+															{child.badge > 99 ? '99+' : child.badge}
+														</span>
+													) : null}
+												</span>
 											</Link>
 										);
 									})}
@@ -850,7 +974,7 @@ function Layout({ children }) {
 							)}
 
 						{/* View switcher mobil (tema e în Setări) */}
-						{isMobile && isSidebarExpanded && !isPlatformAdmin(user) && (
+						{isMobile && isSidebarExpanded && (
 							<div className="sidebar-mobile-controls">
 								<div className="sidebar-mobile-control-item sidebar-mobile-control-item--view-switch">
 									<div className="sidebar-mobile-control-content sidebar-mobile-control-content--view-switch">
@@ -886,51 +1010,53 @@ function Layout({ children }) {
 							{/* Mobile hamburger button */}
 							<button
 								className="mobile-sidebar-toggle"
-								onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-								title={isSidebarExpanded ? 'Închide meniul' : 'Deschide meniul'}
-								aria-label={isSidebarExpanded ? 'Închide meniul' : 'Deschide meniul'}
 								aria-expanded={isSidebarExpanded}
+								onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+								title="Deschide meniul"
+								aria-label="Deschide meniul"
 							>
 								<ListBullets size={24} weight="bold" aria-hidden />
 							</button>
 							{!isMobile && (
 								<span className="va-logo-text">
-									<img className="va-logo-icon-img" src="/logo.png" alt="Formely" />
+									<img
+										src={brandLogo}
+										alt={brandName}
+										className="va-logo-icon-img"
+										style={{ width: '32px', height: '32px', objectFit: 'contain' }}
+									/>
 								</span>
 							)}
 							{adminTopnavContext && (
 								<div className="admin-topnav-page-context desktop-only">
-									<button
-										type="button"
-										className="admin-topnav-page-context-back"
+									<BackButton
+										className="va-btn-back admin-topnav-page-context-back"
 										onClick={() => navigate(adminTopnavContext.backTo || '/admin/content?tab=courses&view=maps')}
 									>
-										<ArrowLeft size={14} weight="bold" aria-hidden /> {adminTopnavContext.backLabel || 'Înapoi'}
-									</button>
+										{adminTopnavContext.backLabel || 'Înapoi'}
+									</BackButton>
 									<span className="admin-topnav-page-context-title">
 										{adminTopnavContext.title || ''}
 									</span>
 								</div>
 							)}
-							{/* Formely text - shown when sidebar is closed on mobile */}
+							{/* Volta Academy text - shown when sidebar is closed on mobile */}
 							{isMobile && !isSidebarExpanded && (
-								<span className="va-topnav-page-title">{companyName}</span>
+								<span className="va-topnav-page-title">{brandName}</span>
 							)}
 						</div>
 						
 						<div className="modern-topnav-right">
 							{/* Search and Notifications */}
-							{!isPlatformAdmin(user) && <AdminTopNavControls />}
+							<AdminTopNavControls />
 
 							{/* View Switcher - Desktop only */}
-							{!isPlatformAdmin(user) && (
-								<div className="admin-topnav-control desktop-only">
-									<AdminViewSwitcher
-										isStudentView={isUserPage}
-										onSwitch={handleAdminViewSwitch}
-									/>
-								</div>
-							)}
+							<div className="admin-topnav-control desktop-only">
+								<AdminViewSwitcher
+									isStudentView={isUserPage}
+									onSwitch={handleAdminViewSwitch}
+								/>
+							</div>
 
 							{/* User Info */}
 							{user && (
@@ -939,11 +1065,7 @@ function Layout({ children }) {
 										{user.avatar ? (
 											<img src={toImageUrl(user.avatar) || user.avatar} alt={user.name || ''} />
 										) : (
-											user.name
-												?.split(' ')
-												.map((n) => n[0])
-												.join('')
-												.toUpperCase() || 'A'
+											nameInitials(user.name, 'A')
 										)}
 									</div>
 									<div className="admin-topnav-user-info">
@@ -963,11 +1085,8 @@ function Layout({ children }) {
 						</div>
 					</header>
 
-					<div className="va-shell-main va-shell-main-topnav">
-						<main className="va-main">
-							<AdminOnboardingBanner />
-							{children}
-						</main>
+					<div className="va-shell-main">
+						<main className="va-main">{children}</main>
 					</div>
 					
 				</>
@@ -984,28 +1103,25 @@ function Layout({ children }) {
 					)}
 
 					{/* Student Sidebar — mobil (drawer) */}
-					<aside
-						className={`modern-sidebar va-sidebar student-sidebar ${isSidebarExpanded ? 'open' : ''}`}
-						inert={!isSidebarExpanded ? true : undefined}
-						aria-hidden={!isSidebarExpanded}
-					>
+					<aside id="student-mobile-menu" role={isMobile && isSidebarExpanded ? 'dialog' : undefined} aria-modal={isMobile && isSidebarExpanded ? true : undefined} aria-label="Meniu principal" inert={isMobile && !isSidebarExpanded ? '' : undefined} className={`modern-sidebar va-sidebar student-sidebar ${isSidebarExpanded ? 'expanded open' : ''}`}>
 						<div className="sidebar-mobile-header">
 							<button
 								type="button"
-								className="sidebar-mobile-close"
+								className="sidebar-mobile-close va-close-btn"
 								onClick={() => setIsSidebarExpanded(false)}
 								title="Închide meniul"
 								aria-label="Închide meniul"
 							>
-								<X size={22} weight="bold" aria-hidden />
+								<X size={18} weight="bold" aria-hidden="true" />
 							</button>
 							<div className="sidebar-mobile-header-brand">
 								<img
-									className="modern-sidebar-logo-img sidebar-mobile-header-logo"
-									src="/logo.png"
-									alt="Formely"
+									src={brandLogo}
+									alt=""
+									aria-hidden="true"
+									className="va-logo-icon-img sidebar-mobile-header-logo"
 								/>
-								<span className="modern-sidebar-brand-text">{companyName}</span>
+								<span className="modern-sidebar-brand-text">{brandName}</span>
 							</div>
 						</div>
 
@@ -1016,23 +1132,19 @@ function Layout({ children }) {
 										key={item.path}
 										to={item.path}
 										title={item.title || item.label}
-										className={({ isActive }) => {
-											const active = isStudentNavItemActive(item, location.pathname, isActive);
-											return ['modern-nav-item', 'va-nav-btn', active ? 'active is-active' : ''].join(' ').trim();
-										}}
+										className={({ isActive }) => ['modern-nav-item', 'va-nav-btn', isActive ? 'active is-active' : ''].join(' ').trim()}
 										end={item.path === '/courses'}
-										onMouseEnter={() => {
-											prefetchRoute(item.path);
-											(item.prefetchPaths || []).forEach((path) => prefetchRoute(path));
-										}}
+										onMouseEnter={() => prefetchRoute(item.path)}
 										onClick={() => {
-											if (window.matchMedia('(max-width: 768px)').matches) {
+											if (window.innerWidth <= 768) {
 												setIsSidebarExpanded(false);
+												document.querySelector('.student-mobile-tab[aria-controls="student-mobile-menu"]')?.blur();
 											}
 										}}
 									>
 										<span className="modern-nav-item-icon va-nav-icon">{item.icon}</span>
 										<span className="modern-nav-item-label va-nav-label">{item.label}</span>
+										
 									</NavLink>
 								))}
 							</div>
@@ -1040,7 +1152,7 @@ function Layout({ children }) {
 
 						{(user || (isTrueAdminAccount && !isStudentPreviewMode)) && (
 							<div className="sidebar-mobile-footer">
-								{isTrueAdminAccount && !isStudentPreviewMode && !isPlatformAdmin(user) && (
+								{isTrueAdminAccount && !isStudentPreviewMode && (
 									<div className="sidebar-mobile-footer-switch">
 										<AdminViewSwitcher
 											isStudentView={isUserPage}
@@ -1067,37 +1179,20 @@ function Layout({ children }) {
 
 					<header className={`modern-topnav va-topnav ${isSidebarExpanded ? 'sidebar-expanded' : ''}`}>
 						<div className="modern-topnav-left va-topnav-brand">
-							{isMobile && showUserLayout && isStudentLessonPath(location.pathname) ? (
-								<button
-									type="button"
-									className="admin-topnav-notification-btn va-topnav-lessons-btn"
-									onClick={() => window.dispatchEvent(new Event('formely-open-lessons-sidebar'))}
-									title="Lecții"
-									aria-label="Deschide meniul lecțiilor"
-								>
-									<ListBullets size={20} weight="duotone" aria-hidden />
-								</button>
-							) : null}
-							{!(isMobile && showUserLayout) ? (
-								<button
-									className="mobile-sidebar-toggle"
-									onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-									title={isSidebarExpanded ? 'Închide meniul' : 'Deschide meniul'}
-									aria-label={isSidebarExpanded ? 'Închide meniul' : 'Deschide meniul'}
-									aria-expanded={isSidebarExpanded}
-								>
-									<ListBullets size={24} weight="bold" aria-hidden />
-								</button>
-							) : null}
 							{!isMobile && (
 								<span className="va-logo-text">
-									<img className="va-logo-icon-img" src="/logo.png" alt="Formely" />
+									<img
+										src={brandLogo}
+										alt={brandName}
+										className="va-logo-icon-img"
+										style={{ width: '32px', height: '32px', objectFit: 'contain' }}
+									/>
 								</span>
 							)}
+							{isMobile && !isSidebarExpanded && (
+								<span className="va-topnav-page-title">{mobileTopnavTitle}</span>
+							)}
 						</div>
-						{isMobile && !isSidebarExpanded ? (
-							<span className="va-topnav-page-title">{mobileTopnavTitle}</span>
-						) : null}
 
 						<nav className="modern-topnav-nav va-topnav-nav desktop-only">
 							{navItems.map((item) => (
@@ -1105,44 +1200,24 @@ function Layout({ children }) {
 									key={item.path}
 									to={item.path}
 									title={item.title || item.label}
-									className={({ isActive }) => {
-										const active = isStudentNavItemActive(item, location.pathname, isActive);
-										return ['modern-topnav-item', 'va-topnav-btn', active ? 'active is-active' : ''].join(' ').trim();
-									}}
+									className={({ isActive }) => ['modern-topnav-item', 'va-topnav-btn', isActive ? 'active is-active' : ''].join(' ').trim()}
 									end={item.path === '/courses'}
-									onMouseEnter={() => {
-										prefetchRoute(item.path);
-										(item.prefetchPaths || []).forEach((path) => prefetchRoute(path));
-									}}
+									onMouseEnter={() => prefetchRoute(item.path)}
 								>
 									<span className="modern-topnav-item-icon va-topnav-icon">{item.icon}</span>
 									<span className="modern-topnav-item-label va-topnav-label">{item.label}</span>
 								</NavLink>
 							))}
+							{renderMoreMenu('desktop')}
 						</nav>
 
 						<div className="modern-topnav-right">
 							{user && (
 								<>
-									{isStudentPreviewMode && (
-										<button
-											type="button"
-											className="student-preview-back-to-admin student-preview-back-to-admin--topnav"
-											onClick={() => {
-												sessionStorage.removeItem('studentPreviewFromAdmin');
-												setAdminViewMode('admin');
-												navigate('/admin', { replace: true });
-											}}
-											title="Înapoi la Admin"
-											aria-label="Înapoi la Admin"
-										>
-											<ArrowLeft size={14} weight="bold" aria-hidden /> Admin
-										</button>
-									)}
 									<StudentTopNavNotifications />
 
 									{/* View Switcher (only for admins, hidden in student preview mode) - Desktop only */}
-									{isTrueAdminAccount && !isStudentPreviewMode && !isPlatformAdmin(user) && (
+									{isTrueAdminAccount && !isStudentPreviewMode && (
 										<div className="admin-topnav-control desktop-only">
 											<AdminViewSwitcher
 												isStudentView={isUserPage}
@@ -1157,11 +1232,7 @@ function Layout({ children }) {
 											{user.avatar ? (
 												<img src={toImageUrl(user.avatar) || user.avatar} alt={user.name || ''} />
 											) : (
-												user.name
-													?.split(' ')
-													.map((n) => n[0])
-													.join('')
-													.toUpperCase() || 'U'
+												nameInitials(user.name, 'U')
 											)}
 										</div>
 										<div className="admin-topnav-user-info">
@@ -1182,21 +1253,55 @@ function Layout({ children }) {
 						</div>
 					</header>
 
-					{isMobile && showUserLayout && user ? (
-						<StudentBottomNav
-							onOpenMenu={() => setIsSidebarExpanded((open) => !open)}
-						/>
-					) : null}
+					{isMobile && (
+						<nav className="student-mobile-tabs" aria-label="Navigare principală">
+							{navItems.filter((item) => item.path !== '/profile').map((item) => (
+								<NavLink
+									key={item.path}
+									to={item.path}
+									className={({ isActive }) => `student-mobile-tab${isActive ? ' active' : ''}`}
+									end={item.path === '/courses'}
+								>
+									<span className="student-mobile-tab-icon">
+										{item.icon}
+										
+									</span>
+									<span className="student-mobile-tab-label">{item.mobileLabel || item.label}</span>
+								</NavLink>
+							))}
+							{renderMoreMenu('mobile')}
+						</nav>
+					)}
 
 					<div className="va-shell-main va-shell-main-topnav">
 						<main className="va-main">{children}</main>
 					</div>
-					{isTrueAdminAccount && !isStudentPreviewMode && !isPlatformAdmin(user) && canUseAiFeature(user, 'ai_builder') ? (
-						<Suspense fallback={null}>
-							<AiAssistantWidget />
-						</Suspense>
-					) : null}
+					
+
+					{/* Înapoi la Admin - minimal button when admin views as student */}
+					{isStudentPreviewMode && (
+						<BackButton
+							className="va-btn-back student-preview-back-to-admin"
+							onClick={() => {
+								sessionStorage.removeItem('studentPreviewFromAdmin');
+								setAdminViewMode('admin');
+								navigate('/admin/courses', { replace: true });
+							}}
+							title="Înapoi la Admin"
+							aria-label="Înapoi la Admin"
+						>
+							Admin
+						</BackButton>
+					)}
 				</>
+			)}
+
+            {user && isTrueAdminAccount && user.role === 'admin' && isVoltEnabled('ai_builder') && (
+				<ErrorBoundary fallback={() => null}>
+					<Suspense fallback={null}>
+						<VoltAssistantWidget />
+					</Suspense>
+				</ErrorBoundary>
 			)}
 		</div>
 	);
@@ -1211,24 +1316,37 @@ function App() {
 		return () => document.removeEventListener('openGlobalSearch', handleOpenSearch);
 	}, []);
 
+	useEffect(() => {
+		const id = window.setTimeout(() => {
+			try {
+				sessionStorage.removeItem('va:chunk-reload');
+			} catch {
+				/* ignore */
+			}
+		}, 4000);
+		return () => window.clearTimeout(id);
+	}, []);
+
 	return (
 		<ThemeProvider>
 			<ToastProvider>
 				<AuthProvider>
-					<Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-						<CompanyBrandingProvider>
+					<Router>
 						<ScrollToTop />
 						<GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
 				<Routes>
 					{/* Splash first page - if authenticated, redirect to app */}
-					{/* Auth: splash → logo sus → login / register (același ecran) */}
-					<Route path="/" element={authExperienceElement} />
-					<Route path="/login" element={authExperienceElement} />
-					<Route path="/register" element={authExperienceElement} />
-					<Route path="/forgot-password" element={authExperienceElement} />
-					<Route path="/reset-password" element={authExperienceElement} />
-					<Route path="/accept-invite" element={authExperienceElement} />
-					<Route path="/register/invite/:token" element={<RedirectInviteRegister />} />
+					<Route
+						path="/"
+						element={
+							<SplashEntry />
+						}
+					/>
+					{/* Public routes */}
+					<Route path="/login" element={<Suspense fallback={<PageLoader />}><LoginPage /></Suspense>} />
+					<Route path="/register/invite/:token" element={<Suspense fallback={<PageLoader />}><InviteRegisterPage /></Suspense>} />
+					<Route path="/accept-invite" element={<LegacyAcceptInviteRedirect />} />
+					<Route path="/register" element={<Suspense fallback={<PageLoader />}><RegisterPage /></Suspense>} />
 					
 					{/* Protected routes */}
 					<Route
@@ -1315,11 +1433,11 @@ function App() {
 									/>
 									{/* Legacy routes - kept for backward compatibility */}
 									<Route
-										path="/courses/:courseId/quiz"
+										path="/monthly-tests"
 										element={
 											<UserRoute>
 												<Suspense fallback={<PageLoader />}>
-													<QuizPage />
+													<MonthlyTestsPage />
 												</Suspense>
 											</UserRoute>
 										}
@@ -1329,33 +1447,25 @@ function App() {
 										element={
 											<UserRoute>
 												<FeatureRoute feature="events">
-													<Suspense fallback={<PageLoader />}>
-														<EventsPage />
-													</Suspense>
+												<Suspense fallback={<PageLoader />}>
+													<EventsPage />
+												</Suspense>
 												</FeatureRoute>
 											</UserRoute>
 										}
 									/>
 									<Route
 										path="/events/:id"
-										element={
-											<UserRoute>
-												<FeatureRoute feature="events">
-													<Suspense fallback={<PageLoader />}>
-														<EventDetailPage />
-													</Suspense>
-												</FeatureRoute>
-											</UserRoute>
-										}
+										element={<Navigate to="/events" replace />}
 									/>
 									<Route
 										path="/library"
 										element={
 											<UserRoute>
 												<FeatureRoute feature="library">
-													<Suspense fallback={<PageLoader />}>
-														<LibraryPage />
-													</Suspense>
+												<Suspense fallback={<PageLoader />}>
+													<LibraryPage />
+												</Suspense>
 												</FeatureRoute>
 											</UserRoute>
 										}
@@ -1365,9 +1475,9 @@ function App() {
 										element={
 											<UserRoute>
 												<FeatureRoute feature="library">
-													<Suspense fallback={<PageLoader />}>
-														<LibraryComposePage />
-													</Suspense>
+												<Suspense fallback={<PageLoader />}>
+													<LibraryComposePage />
+												</Suspense>
 												</FeatureRoute>
 											</UserRoute>
 										}
@@ -1377,9 +1487,9 @@ function App() {
 										element={
 											<UserRoute>
 												<FeatureRoute feature="library">
-													<Suspense fallback={<PageLoader />}>
-														<LibraryComposePage />
-													</Suspense>
+												<Suspense fallback={<PageLoader />}>
+													<LibraryComposePage />
+												</Suspense>
 												</FeatureRoute>
 											</UserRoute>
 										}
@@ -1389,20 +1499,22 @@ function App() {
 										element={
 											<UserRoute>
 												<FeatureRoute feature="library">
-													<Suspense fallback={<PageLoader />}>
-														<LibraryReaderPage />
-													</Suspense>
+												<Suspense fallback={<PageLoader />}>
+													<LibraryReaderPage />
+												</Suspense>
 												</FeatureRoute>
 											</UserRoute>
 										}
 									/>
 									<Route
-										path="/learning-paths/:pathId"
-										element={<Navigate to="/courses" replace />}
-									/>
-									<Route
-										path="/learning-paths"
-										element={<Navigate to="/courses" replace />}
+										path="/guides"
+										element={
+											<UserRoute>
+												<Suspense fallback={<PageLoader />}>
+													<GuidesPage />
+												</Suspense>
+											</UserRoute>
+										}
 									/>
 									<Route
 										path="/exam-results"
@@ -1410,16 +1522,6 @@ function App() {
 											<UserRoute>
 												<Suspense fallback={<PageLoader />}>
 													<ExamResultsPage />
-												</Suspense>
-											</UserRoute>
-										}
-									/>
-									<Route
-										path="/catalog-exam-results"
-										element={
-											<UserRoute>
-												<Suspense fallback={<PageLoader />}>
-													<CatalogExamResultsPage />
 												</Suspense>
 											</UserRoute>
 										}
@@ -1519,10 +1621,6 @@ function App() {
 												</Suspense>
 											</AdminRoute>
 										}
-									/>
-									<Route
-										path="/admin/learning-paths/:pathId"
-										element={<Navigate to="/admin/content" replace />}
 									/>
 									<Route
 										path="/admin/maps/:mapId"
@@ -1696,9 +1794,11 @@ function App() {
 										path="/admin/events"
 										element={
 											<AdminRoute>
+												<FeatureRoute feature="events">
 												<Suspense fallback={<PageLoader />}>
 													<AdminEventsPage />
 												</Suspense>
+												</FeatureRoute>
 											</AdminRoute>
 										}
 									/>
@@ -1714,7 +1814,13 @@ function App() {
 									/>
 									<Route
 										path="/admin/team-members"
-										element={<Navigate to="/admin/users?tab=staff" replace />}
+										element={
+											<AdminRoute>
+												<Suspense fallback={<PageLoader />}>
+													<AdminTeamsPage />
+												</Suspense>
+											</AdminRoute>
+										}
 									/>
 									<Route
 										path="/admin/users"
@@ -1722,16 +1828,6 @@ function App() {
 											<AdminRoute>
 												<Suspense fallback={<PageLoader />}>
 													<AdminUsersPage />
-												</Suspense>
-											</AdminRoute>
-										}
-									/>
-									<Route
-										path="/admin/users/invite"
-										element={
-											<AdminRoute>
-												<Suspense fallback={<PageLoader />}>
-													<AdminInviteUsersPage />
 												</Suspense>
 											</AdminRoute>
 										}
@@ -1765,14 +1861,6 @@ function App() {
 												</Suspense>
 											</AdminRoute>
 										}
-									/>
-									<Route
-										path="/admin/platform"
-										element={<Navigate to="/admin" replace />}
-									/>
-									<Route
-										path="/admin/platform/companies"
-										element={<Navigate to="/admin" replace />}
 									/>
 									<Route
 										path="/admin/top-courses"
@@ -1824,12 +1912,22 @@ function App() {
 											</AdminRoute>
 										}
 									/>
+									{/* Orice altă adresă: pagină 404 în loc de conținut gol */}
+									<Route
+										path="*"
+										element={
+											<UserRoute>
+												<Suspense fallback={<PageLoader />}>
+													<NotFoundPage />
+												</Suspense>
+											</UserRoute>
+										}
+									/>
 								</Routes>
 							</Layout>
 						}
 					/>
 				</Routes>
-						</CompanyBrandingProvider>
 			</Router>
 		</AuthProvider>
 		</ToastProvider>
@@ -1848,3 +1946,49 @@ function AppWithErrorBoundary() {
 
 export default AppWithErrorBoundary;
 
+// Splash entry - afișează splash-ul în timp ce se încarcă auth, prefetch, etc.
+function SplashEntry() {
+	const { user, loading } = useAuth();
+	const navigate = useNavigate();
+	const [prefetchDone, setPrefetchDone] = useState(false);
+
+	// Prefetch pagini critice – butonul apare doar după ce totul e încărcat
+	useEffect(() => {
+		Promise.all([
+			import('./pages/LoginPage'),
+			import('./pages/CoursesPage'),
+		])
+			.then(() => setPrefetchDone(true))
+			.catch(() => setPrefetchDone(true));
+	}, []);
+
+	useEffect(() => {
+		if (!loading && user) {
+			if (user.actualRole === 'admin') {
+				const mode =
+					typeof sessionStorage !== 'undefined'
+						? sessionStorage.getItem('voltaAdminViewMode')
+						: null;
+				navigate(mode === 'student' ? '/courses' : '/admin', { replace: true });
+			} else if (isStaffAdminRole(user.actualRole)) {
+				navigate('/admin', { replace: true });
+			} else {
+				navigate('/courses', { replace: true });
+			}
+		}
+	}, [user, loading, navigate]);
+
+	if (user) {
+		return null;
+	}
+
+	// appReady = auth gata ȘI prefetch gata
+	const appReady = !loading && prefetchDone;
+
+	return (
+		<Suspense fallback={<PageLoader />}><SplashScreen
+			onStart={() => navigate('/login', { replace: true })}
+			appReady={appReady}
+		/></Suspense>
+	);
+}

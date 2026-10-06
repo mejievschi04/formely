@@ -29,9 +29,9 @@
 }
 
 .admin-users-view-tab.active {
-	background: color-mix(in srgb, var(--color-primary) 16%, var(--bg-elevated));
+	background: rgba(var(--color-primary-rgb), 0.15);
 	border-color: var(--color-primary);
-	color: var(--color-primary);
+	color: var(--text-primary);
 }
 
 /* Search */
@@ -155,7 +155,7 @@
 }
 
 .admin-users-table th.sortable:hover {
-	color: var(--color-primary);
+	color: var(--text-accent);
 }
 
 .admin-users-table th.sortable::after {
@@ -176,13 +176,13 @@
 .admin-users-table th.sort-asc::after {
 	content: '↑';
 	opacity: 1;
-	color: var(--color-primary);
+	color: var(--text-accent);
 }
 
 .admin-users-table th.sort-desc::after {
 	content: '↓';
 	opacity: 1;
-	color: var(--color-primary);
+	color: var(--text-accent);
 }
 
 .admin-users-table tbody tr {
@@ -223,7 +223,7 @@
 	height: 40px;
 	border-radius: var(--radius-full);
 	background-color: var(--color-primary);
-	color: var(--text-primary); /* Gri închis pentru inițiale */
+	color: var(--btn-primary-text); /* text închis pe galben, în ambele teme */
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -275,12 +275,13 @@
 	font-weight: var(--font-weight-medium);
 	text-transform: uppercase;
 	letter-spacing: 0.5px;
+	white-space: nowrap;
 }
 
 .admin-users-role-badge.admin {
-	background-color: rgba(8, 145, 178, 0.15);
-	color: var(--color-primary);
-	border: 1px solid rgba(8, 145, 178, 0.3);
+	background-color: rgba(var(--color-primary-rgb), 0.15);
+	color: var(--text-accent);
+	border: 1px solid rgba(var(--color-primary-rgb), 0.3);
 }
 
 .admin-users-role-badge.student {
@@ -302,6 +303,49 @@
 	background-color: rgba(251, 191, 36, 0.2);
 	color: var(--color-warning);
 	border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+.admin-users-status-suspended {
+	background-color: color-mix(in srgb, var(--color-error) 12%, transparent);
+	color: color-mix(in srgb, var(--color-error) 70%, var(--text-primary));
+	border: 1px solid color-mix(in srgb, var(--color-error) 40%, transparent);
+}
+
+/* Fereastra de editare: secțiunea „Acces cont” (suspendare, reactivare, schimbarea parolei) */
+.admin-users-access {
+	grid-column: 1 / -1;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+	/* explicit: regula generală pentru section de pe telefon adaugă padding pe toate laturile */
+	margin: var(--space-2) 0 0;
+	padding: var(--space-4) 0 0;
+	border-top: 1px solid var(--border-primary);
+}
+
+.admin-users-access-title {
+	margin: 0;
+	font-size: var(--font-size-base);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+}
+
+.admin-users-access-status {
+	margin: 0;
+	color: var(--text-secondary);
+	font-size: var(--font-size-sm);
+}
+
+.admin-users-access-confirm {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+}
+
+.admin-users-access-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2);
 }
 
 /* ============================================
@@ -333,7 +377,7 @@
 }
 
 .admin-users-progress-fill.medium {
-	background-color: rgba(8, 145, 178, 0.7);
+	background-color: rgba(var(--color-primary-rgb), 0.7);
 }
 
 .admin-users-progress-fill.low {
@@ -349,7 +393,7 @@
 }
 
 .admin-users-progress-text.high {
-	color: var(--color-primary);
+	color: var(--text-accent);
 }
 
 /* ============================================
@@ -357,16 +401,19 @@
    ============================================ */
 .admin-users-actions {
 	display: flex;
+	flex-wrap: nowrap;
 	align-items: center;
 	justify-content: center;
 	gap: var(--space-2);
 }
 
 .admin-users-actions .admin-users-action-compact {
-	width: 104px;
-	min-width: 104px;
-	height: 32px;
-	padding: 0 8px;
+	width: 36px;
+	min-width: 36px;
+	max-width: 36px;
+	height: 36px;
+	flex: 0 0 36px;
+	padding: 0;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -465,6 +512,13 @@
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: 16px;
+}
+
+/* Pe telefon câmpurile stau unul sub altul (în două coloane „Parolă” era prea îngustă) */
+@media (max-width: 600px) {
+	.admin-users-modal-form {
+		grid-template-columns: 1fr;
+	}
 }
 
 /* Câmpuri care ocupă toată lățimea (cu textarea sau div-uri separate pentru hint-uri) */
@@ -611,12 +665,14 @@
 		font-size: var(--font-size-xs);
 	}
 
-	.admin-users-table th:nth-child(5),
-	.admin-users-table th:nth-child(6),
-	.admin-users-table td:nth-child(5),
-	.admin-users-table td:nth-child(6) {
+	.admin-users-table--directory th:nth-child(5),
+	.admin-users-table--directory td:nth-child(5) {
 		display: none;
 	}
+}
+
+.admin-users-table-cell-email-stacked {
+	display: none;
 }
 
 @media (max-width: 768px) {
@@ -635,11 +691,31 @@
 	}
 
 	.admin-users-table-wrapper {
-		overflow-x: auto;
+		overflow-x: visible;
 	}
 
 	.admin-users-table {
-		min-width: 800px;
+		min-width: 0;
+		width: 100%;
+	}
+
+	.admin-users-table--directory th:nth-child(2),
+	.admin-users-table--directory td:nth-child(2),
+	.admin-users-table--directory th:nth-child(6),
+	.admin-users-table--directory td:nth-child(6) {
+		display: none;
+	}
+
+	.admin-users-table-cell-email-stacked {
+		display: block;
+		font-size: var(--font-size-xs);
+		color: var(--text-secondary);
+		margin-bottom: var(--space-1);
+		word-break: break-all;
+	}
+
+	.admin-users-invite-button {
+		padding: var(--space-2);
 	}
 
 	.admin-users-modal {
@@ -902,7 +978,7 @@
 	width: 40px;
 	height: 40px;
 	border-radius: var(--radius-lg);
-	background: rgba(8, 145, 178, 0.14);
+	background: rgba(var(--color-primary-rgb), 0.14);
 	color: var(--accent-primary);
 	flex-shrink: 0;
 }
@@ -999,10 +1075,152 @@
 		justify-content: center;
 	}
 }
+/* Constrain long user data while reserving room for all row actions. */
+.admin-users-page,
+.admin-users-page .admin-users-table-wrapper {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+.admin-users-page .admin-users-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+}
+.admin-users-page .admin-users-table {
+    display: table;
+    overflow: visible;
+    table-layout: fixed;
+    width: 100%;
+    min-width: 0;
+}
+.admin-users-page .admin-users-table th,
+.admin-users-page .admin-users-table td {
+    padding: 12px 10px;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+.admin-users-table--directory th:nth-child(1) { width: 20%; }
+.admin-users-table--directory th:nth-child(2) { width: 22%; }
+.admin-users-table--directory th:nth-child(3) { width: 12%; }
+.admin-users-table--directory th:nth-child(4) { width: 14%; }
+.admin-users-table--directory th:nth-child(5) { width: 10%; }
+/* Trei acțiuni de 44px (invitație, editare, ștergere) + spațiere + padding */
+.admin-users-page .admin-users-table th:last-child { width: 172px; }
+.admin-users-page .admin-invitations-table th:last-child { width: 172px; }
+.admin-users-page .admin-users-table-cell-user,
+.admin-users-page .admin-users-table-cell-user > div:last-child,
+.admin-users-page .admin-users-progress-container {
+    min-width: 0;
+    max-width: 100%;
+}
+.admin-users-page .admin-users-table-cell-name,
+.admin-users-page .admin-users-table-cell-bio {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.admin-users-page .admin-users-team-chip,
+.admin-users-page .admin-users-role-badge,
+.admin-users-page .admin-users-status-badge { max-width: 100%; }
+.admin-users-page .admin-users-team-chip-name { min-width: 0; }
+.admin-users-page .admin-users-status-badge { white-space: normal; overflow-wrap: anywhere; }
+.admin-users-page .admin-users-role-badge { white-space: nowrap; }
+/* Aliniat la dreapta: editare/ștergere stau în aceeași poziție indiferent dacă există invitație */
+.admin-users-page .admin-users-actions { flex-wrap: nowrap; justify-content: flex-end; gap: 8px; }
+.admin-users-page .admin-users-actions .admin-users-action-compact {
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    padding: 0;
+}
+.admin-users-page .admin-users-action-compact:focus-visible {
+    outline: 2px solid var(--text-primary);
+    outline-offset: 2px;
+}
+@media (max-width: 768px) {
+    .admin-users-page .admin-users-table { min-width: 0; width: 100%; }
+    .admin-users-page .admin-users-table th:last-child { width: 116px; }
+    /* Pe telefon coloana e îngustă: acțiunile trec pe două rânduri, aliniate la dreapta */
+    .admin-users-page .admin-users-actions { flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+    .admin-users-page .admin-invitations-table th:last-child { width: 172px; }
+    .admin-users-page .admin-users-table th:last-child,
+    .admin-users-page .admin-users-table td:last-child {
+        position: sticky;
+        right: 0;
+        z-index: 1;
+        background: var(--bg-elevated);
+        box-shadow: -1px 0 0 var(--border-primary);
+    }
+    .admin-users-page .admin-users-table th:last-child { background: var(--bg-secondary); }
+    .admin-users-page .admin-users-actions .admin-users-action-compact {
+        width: 44px;
+        min-width: 44px;
+        max-width: 44px;
+        height: 44px;
+        flex-basis: 44px;
+    }
+}
 
-.admin-invite-seat-warning {
-	margin: 0 0 0.75rem;
-	color: var(--color-primary);
-	font-size: 0.9rem;
-	line-height: 1.4;
+
+/*
+ * Pe telefon tabelul de utilizatori devine o listă de carduri: cu coloane fixe, celula
+ * utilizatorului rămânea de ~70px și emailul se rupea literă cu literă.
+ * Card: avatar, nume și email sus; rolul și echipa dedesubt; acțiunile în dreapta.
+ */
+@media (max-width: 768px) {
+    .admin-users-page .admin-users-table--directory,
+    .admin-users-page .admin-users-table--directory tbody {
+        display: block;
+        width: 100%;
+    }
+    /* antetul rămâne pentru cititoarele de ecran */
+    .admin-users-page .admin-users-table--directory thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+    .admin-users-page .admin-users-table--directory tbody tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        column-gap: 12px;
+        row-gap: 8px;
+        padding: 14px 12px;
+    }
+    .admin-users-page .admin-users-table--directory tbody td {
+        display: block;
+        width: auto;
+        min-width: 0;
+        padding: 0;
+        border: 0;
+    }
+    /* emailul apare sub nume; cursurile și procentul sunt în profil */
+    .admin-users-page .admin-users-table--directory tbody td:is(:nth-child(2), :nth-child(5), :nth-child(6)) { display: none; }
+    .admin-users-page .admin-users-table--directory tbody td:nth-child(1) { grid-column: 1 / -1; grid-row: 1; }
+    .admin-users-page .admin-users-table--directory tbody td:nth-child(3) { grid-column: 1; grid-row: 2; }
+    .admin-users-page .admin-users-table--directory tbody td:nth-child(4) { grid-column: 1; grid-row: 3; }
+    .admin-users-page .admin-users-table--directory tbody td:nth-child(4):has(> .admin-users-table-cell-muted) { display: none; }
+    .admin-users-page .admin-users-table--directory tbody td:last-child {
+        grid-column: 2;
+        grid-row: 2 / span 2;
+        position: static;
+        width: auto;
+        background: transparent;
+        box-shadow: none;
+    }
+    .admin-users-page .admin-users-table--directory .admin-users-actions { flex-wrap: nowrap; }
+    /* rândul fără date („Nu există utilizatori”) ocupă tot cardul */
+    .admin-users-page .admin-users-table--directory tbody td[colspan] { grid-column: 1 / -1; grid-row: auto; }
+    .admin-users-page .admin-users-table--directory .admin-users-table-cell-email-stacked {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        word-break: normal;
+    }
 }

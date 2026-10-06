@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
 	DndContext,
 	KeyboardSensor,
@@ -18,6 +18,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { DragGripIcon } from '../common/DragGripIcon';
+import './StructuredQuestionRenderer.css';
 
 const sequenceToStrings = (value) => {
 	if (!Array.isArray(value)) return null;
@@ -29,20 +30,8 @@ function SortableOrderItem({ id, text, disabled }) {
 	return (
 		<div
 			ref={setNodeRef}
-			style={{
-				transform: CSS.Transform.toString(transform),
-				transition,
-				opacity: isDragging ? 0.7 : 1,
-				cursor: disabled ? 'default' : 'grab',
-				display: 'flex',
-				alignItems: 'center',
-				gap: '0.75rem',
-				padding: '0.9rem 1rem',
-				borderRadius: '16px',
-				border: '1px solid rgba(255, 255, 255, 0.14)',
-				background: 'rgba(255, 255, 255, 0.05)',
-				boxShadow: '0 10px 24px rgba(0,0,0,0.16)',
-			}}
+			className={`student-exam-order-item${isDragging ? ' is-dragging' : ''}${disabled ? ' is-disabled' : ''}`}
+			style={{ transform: CSS.Transform.toString(transform), transition }}
 		>
 			<button
 				type="button"
@@ -50,18 +39,11 @@ function SortableOrderItem({ id, text, disabled }) {
 				{...listeners}
 				disabled={disabled}
 				aria-label="Mută elementul"
-				style={{
-					border: 'none',
-					background: 'transparent',
-					color: 'var(--student-exam-accent, #5b72ff)',
-					fontSize: '1.2rem',
-					padding: 0,
-					cursor: disabled ? 'default' : 'grab',
-				}}
+				className="student-exam-order-handle"
 			>
 				<DragGripIcon size={16} />
 			</button>
-			<span style={{ flex: 1, color: 'var(--va-text, #fff)' }}>{text}</span>
+			<span className="student-exam-order-text">{text}</span>
 		</div>
 	);
 }
@@ -136,18 +118,8 @@ function MatchingChip({ id, text, disabled }) {
 			{...attributes}
 			{...listeners}
 			disabled={disabled}
-			style={{
-				transform: CSS.Transform.toString(transform),
-				opacity: isDragging ? 0.7 : 1,
-				border: '1px solid rgba(255, 255, 255, 0.16)',
-				background: 'rgba(255, 255, 255, 0.06)',
-				color: 'var(--va-text, #fff)',
-				borderRadius: '999px',
-				padding: '0.7rem 1rem',
-				cursor: disabled ? 'default' : 'grab',
-				boxShadow: '0 10px 24px rgba(0,0,0,0.16)',
-				textAlign: 'left',
-			}}
+			className={`student-exam-matching-chip${isDragging ? ' is-dragging' : ''}`}
+			style={{ transform: CSS.Transform.toString(transform) }}
 		>
 			{text}
 		</button>
@@ -159,21 +131,12 @@ function MatchingSlot({ slotId, assignedId, assignedText, placeholder, disabled 
 	return (
 		<div
 			ref={setNodeRef}
-			style={{
-				minHeight: '56px',
-				borderRadius: '16px',
-				border: `1px dashed ${isOver ? 'var(--student-exam-accent, #5b72ff)' : 'rgba(255,255,255,0.16)'}`,
-				background: isOver ? 'rgba(91, 114, 255, 0.12)' : 'rgba(255,255,255,0.04)',
-				padding: '0.5rem',
-				display: 'flex',
-				alignItems: 'center',
-				justifyContent: 'center',
-			}}
+			className={`student-exam-matching-slot${assignedText ? ' is-filled' : ''}${isOver ? ' is-over' : ''}`}
 		>
 			{assignedText ? (
 				<MatchingChip id={`matching-chip-${assignedId}`} text={assignedText} disabled={disabled} />
 			) : (
-				<span style={{ color: 'var(--va-muted, #aab)', fontSize: '0.92rem' }}>{placeholder}</span>
+				<span className="student-exam-matching-placeholder">{placeholder}</span>
 			)}
 		</div>
 	);
@@ -255,14 +218,14 @@ function MatchingQuestion({ question, value, onChange, disabled }) {
 					})}
 				</div>
 				<div
-					className="student-exam-matching-pool"
+					className={`student-exam-matching-pool${isPoolOver ? ' is-over' : ''}`}
 					ref={setPoolNodeRef}
-					style={{
-						border: `1px solid ${isPoolOver ? 'var(--student-exam-accent, #5b72ff)' : 'rgba(255,255,255,0.14)'}`,
-					}}
 				>
 					<div className="student-exam-matching-pool-title">Răspunsuri disponibile</div>
 					<div className="student-exam-matching-pool-list">
+						{poolItems.length === 0 ? (
+							<span className="student-exam-matching-pool-empty">Toate răspunsurile sunt plasate.</span>
+						) : null}
 						{poolItems.map((item) => (
 							<MatchingChip
 								key={item.id}

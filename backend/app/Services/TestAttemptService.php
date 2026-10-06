@@ -11,7 +11,7 @@ use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaCache;
 use Illuminate\Support\Str;
 
 class TestAttemptService
@@ -29,17 +29,34 @@ class TestAttemptService
             );
     }
 
-    public function completedAttemptsQuery(int $userId, int $testId, ?int $courseId)
+    public function finishedAttempts(int $userId, int $testId)
     {
         return TestResult::query()
             ->where('user_id', $userId)
             ->where('test_id', $testId)
             ->where('status', '!=', 'in_progress')
-            ->when($courseId, function ($query) use ($courseId) {
-                $query->where(function ($scope) use ($courseId) {
-                    $scope->where('course_id', $courseId)->orWhereNull('course_id');
-                });
-            });
+            ->orderByDesc('attempt_number')
+            ->orderByDesc('id');
+    }
+
+    public function finishedAttemptCount(int $userId, int $testId): int
+    {
+        return $this->finishedAttempts($userId, $testId)->count();
+    }
+
+    public function closeExpiredOpenAttempts(int $userId, int $testId): void
+    {
+        $openAttempts = TestResult::query()
+            ->where('user_id', $userId)
+            ->where('test_id', $testId)
+            ->where('status', 'in_progress')
+            ->get();
+
+        foreach ($openAttempts as $attempt) {
+            if ($this->attemptHasExpired($attempt)) {
+                $this->closeExpiredAttempt($attempt);
+            }
+        }
     }
 
     public function snapshotQuestions(Collection $questions): array
@@ -72,7 +89,7 @@ class TestAttemptService
         })->filter(fn ($q) => (int) $q->id > 0)->values();
     }
 
-    public function ensureOpenAttempt(Test $test, User $user, ?int $courseId, Collection $questions, int $attemptNumber, int $passingScore): TestResult
+    public function ensureOpenAttempt(Test $test, User $user, ?int $courseId, Collection $questions, int $attemptNumber, int $passingScore): ?TestResult
     {
         try {
             return DB::transaction(function () use ($test, $user, $courseId, $questions, $attemptNumber, $passingScore) {
@@ -80,7 +97,30 @@ class TestAttemptService
                     ->lockForUpdate()
                     ->first();
                 if ($existing) {
-                    return $existing;
+                    if ($this->attemptHasExpired($existing)) {
+                        $this->closeExpiredAttempt($existing);
+                    } else {
+                        return $existing;
+                    }
+                }
+
+                $allowed = $this->allowedAttemptCount($test, (int) $user->id);
+                if ($allowed !== null) {
+                    $rows = TestResult::query()
+                        ->where('user_id', $user->id)
+                        ->where('test_id', $test->id)
+                        ->lockForUpdate()
+                        ->get();
+                    foreach ($rows as $row) {
+                        if ($row->status === 'in_progress' && $this->attemptHasExpired($row)) {
+                            $this->closeExpiredAttempt($row);
+                        }
+                    }
+                    $finished = $rows->where('status', '!=', 'in_progress')->count();
+                    $open = $rows->first(fn ($row) => $row->status === 'in_progress');
+                    if ($finished + ($open ? 1 : 0) >= $allowed) {
+                        return $open;
+                    }
                 }
 
                 $startedAt = now();
@@ -123,7 +163,7 @@ class TestAttemptService
 
     public function extraAttemptsFor(int $userId, int $testId): int
     {
-        if (! Schema::hasTable('user_test_attempt_grants')) {
+        if (! SchemaCache::hasTable('user_test_attempt_grants')) {
             return 0;
         }
 

@@ -57,8 +57,28 @@
 	font: inherit;
 }
 
-.library-compose-field--editor .rte-container {
-	min-height: 360px;
+.library-compose-label {
+	font-size: 0.85rem;
+	font-weight: 600;
+	color: var(--text-secondary);
+}
+
+/* Aceeași foaie ca editorul din builder-ul de lecții */
+.library-compose-editor {
+	padding: 0 var(--space-6, 24px) var(--space-6, 24px);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-xl, 16px);
+	background: var(--bg-elevated);
+}
+
+.library-compose-editor .lesson-tiptap {
+	min-height: 460px;
+}
+
+@media (max-width: 768px) {
+	.library-compose-editor {
+		padding: 0 var(--space-3, 12px) var(--space-4, 16px);
+	}
 }
 
 .library-compose-cover-head {

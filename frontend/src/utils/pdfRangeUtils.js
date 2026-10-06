@@ -1,16 +1,12 @@
 import { PDFDocument } from 'pdf-lib';
-import { getDocument } from 'pdfjs-dist';
-import { configurePdfWorker } from './pdfWorker';
-
-configurePdfWorker();
 
 export async function getPdfPageCount(file) {
 	if (!file || file.type !== 'application/pdf') {
 		throw new Error('Fișierul trebuie să fie PDF.');
 	}
 	const arrayBuffer = await file.arrayBuffer();
-	const pdf = await getDocument({ data: arrayBuffer }).promise;
-	return Number(pdf?.numPages || 0);
+	const pdf = await PDFDocument.load(arrayBuffer);
+	return Number(pdf.getPageCount() || 0);
 }
 
 export async function slicePdfFileByRange(file, startPage, endPage) {

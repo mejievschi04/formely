@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use App\Jobs\RecalculateCourseProgressJob;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Concerns\InvalidatesTutorKnowledgeCache;
-use App\Jobs\SyncAiKnowledgeJob;
 
 class Lesson extends Model
 {
@@ -90,23 +90,17 @@ class Lesson extends Model
     {
         parent::boot();
 
-        // Recalculate progress when lesson is updated
+        // Progresul cursanților se recalculează în coadă (vezi RecalculateCourseProgressJob)
         static::saved(function ($lesson) {
             self::clearTutorKnowledgeCache((int) ($lesson->course_id ?? 0));
-            SyncAiKnowledgeJob::dispatch((int) $lesson->id, null, 'sync')->onConnection('background');
-            if ($lesson->module && $lesson->module->course) {
-                app(\App\Services\CourseProgressService::class)
-                    ->recalculateCourseProgress($lesson->module->course);
-            }
+            self::queueKnowledgeSync((int) $lesson->id, null, 'sync');
+            RecalculateCourseProgressJob::queueFor((int) ($lesson->course_id ?: $lesson->module?->course_id));
         });
 
         static::deleted(function ($lesson) {
             self::clearTutorKnowledgeCache((int) ($lesson->course_id ?? 0));
-            SyncAiKnowledgeJob::dispatch((int) $lesson->id, null, 'delete')->onConnection('background');
-            if ($lesson->module && $lesson->module->course) {
-                app(\App\Services\CourseProgressService::class)
-                    ->recalculateCourseProgress($lesson->module->course);
-            }
+            self::queueKnowledgeSync((int) $lesson->id, null, 'delete');
+            RecalculateCourseProgressJob::queueFor((int) ($lesson->course_id ?: $lesson->module?->course_id));
         });
     }
 }

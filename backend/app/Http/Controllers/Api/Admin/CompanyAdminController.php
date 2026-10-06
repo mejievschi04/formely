@@ -6,11 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\Lead;
 use App\Models\User;
-use App\Models\UserInvitation;
+use App\Models\RegistrationInvitation;
+use App\Models\Scopes\CompanyScope;
 use App\Models\ActivityLog;
 use App\Services\CompanyDeletionService;
 use App\Services\PlanEntitlementService;
-use App\Services\UserInvitationService;
+use App\Services\RegistrationInvitationService;
 use App\Support\PlatformActivityLogger;
 use App\Support\UserRoles;
 use Illuminate\Http\Request;
@@ -22,7 +23,7 @@ class CompanyAdminController extends Controller
 {
     public function __construct(
         private PlanEntitlementService $entitlements,
-        private UserInvitationService $invitations,
+        private RegistrationInvitationService $invitations,
         private CompanyDeletionService $companyDeletion,
     ) {}
 
@@ -193,7 +194,7 @@ class CompanyAdminController extends Controller
             abort(422, 'Acest email are deja un cont în academie.');
         }
 
-        $pendingInvite = UserInvitation::withoutGlobalScopes()
+        $pendingInvite = RegistrationInvitation::withoutGlobalScope(CompanyScope::class)
             ->where('company_id', $company->id)
             ->where('email', $email)
             ->whereNull('accepted_at')
@@ -203,30 +204,16 @@ class CompanyAdminController extends Controller
             abort(422, 'Ai atins limita de conturi staff pentru planul curent.');
         }
 
-        // Temporarily set tenant so invitation gets company_id
-        $previousCompanyId = \App\Support\TenantContext::companyId();
-        \App\Support\TenantContext::setCompanyId($company->id);
-
-        try {
-            return $this->invitations->createAndSend(
-                $email,
-                $inviter,
-                $name,
-                UserRoles::COMPANY_OWNER,
-                null,
-                $request
-            );
-        } finally {
-            if ($previousCompanyId) {
-                \App\Support\TenantContext::setCompanyId($previousCompanyId);
-            } else {
-                \App\Support\TenantContext::clear();
-                // Restore platform bypass for super admin without company
-                if ($inviter && $inviter->isPlatformAdmin()) {
-                    \App\Support\TenantContext::setFromUser($inviter);
-                }
-            }
-        }
+        return $this->invitations->createAndSend(
+            $email,
+            $inviter,
+            $name,
+            UserRoles::ADMIN,
+            null,
+            (int) config('formely.invitation_expire_days', 7),
+            null,
+            (int) $company->id
+        );
     }
 
     public function sendOwnerInvite(Request $request, int $id)
@@ -562,9 +549,9 @@ class CompanyAdminController extends Controller
         if ($detailed) {
             $payload['notes'] = $company->notes;
             $payload['users_count'] = User::withoutGlobalScopes()->where('company_id', $company->id)->count();
-            $payload['pending_owner_invites'] = UserInvitation::withoutGlobalScopes()
+            $payload['pending_owner_invites'] = RegistrationInvitation::withoutGlobalScope(CompanyScope::class)
                 ->where('company_id', $company->id)
-                ->where('role', UserRoles::COMPANY_OWNER)
+                ->where('role', UserRoles::ADMIN)
                 ->whereNull('accepted_at')
                 ->count();
         }

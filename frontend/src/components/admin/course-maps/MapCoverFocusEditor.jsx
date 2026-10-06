@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { coverFocusImgStyle, normalizeCoverFocus } from '../../../utils/coverFocus';
 import './MapCoverFocusEditor.css';
 
-const MapCoverFocusEditor = ({ src, value, onChange, disabled = false, compact = false }) => {
+const MapCoverFocusEditor = ({ src, value, onChange, disabled = false }) => {
 	const stageRef = useRef(null);
 	const dragRef = useRef(null);
 	const focus = normalizeCoverFocus(value);
@@ -12,7 +12,7 @@ const MapCoverFocusEditor = ({ src, value, onChange, disabled = false, compact =
 	};
 
 	const onPointerDown = (event) => {
-		if (disabled || (event.button != null && event.button !== 0)) return;
+		if (disabled || event.button != null && event.button !== 0) return;
 		event.preventDefault();
 		const stage = stageRef.current;
 		if (!stage) return;
@@ -47,7 +47,7 @@ const MapCoverFocusEditor = ({ src, value, onChange, disabled = false, compact =
 	};
 
 	return (
-		<div className={`map-cover-focus-editor${compact ? ' is-compact' : ''}`}>
+		<div className="map-cover-focus-editor">
 			<div
 				ref={stageRef}
 				className={`map-cover-focus-editor__stage${disabled ? ' is-disabled' : ''}`}
@@ -58,9 +58,7 @@ const MapCoverFocusEditor = ({ src, value, onChange, disabled = false, compact =
 				role="presentation"
 			>
 				<img src={src} alt="" draggable={false} style={coverFocusImgStyle(focus)} />
-				{compact ? null : (
-					<span className="map-cover-focus-editor__hint">Trage ca să alegi zona vizibilă</span>
-				)}
+				<span className="map-cover-focus-editor__hint">Trage ca să alegi zona vizibilă</span>
 			</div>
 			<label className="map-cover-focus-editor__zoom">
 				<span>Mărime</span>

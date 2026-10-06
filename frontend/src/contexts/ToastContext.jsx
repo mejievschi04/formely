@@ -1,16 +1,11 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { ToastContext } from './ToastContextShared.js';
+import React, {   useState, useCallback, useEffect } from 'react';
 import Toast from '../components/common/Toast';
 import { setApiErrorNotifier } from '../api';
 
-const ToastContext = createContext(null);
 
-export const useToast = () => {
-	const context = useContext(ToastContext);
-	if (!context) {
-		throw new Error('useToast must be used within ToastProvider');
-	}
-	return context;
-};
+
+
 
 export const ToastProvider = ({ children }) => {
 	const [toasts, setToasts] = useState([]);

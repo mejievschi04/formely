@@ -1,0 +1,179 @@
+/* Ghiduri — extinde stilurile bibliotecii pentru carduri link */
+
+.guides-page .library-upload-trigger {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.guides-cover-icon {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--lib-cover-accent, #fde68a);
+	opacity: 0.85;
+	z-index: 1;
+	pointer-events: none;
+}
+
+.guides-cover.library-book-cover--photo .guides-cover-icon {
+	display: none;
+}
+
+.guides-link-host {
+	margin: 0 0 0.75rem;
+	font-size: var(--font-size-xs);
+	color: var(--text-tertiary);
+	word-break: break-all;
+}
+
+.guides-modal textarea {
+	width: 100%;
+	min-height: 5rem;
+	padding: 0.65rem 0.75rem;
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-md);
+	background: var(--bg-elevated);
+	color: var(--text-primary);
+	font: inherit;
+	resize: vertical;
+}
+
+.guides-modal .library-form-row input[type="text"],
+.guides-modal .library-form-row input[type="url"],
+.guides-modal .library-form-row textarea {
+	width: 100%;
+	box-sizing: border-box;
+	min-height: 44px;
+	padding: 10px 14px;
+	border: 1px solid var(--border-primary);
+	border-radius: 12px;
+	background: var(--bg-elevated);
+	color: var(--text-primary);
+	font: inherit;
+	font-size: var(--font-size-sm, 0.875rem);
+	transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.guides-modal .library-form-row textarea {
+	min-height: 96px;
+	resize: vertical;
+}
+
+.guides-modal .library-form-row input::placeholder,
+.guides-modal .library-form-row textarea::placeholder {
+	color: #9ca3af;
+}
+
+.guides-modal .library-form-row input:focus,
+.guides-modal .library-form-row textarea:focus {
+	outline: none;
+	border-color: var(--color-brand-primary);
+	box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.25);
+}
+
+.guides-cover-picker {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding: 12px;
+	border: 1px dashed #9ca3af;
+	border-radius: 12px;
+	background: #f8fafc;
+}
+
+.guides-cover-picker.has-image {
+	border-style: solid;
+	border-color: var(--border-primary);
+}
+
+.guides-cover-picker-thumb {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 64px;
+	height: 64px;
+	border-radius: 10px;
+	overflow: hidden;
+	background: var(--color-brand-primary);
+	color: var(--btn-primary-text);
+}
+
+.guides-cover-picker-thumb img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.guides-cover-picker-copy {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+	flex: 1;
+}
+
+.guides-cover-picker-copy strong {
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: var(--text-primary);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+html body .guides-cover-picker-copy span {
+	font-size: 0.75rem;
+	color: #6b7280 !important;
+}
+
+.guides-cover-picker-actions {
+	display: flex;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
+.guides-modal .library-upload-modal-actions .library-btn,
+.guides-cover-picker-actions .library-btn {
+	min-height: 40px;
+	border-radius: 12px;
+}
+
+html body .guides-cover-picker-actions .library-btn--secondary.library-btn--secondary,
+html body .guides-modal .library-upload-modal-actions .library-btn--secondary.library-btn--secondary {
+	background: var(--bg-elevated) !important;
+	color: var(--text-primary) !important;
+	border: 1px solid var(--border-secondary) !important;
+}
+
+html body .guides-cover-picker-actions .library-btn--danger.library-btn--danger {
+	background: var(--color-error) !important;
+	color: var(--color-white) !important;
+	border: 1px solid var(--border-secondary) !important;
+}
+
+@media (max-width: 560px) {
+	.guides-cover-picker {
+		flex-wrap: wrap;
+	}
+
+	.guides-cover-picker-actions {
+		width: 100%;
+	}
+
+	.guides-cover-picker-actions .library-btn {
+		flex: 1;
+	}
+}
+
+[data-theme="dark"] .guides-cover-picker {
+	background: var(--bg-elevated);
+	border-color: #6b7280;
+}
+
+[data-theme="dark"] .guides-cover-picker-copy strong {
+	color: #f8fafc;
+}

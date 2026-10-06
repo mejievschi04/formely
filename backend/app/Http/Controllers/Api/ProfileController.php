@@ -8,7 +8,6 @@ use App\Services\UserAssignedCoursesService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -19,8 +18,8 @@ class ProfileController extends Controller
     {
         try {
             $user = Auth::user();
-
-            if (! $user) {
+            
+            if (!$user) {
                 return response()->json(['error' => 'Neautentificat'], 401);
             }
 
@@ -62,10 +61,9 @@ class ProfileController extends Controller
                 'trace' => $e->getTraceAsString(),
                 'user_id' => Auth::id(),
             ]);
-
             return response()->json([
                 'error' => 'Eroare la încărcarea profilului',
-                'message' => $e->getMessage(),
+                'message' => (config('app.debug') ? $e->getMessage() : null)
             ], 500);
         }
     }
@@ -168,18 +166,19 @@ class ProfileController extends Controller
 
         $file = $request->file('avatar');
         $ext = $file->getClientOriginalExtension() ?: 'jpg';
-        $path = $file->storeAs('avatars', $user->id . '_' . time() . '.' . $ext, 'public');
+        $path = $file->storeAs('avatars', $user->id . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext, 'public');
+        $oldAvatar = $user->avatar;
 
-        if ($user->avatar) {
+        $user->avatar = $path;
+        $user->save();
+
+        if ($oldAvatar && $oldAvatar !== $path) {
             try {
-                Storage::disk('public')->delete($user->avatar);
+                Storage::disk('public')->delete($oldAvatar);
             } catch (\Exception $e) {
                 Log::warning('Could not delete old avatar: ' . $e->getMessage());
             }
         }
-
-        $user->avatar = $path;
-        $user->save();
 
         Cache::forget("profile_user_{$user->id}");
 
@@ -227,4 +226,3 @@ class ProfileController extends Controller
         ]);
     }
 }
-

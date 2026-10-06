@@ -8,18 +8,14 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Instructor: doar creare/editare conținut LMS (cursuri, builder, module, lecții,
- * examene, teste, întrebări, bănci, media, conținut AI).
+ * examene, teste, întrebări, bănci, media, conținut Volt).
  * Fără utilizatori, echipe, setări, statistici, mape cursuri, export etc. Evenimentele: acces cu domeniu instructor în controller.
  */
 class InstructorContentScopeMiddleware
 {
     private const BLOCKED_PREFIXES = [
         'api/admin/users',
-        'api/admin/users/invitations',
-        'api/admin/team-members',
         'api/admin/teams',
-        'api/admin/departments',
-        'api/admin/organization',
         'api/admin/settings',
         'api/admin/activity-logs',
         'api/admin/statistics',
@@ -33,7 +29,7 @@ class InstructorContentScopeMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         $user = auth()->user();
-        if (! $user || (! $user->isInstructor() && ! $user->isHrAdmin())) {
+        if (! $user || ! $user->isInstructor()) {
             return $next($request);
         }
 

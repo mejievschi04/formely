@@ -1,1 +1,85 @@
+# Root level .gitignore for Formely
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+logs/
+debug.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.backup
+.env.production
+deploy.env
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build outputs
+dist/
+build/
+*.local
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Temporary files
+*.tmp
+*.temp
+.tmp-*.php
+*.cache
+.cache/
+
+# Docker
+# .dockerignore (keep this file, it's needed)
+
+# Deployment scripts (optional - uncomment if you don't want to track these)
+# deploy.sh
+# deploy.ps1
+
+# Documentation build (if any)
+docs/_build/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Misc
+*.bak
+*.swp
+*~
+.replacements.txt
+
+# Formely
 .venv-img/

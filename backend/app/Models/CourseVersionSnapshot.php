@@ -16,9 +16,5 @@ class CourseVersionSnapshot extends Model
         'snapshot_json' => 'array',
     ];
 
-    public function courseVersion(): BelongsTo
-    {
-        return $this->belongsTo(CourseVersion::class);
-    }
 }
 

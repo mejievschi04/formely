@@ -76,31 +76,6 @@ class CourseAndQuestionBankTest extends TestCase
             ->assertJsonPath('exams.0.title', 'Quiz introductiv');
     }
 
-    public function test_course_show_does_not_include_legacy_exam_in_course_structure(): void
-    {
-        $student = User::factory()->create(['role' => 'student']);
-
-        $course = Course::withoutEvents(fn () => Course::factory()->create([
-            'status' => 'published',
-        ]));
-
-        Exam::withoutEvents(fn () => Exam::create([
-            'course_id' => $course->id,
-            'title' => 'Examen final legacy',
-            'status' => 'published',
-            'passing_score' => 70,
-            'is_required' => true,
-            'created_by' => User::factory()->create(['role' => 'admin'])->id,
-        ]));
-
-        $response = $this->actingAs($student, 'sanctum')
-            ->getJson("/api/courses/{$course->id}")
-            ->assertOk();
-
-        $titles = collect($response->json('exams') ?? [])->pluck('title')->all();
-        $this->assertNotContains('Examen final legacy', $titles);
-    }
-
     public function test_admin_can_create_question_bank_and_add_questions(): void
     {
         $admin = User::factory()->create([
@@ -113,7 +88,6 @@ class CourseAndQuestionBankTest extends TestCase
             'title' => 'Bancă PHP',
             'description' => 'Întrebări despre PHP',
             'status' => 'draft',
-            'tags' => ['PHP', 'Backend'],
         ]);
 
         $createResponse->assertCreated()

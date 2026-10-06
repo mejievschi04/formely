@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo, Fragment } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, Fragment, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
 	ArrowLeft,
@@ -12,30 +12,36 @@ import {
 	X,
 } from '@phosphor-icons/react';
 import { coursesService, courseProgressService, lessonsService } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../contexts/ToastContext';
+
+import { useAuth } from '../contexts/AuthContextShared.js';
+
+import { useToast } from '../contexts/ToastContextShared.js';
 import LessonBlocksPreview from '../components/admin/content-blocks/LessonBlocksPreview';
 import CourseCongratulationsModal from '../components/student/CourseCongratulationsModal';
-import { getNextLessonIdAfter, getPreviousLessonIdBefore, getRootLessons } from '../utils/lessonOrder';
-import {
-	advanceAfterLessonComplete,
-	courseResumeLessonId,
-	getPendingEndOfCourseTestId,
-	normalizeCourseProgressPayload,
-} from '../utils/courseFlowNavigation';
+import { getLessonPosition, getNextLessonIdAfter, getPreviousLessonIdBefore, getRootLessons } from '../utils/lessonOrder';
 import { normalizeRichTextMediaHtml } from '../utils/richTextContent';
 import { useLessonTimeTracking } from '../hooks/useLessonTimeTracking';
+import { useLessonReachedEnd } from '../hooks/useLessonReachedEnd';
+import LessonReadTrackers from '../components/student/LessonReadTrackers';
+import LessonPullRefresh from '../components/student/LessonPullRefresh';
 import { filterPublishedCourseTests, isPublishedTestStatus } from '../utils/testVisibility';
-import { isLessonMarkedComplete } from '../utils/lessonProgress';
+import { isLessonMarkedComplete, preserveCompletedLessons } from '../utils/lessonProgress';
 import { scrollAppToTop } from '../utils/scrollToTop';
 import { normalizeLessonFromApi, lessonLegacyHtml } from '../utils/lessonContent';
-import { buildCourseModuleList } from '../utils/courseModuleDisplay';
 import './LessonsPage.css';
-
-const LESSON_MILESTONES = [25, 50, 75, 100];
+import '../components/admin/lessons/callout/LessonCallout.css';
+import { logger } from '../utils/logger';
+import { courseProgressLabel } from '../utils/courseProgressLabel.js';
 
 const renderTestStatusIcon = (passed) => (
 	passed ? <Check size={14} weight="bold" aria-hidden /> : <NotePencil size={14} weight="duotone" aria-hidden />
+);
+
+const renderLessonIndexIcon = (index, completed) => (
+	<div className={`lessons-page-sidebar-lesson-icon${completed ? ' has-check' : ''}`}>
+		<span>{index + 1}</span>
+		{completed ? <Check className="lessons-page-sidebar-lesson-check" size={11} weight="bold" aria-hidden /> : null}
+	</div>
 );
 
 const LessonsPage = () => {
@@ -43,15 +49,19 @@ const LessonsPage = () => {
 	const [searchParams] = useSearchParams();
 	const navigate = useNavigate();
 	const { user } = useAuth();
+	const isPlayerStaff = ['admin', 'instructor', 'analyst'].includes(user?.actualRole || user?.role || '');
+	// La previzualizare, staff-ul vede și testele ciornă atașate (marcate „Ciornă”), ca să le poată deschide.
+	const courseFetchParams = isPlayerStaff ? { include_draft_tests: 1 } : {};
+	const isTestVisibleInPlayer = (status) => isPlayerStaff || isPublishedTestStatus(status);
+	const testDraftSuffix = (status) => (isPublishedTestStatus(status) ? '' : ' · Ciornă');
 	const { showToast } = useToast();
 	const contentRef = useRef(null);
-	const sentMilestonesRef = useRef(new Set());
-	
+	const completedLessonIdsRef = useRef(new Set());
+
 	const [course, setCourse] = useState(null);
-	const [modules, setModules] = useState([]);
-	const courseModules = useMemo(
+	const modules = useMemo(
 		() => [...(course?.modules || [])].sort((a, b) => (a.order || 0) - (b.order || 0)),
-		[course?.modules],
+		[course?.modules]
 	);
 	const rootLessons = useMemo(() => getRootLessons(course), [course]);
 	const [progress, setProgress] = useState(null);
@@ -65,30 +75,10 @@ const LessonsPage = () => {
 	const [sidebarOpen, setSidebarOpen] = useState(false);
 	const [showCourseCongrats, setShowCourseCongrats] = useState(false);
 	const [finalizingCourse, setFinalizingCourse] = useState(false);
-	const [reachedMilestones, setReachedMilestones] = useState(() => new Set());
 
 	// Get lessonId from URL or auto-select first lesson
 	const lessonIdFromUrl = searchParams.get('lesson');
 	const [selectedLessonId, setSelectedLessonId] = useState(lessonIdFromUrl);
-
-	useEffect(() => {
-		document.body.classList.add('student-lesson-player');
-		return () => document.body.classList.remove('student-lesson-player');
-	}, []);
-
-	useEffect(() => {
-		const title = course?.title ? String(course.title) : '';
-		window.dispatchEvent(new CustomEvent('formely-lesson-course-title', { detail: title }));
-		return () => {
-			window.dispatchEvent(new CustomEvent('formely-lesson-course-title', { detail: '' }));
-		};
-	}, [course?.title]);
-
-	useEffect(() => {
-		const openLessonsMenu = () => setSidebarOpen(true);
-		window.addEventListener('formely-open-lessons-sidebar', openLessonsMenu);
-		return () => window.removeEventListener('formely-open-lessons-sidebar', openLessonsMenu);
-	}, []);
 
 	useEffect(() => {
 		if (courseId) {
@@ -97,32 +87,30 @@ const LessonsPage = () => {
 	}, [courseId]);
 
 	useEffect(() => {
-		if (lessonIdFromUrl && String(lessonIdFromUrl) !== String(selectedLessonId ?? '')) {
-			setSelectedLessonId(lessonIdFromUrl);
-		}
-	}, [lessonIdFromUrl, selectedLessonId]);
-
-	useEffect(() => {
-		setReachedMilestones(new Set());
-		sentMilestonesRef.current = new Set();
+		setIsCompleted(false);
 	}, [selectedLessonId]);
 
-	// Reia progresul (next_lesson) sau prima lecție — nu reseta la prima după test
+	// Auto-open first lesson when course loads (no lesson in URL)
 	useEffect(() => {
-		if (!loading && (courseModules.length > 0 || rootLessons.length > 0) && !selectedLessonId && !lessonIdFromUrl) {
-			const resumeId = courseResumeLessonId(progress, courseModules, rootLessons);
-			if (resumeId) {
-				setSelectedLessonId(String(resumeId));
-				loadLesson(resumeId);
-				const moduleContainingLesson = modules.find((m) =>
-					m.lessons?.some((l) => Number(l.id) === Number(resumeId))
-				);
-				if (moduleContainingLesson) {
-					setExpandedModules(new Set([moduleContainingLesson.id]));
+		if (!loading && !selectedLessonId) {
+			const firstRootLesson = rootLessons[0];
+			if (firstRootLesson) {
+				setSelectedLessonId(firstRootLesson.id);
+				loadLesson(firstRootLesson.id);
+				return;
+			}
+			const firstModule = modules[0];
+			if (firstModule?.lessons?.length > 0) {
+				const sortedLessons = [...firstModule.lessons].sort((a, b) => (a.order || 0) - (b.order || 0));
+				const firstLesson = sortedLessons[0];
+				if (firstLesson) {
+					setSelectedLessonId(firstLesson.id);
+					loadLesson(firstLesson.id);
+					setExpandedModules(new Set([firstModule.id]));
 				}
 			}
 		}
-	}, [loading, courseModules, rootLessons, modules, selectedLessonId, lessonIdFromUrl, progress?.next_lesson?.id]);
+	}, [loading, modules, rootLessons, selectedLessonId]);
 
 	// Expand module containing lesson when loading from URL (?lesson=1)
 	useEffect(() => {
@@ -171,23 +159,28 @@ const LessonsPage = () => {
 		enabled: lessonReadyForTracking && !['admin', 'analyst'].includes(user?.actualRole || user?.role || ''),
 	});
 
+	const reachedEnd = useLessonReachedEnd({
+		contentRef,
+		lessonId: selectedLessonId,
+		enabled: lessonReadyForTracking,
+	});
+	const canAdvanceLesson = reachedEnd;
+
 	const fetchCourseData = async () => {
 		try {
 			setLoading(true);
 			setError(null);
 			
-			const courseData = await coursesService.getById(courseId);
+			const courseData = await coursesService.getById(courseId, courseFetchParams);
 			setCourse(courseData);
-			
-			setModules(buildCourseModuleList(courseData, { withCourseTestFields: true }));
 			
 			// Fetch progress if user is enrolled
 			if (user?.id) {
 				try {
 					const progressData = await courseProgressService.getCourseProgress(courseId);
-					setProgress(progressData);
-				} catch (err) {
-					console.log('No progress data available');
+					setProgress((prev) => withRememberedCompletions(preserveCompletedLessons(prev, progressData)));
+				} catch  {
+					logger.log('No progress data available');
 				}
 			}
 		} catch (err) {
@@ -211,16 +204,37 @@ const LessonsPage = () => {
 			window.history.replaceState({}, '', `/courses/${courseId}?lesson=${lessonId}`);
 		} catch (err) {
 			console.error('Error loading lesson:', err);
-			showToast('Eroare la încărcarea lecției', 'error');
+			const locked = err?.response?.status === 403 && err?.response?.data?.locked;
+			showToast(locked ? (err.response.data.message || 'Lecția este blocată.') : 'Eroare la încărcarea lecției', 'error');
 		} finally {
 			setCurrentLessonLoading(false);
 		}
 	};
 
-	const handleLessonClick = (lessonId) => {
-		setSelectedLessonId(lessonId);
-		setSidebarOpen(false); // Close sidebar on mobile when selecting lesson
-		scrollAppToTop({ behavior: 'instant' });
+	const refreshOpenLesson = async () => {
+		try {
+			const courseData = await coursesService.getById(courseId, courseFetchParams);
+			setCourse(courseData);
+			let progressData = progress;
+			if (user?.id) {
+				try {
+					progressData = await courseProgressService.getCourseProgress(courseId);
+					setProgress((prev) => {
+						progressData = withRememberedCompletions(preserveCompletedLessons(prev, progressData));
+						return progressData;
+					});
+				} catch {
+					// Progresul vechi rămâne pe ecran dacă reîncărcarea lui eșuează.
+				}
+			}
+			if (selectedLessonId) {
+				const lessonData = normalizeLessonFromApi(await lessonsService.getById(selectedLessonId));
+				setCurrentLesson(lessonData);
+				setIsCompleted(user?.id ? isLessonMarkedComplete(progressData, selectedLessonId) : false);
+			}
+		} catch {
+			showToast('Nu s-a putut actualiza lecția', 'error');
+		}
 	};
 
 	const toggleModule = (moduleId) => {
@@ -237,55 +251,145 @@ const LessonsPage = () => {
 		if (!user?.id || !courseId) return null;
 		try {
 			const progressData = await courseProgressService.getCourseProgress(courseId);
-			setProgress(progressData);
-			return progressData;
+			let merged = progressData;
+			setProgress((prev) => {
+				merged = withRememberedCompletions(preserveCompletedLessons(prev, progressData));
+				return merged;
+			});
+			return merged;
 		} catch {
 			return null;
 		}
 	}, [courseId, user?.id]);
 
-	const completeCurrentLesson = useCallback(async () => {
-		if (!selectedLessonId || !user?.id) return null;
-		if (isCompleted) return { progress };
+	const completeCurrentLesson = useCallback(async ({ force = false } = {}) => {
+		if (!selectedLessonId || !user?.id) return true;
+		if (isCompleted && !force) return true;
+		rememberCompletedLesson(selectedLessonId);
 		try {
 			setIsCompleting(true);
 			const result = await courseProgressService.completeLesson(selectedLessonId);
 			setIsCompleted(true);
+			const stampComplete = (source) => {
+				if (!source) return source;
+				const id = Number(selectedLessonId);
+				const patchRow = (row) => (
+					Number(row?.id) === id || Number(row?.lesson_id) === id
+						? { ...row, completed: true, progress_percentage: 100 }
+						: row
+				);
+				return {
+					...source,
+					lessons: (source.lessons || []).map(patchRow),
+					root_lessons: (source.root_lessons || []).map(patchRow),
+					modules: (source.modules || []).map((mod) => ({
+						...mod,
+						lessons: (mod.lessons || []).map(patchRow),
+					})),
+				};
+			};
 			if (result?.progress) {
-				setProgress(result.progress);
+				setProgress((prev) => {
+					const next = stampComplete(result.progress);
+					const nextHasLessons = Boolean(next?.modules?.length || next?.root_lessons?.length);
+					const prevHasLessons = Boolean(prev?.modules?.length || prev?.root_lessons?.length);
+					if (!nextHasLessons && prevHasLessons) {
+						return withRememberedCompletions(stampComplete({
+							...prev,
+							...next,
+							modules: prev.modules,
+							root_lessons: prev.root_lessons,
+							course_level_tests: next.course_level_tests || prev.course_level_tests,
+						}));
+					}
+					return withRememberedCompletions(next);
+				});
 			} else {
+				setProgress((prev) => withRememberedCompletions(stampComplete(prev)));
 				await refreshCourseProgress();
 			}
-			return result;
+			return true;
 		} catch (err) {
+			completedLessonIdsRef.current.delete(Number(selectedLessonId));
 			const msg = err?.response?.data?.message || err?.message || 'Nu s-a putut marca lecția ca finalizată.';
 			showToast(msg, 'error');
-			return null;
+			return false;
 		} finally {
 			setIsCompleting(false);
 		}
-	}, [selectedLessonId, isCompleted, user?.id, progress, refreshCourseProgress, showToast]);
+	}, [selectedLessonId, isCompleted, user?.id, refreshCourseProgress, showToast]);
 
-	const isLessonCompleted = (lessonId) => isLessonMarkedComplete(progress, lessonId);
-
-	const getModuleProgress = (module) => {
-		if (!progress || !module.lessons) return { completed: 0, total: 0, percentage: 0 };
-		
-		const total = module.lessons.length;
-		const completed = module.lessons.filter(lesson => isLessonCompleted(lesson.id)).length;
-		const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-		
-		return { completed, total, percentage };
+	const rememberCompletedLesson = (lessonId) => {
+		const id = Number(lessonId);
+		if (Number.isFinite(id)) completedLessonIdsRef.current.add(id);
 	};
 
-	const getModuleCourseTests = (m) =>
-		filterPublishedCourseTests(m?.course_tests || m?.courseTests || []);
-	const getCourseLevelTests = () =>
-		filterPublishedCourseTests(course?.course_tests || course?.courseTests || []);
-	const getLessonCourseTests = (l) => filterPublishedCourseTests(l?.course_tests || l?.courseTests || []);
+	const withRememberedCompletions = (source) => {
+		const ids = completedLessonIdsRef.current;
+		if (!source || ids.size === 0) return source;
+		const patch = (row, id) => (
+			ids.has(Number(id))
+				? { ...row, completed: true, progress_percentage: Math.max(100, Number(row?.progress_percentage) || 0) }
+				: row
+		);
+		return {
+			...source,
+			lessons: (source.lessons || []).map((row) => patch(row, row.lesson_id ?? row.id)),
+			root_lessons: (source.root_lessons || []).map((row) => patch(row, row.id)),
+			modules: (source.modules || []).map((mod) => ({
+				...mod,
+				lessons: (mod.lessons || []).map((row) => patch(row, row.id)),
+			})),
+		};
+	};
+
+	const isLessonCompleted = (lessonId) => (
+		completedLessonIdsRef.current.has(Number(lessonId)) || isLessonMarkedComplete(progress, lessonId)
+	);
+
+	const isLessonUnlockedForPlayer = (lessonId, lesson = null) => {
+		if (isPlayerStaff) return true;
+		if (lesson?.is_preview) return true;
+		if (!progress) return true;
+		const fromRoot = progress.root_lessons?.find((x) => Number(x.id) === Number(lessonId));
+		if (fromRoot) return Boolean(fromRoot.unlocked);
+		for (const mod of progress.modules || []) {
+			const found = mod.lessons?.find((x) => Number(x.id) === Number(lessonId));
+			if (found) return Boolean(found.unlocked);
+		}
+		return true;
+	};
+
+	const handleLessonClick = async (lessonId, lesson = null) => {
+		const nextId = getNextLessonIdAfter(modules, selectedLessonId, rootLessons);
+		const isImmediateNext = nextId != null && Number(nextId) === Number(lessonId);
+		const leavingIncomplete = selectedLessonId
+			&& Number(selectedLessonId) !== Number(lessonId)
+			&& !isLessonCompleted(selectedLessonId);
+		if (isImmediateNext && leavingIncomplete) {
+			const ok = await completeCurrentLesson();
+			if (!ok) return;
+		} else if (!isLessonUnlockedForPlayer(lessonId, lesson)) {
+			showToast('Lecția este blocată. Completează lecțiile anterioare.', 'error');
+			return;
+		}
+		setSelectedLessonId(lessonId);
+		setSidebarOpen(false);
+		scrollAppToTop({ behavior: 'instant' });
+	};
+
+
+
+	const visibleCourseTests = (items) => (isPlayerStaff ? (Array.isArray(items) ? items : []) : filterPublishedCourseTests(items));
+	const getModuleCourseTests = (m) => visibleCourseTests(m?.course_tests || m?.courseTests || m?.exams || []);
+	const getLessonCourseTests = (l) => visibleCourseTests(l?.course_tests || l?.courseTests || []);
 	const getProgressModule = (moduleId) =>
 		progress?.modules?.find((x) => Number(x.id) === Number(moduleId));
 	const getLessonTestProgress = (moduleId, lessonId, testId) => {
+		if (moduleId == null) {
+			const les = progress?.root_lessons?.find((x) => Number(x.id) === Number(lessonId));
+			return les?.tests?.find((t) => Number(t.test_id) === Number(testId));
+		}
 		const mod = getProgressModule(moduleId);
 		const les = mod?.lessons?.find((x) => Number(x.id) === Number(lessonId));
 		return les?.tests?.find((t) => Number(t.test_id) === Number(testId));
@@ -297,160 +401,23 @@ const LessonsPage = () => {
 	const getCourseLevelTestProgress = (testId) =>
 		progress?.course_level_tests?.find((t) => Number(t.test_id) === Number(testId));
 
-	useEffect(() => {
-		const pendingMilestones = LESSON_MILESTONES.filter(
-			(milestone) => reachedMilestones.has(milestone) && !sentMilestonesRef.current.has(milestone)
-		);
-
-		if (!pendingMilestones.length) return;
-
-		pendingMilestones.forEach((milestone) => sentMilestonesRef.current.add(milestone));
-
-		let cancelled = false;
-
-		const syncMilestones = async () => {
-			for (const milestone of pendingMilestones) {
-				try {
-					const response = await courseProgressService.updateLessonProgress(selectedLessonId, {
-						milestone,
-						milestone_reached: milestone,
-						progress_percentage: milestone,
-						completed: milestone >= 100,
-					});
-
-					if (cancelled) return;
-
-					if (response?.completed || response?.auto_completed || milestone >= 100) {
-						setIsCompleted(true);
-						if (user?.id && !cancelled) {
-							await refreshCourseProgress();
-						}
-					}
-				} catch (err) {
-					if (cancelled) return;
-					sentMilestonesRef.current.delete(milestone);
-				}
-			}
-		};
-
-		syncMilestones();
-
-		return () => {
-			cancelled = true;
-		};
-	}, [selectedLessonId, reachedMilestones, courseId, user?.id, refreshCourseProgress]);
-
-	// Scroll milestones — only for the lesson we're actually viewing
-	useEffect(() => {
-		if (!currentLesson || isCompleted || isCompleting) return;
-		// Must match: avoid completing the wrong lesson when switching (selectedLessonId updates before currentLesson)
-		if (currentLesson.id !== selectedLessonId) return;
-
-	
-		const checkCompletion = () => {
-			if (isCompleted || isCompleting) return;
-			if (currentLesson?.id !== selectedLessonId) return;
-
-			const markers = Array.from(contentRef.current?.querySelectorAll('[data-lesson-milestone]') || []);
-			if (!markers.length) return;
-
-			const footerOffset = window.matchMedia('(max-width: 768px)').matches ? 72 : 0;
-			const viewportBottom = window.innerHeight - footerOffset;
-			const seen = [];
-
-			markers.forEach((marker) => {
-				const milestone = Number(marker.dataset.lessonMilestone);
-				if (!Number.isFinite(milestone)) return;
-				const rect = marker.getBoundingClientRect();
-				if (rect.top <= viewportBottom) {
-					seen.push(milestone);
-				}
-			});
-
-			if (seen.length) {
-				setReachedMilestones((prev) => {
-					const next = new Set(prev);
-					seen.forEach((value) => next.add(value));
-					return next.size === prev.size ? prev : next;
-				});
-			}
-		};
-
-		let ticking = false;
-		const throttledScroll = () => {
-			if (!ticking) {
-				window.requestAnimationFrame(() => {
-					checkCompletion();
-					ticking = false;
-				});
-				ticking = true;
-			}
-		};
-
-		const scrollRoot =
-			contentRef.current?.closest('.va-shell-main') ||
-			contentRef.current?.closest('.va-main');
-
-		const onScroll = () => throttledScroll();
-		if (scrollRoot) {
-			scrollRoot.addEventListener('scroll', onScroll, { passive: true });
-		}
-		window.addEventListener('scroll', onScroll, { passive: true });
-		window.addEventListener('resize', onScroll, { passive: true });
-
-		const checkInitial = setTimeout(() => {
-			checkCompletion();
-		}, 500);
-
-		if (contentRef.current) {
-			checkCompletion();
-		}
-
-		return () => {
-			if (scrollRoot) {
-				scrollRoot.removeEventListener('scroll', onScroll);
-			}
-			window.removeEventListener('scroll', onScroll);
-			window.removeEventListener('resize', onScroll);
-			clearTimeout(checkInitial);
-		};
-	}, [currentLesson, selectedLessonId, isCompleted, isCompleting, reachedMilestones]);
-
 	const handleNextLesson = async () => {
-		let progressPayload = null;
-		if (!isCompleted) {
-			progressPayload = await completeCurrentLesson();
-			if (progressPayload === null) return;
+		if (!reachedEnd) return;
+		const ok = await completeCurrentLesson({ force: true });
+		if (!ok) return;
+
+		const nextId = getNextLessonIdAfter(modules, selectedLessonId, rootLessons);
+		if (nextId != null && !Number.isNaN(nextId)) {
+			setSelectedLessonId(nextId);
+			setSidebarOpen(false);
+			scrollAppToTop({ behavior: 'instant' });
+			return;
 		}
-		const payload = progressPayload ?? progress;
-		const nextId = getNextLessonIdAfter(courseModules, selectedLessonId, rootLessons);
-		const examId =
-			payload?.next_exam?.id ||
-			(nextId === null
-				? getPendingEndOfCourseTestId({
-						course,
-						modules: courseModules,
-						rootLessons,
-						progress: payload,
-					})
-				: null);
-		await advanceAfterLessonComplete({
-			courseId,
-			lessonId: selectedLessonId,
-			modules: courseModules,
-			rootLessons,
-			navigate,
-			progressPayload: examId
-				? { ...normalizeCourseProgressPayload(payload), next_exam: { id: examId } }
-				: payload,
-			lessonPageMode: false,
-			onCongrats: () => setShowCourseCongrats(true),
-			onFinalize: handleFinalizeCourse,
-		});
+		navigate(`/courses/${courseId}`);
 	};
 
 	const handlePreviousLesson = () => {
-		const prevId = getPreviousLessonIdBefore(courseModules, selectedLessonId, rootLessons);
+		const prevId = getPreviousLessonIdBefore(modules, selectedLessonId, rootLessons);
 		if (prevId != null && !Number.isNaN(prevId)) {
 			handleLessonClick(prevId);
 		}
@@ -469,17 +436,13 @@ const LessonsPage = () => {
 				if (!ok) return;
 			}
 			const p = await courseProgressService.getCourseProgress(courseId);
-			setProgress(p);
-			const pendingId =
-				p?.next_exam?.id ||
-				getPendingEndOfCourseTestId({
-					course,
-					modules: courseModules,
-					rootLessons,
-					progress: p,
-				});
-			if (pendingId) {
-				navigate(`/courses/${courseId}/exams/${pendingId}`);
+			let merged = p;
+			setProgress((prev) => {
+				merged = withRememberedCompletions(preserveCompletedLessons(prev, p));
+				return merged;
+			});
+			if (p?.next_exam?.id) {
+				navigate(`/courses/${courseId}/exams/${p.next_exam.id}`);
 				return;
 			}
 			if (p?.course_complete) {
@@ -532,7 +495,7 @@ const LessonsPage = () => {
 					<h2>Eroare</h2>
 					<p>{error || 'Cursul nu a fost găsit'}</p>
 					<button
-						className="lessons-page-btn lessons-page-btn-primary"
+						className="lessons-page-btn lms-btn-primary lessons-page-btn-primary"
 						onClick={() => navigate('/courses')}
 					>
 						Înapoi la cursuri
@@ -542,33 +505,18 @@ const LessonsPage = () => {
 		);
 	}
 
-	const totalLessons = rootLessons.length + courseModules.reduce((sum, module) => sum + (module.lessons?.length || 0), 0);
+	const totalLessons = rootLessons.length + modules.reduce((sum, module) => sum + (module.lessons?.length || 0), 0);
 	const hasMultipleLessons = totalLessons > 1;
-	const nextLessonTarget = selectedLessonId ? getNextLessonIdAfter(courseModules, selectedLessonId, rootLessons) : undefined;
-	const previousLessonTarget = selectedLessonId ? getPreviousLessonIdBefore(courseModules, selectedLessonId, rootLessons) : undefined;
-	const progressSnapshot = normalizeCourseProgressPayload(progress);
-	const pendingExamId =
-		progressSnapshot?.next_exam?.id ||
-		(nextLessonTarget === null
-			? getPendingEndOfCourseTestId({
-					course,
-					modules: courseModules,
-					rootLessons,
-					progress: progressSnapshot,
-				})
-			: null);
-	const isLastLessonInCourse = nextLessonTarget === null && !pendingExamId;
+	const nextLessonTarget = selectedLessonId ? getNextLessonIdAfter(modules, selectedLessonId, rootLessons) : undefined;
+	const previousLessonTarget = selectedLessonId ? getPreviousLessonIdBefore(modules, selectedLessonId, rootLessons) : undefined;
+	const isLastLessonInCourse = nextLessonTarget === null;
 	const hasPreviousLesson = previousLessonTarget != null && !Number.isNaN(previousLessonTarget);
-	const hasNextLesson =
-		(typeof nextLessonTarget === 'number' && !Number.isNaN(nextLessonTarget)) || Boolean(pendingExamId);
-	const nextButtonLabel = pendingExamId
-		? 'Continuă la test'
-		: typeof nextLessonTarget === 'number'
-			? 'Lecția următoare'
-			: 'Continuă';
+	const hasNextLesson = typeof nextLessonTarget === 'number' && !Number.isNaN(nextLessonTarget);
+	const lessonPosition = getLessonPosition(modules, selectedLessonId, rootLessons);
 
 	return (
 		<div className={`lessons-page-modern lessons-page-player-layout ${sidebarOpen ? 'lessons-page-sidebar-open' : ''}`}>
+			<LessonPullRefresh onRefresh={refreshOpenLesson} />
 			<CourseCongratulationsModal
 				open={showCourseCongrats}
 				courseTitle={course?.title}
@@ -587,18 +535,18 @@ const LessonsPage = () => {
 				<div className="lessons-page-sidebar-header">
 					<div className="lessons-page-sidebar-header-actions">
 						<button 
-							className="lessons-page-sidebar-back-btn"
+							className="va-btn-back lessons-page-sidebar-back-btn"
 							onClick={() => navigate(-1)}
 						>
 							<ArrowLeft size={20} weight="bold" aria-hidden />
 							<span>Înapoi</span>
 						</button>
 						<button 
-							className="lessons-page-sidebar-close-btn"
+							className="lessons-page-sidebar-close-btn va-close-btn"
 							onClick={() => setSidebarOpen(false)}
 							aria-label="Închide meniul"
 						>
-							<X size={24} weight="bold" aria-hidden />
+							<X size={18} weight="bold" aria-hidden="true" />
 						</button>
 					</div>
 					<h2 className="lessons-page-sidebar-title">{course.title}</h2>
@@ -611,48 +559,88 @@ const LessonsPage = () => {
 								></div>
 							</div>
 							<span className="lessons-page-sidebar-progress-text">
-								{progress.progress_percentage || 0}% completat
+								{Number(progress.progress_percentage) >= 100 ? 'Finalizat' : `${courseProgressLabel(progress.progress_percentage)} completat`}
 							</span>
 						</div>
 					)}
 				</div>
 
 				<div className="lessons-page-sidebar-content">
-					{modules.length > 0 ? (
+					{rootLessons.length > 0 || modules.length > 0 ? (
 						<div className="lessons-page-sidebar-modules">
+							{rootLessons.length > 0 && (
+								<div className="lessons-page-sidebar-root-lessons">
+									{rootLessons.map((lesson, lessonIndex) => {
+										const isCompleted = isLessonCompleted(lesson.id);
+										const isActive = selectedLessonId === lesson.id;
+										const lessonTests = getLessonCourseTests(lesson);
+
+										return (
+											<Fragment key={lesson.id}>
+												<button
+													type="button"
+													className={`lessons-page-sidebar-lesson ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''} ${!isLessonUnlockedForPlayer(lesson.id, lesson) ? 'locked' : ''}`}
+													onClick={() => handleLessonClick(lesson.id, lesson)}
+												>
+													{renderLessonIndexIcon(lessonIndex, isCompleted)}
+													<span className="lessons-page-sidebar-lesson-title">{lesson.title}</span>
+												</button>
+												{lessonTests.map((ct) => {
+													const testId = ct.test_id ?? ct.test?.id;
+													if (!testId) return null;
+													const tp = getLessonTestProgress(null, lesson.id, testId);
+													const passed = Boolean(tp?.passed);
+													return (
+														<button
+															key={`lesson-${lesson.id}-test-${testId}`}
+															type="button"
+															className={`lessons-page-sidebar-lesson lessons-page-sidebar-test lessons-page-sidebar-nested-test ${passed ? 'completed' : ''}`}
+															onClick={() => navigate(`/courses/${courseId}/exams/${testId}`)}
+														>
+															<div className="lessons-page-sidebar-lesson-icon">{renderTestStatusIcon(passed)}</div>
+															<span className="lessons-page-sidebar-lesson-title">
+																{ct.test?.title || 'Test'}
+																{' · Obligatoriu'}
+																{testDraftSuffix(ct.test?.status ?? ct.status)}
+															</span>
+														</button>
+													);
+												})}
+											</Fragment>
+										);
+									})}
+								</div>
+							)}
 							{modules.map((module, moduleIndex) => {
 								const isModuleExpanded = expandedModules.has(module.id);
+
 								const sortedLessons = (module.lessons || []).sort((a, b) => (a.order || 0) - (b.order || 0));
 								const isActive = selectedLessonId && sortedLessons.some(l => l.id === selectedLessonId);
-								const showLessons = module.hideGroupHeader || isModuleExpanded;
-
+								
 								return (
-									<div
-										key={module.id}
-										className={`lessons-page-sidebar-module ${module.hideGroupHeader ? 'lessons-page-sidebar-module--flat' : ''} ${isActive ? 'active' : ''}`}
-									>
-										{!module.hideGroupHeader && (
-											<button
-												type="button"
-												className={`lessons-page-sidebar-module-header ${isModuleExpanded ? 'expanded' : ''}`}
-												onClick={() => toggleModule(module.id)}
-											>
-												<div className="lessons-page-sidebar-module-info">
-													<span className="lessons-page-sidebar-module-number">
-														{module.isRootLessonGroup ? '•' : moduleIndex + 1}
-													</span>
-													<span className="lessons-page-sidebar-module-title">{module.title}</span>
-												</div>
-												<CaretDown
-													className={`lessons-page-sidebar-module-arrow ${isModuleExpanded ? 'expanded' : ''}`}
-													size={16}
-													weight="bold"
-													aria-hidden
-												/>
-											</button>
-										)}
+									<div key={module.id} className={`lessons-page-sidebar-module ${isActive ? 'active' : ''}`}>
+										<button
+											type="button"
+											className={`lessons-page-sidebar-module-header ${isModuleExpanded ? 'expanded' : ''}`}
+											onClick={() => toggleModule(module.id)}
+										>
+											<div className="lessons-page-sidebar-module-info">
+												<span className="lessons-page-sidebar-module-number">
+													{moduleIndex + 1}
+												</span>
+												<span className="lessons-page-sidebar-module-title">
+													{module.title}
+												</span>
+											</div>
+											<CaretDown
+												className={`lessons-page-sidebar-module-arrow ${isModuleExpanded ? 'expanded' : ''}`}
+												size={16}
+												weight="bold"
+												aria-hidden
+											/>
+										</button>
 
-										{showLessons && (
+										{isModuleExpanded && (
 											<div className="lessons-page-sidebar-lessons">
 												{sortedLessons.map((lesson, lessonIndex) => {
 													const isCompleted = isLessonCompleted(lesson.id);
@@ -663,16 +651,10 @@ const LessonsPage = () => {
 														<Fragment key={lesson.id}>
 															<button
 																type="button"
-																className={`lessons-page-sidebar-lesson ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
-																onClick={() => handleLessonClick(lesson.id)}
+																className={`lessons-page-sidebar-lesson ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''} ${!isLessonUnlockedForPlayer(lesson.id, lesson) ? 'locked' : ''}`}
+																onClick={() => handleLessonClick(lesson.id, lesson)}
 															>
-																<div className="lessons-page-sidebar-lesson-icon">
-																	{isCompleted ? (
-																		<Check size={16} weight="bold" aria-hidden />
-																	) : (
-																		<span>{lessonIndex + 1}</span>
-																	)}
-																</div>
+																{renderLessonIndexIcon(lessonIndex, isCompleted)}
 																<span className="lessons-page-sidebar-lesson-title">{lesson.title}</span>
 															</button>
 															{lessonTests.map((ct) => {
@@ -690,7 +672,8 @@ const LessonsPage = () => {
 																		<div className="lessons-page-sidebar-lesson-icon">{renderTestStatusIcon(passed)}</div>
 																		<span className="lessons-page-sidebar-lesson-title">
 																			{ct.test?.title || 'Test'}
-																			{ct.required ? ' *' : ''}
+																			{' · Obligatoriu'}
+																			{testDraftSuffix(ct.test?.status ?? ct.status)}
 																		</span>
 																	</button>
 																);
@@ -714,7 +697,8 @@ const LessonsPage = () => {
 															<div className="lessons-page-sidebar-lesson-icon">{renderTestStatusIcon(passed)}</div>
 															<span className="lessons-page-sidebar-lesson-title">
 																{ct.test?.title || 'Test'}
-																{ct.required ? ' *' : ''}
+																{' · Obligatoriu'}
+																{testDraftSuffix(ct.test?.status ?? ct.status)}
 															</span>
 														</button>
 													);
@@ -730,27 +714,27 @@ const LessonsPage = () => {
 							<p>Nu există lecții disponibile</p>
 						</div>
 					)}
-					{/* Course-level tests (doar Test / course_test — nu examene Admin → Examene) */}
-					{getCourseLevelTests().length > 0 && (
+					{/* Course-level tests */}
+					{Array.isArray(course?.exams) &&
+						course.exams.filter((e) => !e.module_id && isTestVisibleInPlayer(e?.status)).length > 0 && (
 						<div className="lessons-page-sidebar-tests-section">
 							<div className="lessons-page-sidebar-tests-header">Teste la nivel de curs</div>
-							<p className="lessons-page-sidebar-tests-hint">Teste din curs. Examenele independente sunt în Cursuri → Examene.</p>
-							{getCourseLevelTests().map((ct) => {
-								const testId = ct.test_id ?? ct.test?.id;
-								if (!testId) return null;
-								const tp = getCourseLevelTestProgress(testId);
+							<p className="lessons-page-sidebar-tests-hint">Legate de acest curs (nu examene independente)</p>
+							{course.exams.filter((e) => !e.module_id && isTestVisibleInPlayer(e?.status)).map((exam) => {
+								const tp = getCourseLevelTestProgress(exam.id);
 								const passed = Boolean(tp?.passed);
 								return (
 									<button
-										key={`course-test-${testId}`}
+										key={exam.id}
 										type="button"
 										className={`lessons-page-sidebar-lesson lessons-page-sidebar-test ${passed ? 'completed' : ''}`}
-										onClick={() => navigate(`/courses/${courseId}/exams/${testId}`)}
+										onClick={() => navigate(`/courses/${courseId}/exams/${exam.id}`)}
 									>
 										<div className="lessons-page-sidebar-lesson-icon">{renderTestStatusIcon(passed)}</div>
 										<span className="lessons-page-sidebar-lesson-title">
-											{ct.test?.title || 'Test'}
-											{ct.required ? ' *' : ''}
+											{exam.title || 'Test'}
+											{' · Obligatoriu'}
+											{testDraftSuffix(exam.status)}
 										</span>
 									</button>
 								);
@@ -762,16 +746,38 @@ const LessonsPage = () => {
 
 			{/* Main Content - Lesson Viewer */}
 			<main className="lessons-page-main-content">
-				{/* Mobile: toggle sidebar button */}
-				<button
-					type="button"
-					className="lessons-page-sidebar-toggle"
-					onClick={() => setSidebarOpen(true)}
-					aria-label="Deschide meniul lecțiilor"
-				>
-					<List size={24} weight="bold" aria-hidden />
-					<span>Lecții</span>
-				</button>
+				{/* Mobil: cuprinsul + poziția în curs, lipite sub bara de sus */}
+				<div className="lessons-page-context-bar">
+					<button
+						type="button"
+						className="lessons-page-sidebar-toggle"
+						onClick={() => setSidebarOpen(true)}
+						aria-label="Deschide meniul lecțiilor"
+					>
+						<List size={20} weight="bold" aria-hidden />
+						<span>Lecții</span>
+					</button>
+					{lessonPosition ? (
+						<div className="lessons-page-context-progress">
+							<span className="lessons-page-context-progress-label">
+								Lecția {lessonPosition.index} din {lessonPosition.total}
+							</span>
+							<div
+								className="lessons-page-context-progress-track"
+								role="progressbar"
+								aria-label="Poziția în curs"
+								aria-valuemin={1}
+								aria-valuemax={lessonPosition.total}
+								aria-valuenow={lessonPosition.index}
+							>
+								<div
+									className="lessons-page-context-progress-fill"
+									style={{ width: `${Math.round((lessonPosition.index / lessonPosition.total) * 100)}%` }}
+								/>
+							</div>
+						</div>
+					) : null}
+				</div>
 				{currentLessonLoading ? (
 					<div className="lessons-page-lesson-loading">
 						<div className="lessons-page-spinner"></div>
@@ -781,6 +787,9 @@ const LessonsPage = () => {
 					<div className="lessons-page-lesson-viewer">
 						{/* Lesson Header */}
 						<div className="lessons-page-lesson-header">
+							{lessonPosition?.module?.title ? (
+								<p className="lessons-page-lesson-eyebrow">{lessonPosition.module.title}</p>
+							) : null}
 							<h1 className="lessons-page-lesson-viewer-title">{currentLesson.title}</h1>
 							{currentLesson.description && (
 								<p className="lessons-page-lesson-viewer-description">{currentLesson.description}</p>
@@ -789,16 +798,7 @@ const LessonsPage = () => {
 
 						{/* Lesson Content */}
 						<div className="lessons-page-lesson-body" ref={contentRef}>
-						{LESSON_MILESTONES.map((milestone) => (
-							<div
-								key={`lesson-milestone-${milestone}`}
-								className="lesson-progress-marker"
-								data-lesson-milestone={milestone}
-								style={{ top: `${milestone}%` }}
-								aria-hidden="true"
-							/>
-						))}
-
+						<LessonReadTrackers>
 							{(() => {
 								const blocks = currentLesson.content_blocks ?? currentLesson.contentBlocks ?? [];
 								const hasBlocks = Array.isArray(blocks) && blocks.length > 0;
@@ -814,7 +814,7 @@ const LessonsPage = () => {
 								if (legacyHtml.trim()) {
 									return (
 										<div
-											className="lessons-page-lesson-content-text rte-content"
+											className="lessons-page-lesson-content-text"
 											dangerouslySetInnerHTML={{ __html: normalizeRichTextMediaHtml(legacyHtml) }}
 										/>
 									);
@@ -829,6 +829,7 @@ const LessonsPage = () => {
 									</div>
 								);
 							})()}
+						</LessonReadTrackers>
 						</div>
 
 						<div
@@ -843,20 +844,20 @@ const LessonsPage = () => {
 								<>
 									<button
 										type="button"
-										className="lessons-page-nav-btn lessons-page-nav-btn--prev"
+										className="lessons-page-nav-btn va-btn-back lessons-page-nav-btn--prev"
 										disabled={!hasPreviousLesson || isCompleting || finalizingCourse}
 										onClick={handlePreviousLesson}
 										aria-label="Lecția anterioară"
 										title="Lecția anterioară"
 									>
-										<ArrowLeft size={22} weight="bold" aria-hidden />
-										<span className="lessons-page-nav-btn__label">Lecția anterioară</span>
+										<ArrowLeft size={22} weight="bold" aria-hidden /><span>Anterioară</span>
 									</button>
 									{isLastLessonInCourse ? (
 										<button
-											className="lessons-page-btn lessons-page-btn-primary lessons-page-lesson-cta lessons-page-lesson-cta--finalize"
+											className="lessons-page-btn lms-btn-primary lessons-page-btn-primary lessons-page-lesson-cta lessons-page-lesson-cta--finalize"
 											type="button"
-											disabled={finalizingCourse || isCompleting}
+											disabled={finalizingCourse || isCompleting || !canAdvanceLesson}
+											title={canAdvanceLesson ? undefined : 'Derulează până la finalul lecției'}
 											onClick={handleFinalizeCourse}
 										>
 											{finalizingCourse ? (
@@ -864,29 +865,29 @@ const LessonsPage = () => {
 											) : (
 												<>
 													<Check size={16} weight="bold" aria-hidden />
-													<span>Finalizează</span>
+													<span>Urmează testul</span>
 												</>
 											)}
 										</button>
 									) : (
 										<button
 											type="button"
-											className="lessons-page-nav-btn lessons-page-nav-btn--next"
-											disabled={!hasNextLesson || isCompleting || finalizingCourse}
+											className="lessons-page-nav-btn lms-btn-primary lessons-page-nav-btn--next"
+											disabled={!hasNextLesson || isCompleting || finalizingCourse || !canAdvanceLesson}
 											onClick={handleNextLesson}
 											aria-label="Lecția următoare"
-											title="Lecția următoare"
+											title={canAdvanceLesson ? 'Lecția următoare' : 'Derulează până la finalul lecției'}
 										>
-											<span className="lessons-page-nav-btn__label">{nextButtonLabel}</span>
-											<ArrowRight size={22} weight="bold" aria-hidden />
+											<span>Următoarea</span><ArrowRight size={22} weight="bold" aria-hidden />
 										</button>
 									)}
 								</>
 							) : (
 								<button
-									className="lessons-page-btn lessons-page-btn-primary lessons-page-lesson-cta"
+									className="lessons-page-btn lms-btn-primary lessons-page-btn-primary lessons-page-lesson-cta"
 									type="button"
-									disabled={finalizingCourse || isCompleting}
+									disabled={finalizingCourse || isCompleting || !canAdvanceLesson}
+									title={canAdvanceLesson ? undefined : 'Derulează până la finalul lecției'}
 									onClick={handleFinalizeCourse}
 								>
 									{finalizingCourse ? (
@@ -894,7 +895,7 @@ const LessonsPage = () => {
 									) : (
 										<>
 											<Check size={16} weight="bold" aria-hidden />
-											<span>Finalizează</span>
+											<span>Urmează testul</span>
 										</>
 									)}
 								</button>

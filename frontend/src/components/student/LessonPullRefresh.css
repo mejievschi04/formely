@@ -1,0 +1,59 @@
+.lesson-pull-refresh {
+	position: fixed;
+	top: var(--app-header-height, 56px);
+	left: 0;
+	right: 0;
+	z-index: 120;
+	display: flex;
+	justify-content: center;
+	height: 0;
+	pointer-events: none;
+	overflow: visible;
+}
+
+.lesson-pull-refresh-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 8px;
+	padding: 8px 14px;
+	border-radius: 999px;
+	background: var(--color-brand-primary);
+	color: var(--btn-primary-text);
+	font-size: 0.78rem;
+	font-weight: 800;
+	line-height: 1;
+	box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+	opacity: 0;
+	transform: translateY(calc(var(--lesson-pull, 0px) - 28px));
+	transition: opacity 0.15s ease;
+}
+
+.lesson-pull-refresh.is-visible .lesson-pull-refresh-chip {
+	opacity: 1;
+}
+
+.lesson-pull-refresh-spinner {
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	border: 2px solid rgba(17, 17, 17, 0.25);
+	border-top-color: var(--border-secondary);
+	flex-shrink: 0;
+}
+
+.lesson-pull-refresh.is-refreshing .lesson-pull-refresh-spinner {
+	animation: lesson-pull-refresh-spin 0.7s linear infinite;
+}
+
+@keyframes lesson-pull-refresh-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@media (min-width: 769px) {
+	.lesson-pull-refresh {
+		display: none;
+	}
+}

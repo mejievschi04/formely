@@ -1,0 +1,612 @@
+/*
+ * Editorul de test (pagina builder-ului de test și testul din builder-ul de curs):
+ * rândul fiecărei întrebări și fereastra de alegere a tipului.
+ * Formularele întrebării (text, variante, perechi, ordine) rămân cu stilurile lor.
+ */
+
+html body .admin-course-builder-test-question-item {
+	padding: 12px 14px;
+}
+
+html body .va-tq-row {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	align-items: start;
+	gap: 12px;
+}
+
+html body .va-tq-num {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	margin-top: 2px;
+	border-radius: 999px;
+	background: var(--bg-secondary);
+	color: var(--text-primary);
+	font-size: 0.8125rem;
+	font-weight: 700;
+}
+
+html body .va-tq-main {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 4px;
+	min-width: 0;
+}
+
+html body .va-tq-type.va-tq-type {
+	height: 28px !important;
+	max-height: 28px !important;
+	min-width: 0 !important;
+	display: inline-flex !important;
+	align-items: center;
+	gap: 6px;
+	min-height: 26px !important;
+	padding: 0 10px !important;
+	border: 1px solid var(--btn-outline-border) !important;
+	border-radius: 999px !important;
+	background: var(--bg-elevated) !important;
+	color: var(--text-primary) !important;
+	font-size: 0.75rem !important;
+	font-weight: 700;
+	letter-spacing: 0.01em;
+	cursor: pointer;
+}
+
+html body .va-tq-type.va-tq-type:hover:not(:disabled) {
+	border-color: var(--btn-outline-border-hover) !important;
+}
+
+html body .va-tq-type.va-tq-type:disabled {
+	cursor: default;
+	opacity: 1;
+}
+
+html body .va-tq-preview {
+	margin: 0;
+	overflow: hidden;
+	color: var(--text-primary);
+	font-size: 0.9375rem;
+	font-weight: 600;
+	line-height: 1.4;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 100%;
+}
+
+html body .va-tq-preview-desc {
+	margin: 0;
+	overflow: hidden;
+	color: var(--text-secondary);
+	font-size: 0.8125rem;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 100%;
+}
+
+html body .va-tq-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+html body .va-tq-delete.va-tq-delete {
+	min-width: 36px !important;
+	min-height: 36px !important;
+	max-width: 36px !important;
+	max-height: 36px !important;
+	display: inline-flex !important;
+	align-items: center;
+	justify-content: center;
+	width: 36px !important;
+	height: 36px !important;
+	padding: 0 !important;
+	border: 1px solid var(--btn-outline-border) !important;
+	border-radius: 8px !important;
+	background: var(--bg-elevated) !important;
+	color: var(--color-error) !important;
+	cursor: pointer;
+}
+
+html body .va-tq-delete.va-tq-delete:hover {
+	border-color: var(--color-error) !important;
+	background: color-mix(in srgb, var(--color-error) 12%, var(--bg-elevated)) !important;
+}
+
+html body .va-tq-delete.va-tq-delete svg,
+html body .va-tq-type.va-tq-type svg {
+	display: block !important;
+	flex: 0 0 auto;
+	color: inherit !important;
+	fill: currentColor !important;
+}
+
+html body .va-tq-delete.va-tq-delete svg {
+	width: 16px !important;
+	height: 16px !important;
+}
+
+/* formularul deschis începe sub rând, aliniat cu textul întrebării */
+html body .admin-course-builder-test-question-item.is-expanded .va-tq-row {
+	margin-bottom: 12px;
+}
+
+/* Fereastra „Tipul întrebării” */
+html body .va-dialog.va-tq-type-dialog {
+	width: min(560px, calc(100vw - 32px));
+}
+
+html body .va-tq-type-hint {
+	margin-bottom: 12px;
+}
+
+@media (max-width: 640px) {
+	html body .va-tq-row {
+		grid-template-columns: auto minmax(0, 1fr);
+	}
+
+	html body .va-tq-actions {
+		grid-column: 1 / -1;
+		justify-content: flex-end;
+	}
+
+	}
+
+/* ---------- Culoare pe tipuri de întrebări: bară în stânga + etichetă (text ≥ 6:1 în ambele teme) ---------- */
+html body [data-qtype] {
+	--tq-accent: #2563eb;
+	--tq-ink: #1e40af;
+	--tq-ink-dark: #93c5fd;
+}
+html body [data-qtype="single_choice"] { --tq-accent: #7c3aed; --tq-ink: #5b21b6; --tq-ink-dark: #c4b5fd; }
+html body [data-qtype="true_false"] { --tq-accent: #0d9488; --tq-ink: #115e59; --tq-ink-dark: #5eead4; }
+html body [data-qtype="yes_no"] { --tq-accent: #16a34a; --tq-ink: #166534; --tq-ink-dark: #86efac; }
+html body [data-qtype="matching"] { --tq-accent: #ea580c; --tq-ink: #9a3412; --tq-ink-dark: #fdba74; }
+html body [data-qtype="ordering"] { --tq-accent: #db2777; --tq-ink: #9d174d; --tq-ink-dark: #f9a8d4; }
+
+html[data-theme="dark"] body [data-qtype] {
+	--tq-accent: var(--tq-ink-dark);
+	--tq-ink: var(--tq-ink-dark);
+}
+
+/* lista: rândurile albe se desprind de fundalul nuanțat al secțiunii */
+html body .admin-course-builder-test-question-list {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+html body .admin-course-builder-test-question-item[data-qtype] {
+	position: relative;
+	border: 1px solid var(--border-primary) !important;
+	border-left: 4px solid var(--tq-accent) !important;
+	border-radius: 12px !important;
+	background: var(--bg-elevated) !important;
+	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.05);
+	transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+html body .admin-course-builder-test-question-item[data-qtype]:hover {
+	box-shadow: 0 2px 4px rgba(15, 23, 42, 0.08), 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+html body .admin-course-builder-test-question-item[data-qtype].is-expanded {
+	box-shadow: 0 0 0 1px var(--tq-accent), 0 8px 24px rgba(15, 23, 42, 0.1);
+}
+
+html body [data-qtype] .va-tq-type.va-tq-type {
+	border-color: color-mix(in srgb, var(--tq-accent) 45%, transparent) !important;
+	background: color-mix(in srgb, var(--tq-accent) 12%, var(--bg-elevated)) !important;
+	color: var(--tq-ink) !important;
+}
+
+html[data-theme="dark"] body [data-qtype] .va-tq-type.va-tq-type {
+	background: color-mix(in srgb, var(--tq-accent) 22%, var(--bg-elevated)) !important;
+}
+
+html body [data-qtype] .va-tq-type.va-tq-type:hover:not(:disabled) {
+	border-color: var(--tq-accent) !important;
+}
+
+/* numărul întrebării: insigna galbenă Volta */
+html body .va-tq-num {
+	background: var(--btn-primary-bg);
+	color: var(--btn-primary-text);
+	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.18);
+}
+
+/* ---------- Formularul întrebării: aceleași câmpuri ca în restul aplicației (dialog-system) ---------- */
+html body .admin-course-builder-test-question-field-label {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 6px;
+	margin-bottom: 6px;
+	font-size: 0.875rem !important;
+	font-weight: 600 !important;
+	color: var(--text-primary) !important;
+	text-transform: none !important;
+	letter-spacing: 0 !important;
+}
+
+html body .admin-course-builder-test-question-field-hint {
+	font-weight: 400 !important;
+	color: var(--text-secondary) !important;
+}
+
+html body .admin-course-builder-test-question-rte {
+	border: 1px solid var(--btn-outline-border) !important;
+	border-radius: 10px !important;
+	background: var(--bg-elevated) !important;
+	overflow: hidden;
+}
+
+html body .admin-course-builder-test-question-rte:focus-within {
+	border-color: var(--text-primary) !important;
+	box-shadow: 0 0 0 3px var(--color-primary-alpha-30);
+}
+
+/* Variante, perechi, ordine */
+html body .va-qa {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-top: 16px;
+	padding: 14px;
+	border: 1px solid var(--border-primary);
+	border-radius: 12px;
+	background: color-mix(in srgb, var(--text-primary) 3%, var(--bg-elevated));
+}
+
+html body .va-qa__head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 4px 10px;
+}
+
+html body .va-qa__title {
+	font-size: 0.875rem;
+	font-weight: 700;
+	color: var(--text-primary);
+}
+
+html body .va-qa__hint {
+	font-size: 0.8125rem;
+	color: var(--text-secondary);
+}
+
+html body .va-qa__list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+html body .va-qa__row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+}
+
+html body .va-qa__input.va-qa__input {
+	flex: 1 1 auto;
+	min-width: 0;
+	height: 44px !important;
+	min-height: 44px !important;
+	margin: 0 !important;
+	padding: 0 12px !important;
+	border: 1px solid var(--btn-outline-border) !important;
+	border-radius: 10px !important;
+	background: var(--bg-elevated) !important;
+	color: var(--text-primary) !important;
+	box-shadow: none !important;
+	font: inherit !important;
+	font-size: 0.9375rem !important;
+}
+
+html body .va-qa__input.va-qa__input:hover:not(:disabled) {
+	border-color: var(--btn-outline-border-hover) !important;
+}
+
+html body .va-qa__input.va-qa__input:focus {
+	outline: none !important;
+	border-color: var(--text-primary) !important;
+	box-shadow: 0 0 0 3px var(--color-primary-alpha-30) !important;
+}
+
+html body .va-qa__input.va-qa__input:disabled {
+	background: color-mix(in srgb, var(--text-primary) 4%, var(--bg-elevated)) !important;
+	cursor: default;
+}
+
+/* „Corect / Greșit”: eticheta care ține bifa; verde când varianta e corectă */
+html body .va-qa__correct {
+	display: inline-flex;
+	flex: 0 0 auto;
+	align-items: center;
+	gap: 8px;
+	min-width: 104px;
+	height: 44px;
+	padding: 0 12px;
+	border: 1px solid var(--btn-outline-border);
+	border-radius: 10px;
+	background: var(--bg-elevated);
+	color: var(--text-secondary);
+	font-size: 0.8125rem;
+	font-weight: 700;
+	cursor: pointer;
+	user-select: none;
+}
+
+html body .va-qa__correct input {
+	width: 18px;
+	height: 18px;
+	margin: 0;
+	accent-color: #15803d;
+	cursor: pointer;
+}
+
+html body .va-qa__row.is-correct .va-qa__correct {
+	border-color: color-mix(in srgb, var(--color-success) 70%, transparent);
+	background: color-mix(in srgb, var(--color-success) 14%, var(--bg-elevated));
+	color: var(--text-success);
+}
+
+html body .va-qa__row.is-correct .va-qa__input.va-qa__input {
+	border-color: color-mix(in srgb, var(--color-success) 70%, transparent) !important;
+}
+
+html body .va-qa__correct:has(input:focus-visible) {
+	outline: 2px solid var(--border-focus);
+	outline-offset: 2px;
+}
+
+/* butoane-iconiță: ca restul butoanelor cu contur */
+html body .va-qa__icon-btn.va-qa__icon-btn {
+	display: inline-flex !important;
+	flex: 0 0 auto;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 40px !important;
+	min-width: 40px !important;
+	height: 40px !important;
+	min-height: 40px !important;
+	padding: 0 !important;
+	border: 1px solid var(--btn-outline-border) !important;
+	border-radius: 8px !important;
+	background: var(--bg-elevated) !important;
+	color: var(--text-primary) !important;
+	box-shadow: none !important;
+	cursor: pointer;
+}
+
+html body .va-qa__icon-btn.va-qa__icon-btn:hover:not(:disabled) {
+	border-color: var(--btn-outline-border-hover) !important;
+	background: var(--bg-secondary) !important;
+}
+
+html body .va-qa__icon-btn.va-qa__icon-btn.is-danger {
+	color: var(--color-error) !important;
+}
+
+html body .va-qa__icon-btn.va-qa__icon-btn.is-danger:hover:not(:disabled) {
+	border-color: var(--color-error) !important;
+	background: color-mix(in srgb, var(--color-error) 12%, var(--bg-elevated)) !important;
+}
+
+html body .va-qa__icon-btn.va-qa__icon-btn:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+html body .va-qa__icon-btn.va-qa__icon-btn svg {
+	color: inherit !important;
+	fill: currentColor !important;
+}
+
+html body .va-qa__pair-arrow {
+	flex: 0 0 auto;
+	color: var(--text-secondary);
+}
+
+html body .va-qa__order-index {
+	display: inline-flex;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--tq-accent, var(--text-primary)) 16%, var(--bg-elevated));
+	color: var(--tq-ink, var(--text-primary));
+	font-size: 0.8125rem;
+	font-weight: 700;
+}
+
+html body .va-qa__order-actions {
+	display: flex;
+	gap: 6px;
+}
+
+html body .va-qa__add.va-qa__add {
+	display: inline-flex;
+	align-self: flex-start;
+	align-items: center;
+	gap: 6px;
+}
+
+@media (max-width: 640px) {
+	html body .va-qa {
+		padding: 12px;
+	}
+
+	html body .va-qa__row--pair {
+		flex-wrap: wrap;
+	}
+
+	html body .va-qa__row--pair .va-qa__input {
+		flex-basis: calc(50% - 40px);
+	}
+
+	html body .va-qa__row--pair .va-qa__pair-arrow {
+		display: none;
+	}
+
+	html body .va-qa__correct {
+		min-width: 0;
+	}
+
+	html body .va-qa__correct span {
+		display: none;
+	}
+
+	html body .va-qa__row--order {
+		flex-wrap: wrap;
+	}
+
+	html body .va-qa__row--order .va-qa__input {
+		flex-basis: calc(100% - 40px);
+	}
+
+	html body .va-qa__order-actions {
+		margin-left: 40px;
+	}
+}
+
+/* ---------- Fereastra „Tipul întrebării”: opțiuni cu iconiță, nume și explicație ---------- */
+html body .va-dialog.va-tq-type-dialog {
+	width: min(640px, calc(100vw - 32px));
+}
+
+html body .va-tq-types {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px;
+}
+
+html body .va-tq-option.va-tq-option {
+	position: relative;
+	display: flex !important;
+	align-items: center !important;
+	gap: 12px;
+	width: 100% !important;
+	height: auto !important;
+	min-height: 76px !important;
+	padding: 12px 14px !important;
+	border: 1px solid var(--btn-outline-border) !important;
+	border-radius: 12px !important;
+	background: var(--bg-elevated) !important;
+	color: var(--text-primary) !important;
+	box-shadow: none !important;
+	text-align: left !important;
+	cursor: pointer;
+	transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+html body .va-tq-option.va-tq-option:hover:not(:disabled) {
+	border-color: var(--tq-accent) !important;
+	background: color-mix(in srgb, var(--tq-accent) 6%, var(--bg-elevated)) !important;
+}
+
+html body .va-tq-option.va-tq-option:focus-visible {
+	outline: 2px solid var(--border-focus) !important;
+	outline-offset: 2px !important;
+}
+
+html body .va-tq-option.va-tq-option.is-current {
+	border-color: var(--tq-accent) !important;
+	background: color-mix(in srgb, var(--tq-accent) 10%, var(--bg-elevated)) !important;
+	box-shadow: inset 0 0 0 1px var(--tq-accent) !important;
+}
+
+html body .va-tq-option.va-tq-option:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+
+html body .va-tq-option__icon {
+	display: inline-flex;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	border-radius: 12px;
+	background: color-mix(in srgb, var(--tq-accent) 16%, var(--bg-elevated));
+	color: var(--tq-ink);
+}
+
+html body .va-tq-option.va-tq-option .va-tq-option__icon,
+html body .va-tq-option.va-tq-option .va-tq-option__icon svg {
+	color: var(--tq-ink) !important;
+}
+
+html body .va-tq-option__text {
+	display: flex;
+	flex: 1 1 auto;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+html body .va-tq-option__label {
+	font-size: 0.9375rem;
+	font-weight: 700;
+	line-height: 1.3;
+	color: var(--text-primary);
+}
+
+html body .va-tq-option__hint {
+	font-size: 0.8125rem;
+	font-weight: 400;
+	line-height: 1.35;
+	color: var(--text-secondary);
+	white-space: normal;
+}
+
+html body .va-tq-option__current {
+	position: absolute;
+	top: 8px;
+	right: 10px;
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 8px;
+	border-radius: 999px;
+	/* nuanța închisă a tipului: textul alb are ≥ 7:1 (pe culoarea deschisă avea sub 4,5) */
+	background: var(--tq-ink);
+	color: #ffffff;
+	font-size: 0.6875rem;
+	font-weight: 700;
+}
+
+html[data-theme="dark"] body .va-tq-option__current {
+	color: #0f172a;
+}
+
+html body .va-tq-option.is-current .va-tq-option__text {
+	padding-right: 84px;
+}
+
+@media (max-width: 640px) {
+	html body .va-tq-types {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+
+html body .va-tq-option.va-tq-option .va-tq-option__current,
+html body .va-tq-option.va-tq-option .va-tq-option__current svg {
+	color: #ffffff !important;
+}
+
+html[data-theme="dark"] body .va-tq-option.va-tq-option .va-tq-option__current,
+html[data-theme="dark"] body .va-tq-option.va-tq-option .va-tq-option__current svg {
+	color: #0f172a !important;
+}

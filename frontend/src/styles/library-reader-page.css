@@ -111,18 +111,6 @@
 	transform: none;
 }
 
-.library-reader-btn-primary {
-	background: var(--btn-primary-bg);
-	color: var(--btn-primary-text);
-	border-color: var(--btn-primary-border);
-}
-
-.library-reader-btn-secondary {
-	background: var(--bg-secondary);
-	color: var(--text-primary);
-	border-color: var(--border-primary);
-}
-
 .library-reader-floating-btn {
 	background: transparent;
 	color: var(--text-secondary);
@@ -169,16 +157,25 @@
 @media (max-width: 768px) {
 	.library-reader-page {
 		overflow-x: clip;
-		min-height: 100dvh;
+		min-height: 0;
+		padding-bottom: 0;
+	}
+
+	html:has(.student-mobile-tabs) .library-reader-page {
+		top: var(--app-header-height, 56px);
+		bottom: var(--student-tab-height, 0px);
+		height: auto;
 	}
 
 	.library-reader-stage {
 		padding: var(--space-2);
-		padding-bottom: env(safe-area-inset-bottom, 0);
+		padding-bottom: var(--space-4);
+		min-height: 0;
+		height: 100%;
 	}
 
 	.library-reader-floating-actions {
-		top: calc(56px + var(--space-2));
+		top: var(--space-2);
 		right: var(--space-3);
 		left: var(--space-3);
 		justify-content: space-between;
@@ -190,6 +187,13 @@
 	.library-reader-floating-actions a {
 		min-height: 44px;
 		min-width: 44px;
+	}
+
+	html:has(.student-mobile-tabs) .library-reader-frame,
+	html:has(.student-mobile-tabs) .library-reader-loading--embedded,
+	html:has(.student-mobile-tabs) .library-reader-empty-state--embedded {
+		min-height: 0;
+		height: 100%;
 	}
 
 	.library-reader-frame,
@@ -276,4 +280,34 @@
 	max-width: 100%;
 	height: auto;
 	border-radius: 8px;
+}
+
+/* Imagini din editorul de lecții: aliniere salvată în data-alignment */
+.library-reader-article-body img {
+	max-width: 100%;
+	height: auto;
+}
+
+.library-reader-article-body img[data-alignment='left'],
+.library-reader-article-body img[data-alignment='inline'] {
+	display: block;
+	margin-left: 0;
+	margin-right: auto;
+}
+
+.library-reader-article-body img[data-alignment='center'] {
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.library-reader-article-body img[data-alignment='right'] {
+	display: block;
+	margin-left: auto;
+	margin-right: 0;
+}
+
+.library-reader-article-body img[data-alignment='full'] {
+	display: block;
+	width: 100%;
 }

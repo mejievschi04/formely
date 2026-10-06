@@ -24,7 +24,7 @@
 
 .va-theme-preference-desc {
 	font-size: var(--font-size-sm);
-	color: var(--text-secondary) !important;
+	color: var(--text-secondary);
 	margin-top: var(--space-1);
 	line-height: var(--line-height-normal);
 }

@@ -12,8 +12,7 @@ use App\Services\ExamBankQuestionSyncService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaCache;
 use Illuminate\Database\QueryException;
 
 class ExamAdminController extends Controller
@@ -39,7 +38,7 @@ class ExamAdminController extends Controller
             }
             abort(403, 'Acces interzis.');
         }
-        if (Schema::hasColumn('exams', 'created_by') && (int) ($exam->created_by ?? 0) === (int) $user->id) {
+        if (SchemaCache::hasColumn('exams', 'created_by') && (int) ($exam->created_by ?? 0) === (int) $user->id) {
             return;
         }
         abort(403, 'Acces interzis.');
@@ -52,7 +51,7 @@ class ExamAdminController extends Controller
             $uid = (int) auth()->id();
             $query->where(function ($q) use ($uid) {
                 $q->whereHas('course', fn ($c) => $c->where('teacher_id', $uid));
-                if (Schema::hasColumn('exams', 'created_by')) {
+                if (SchemaCache::hasColumn('exams', 'created_by')) {
                     $q->orWhere(function ($q2) use ($uid) {
                         $q2->whereNull('course_id')->where('created_by', $uid);
                     });
@@ -120,7 +119,7 @@ class ExamAdminController extends Controller
                 'id' => $question->id,
                 'text' => $question->question_text,
                 'type' => $questionType,
-                'options' => in_array($questionType, ['multiple_choice', 'single_choice', 'true_false'], true)
+                'options' => in_array($questionType, ['multiple_choice', 'single_choice', 'true_false', 'yes_no'], true)
                     ? $answers->pluck('answer_text')->toArray()
                     : [],
                 'answerIndex' => $correctAnswerIndex,
@@ -163,7 +162,7 @@ class ExamAdminController extends Controller
             'settings' => 'nullable|array',
             'questions' => 'nullable|array',
             'questions.*.question_text' => 'required|string',
-            'questions.*.question_type' => 'nullable|string|in:single_choice,multiple_choice,true_false,matching,ordering',
+            'questions.*.question_type' => 'nullable|string|in:single_choice,multiple_choice,true_false,yes_no,matching,ordering',
             'questions.*.points' => 'nullable|integer|min:1',
             'questions.*.order' => 'nullable|integer|min:0',
             'questions.*.payload' => 'nullable|array',
@@ -202,7 +201,7 @@ class ExamAdminController extends Controller
                 if ((int) $course->teacher_id !== (int) auth()->id()) {
                     abort(403, 'Acces interzis. Poți crea examene doar pentru cursurile tale.');
                 }
-            } elseif (! Schema::hasColumn('exams', 'created_by')) {
+            } elseif (! SchemaCache::hasColumn('exams', 'created_by')) {
                 abort(403, 'Acces interzis. Instructorii trebuie să aleagă un curs.');
             }
         }
@@ -219,7 +218,9 @@ class ExamAdminController extends Controller
             'description' => $validated['description'] ?? null,
             'status' => $validated['status'] ?? 'draft',
             'max_score' => $validated['max_score'],
-            'max_attempts' => $validated['max_attempts'] ?? null,
+            'max_attempts' => array_key_exists('max_attempts', $validated)
+                ? ($validated['max_attempts'] === null ? null : (int) $validated['max_attempts'])
+                : null,
         ];
         if ($courseId) {
             $examData['course_id'] = $courseId;
@@ -243,7 +244,7 @@ class ExamAdminController extends Controller
         if (array_key_exists('settings', $validated)) {
             $examData['settings'] = $this->sanitizeExamSettings($validated['settings']);
         }
-        if (Schema::hasColumn('exams', 'created_by')) {
+        if (SchemaCache::hasColumn('exams', 'created_by')) {
             $examData['created_by'] = (int) auth()->id();
         }
 
@@ -376,7 +377,7 @@ class ExamAdminController extends Controller
             'questions' => 'nullable|array',
             'questions.*.id' => 'nullable|exists:exam_questions,id',
             'questions.*.question_text' => 'required|string',
-            'questions.*.question_type' => 'nullable|string|in:single_choice,multiple_choice,true_false,matching,ordering',
+            'questions.*.question_type' => 'nullable|string|in:single_choice,multiple_choice,true_false,yes_no,matching,ordering',
             'questions.*.points' => 'nullable|integer|min:1',
             'questions.*.order' => 'nullable|integer|min:0',
             'questions.*.payload' => 'nullable|array',
@@ -408,7 +409,9 @@ class ExamAdminController extends Controller
             'description' => array_key_exists('description', $validated) ? $validated['description'] : $exam->description,
             'status' => $validated['status'] ?? $exam->status,
             'max_score' => $validated['max_score'] ?? $exam->max_score,
-            'max_attempts' => $validated['max_attempts'] ?? $exam->max_attempts,
+            'max_attempts' => array_key_exists('max_attempts', $validated)
+                ? ($validated['max_attempts'] === null ? null : (int) $validated['max_attempts'])
+                : $exam->max_attempts,
         ];
         if ($newCourseId) {
             $updateData['course_id'] = $newCourseId;
@@ -567,7 +570,9 @@ class ExamAdminController extends Controller
         }
 
         $copySettings = $this->sanitizeExamSettings(
-            is_array($source->settings) ? json_decode(json_encode($source->settings), true) : []
+            is_array($source->settings)
+                ? json_decode(json_encode($source->settings), true)
+                : []
         );
 
         $baseTitle = isset($validated['title']) && trim((string) $validated['title']) !== ''
@@ -604,7 +609,7 @@ class ExamAdminController extends Controller
                 'passes_count' => 0,
                 'average_score' => null,
             ];
-            if (Schema::hasColumn('exams', 'created_by')) {
+            if (SchemaCache::hasColumn('exams', 'created_by')) {
                 $create['created_by'] = (int) auth()->id();
             }
             $new = Exam::create($create);
@@ -659,36 +664,12 @@ class ExamAdminController extends Controller
         ], 201);
     }
 
-    public function uploadCover(Request $request, $id)
-    {
-        $exam = Exam::with('course')->findOrFail($id);
-        $this->assertExamAccessibleByInstructor($exam);
-
-        $validated = $request->validate([
-            'file' => 'required|image|max:5120',
-        ]);
-
-        $file = $validated['file'];
-        $path = $file->store('exam-covers', 'public');
-        $url = '/storage/' . ltrim($path, '/');
-
-        $settings = is_array($exam->settings) ? $exam->settings : [];
-        $settings['cover_url'] = $url;
-        $settings['cover_name'] = $file->getClientOriginalName();
-        $exam->update(['settings' => $settings]);
-
-        return response()->json([
-            'url' => $url,
-            'filename' => $file->getClientOriginalName(),
-        ], 201);
-    }
-
     public function results(Request $request, $id)
     {
         $exam = Exam::with('course')->findOrFail($id);
         $this->assertExamAccessibleByInstructor($exam);
 
-        if (!Schema::hasTable('exam_results')) {
+        if (!SchemaCache::hasTable('exam_results')) {
             return response()->json([]);
         }
 
@@ -724,7 +705,7 @@ class ExamAdminController extends Controller
         $exam = Exam::with(['course', 'questions.answers'])->findOrFail($id);
         $this->assertExamAccessibleByInstructor($exam);
 
-        if (!Schema::hasTable('exam_results')) {
+        if (!SchemaCache::hasTable('exam_results')) {
             return response()->json([]);
         }
 
@@ -739,7 +720,7 @@ class ExamAdminController extends Controller
             ->map(function ($question) use ($results, $attemptsCount) {
                 $questionIdKey = (string) $question->id;
                 $questionType = (string) ($question->question_type ?? 'multiple_choice');
-                $isChoiceType = in_array($questionType, ['multiple_choice', 'single_choice', 'true_false'], true);
+                $isChoiceType = in_array($questionType, ['multiple_choice', 'single_choice', 'true_false', 'yes_no'], true);
 
                 $answers = $question->answers->sortBy('order')->values();
                 $correctIndex = null;
@@ -902,12 +883,30 @@ class ExamAdminController extends Controller
 
     public function getPendingReviews(Request $request)
     {
-        $query = ExamResult::with([
+        $results = $this->pendingReviewsQuery()
+            ->with([
                 'exam.course',
                 'exam.questions' => fn ($q) => $q->orderBy('order'),
                 'exam.questions.answers' => fn ($q) => $q->orderBy('order'),
                 'user:id,name,email',
             ])
+            ->orderBy('completed_at', 'desc')
+            ->get();
+
+        return response()->json($results);
+    }
+
+    /**
+     * Doar numărul rezultatelor de revizuit (pentru badge), fără a încărca întrebările.
+     */
+    public function pendingReviewsCount(Request $request)
+    {
+        return response()->json(['count' => $this->pendingReviewsQuery()->count()]);
+    }
+
+    private function pendingReviewsQuery()
+    {
+        $query = ExamResult::query()
             ->where('needs_manual_review', true)
             ->whereNull('reviewed_at');
         if (auth()->user()->isInstructor()) {
@@ -915,7 +914,7 @@ class ExamAdminController extends Controller
             $query->whereHas('exam', function ($q) use ($uid) {
                 $q->where(function ($q2) use ($uid) {
                     $q2->whereHas('course', fn ($c) => $c->where('teacher_id', $uid));
-                    if (Schema::hasColumn('exams', 'created_by')) {
+                    if (SchemaCache::hasColumn('exams', 'created_by')) {
                         $q2->orWhere(function ($q3) use ($uid) {
                             $q3->whereNull('course_id')->where('created_by', $uid);
                         });
@@ -923,9 +922,8 @@ class ExamAdminController extends Controller
                 });
             });
         }
-        $results = $query->orderBy('completed_at', 'desc')->get();
 
-        return response()->json($results);
+        return $query;
     }
 
     /**
@@ -939,6 +937,8 @@ class ExamAdminController extends Controller
 
         $olderThanDays = (int) ($validated['older_than_days'] ?? 30);
         $cutoff = now()->subDays($olderThanDays);
+        $manualTypes = ['essay'];
+
         $query = ExamResult::with([
             'exam.questions',
         ])
@@ -950,7 +950,7 @@ class ExamAdminController extends Controller
             $query->whereHas('exam', function ($q) use ($uid) {
                 $q->where(function ($q2) use ($uid) {
                     $q2->whereHas('course', fn ($c) => $c->where('teacher_id', $uid));
-                    if (Schema::hasColumn('exams', 'created_by')) {
+                    if (SchemaCache::hasColumn('exams', 'created_by')) {
                         $q2->orWhere(function ($q3) use ($uid) {
                             $q3->whereNull('course_id')->where('created_by', $uid);
                         });
@@ -965,8 +965,10 @@ class ExamAdminController extends Controller
         foreach ($rows as $row) {
             $isExpired = $row->completed_at && $row->completed_at->lt($cutoff);
             $questions = $row->exam?->questions ?? collect();
-            $hasManualQuestions = $questions->contains(fn ($q) => $q->requiresManualGrading());
-            $hasErrorLikeState = ! $row->exam || ! $hasManualQuestions;
+            $hasManualQuestions = $questions->contains(function ($q) use ($manualTypes) {
+                return in_array((string) ($q->question_type ?? ''), $manualTypes, true);
+            });
+            $hasErrorLikeState = !$row->exam || !$hasManualQuestions;
 
             if ($isExpired || $hasErrorLikeState) {
                 $toClearIds[] = $row->id;
@@ -999,6 +1001,68 @@ class ExamAdminController extends Controller
         return response()->json([
             'message' => 'Coada de verificări a fost curățată.',
             'cleared_count' => count($toClearIds),
+        ]);
+    }
+
+    /**
+     * Manually adjust the score for an exam attempt.
+     */
+    public function updateResultScore(Request $request, $resultId)
+    {
+        $validated = $request->validate([
+            'score' => 'required|numeric|min:0',
+            'note' => 'nullable|string|max:2000',
+        ]);
+
+        $result = ExamResult::with('exam')->findOrFail($resultId);
+        $this->assertExamAccessibleByInstructor($result->exam);
+
+        $maxScore = (int) ($result->total_points ?? 0);
+        if ($maxScore <= 0) {
+            $maxScore = 1;
+        }
+
+        $newScore = min((float) $validated['score'], (float) $maxScore);
+        $newPercentage = round(($newScore / $maxScore) * 100, 2);
+        $passingScore = (int) ($result->exam->passing_score ?? 70);
+        $newPassed = $newPercentage >= $passingScore;
+
+        $manualScores = is_array($result->manual_review_scores) ? $result->manual_review_scores : [];
+        $previousScore = $result->score;
+        $meta = is_array($manualScores['_meta'] ?? null) ? $manualScores['_meta'] : [];
+        $meta['score_adjustment'] = [
+            'previous_score' => $previousScore,
+            'adjusted_score' => $newScore,
+            'adjusted_at' => now()->toIso8601String(),
+            'adjusted_by' => Auth::id(),
+            'note' => $validated['note'] ?? null,
+        ];
+        $manualScores['_meta'] = $meta;
+
+        $result->update([
+            'score' => (int) round($newScore),
+            'percentage' => $newPercentage,
+            'passed' => $newPassed,
+            'needs_manual_review' => false,
+            'reviewed_at' => $result->reviewed_at ?? now(),
+            'reviewed_by' => Auth::id(),
+            'manual_review_scores' => $manualScores,
+        ]);
+
+        \Illuminate\Support\Facades\Cache::forget("profile_user_{$result->user_id}");
+        \Illuminate\Support\Facades\Cache::forget("dashboard_user_{$result->user_id}_stats");
+
+        return response()->json([
+            'message' => 'Punctajul a fost actualizat.',
+            'result' => [
+                'id' => $result->id,
+                'score' => $result->score,
+                'total_points' => $result->total_points,
+                'percentage' => $result->percentage,
+                'passed' => $result->passed,
+                'status' => $result->reviewed_at ? 'approved' : 'completed',
+                'reviewed_at' => $result->reviewed_at,
+            ],
         ]);
     }
 
@@ -1073,11 +1137,29 @@ class ExamAdminController extends Controller
     private function sanitizeExamSettings($settings): array
     {
         $settings = is_array($settings) ? $settings : [];
-        $rawMode = (string) ($settings['selection_mode'] ?? 'folders');
-        $mode = $rawMode === 'questions' ? 'questions' : ($rawMode === 'tags' ? 'tags' : 'folders');
+        unset($settings['tags']);
+
+        $mode = ($settings['selection_mode'] ?? 'folders') === 'questions' ? 'questions' : 'folders';
         $settings['selection_mode'] = $mode;
         $settings['folder_ids'] = $this->normalizeSettingIds($settings['folder_ids'] ?? []);
         $settings['question_ids'] = $this->normalizeSettingIds($settings['question_ids'] ?? []);
+
+        $accessMode = (string) ($settings['access_mode'] ?? '');
+        if ($accessMode !== '' && ! in_array($accessMode, ['all_students', 'selected_students', 'teams'], true)) {
+            $settings['access_mode'] = 'all_students';
+        }
+        if (array_key_exists('team_ids', $settings)) {
+            $settings['team_ids'] = $this->normalizeSettingIds($settings['team_ids']);
+        }
+        if (array_key_exists('excluded_student_ids', $settings)) {
+            $settings['excluded_student_ids'] = $this->normalizeSettingIds($settings['excluded_student_ids']);
+        }
+        if (array_key_exists('selected_students', $settings)) {
+            $settings['selected_students'] = $this->normalizeSettingIds($settings['selected_students']);
+        }
+        if (array_key_exists('deadline_flexible', $settings)) {
+            $settings['deadline_flexible'] = (bool) $settings['deadline_flexible'];
+        }
 
         if ($mode === 'questions') {
             $poolSize = count($settings['question_ids']);
@@ -1085,10 +1167,11 @@ class ExamAdminController extends Controller
             $settings['question_count'] = $poolSize > 0
                 ? max(1, min($requested > 0 ? $requested : $poolSize, $poolSize))
                 : 0;
+            $settings['include_starred'] = ! array_key_exists('include_starred', $settings) || (bool) $settings['include_starred'];
         } else {
             $settings['question_count'] = max(0, (int) ($settings['question_count'] ?? 0));
+            $settings['include_starred'] = ! array_key_exists('include_starred', $settings) || (bool) $settings['include_starred'];
         }
-        $settings['include_starred'] = ! array_key_exists('include_starred', $settings) || (bool) $settings['include_starred'];
 
         return $settings;
     }

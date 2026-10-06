@@ -36,9 +36,9 @@ class HandleCors
             return response('', 200)
                 ->header('Access-Control-Allow-Origin', $allowedOrigin)
                 ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH')
-                ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-XSRF-TOKEN, Accept, Origin, X-Formely-Client')
+                ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-XSRF-TOKEN, X-CSRF-TOKEN, Accept, Origin, X-Volta-Client, X-Formely-Client')
                 ->header('Access-Control-Allow-Credentials', 'true')
-                ->header('Access-Control-Expose-Headers', 'X-XSRF-TOKEN');
+                ->header('Access-Control-Expose-Headers', 'X-XSRF-TOKEN, X-CSRF-TOKEN');
         }
 
         $response = $next($request);
@@ -46,9 +46,9 @@ class HandleCors
         // Add CORS headers to response
         $response->headers->set('Access-Control-Allow-Origin', $allowOrigin);
         $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-        $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-XSRF-TOKEN, Accept, Origin, X-Formely-Client');
+        $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-XSRF-TOKEN, X-CSRF-TOKEN, Accept, Origin, X-Volta-Client, X-Formely-Client');
         $response->headers->set('Access-Control-Allow-Credentials', 'true');
-        $response->headers->set('Access-Control-Expose-Headers', 'X-XSRF-TOKEN');
+        $response->headers->set('Access-Control-Expose-Headers', 'X-XSRF-TOKEN, X-CSRF-TOKEN');
 
         return $response;
     }

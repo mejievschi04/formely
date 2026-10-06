@@ -1,5 +1,13 @@
-﻿import React from 'react';
+import { AI_QUESTION_TYPE_OPTIONS, DEFAULT_AI_QUESTION_TYPES, getAiQuestionTypeLabel } from './AIGenerateQuestionsModalShared.js';
+import { X } from '@phosphor-icons/react';
+import React from 'react';
 import { createPortal } from 'react-dom';
+
+
+
+
+
+
 
 const AIGenerateQuestionsModal = ({
   open,
@@ -20,17 +28,34 @@ const AIGenerateQuestionsModal = ({
   if (!open) return null;
 
   const hasCourses = Array.isArray(courses) && courses.length > 0;
+  const selectedTypes = Array.isArray(aiOptions.questionTypes) ? aiOptions.questionTypes : DEFAULT_AI_QUESTION_TYPES;
+
+  const toggleQuestionType = (typeId) => {
+    setAiOptions((prev) => {
+      const current = Array.isArray(prev.questionTypes) ? prev.questionTypes : DEFAULT_AI_QUESTION_TYPES;
+      const next = current.includes(typeId)
+        ? current.filter((id) => id !== typeId)
+        : [...current, typeId];
+      return {
+        ...prev,
+        questionTypes: next.length > 0 ? next : [typeId],
+      };
+    });
+  };
 
   const modal = (
-    <div className="admin-team-modal-overlay" onClick={() => !aiGenerating && onClose()} style={{ zIndex: 10000 }}>
+    <div className="admin-team-modal-overlay" style={{ zIndex: 10000 }}>
       <div className="admin-team-modal" onClick={(e) => e.stopPropagation()}>
         <div className="admin-team-modal-header">
           <div>
-            <h2 className="admin-team-modal-title">🤖 Generează întrebări cu AI</h2>
+            <h2 className="admin-team-modal-title">🤖 Generează întrebări cu Formely AI</h2>
+            <p className="admin-page-subtitle" style={{ marginTop: '0.5rem', marginBottom: 0 }}>
+              Alege cursul, tipurile de întrebări și numărul dorit. Formely AI le generează și le salvează direct.
+            </p>
           </div>
           {!aiGenerating && (
-            <button type="button" className="admin-team-modal-close" onClick={onClose}>
-              ×
+            <button type="button" className="admin-team-modal-close va-close-btn" onClick={onClose} aria-label="Închide">
+              <X size={18} weight="bold" aria-hidden="true" />
             </button>
           )}
         </div>
@@ -53,10 +78,28 @@ const AIGenerateQuestionsModal = ({
                   ))
                 : null}
             </select>
-            <p className="admin-form-hint">AI va folosi conținutul cursului selectat ca sursă principală.</p>
+            <p className="admin-form-hint">Formely AI va folosi conținutul cursului selectat ca sursă principală.</p>
             {!coursesLoading && !hasCourses ? (
               <p className="admin-form-hint">Nu există cursuri disponibile pentru selecție.</p>
             ) : null}
+          </div>
+
+          <div className="admin-form-group">
+            <label className="admin-form-label">Tipuri de întrebări</label>
+            <div className="qb-ai-type-grid">
+              {AI_QUESTION_TYPE_OPTIONS.map((option) => (
+                <label key={option.id} className="qb-ai-type-option">
+                  <input
+                    type="checkbox"
+                    checked={selectedTypes.includes(option.id)}
+                    disabled={aiGenerating}
+                    onChange={() => toggleQuestionType(option.id)}
+                  />
+                  <span>{option.label}</span>
+                </label>
+              ))}
+            </div>
+            <p className="admin-form-hint">Formely AI va varia tipurile selectate în setul generat.</p>
           </div>
 
           <div className="admin-form-group">
@@ -95,7 +138,7 @@ const AIGenerateQuestionsModal = ({
           {aiGenerating ? (
             <div className="qb-ai-review-loading">
               <span className="qb-spinner" aria-hidden />
-              AI generează întrebările... {aiGeneratedCount ? `${aiGeneratedCount}/${aiTargetCount || aiOptions.numberOfQuestions}` : ''}
+              Formely AI generează întrebările... {aiGeneratedCount ? `${aiGeneratedCount}/${aiTargetCount || aiOptions.numberOfQuestions}` : ''}
             </div>
           ) : null}
 
@@ -105,7 +148,9 @@ const AIGenerateQuestionsModal = ({
               <ol className="qb-ai-generated-preview-list">
                 {aiGeneratedPreviews.map((question) => (
                   <li key={`${question.index}-${question.content.slice(0, 24)}`}>
-                    <strong>{question.index}.</strong> {question.content}
+                    <strong>{question.index}.</strong>{' '}
+                    <span className="qb-ai-type-pill">{getAiQuestionTypeLabel(question.type)}</span>{' '}
+                    {question.content}
                   </li>
                 ))}
               </ol>
@@ -123,7 +168,7 @@ const AIGenerateQuestionsModal = ({
             type="button"
             className="lms-btn-primary"
             onClick={() => onStartReview(selectedCourseId, aiOptions.numberOfQuestions)}
-            disabled={aiGenerating || !selectedCourseId || !hasCourses}
+            disabled={aiGenerating || !selectedCourseId || !hasCourses || selectedTypes.length === 0}
           >
             {aiGenerating ? 'Se pregătește...' : 'Generează automat'}
           </button>

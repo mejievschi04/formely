@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class AdminAlertController extends Controller
 {
@@ -14,10 +13,6 @@ class AdminAlertController extends Controller
         $validated = $request->validate([
             'alert_id' => 'required|string|max:128',
         ]);
-
-        if (! Schema::hasTable('dismissed_dashboard_alerts')) {
-            return response()->json(['message' => 'Alertă închisă']);
-        }
 
         DB::table('dismissed_dashboard_alerts')->updateOrInsert(
             [
@@ -37,10 +32,6 @@ class AdminAlertController extends Controller
      */
     public static function dismissedIdsForUser(int $userId): array
     {
-        if (! Schema::hasTable('dismissed_dashboard_alerts')) {
-            return [];
-        }
-
         return DB::table('dismissed_dashboard_alerts')
             ->where('user_id', $userId)
             ->pluck('alert_id')

@@ -8,14 +8,13 @@ const prefetched = new Set();
 if (typeof requestIdleCallback !== 'undefined') {
 	requestIdleCallback(
 		() => {
-			Promise.all([
-				import('../pages/CoursesPage'),
-				import('../pages/admin/AdminDashboardPage'),
-			]).then(() => {
-				['/courses', '/admin'].forEach((p) => prefetched.add(p));
-			}).catch(() => {});
+			import('../pages/CoursesPage')
+				.then(() => {
+					prefetched.add('/courses');
+				})
+				.catch(() => {});
 		},
-		{ timeout: 2000 }
+		{ timeout: 2500 }
 	);
 }
 
@@ -23,14 +22,14 @@ const routePrefetchers = [
 	{ prefix: '/courses', fn: () => import('../pages/CoursesPage') },
 	{ prefix: '/courses/map', fn: () => import('../pages/CourseMapPage') },
 	{ prefix: '/admin/maps', fn: () => import('../pages/CourseMapPage') },
-	{ prefix: '/library/compose', fn: () => import('../pages/LibraryComposePage') },
+	{ prefix: '/monthly-tests', fn: () => import('../pages/MonthlyTestsPage') },
 	{ prefix: '/events', fn: () => import('../pages/EventsPage') },
 	{ prefix: '/library', fn: () => import('../pages/LibraryPage') },
+	{ prefix: '/guides', fn: () => import('../pages/GuidesPage') },
 	{ prefix: '/settings', fn: () => import('../pages/StudentSettingsPage') },
 	{ prefix: '/profile/activity', fn: () => import('../pages/StudentActivityPage') },
 	{ prefix: '/profile', fn: () => import('../pages/ProfilePage') },
 	{ prefix: '/achievements', fn: () => import('../pages/AchievementsPage') },
-	{ prefix: '/catalog-exam-results', fn: () => import('../pages/CatalogExamResultsPage') },
 	{ prefix: '/exam-results', fn: () => import('../pages/ExamResultsPage') },
 	{ prefix: '/completed-courses', fn: () => import('../pages/CompletedCoursesPage') },
 	{ prefix: '/admin', fn: () => import('../pages/admin/AdminDashboardPage') },
@@ -38,6 +37,7 @@ const routePrefetchers = [
 	{ prefix: '/admin/courses', fn: () => import('../pages/admin/AdminCoursesPage') },
 	{ prefix: '/admin/events', fn: () => import('../pages/admin/AdminEventsPage') },
 	{ prefix: '/admin/teams', fn: () => import('../pages/admin/AdminTeamsPage') },
+	{ prefix: '/admin/team-members', fn: () => import('../pages/admin/AdminTeamsPage') },
 	{ prefix: '/admin/users', fn: () => import('../pages/admin/AdminUsersPage') },
 	{ prefix: '/admin/activity-logs', fn: () => import('../pages/admin/AdminActivityLogsPage') },
 	{ prefix: '/admin/tests/pending-review', fn: () => import('../pages/admin/AdminTestsPendingReviewsPage') },
@@ -48,7 +48,7 @@ const routePrefetchers = [
 export function prefetchRoute(path) {
 	const normalized = (path || '/').replace(/\/$/, '') || '/';
 	if (prefetched.has(normalized)) return;
-	// Match longest prefix first (e.g. /admin/users before /admin)
+	// Match longest prefix first (e.g. /admin/team-members before /admin)
 	const match = routePrefetchers
 		.filter((r) => normalized === r.prefix || normalized.startsWith(r.prefix + '/'))
 		.sort((a, b) => b.prefix.length - a.prefix.length)[0];

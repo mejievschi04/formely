@@ -65,13 +65,6 @@ body.admin-view .va-main {
 	line-height: var(--line-height-relaxed);
 }
 
-.admin-page-header-actions {
-	display: flex;
-	align-items: center;
-	gap: var(--space-3);
-	flex-wrap: wrap;
-}
-
 /* ============================================
    3. ADMIN TOOLBAR
    ============================================ */
@@ -116,70 +109,6 @@ body.admin-view .va-main {
 	color: var(--text-tertiary);
 }
 
-.admin-search-icon {
-	position: absolute;
-	left: var(--space-3);
-	top: 50%;
-	transform: translateY(-50%);
-	width: 20px;
-	height: 20px;
-	color: var(--text-tertiary);
-	pointer-events: none;
-}
-
-.admin-search-clear {
-	position: absolute;
-	right: var(--space-3);
-	top: 50%;
-	transform: translateY(-50%);
-	width: 24px;
-	height: 24px;
-	background: transparent;
-	border: none;
-	color: var(--text-tertiary);
-	cursor: pointer;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	border-radius: var(--radius-sm);
-	transition: all var(--transition-base);
-}
-
-.admin-search-clear:hover {
-	background-color: var(--bg-elevated);
-	color: var(--text-primary);
-}
-
-.admin-courses-actions {
-	display: flex;
-	align-items: center;
-	gap: var(--space-3);
-	flex-wrap: wrap;
-}
-
-.admin-filter-select {
-	padding: var(--space-3) var(--space-4);
-	background-color: var(--bg-secondary);
-	border: 1px solid var(--border-primary);
-	border-radius: var(--radius-lg);
-	color: var(--text-primary);
-	font-size: var(--font-size-sm);
-	cursor: pointer;
-	transition: all var(--transition-base);
-	font-family: var(--font-family);
-}
-
-.admin-filter-select:focus {
-	outline: none;
-	border-color: var(--border-focus);
-	box-shadow: var(--shadow-focus);
-}
-
-.admin-events-view-toggle {
-	display: flex;
-	gap: var(--space-2);
-}
-
 /* ============================================
    4. ADMIN BUTTONS (Extended)
    ============================================ */
@@ -201,52 +130,14 @@ body.admin-view .va-main {
 	white-space: nowrap;
 }
 
-.admin-btn-primary {
-	background-color: var(--color-primary);
-	color: var(--text-inverse);
-	border-color: var(--color-primary);
-	box-shadow: var(--shadow-sm);
-}
-
-.admin-btn-primary:hover:not(:disabled) {
-	background-color: var(--color-primary-hover);
-	border-color: var(--color-primary-hover);
-	box-shadow: var(--shadow-md);
-	transform: translateY(-1px);
-}
-
-/* Light theme - yellow background with black text */
-[data-theme="light"] .admin-btn-primary {
-	background-color: var(--color-primary);
-	color: var(--text-inverse);
-	border-color: var(--color-primary);
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-}
-
-[data-theme="light"] .admin-btn-primary:hover:not(:disabled) {
-	background-color: var(--color-primary-hover);
-	border-color: var(--color-primary-hover);
-	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.admin-btn-primary:active:not(:disabled) {
-	transform: translateY(0);
-	box-shadow: var(--shadow-sm);
-}
-
-.admin-btn-primary:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
 .admin-btn-secondary {
 	background-color: transparent;
-	color: var(--color-primary);
+	color: var(--text-accent);
 	border: 1px solid var(--color-primary);
 }
 
 .admin-btn-secondary:hover:not(:disabled) {
-	background-color: rgba(var(--formely-white-rgb), 0.1);
+	background-color: rgba(var(--color-primary-rgb), 0.1);
 	border-color: var(--color-primary-hover);
 	color: var(--color-primary-hover);
 }
@@ -308,31 +199,6 @@ body.admin-view .va-main {
 /* ============================================
    5. BULK ACTIONS BAR
    ============================================ */
-.admin-bulk-actions-bar {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: var(--space-4);
-	padding: var(--space-4) var(--space-6);
-	background-color: var(--bg-elevated);
-	border-radius: var(--radius-lg);
-	border: 1px solid var(--border-primary);
-	margin-bottom: var(--space-6);
-	flex-wrap: wrap;
-}
-
-.admin-bulk-actions-info {
-	font-size: var(--font-size-sm);
-	font-weight: var(--font-weight-medium);
-	color: var(--text-primary);
-}
-
-.admin-bulk-actions-buttons {
-	display: flex;
-	align-items: center;
-	gap: var(--space-2);
-	flex-wrap: wrap;
-}
 
 /* ============================================
    6. ADMIN GRID & CARD
@@ -380,42 +246,6 @@ body.admin-view .va-main {
 	min-width: 0;
 }
 
-.admin-card-description {
-	font-size: var(--font-size-sm);
-	color: var(--text-secondary);
-	margin: 0;
-	line-height: var(--line-height-relaxed);
-	min-height: 3em;
-	display: -webkit-box;
-	-webkit-line-clamp: 2;
-	-webkit-box-orient: vertical;
-	overflow: hidden;
-}
-
-.admin-card-info {
-	display: flex;
-	flex-direction: column;
-	gap: var(--space-2);
-	font-size: var(--font-size-sm);
-	color: var(--text-secondary);
-	flex: 1;
-	min-height: 0;
-}
-
-.admin-card-info > div {
-	display: flex;
-	flex-direction: column;
-	gap: var(--space-2);
-}
-
-.admin-card-info > div > div {
-	display: flex;
-	align-items: center;
-	gap: var(--space-2);
-	font-size: var(--font-size-sm);
-	line-height: 1.5;
-}
-
 .admin-card-actions {
 	display: flex;
 	gap: var(--space-2);
@@ -435,15 +265,6 @@ body.admin-view .va-main {
 /* ============================================
    7. ADMIN CARD BADGE
    ============================================ */
-.admin-card-badge {
-	padding: var(--space-1) var(--space-3);
-	border-radius: var(--radius-full);
-	font-size: var(--font-size-xs);
-	font-weight: var(--font-weight-medium);
-	display: inline-flex;
-	align-items: center;
-	gap: var(--space-1);
-}
 
 /* ============================================
    7. ADMIN SETTINGS PAGE
@@ -511,9 +332,7 @@ body.admin-view .va-main {
 	margin-bottom: var(--space-2);
 }
 
-.admin-settings-input,
-.admin-settings-select,
-.admin-settings-textarea {
+.admin-settings-select {
 	width: 100%;
 	padding: var(--space-3) var(--space-4);
 	background-color: var(--bg-secondary);
@@ -525,18 +344,11 @@ body.admin-view .va-main {
 	transition: all var(--transition-base);
 }
 
-.admin-settings-input:focus,
-.admin-settings-select:focus,
-.admin-settings-textarea:focus {
+.admin-settings-select:focus {
 	outline: none;
 	border-color: var(--border-focus);
 	box-shadow: var(--shadow-focus);
 	background-color: var(--bg-elevated);
-}
-
-.admin-settings-textarea {
-	resize: vertical;
-	min-height: 100px;
 }
 
 .admin-settings-toggle {
@@ -557,12 +369,6 @@ body.admin-view .va-main {
 	font-size: var(--font-size-sm);
 	color: var(--text-primary);
 	cursor: pointer;
-}
-
-.admin-settings-hint {
-	font-size: var(--font-size-xs);
-	color: var(--text-tertiary);
-	margin-top: var(--space-1);
 }
 
 .admin-settings-actions {
@@ -653,11 +459,11 @@ body.admin-view .va-main {
 
 /* Toggle switch - exclude from generic button styles (va-shell-main, admin-container) */
 .admin-settings-toggle-switch {
-	width: 44px !important;
-	height: 24px !important;
-	min-width: 44px !important;
-	min-height: 24px !important;
-	padding: 0 !important;
+	width: 44px;
+	height: 24px;
+	min-width: 44px;
+	min-height: 24px;
+	padding: 0;
 	background-color: var(--bg-secondary);
 	border: 1px solid var(--border-primary);
 	border-radius: var(--radius-full);
@@ -665,7 +471,7 @@ body.admin-view .va-main {
 	cursor: pointer;
 	transition: all var(--transition-base);
 	flex-shrink: 0;
-	font-size: 0 !important; /* Prevent text/icon sizing from button rules */
+	font-size: 0; /* Prevent text/icon sizing from button rules */
 }
 
 .admin-settings-toggle-switch.active {
@@ -676,7 +482,7 @@ body.admin-view .va-main {
 .admin-settings-toggle-slider {
 	width: 18px;
 	height: 18px;
-	background-color: var(--formely-bg);
+	background-color: var(--bg-elevated);
 	border-radius: var(--radius-full);
 	position: absolute;
 	top: 2px;
@@ -687,7 +493,7 @@ body.admin-view .va-main {
 
 .admin-settings-toggle-switch.active .admin-settings-toggle-slider {
 	transform: translateX(20px);
-	background-color: var(--formely-bg);
+	background-color: var(--bg-elevated);
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
@@ -707,72 +513,6 @@ body.admin-view .va-main {
 }
 
 /* Currency Selector */
-.admin-currency-selector {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-	gap: var(--space-4);
-	margin-top: var(--space-4);
-}
-
-.admin-currency-option {
-	display: flex;
-	flex-direction: column;
-	gap: var(--space-2);
-	padding: var(--space-4) var(--space-5);
-	background-color: var(--bg-secondary);
-	border: 2px solid var(--border-primary);
-	border-radius: var(--radius-lg);
-	cursor: pointer;
-	transition: all var(--transition-base);
-	text-align: left;
-	font-family: var(--font-family);
-}
-
-.admin-currency-option:hover {
-	border-color: var(--border-secondary);
-	box-shadow: var(--shadow-sm);
-	transform: translateY(-2px);
-}
-
-.admin-currency-option.active {
-	background-color: var(--color-primary);
-	border-color: var(--color-primary);
-	color: var(--bg-primary);
-	box-shadow: var(--shadow-md);
-}
-
-.admin-currency-option.active .admin-currency-symbol,
-.admin-currency-option.active .admin-currency-code,
-.admin-currency-option.active .admin-currency-name {
-	color: var(--bg-primary);
-}
-
-.admin-currency-option-header {
-	display: flex;
-	align-items: center;
-	gap: var(--space-3);
-	margin-bottom: var(--space-1);
-}
-
-.admin-currency-symbol {
-	font-size: var(--font-size-2xl);
-	font-weight: var(--font-weight-bold);
-	color: var(--text-primary);
-	line-height: 1;
-}
-
-.admin-currency-code {
-	font-size: var(--font-size-lg);
-	font-weight: var(--font-weight-semibold);
-	color: var(--text-primary);
-	letter-spacing: 0.05em;
-}
-
-.admin-currency-name {
-	font-size: var(--font-size-sm);
-	color: var(--text-tertiary);
-	font-weight: var(--font-weight-medium);
-}
 
 .admin-settings-actions .lms-btn-primary {
 	display: flex;
@@ -823,166 +563,11 @@ body.admin-view .va-main {
 	overflow: hidden;
 }
 
-.admin-events-two-groups {
-	display: flex;
-	flex-direction: column;
-	gap: var(--space-8);
-	padding-bottom: var(--space-4);
-}
-
-.admin-events-group__title {
-	margin: 0 0 var(--space-4) 0;
-	font-size: var(--font-size-lg);
-	font-weight: var(--font-weight-semibold);
-	color: var(--text-primary);
-}
-
-.admin-events-group__empty {
-	margin: 0;
-	font-size: var(--font-size-sm);
-	color: var(--text-secondary);
-}
-
-.admin-events-time-menu {
-	flex-wrap: wrap;
-	margin: 0 0 var(--space-4) 0;
-	padding: 0 var(--space-1);
-}
-
-.admin-events-tab-empty .lms-btn-secondary {
-	margin-top: var(--space-3);
-}
-
-.admin-events-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-	gap: var(--space-6);
-}
-
-.admin-event-card {
-	background-color: var(--bg-elevated);
-	border-radius: var(--radius-lg);
-	padding: var(--space-6);
-	border: 1px solid var(--border-primary);
-	box-shadow: var(--shadow-sm);
-	transition: all var(--transition-base);
-	cursor: pointer;
-}
-
-.admin-event-card:hover {
-	box-shadow: var(--shadow-md);
-	border-color: var(--border-secondary);
-	transform: translateY(-2px);
-}
-
-.admin-event-card-header {
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	margin-bottom: var(--space-4);
-}
-
-.admin-event-card-title {
-	font-size: var(--font-size-lg);
-	font-weight: var(--font-weight-semibold);
-	color: var(--text-primary);
-	margin: 0 0 var(--space-2) 0;
-}
-
-.admin-event-card-meta {
-	display: flex;
-	flex-direction: column;
-	gap: var(--space-2);
-	font-size: var(--font-size-sm);
-	color: var(--text-tertiary);
-}
-
-.admin-event-card-actions {
-	display: flex;
-	align-items: center;
-	gap: var(--space-2);
-	margin-top: var(--space-4);
-	padding-top: var(--space-4);
-	border-top: 1px solid var(--border-primary);
-}
-
 /* Event card (list view) refinements */
-.admin-event-card-checkbox {
-	position: absolute;
-	top: var(--space-4);
-	right: var(--space-4);
-	z-index: 1;
-}
-
-.admin-event-card-header {
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: var(--space-4);
-}
-
-.admin-event-card-tags {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var(--space-3);
-}
-
-.admin-event-kpis {
-	display: grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: var(--space-4);
-	margin-top: var(--space-2);
-}
-
-.admin-kpi-label {
-	font-size: var(--font-size-xs);
-	color: var(--text-secondary);
-	margin: 0 0 var(--space-1) 0;
-}
-
-.admin-kpi-value {
-	font-size: var(--font-size-lg);
-	font-weight: var(--font-weight-bold);
-	color: var(--text-primary);
-	line-height: 1.2;
-}
-
-@media (max-width: 768px) {
-	.admin-event-kpis {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-	}
-}
-
-@media (max-width: 480px) {
-	.admin-event-kpis {
-		grid-template-columns: 1fr;
-	}
-}
 
 /* ============================================
    9. ADMIN TEAMS PAGE
    ============================================ */
-.admin-teams-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-	gap: var(--space-6);
-}
-
-.admin-team-card {
-	background-color: var(--bg-elevated);
-	border-radius: var(--radius-lg);
-	padding: var(--space-6);
-	border: 1px solid var(--border-primary);
-	box-shadow: var(--shadow-sm);
-	transition: all var(--transition-base);
-	cursor: pointer;
-}
-
-.admin-team-card:hover {
-	box-shadow: var(--shadow-md);
-	border-color: var(--border-secondary);
-	transform: translateY(-2px);
-}
 
 /* Lista echipe — card compact (aceleași elemente, spațiere redusă) */
 .admin-team-card-compact.admin-card {
@@ -1069,43 +654,41 @@ body.admin-view .va-main {
 	flex-shrink: 0;
 }
 
+.admin-team-card-compact__icon-btn--danger {
+	color: var(--color-error);
+	background: var(--bg-elevated);
+	border: 1px solid var(--border-secondary);
+}
+
+.admin-team-card-compact__icon-btn--danger:hover,
+.admin-team-card-compact__icon-btn--danger:hover svg {
+	color: var(--color-error);
+	background: color-mix(in srgb, var(--color-error) 14%, var(--bg-elevated));
+	border-color: var(--color-error);
+}
+
+.admin-team-card-compact__icon-btn--danger:hover svg {
+	background: transparent;
+	fill: currentColor;
+}
+
+.admin-team-card-compact__icon-btn--danger svg {
+	color: currentColor;
+	fill: currentColor;
+}
+
 .admin-team-card-compact__avatar svg {
 	display: block;
 	flex-shrink: 0;
 }
 
+/* pe fundalul galben iconița rămâne închisă și în tema întunecată (albă nu se vedea) */
 html[data-theme="dark"] .admin-team-card-compact__avatar {
-	color: var(--formely-bg);
+	color: var(--btn-primary-text);
 }
 
 html[data-theme="dark"] .admin-team-card-compact__avatar svg {
-	color: var(--formely-bg);
-}
-
-.admin-team-card-compact__description {
-	margin-bottom: 0;
-	min-height: 2.5em;
-	-webkit-line-clamp: 2;
-}
-
-.admin-team-card-compact__owner {
-	font-size: var(--font-size-xs);
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	margin-bottom: 0;
-	white-space: nowrap;
-	line-height: 1.45;
-	gap: var(--space-2);
-	flex-direction: row;
-}
-
-.admin-team-card-compact__owner-name {
-	white-space: nowrap;
-	font-weight: var(--font-weight-medium);
-	overflow: hidden;
-	text-overflow: ellipsis;
-	min-width: 0;
+	color: var(--btn-primary-text);
 }
 
 .admin-team-card-compact__stats {
@@ -1196,27 +779,6 @@ html[data-theme="dark"] .admin-team-card-compact__avatar svg {
 /* ============================================
    12. ADMIN LESSONS PAGE
    ============================================ */
-.admin-lessons-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-	gap: var(--space-6);
-}
-
-.admin-lesson-card {
-	background-color: var(--bg-elevated);
-	border-radius: var(--radius-lg);
-	padding: var(--space-6);
-	border: 1px solid var(--border-primary);
-	box-shadow: var(--shadow-sm);
-	transition: all var(--transition-base);
-	cursor: pointer;
-}
-
-.admin-lesson-card:hover {
-	box-shadow: var(--shadow-md);
-	border-color: var(--border-secondary);
-	transform: translateY(-2px);
-}
 
 .admin-btn-icon {
 	display: inline-flex;
@@ -1276,25 +838,6 @@ html[data-theme="dark"] .admin-team-card-compact__avatar svg {
 
 .admin-team-card-sortable {
 	position: relative;
-}
-
-.admin-team-card-sortable--grabbable {
-	cursor: grab;
-	touch-action: none;
-}
-
-.admin-team-card-sortable--grabbable:active,
-.admin-team-card-sortable--dragging {
-	cursor: grabbing;
-}
-
-.admin-team-card-sortable--grabbable .admin-card-body {
-	cursor: grab;
-}
-
-.admin-team-card-sortable--grabbable .admin-card-actions,
-.admin-team-card-sortable--grabbable .admin-team-card-compact__header-actions {
-	cursor: default;
 }
 
 .admin-team-member-assign-list {
@@ -1407,6 +950,20 @@ html[data-theme="dark"] .admin-team-card-compact__avatar svg {
 /* ============================================
    15. ADMIN TEAM MODAL LIST
    ============================================ */
+.admin-team-member-search {
+	display: block;
+	width: 100%;
+	max-width: none;
+	margin-bottom: var(--space-3);
+	box-sizing: border-box;
+}
+
+.admin-team-member-search-empty {
+	margin: 0;
+	color: var(--text-tertiary);
+	font-size: var(--font-size-sm);
+}
+
 .admin-team-modal-list {
 	max-height: 400px;
 	overflow-y: auto;
@@ -1437,7 +994,7 @@ html[data-theme="dark"] .admin-team-card-compact__avatar svg {
 }
 
 .admin-team-modal-list-item.selected {
-	background-color: rgba(var(--formely-white-rgb), 0.1);
+	background-color: rgba(var(--color-primary-rgb), 0.1);
 	border-color: var(--color-primary);
 }
 
@@ -1462,7 +1019,7 @@ html[data-theme="dark"] .admin-team-card-compact__avatar svg {
 }
 
 .admin-team-modal-list-item-label.selected {
-	color: var(--color-primary);
+	color: var(--text-accent);
 }
 
 .admin-team-modal-list-item-sublabel {
@@ -1470,13 +1027,100 @@ html[data-theme="dark"] .admin-team-card-compact__avatar svg {
 	color: var(--text-tertiary);
 }
 
-/* Publish course modal – overlay z-index and narrow content */
-.publish-course-modal-overlay.admin-team-modal-overlay {
+/* Publish course modal – centered dialog over dimmed page */
+.publish-course-modal-overlay.va-modal-overlay {
 	z-index: 10000;
+	align-items: center;
+	justify-content: center;
 }
 
-.publish-course-modal-overlay .admin-team-modal {
-	max-width: 480px;
+.publish-course-modal-overlay .publish-course-modal-shell,
+.publish-course-modal-overlay .va-modal-content {
+	background: transparent;
+	box-shadow: none;
+	width: min(440px, calc(100vw - 32px));
+	max-width: min(440px, calc(100vw - 32px));
+	max-height: min(90vh, 720px);
+	margin: 0 auto;
+	overflow: visible;
+}
+
+.publish-course-modal-overlay .admin-team-modal,
+.publish-course-modal-panel {
+	width: 100%;
+	max-width: none;
+	max-height: min(90vh, 720px);
+	margin: 0;
+}
+
+.publish-course-section {
+	margin: 0 0 var(--space-5);
+	padding: 0;
+	border: 0;
+	min-width: 0;
+}
+
+.publish-course-section-title {
+	margin: 0 0 var(--space-3);
+	font-size: var(--font-size-sm);
+	font-weight: 700;
+	color: var(--text-primary);
+}
+
+.publish-course-section-hint {
+	margin: 0;
+	font-size: var(--font-size-sm);
+	line-height: 1.5;
+	color: var(--text-secondary);
+}
+
+.publish-course-choice {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--space-3);
+	margin-bottom: var(--space-3);
+	cursor: pointer;
+}
+
+.publish-course-ready {
+	margin: 0 0 var(--space-3);
+	color: var(--color-success);
+	font-size: var(--font-size-sm);
+}
+
+.publish-course-error-group {
+	margin-bottom: var(--space-3);
+}
+
+.publish-course-error-group-title {
+	margin: 0 0 var(--space-2);
+	font-size: var(--font-size-xs);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--text-secondary);
+}
+
+.publish-course-error-action {
+	display: inline-block;
+	margin-left: var(--space-2);
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--text-accent);
+	font: inherit;
+	font-weight: 600;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.publish-course-blocked-reason {
+	margin: 0 0 var(--space-3);
+	font-size: var(--font-size-sm);
+	color: var(--text-secondary);
+}
+
+.publish-course-blocked-reason {
+	color: var(--color-error);
 }
 
 .publish-course-error-margin {
@@ -1506,30 +1150,11 @@ html[data-theme="dark"] .admin-team-card-compact__avatar svg {
 	margin-bottom: var(--space-1);
 }
 
-.publish-course-error-list li.publish-course-error-more {
-	color: var(--text-tertiary);
-}
-
-.publish-course-error-hint {
-	margin: var(--space-2) 0 0;
-	font-size: var(--font-size-xs);
-	color: var(--text-secondary);
-}
-
 .publish-course-validate-section {
 	margin-bottom: var(--space-4);
 	padding: var(--space-4);
 	background: var(--bg-secondary);
 	border-radius: var(--radius-md);
-}
-
-.publish-course-validate-text {
-	margin: 0 0 var(--space-3) 0;
-	color: var(--text-secondary);
-}
-
-.publish-course-subtitle-margin {
-	margin-bottom: var(--space-4);
 }
 
 .publish-course-teams-muted {
@@ -1560,9 +1185,41 @@ html[data-theme="dark"] .admin-team-card-compact__avatar svg {
 
 .publish-course-actions {
 	display: flex;
+	flex-wrap: wrap;
 	gap: var(--space-3);
-	margin-top: var(--space-6);
+	margin-top: var(--space-4);
+	padding-top: var(--space-4);
+	border-top: 1px solid var(--border-primary);
 	justify-content: flex-end;
+}
+
+.publish-course-assigned-users-list {
+	display: flex;
+	flex-direction: column;
+	gap: 0.45rem;
+	margin: 0 0 0.5rem;
+	padding: 0;
+	list-style: none;
+}
+
+.publish-course-assigned-users-list li {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0.35rem 0.65rem;
+	padding: 0.5rem 0.65rem;
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.04);
+}
+
+.publish-course-assigned-users-list strong {
+	font-size: 0.9rem;
+	color: var(--text-primary, #fff);
+}
+
+.publish-course-assigned-users-list span {
+	font-size: 0.82rem;
+	color: var(--text-tertiary, #9ca3af);
 }
 
 /* ============================================
@@ -1592,215 +1249,16 @@ html[data-theme="dark"] .admin-team-card-compact__avatar svg {
 /* ============================================
    17. ADMIN EVENTS PAGE
    ============================================ */
-.admin-events-view-toggle {
-	display: flex;
-	gap: var(--space-2);
-}
-
-.admin-events-view-toggle .lms-btn-secondary.active {
-	background-color: var(--color-primary);
-	color: var(--btn-primary-text);
-	border-color: var(--color-primary);
-}
-
-.admin-events-calendar-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: var(--space-4) var(--space-6);
-	border-bottom: 1px solid var(--border-primary);
-	background-color: var(--bg-elevated);
-}
-
-.admin-events-calendar-header-actions {
-	display: flex;
-	gap: var(--space-2);
-}
-
-.admin-events-calendar-month {
-	font-size: var(--font-size-xl);
-	font-weight: var(--font-weight-semibold);
-	color: var(--text-primary);
-	margin: 0;
-}
 
 /* ============================================
    18. ADMIN EVENTS CALENDAR
    ============================================ */
-.admin-events-calendar {
-	max-height: calc(100vh - 300px);
-	height: calc(100vh - 300px);
-	flex: 1;
-	min-height: 0;
-	display: flex;
-	flex-direction: column;
-	background-color: var(--bg-elevated);
-	border-radius: var(--radius-lg);
-	border: 1px solid var(--border-primary);
-	overflow: hidden;
-	margin-bottom: 0;
-}
 
 /* Ensure calendar contents participate in the flex layout */
-.admin-events-calendar > div {
-	flex: 1;
-	display: flex;
-	flex-direction: column;
-	min-height: 0;
-	overflow: hidden;
-}
-
-.admin-events-calendar-weekdays {
-	display: grid;
-	grid-template-columns: repeat(7, 1fr);
-	background-color: var(--bg-secondary);
-	border-bottom: 1px solid var(--border-primary);
-}
-
-.admin-events-calendar-weekday {
-	padding: var(--space-3) var(--space-4);
-	text-align: center;
-	font-size: var(--font-size-sm);
-	font-weight: var(--font-weight-semibold);
-	color: var(--text-secondary);
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-}
-
-.admin-events-calendar-days {
-	display: grid;
-	grid-template-columns: repeat(7, 1fr);
-	flex: 1;
-	overflow-y: auto;
-	gap: 1px;
-	background-color: var(--border-primary);
-	max-height: 450px;
-}
-
-.admin-events-calendar-day {
-	background-color: var(--bg-elevated);
-	min-height: 80px;
-	padding: var(--space-2);
-	display: flex;
-	flex-direction: column;
-	cursor: pointer;
-	transition: all var(--transition-base);
-	border: 1px solid transparent;
-}
-
-.admin-events-calendar-day:hover {
-	background-color: var(--bg-secondary);
-	border-color: var(--border-secondary);
-}
-
-.admin-events-calendar-day.today {
-	background-color: rgba(var(--formely-white-rgb), 0.1);
-	border-color: var(--color-primary);
-}
-
-.admin-events-calendar-day.today .admin-events-calendar-day-number {
-	color: var(--color-primary);
-	font-weight: var(--font-weight-bold);
-}
-
-.admin-events-calendar-day.other-month {
-	background-color: var(--bg-secondary);
-	opacity: 0.5;
-}
-
-.admin-events-calendar-day.other-month .admin-events-calendar-day-number {
-	color: var(--text-tertiary);
-}
-
-.admin-events-calendar-day-number {
-	font-size: var(--font-size-sm);
-	font-weight: var(--font-weight-medium);
-	color: var(--text-primary);
-	margin-bottom: var(--space-2);
-	line-height: 1;
-}
-
-.admin-events-calendar-day-events {
-	flex: 1;
-	display: flex;
-	flex-direction: column;
-	gap: var(--space-1);
-	min-height: 0;
-	overflow: hidden;
-}
-
-.admin-events-calendar-day-event {
-	font-size: var(--font-size-xs);
-	padding: var(--space-1) var(--space-2);
-	background-color: var(--color-primary);
-	color: var(--btn-primary-text);
-	border-radius: var(--radius-sm);
-	cursor: pointer;
-	transition: all var(--transition-base);
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-	line-height: 1.3;
-}
-
-.admin-events-calendar-day-event:hover {
-	background-color: var(--color-primary-hover);
-	transform: translateY(-1px);
-	box-shadow: var(--shadow-sm);
-}
-
-.admin-events-calendar-day-more {
-	font-size: var(--font-size-xs);
-	padding: var(--space-1) var(--space-2);
-	color: var(--text-secondary);
-	cursor: pointer;
-	transition: color var(--transition-base);
-	font-weight: var(--font-weight-medium);
-}
-
-.admin-events-calendar-day-more:hover {
-	color: var(--color-primary);
-}
 
 /* Custom scrollbar for calendar */
-.admin-events-calendar-days::-webkit-scrollbar {
-	width: 6px;
-}
-
-.admin-events-calendar-days::-webkit-scrollbar-track {
-	background: var(--bg-secondary);
-}
-
-.admin-events-calendar-days::-webkit-scrollbar-thumb {
-	background: var(--border-secondary);
-	border-radius: var(--radius-full);
-}
-
-.admin-events-calendar-days::-webkit-scrollbar-thumb:hover {
-	background: var(--text-tertiary);
-}
 
 /* Responsive calendar */
-@media (max-width: 768px) {
-	.admin-events-calendar-day {
-		min-height: 80px;
-		padding: var(--space-1);
-	}
-
-	.admin-events-calendar-day-number {
-		font-size: var(--font-size-xs);
-	}
-
-	.admin-events-calendar-day-event {
-		font-size: 10px;
-		padding: 2px 4px;
-	}
-
-	.admin-events-calendar-weekday {
-		padding: var(--space-2);
-		font-size: var(--font-size-xs);
-	}
-}
 
 .admin-event-modal-overlay {
 	position: fixed;
@@ -1892,20 +1350,6 @@ html[data-theme="dark"] .admin-team-card-compact__avatar svg {
 	border-top: 1px solid var(--border-primary);
 }
 
-/* Light theme - dark background for yellow buttons */
-[data-theme="light"] .admin-event-btn-primary {
-	background-color: var(--color-primary);
-	color: var(--text-inverse);
-	border: 1px solid var(--color-primary);
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-}
-
-[data-theme="light"] .admin-event-btn-primary:hover:not(:disabled) {
-	background-color: var(--color-primary-hover);
-	border-color: var(--color-primary-hover);
-	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
 .admin-event-btn-primary,
 .admin-event-btn-secondary {
 	display: inline-flex;
@@ -1926,38 +1370,14 @@ html[data-theme="dark"] .admin-team-card-compact__avatar svg {
 	height: 34px;
 }
 
-.admin-event-btn-primary {
-	background-color: var(--color-primary);
-	color: var(--text-inverse);
-	border-color: var(--color-primary);
-	box-shadow: var(--shadow-sm);
-}
-
-.admin-event-btn-primary:hover:not(:disabled) {
-	background-color: var(--color-primary-hover);
-	border-color: var(--color-primary-hover);
-	box-shadow: var(--shadow-md);
-	transform: translateY(-1px);
-}
-
-.admin-event-btn-primary:active:not(:disabled) {
-	transform: translateY(0);
-	box-shadow: var(--shadow-sm);
-}
-
-.admin-event-btn-primary:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
 .admin-event-btn-secondary {
 	background-color: transparent;
-	color: var(--color-primary);
+	color: var(--text-accent);
 	border: 1px solid var(--color-primary);
 }
 
 .admin-event-btn-secondary:hover:not(:disabled) {
-	background-color: rgba(var(--formely-white-rgb), 0.1);
+	background-color: rgba(var(--color-primary-rgb), 0.1);
 	border-color: var(--color-primary-hover);
 	color: var(--color-primary-hover);
 }
@@ -1978,16 +1398,8 @@ html[data-theme="dark"] .admin-team-card-compact__avatar svg {
 }
 
 /* ============================================
-   19. ADMIN AI GENERATING STATE
+   19. ADMIN VOLT GENERATING STATE
    ============================================ */
-.admin-ai-generating {
-	padding: var(--space-6);
-	background-color: rgba(var(--formely-white-rgb), 0.1);
-	border-radius: var(--radius-lg);
-	text-align: center;
-	margin-top: var(--space-4);
-	border: 1px solid rgba(var(--formely-white-rgb), 0.2);
-}
 
 /* ============================================
    19.5. ADMIN FORM INPUTS (Global)
@@ -2010,12 +1422,6 @@ html[data-theme="dark"] .admin-team-card-compact__avatar svg {
 }
 .admin-event-form .admin-form-section:first-child {
 	margin-top: 0;
-}
-
-.admin-event-datetime-grid {
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: var(--space-4);
 }
 
 .admin-event-form-grid-2 {
@@ -2082,12 +1488,6 @@ html[data-theme="dark"] .admin-team-card-compact__avatar svg {
 	font-weight: var(--font-weight-normal);
 	color: var(--text-tertiary);
 	font-size: var(--font-size-sm);
-}
-
-@media (max-width: 520px) {
-	.admin-event-datetime-grid {
-		grid-template-columns: 1fr;
-	}
 }
 
 .admin-form-label {
@@ -2272,7 +1672,7 @@ html[data-theme="dark"] .admin-team-card-compact__avatar svg {
 }
 
 .admin-course-builder-step.active {
-	background-color: rgba(var(--formely-white-rgb), 0.1);
+	background-color: rgba(var(--color-primary-rgb), 0.1);
 	border-color: var(--color-primary);
 }
 
@@ -2372,7 +1772,7 @@ html[data-theme="dark"] .admin-team-card-compact__avatar svg {
 	margin-left: auto;
 }
 
-.admin-course-builder-footer .admin-btn-primary,
+.admin-course-builder-footer .admin-btn.lms-btn-primary,
 .admin-course-builder-footer .admin-btn-secondary {
 	min-width: 140px;
 	padding: var(--space-3) var(--space-5);
@@ -2384,25 +1784,6 @@ html[data-theme="dark"] .admin-team-card-compact__avatar svg {
 	align-items: center;
 	justify-content: center;
 	gap: var(--space-2);
-}
-
-.admin-course-builder-footer .admin-btn-primary {
-	background-color: var(--color-primary);
-	color: var(--text-inverse);
-	border: 1px solid var(--color-primary);
-	box-shadow: 0 2px 8px rgba(var(--formely-white-rgb), 0.2);
-}
-
-.admin-course-builder-footer .admin-btn-primary:hover:not(:disabled) {
-	background-color: var(--color-primary-hover);
-	border-color: var(--color-primary-hover);
-	box-shadow: 0 4px 12px rgba(var(--formely-white-rgb), 0.3);
-	transform: translateY(-2px);
-}
-
-.admin-course-builder-footer .admin-btn-primary:active:not(:disabled) {
-	transform: translateY(0);
-	box-shadow: 0 2px 8px rgba(var(--formely-white-rgb), 0.2);
 }
 
 .admin-course-builder-footer .admin-btn-secondary {
@@ -2422,7 +1803,7 @@ html[data-theme="dark"] .admin-team-card-compact__avatar svg {
 	transform: translateY(0);
 }
 
-.admin-course-builder-footer .admin-btn-primary:disabled,
+.admin-course-builder-footer .admin-btn.lms-btn-primary:disabled,
 .admin-course-builder-footer .admin-btn-secondary:disabled {
 	opacity: 0.5;
 	cursor: not-allowed;
@@ -2479,8 +1860,8 @@ html[data-theme="dark"] .admin-team-card-compact__avatar svg {
    ============================================ */
 .admin-info-box {
 	padding: var(--space-4) var(--space-6);
-	background-color: rgba(var(--formely-white-rgb), 0.1);
-	border: 1px solid rgba(var(--formely-white-rgb), 0.2);
+	background-color: rgba(var(--color-primary-rgb), 0.1);
+	border: 1px solid rgba(var(--color-primary-rgb), 0.2);
 	border-radius: var(--radius-lg);
 }
 
@@ -2552,24 +1933,6 @@ html[data-theme="dark"] .admin-team-card-compact__avatar svg {
 	font-size: var(--font-size-sm);
 	color: var(--text-secondary);
 	margin-bottom: var(--space-2);
-}
-
-.admin-question-item-answers {
-	margin-top: var(--space-2);
-	display: flex;
-	flex-direction: column;
-	gap: var(--space-1);
-}
-
-.admin-question-answer {
-	font-size: var(--font-size-sm);
-	color: var(--text-secondary);
-	margin-top: var(--space-1);
-}
-
-.admin-question-answer.correct {
-	color: var(--color-success);
-	font-weight: var(--font-weight-medium);
 }
 
 .admin-question-item-actions {
@@ -2733,53 +2096,6 @@ body.admin-view .admin-lesson-creator-page {
 }
 
 /* Admin Lessons Page – card layout (fără inline styles) */
-.admin-lessons-card-header {
-	display: flex;
-	align-items: flex-start;
-	gap: var(--space-4);
-	margin-bottom: var(--space-4);
-}
-
-.admin-lessons-card-icon {
-	width: 56px;
-	height: 56px;
-	border-radius: var(--radius-xl);
-	background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	font-size: 28px;
-	flex-shrink: 0;
-	box-shadow: var(--shadow-md);
-}
-
-.admin-lessons-card-content {
-	flex: 1;
-	min-width: 0;
-}
-
-.admin-lessons-card-title-wrap {
-	margin-bottom: var(--space-2);
-}
-
-.admin-lessons-card-meta {
-	font-size: var(--font-size-sm);
-	display: flex;
-	align-items: center;
-	gap: var(--space-2);
-	flex-wrap: wrap;
-}
-
-.admin-lessons-card-preview {
-	margin-bottom: var(--space-4);
-}
-
-.admin-form-actions-inline {
-	display: flex;
-	gap: var(--space-2);
-	justify-content: flex-end;
-	margin-top: var(--space-6);
-}
 
 /* Lesson Creator Specific */
 .admin-lesson-form {
@@ -2818,7 +2134,7 @@ body.admin-view .admin-lesson-creator-page {
 
 .admin-form-progress-value {
 	font-size: var(--font-size-sm);
-	color: var(--color-primary);
+	color: var(--text-accent);
 	font-weight: var(--font-weight-semibold);
 }
 
@@ -2956,11 +2272,6 @@ body.admin-view .admin-lesson-creator-page {
 		gap: var(--space-4);
 	}
 
-	.admin-page-header-actions {
-		width: 100%;
-		flex-wrap: wrap;
-	}
-
 	.admin-form-actions {
 		flex-direction: column;
 	}
@@ -2980,12 +2291,6 @@ body.admin-view .admin-lesson-creator-page {
 @media (max-width: 1024px) {
 	.admin-container {
 		padding: var(--space-6);
-	}
-
-	.admin-events-grid,
-	.admin-teams-grid,
-	.admin-lessons-grid {
-		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 	}
 }
 
@@ -3009,10 +2314,6 @@ body.admin-view .admin-lesson-creator-page {
 		padding: var(--space-4);
 	}
 
-	.admin-currency-selector {
-		grid-template-columns: 1fr;
-	}
-
 	.admin-settings-actions-grid {
 		grid-template-columns: 1fr;
 	}
@@ -3032,10 +2333,6 @@ body.admin-view .admin-lesson-creator-page {
 		align-items: flex-start;
 	}
 
-	.admin-page-header-actions {
-		width: 100%;
-	}
-
 	.admin-courses-toolbar {
 		flex-direction: column;
 		align-items: stretch;
@@ -3043,26 +2340,6 @@ body.admin-view .admin-lesson-creator-page {
 
 	.admin-courses-search {
 		min-width: 100%;
-	}
-
-	.admin-events-grid,
-	.admin-teams-grid,
-	.admin-lessons-grid {
-		grid-template-columns: 1fr;
-	}
-
-	.admin-bulk-actions-bar {
-		flex-direction: column;
-		align-items: stretch;
-	}
-
-	.admin-bulk-actions-buttons {
-		width: 100%;
-		flex-direction: column;
-	}
-
-	.admin-bulk-actions-buttons .admin-btn {
-		width: 100%;
 	}
 
 	.admin-settings-tabs {
@@ -3088,250 +2365,169 @@ body.admin-view .admin-lesson-creator-page {
    ============================================ */
 
 /* Admin card badges with yellow background need dark text in light theme */
-[data-theme="light"] .admin-card-badge {
-	/* Override inline styles for yellow badges */
-}
-
-[data-theme="light"] .admin-card-badge[style*="rgba(var(--formely-bg-rgb)"] {
-	background: rgba(31, 41, 55, 0.1) !important;
-	color: var(--text-primary) !important;
-	border: 1px solid rgba(31, 41, 55, 0.2) !important;
-}
-
-[data-theme="light"] .admin-card-badge[style*="rgb(var(--formely-white-rgb))"] {
-	background: rgba(31, 41, 55, 0.1) !important;
-	color: var(--text-primary) !important;
-	border: 1px solid rgba(31, 41, 55, 0.2) !important;
-}
 
 /* Generic badge styles for light theme */
-[data-theme="light"] span[class*="badge"][style*="rgba(var(--formely-bg-rgb)"] {
+[data-theme="light"] span[class*="badge"][style*="rgba(255, 238, 0"] {
 	background: rgba(31, 41, 55, 0.1) !important;
 	color: var(--text-primary) !important;
 	border: 1px solid rgba(31, 41, 55, 0.2) !important;
 }
 
-[data-theme="light"] span[class*="badge"][style*="rgb(var(--formely-white-rgb))"] {
+[data-theme="light"] span[class*="badge"][style*="rgb(255, 238, 0)"] {
 	background: rgba(31, 41, 55, 0.1) !important;
 	color: var(--text-primary) !important;
 	border: 1px solid rgba(31, 41, 55, 0.2) !important;
 }
 
-/* ============================================
-   ADMIN ACTION BAR (tabele + carduri)
-   ============================================ */
-.admin-action-bar,
-.admin-users-action-bar {
-	display: inline-flex;
-	align-items: stretch;
-	border: 1px solid var(--border-primary);
-	border-radius: var(--radius-md);
-	overflow: hidden;
-	background: var(--bg-secondary);
-	box-shadow: var(--shadow-xs, 0 1px 2px rgba(0, 0, 0, 0.06));
+html body .admin-back-btn.admin-back-btn {
+	display: inline-flex !important;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	box-sizing: border-box;
+	width: auto !important;
+	height: 40px;
+	min-height: 40px;
+	padding: 0 16px !important;
+	border: 1px solid var(--border-secondary);
+	border-radius: var(--btn-desktop-radius);
+	background: var(--bg-elevated);
+	color: var(--text-primary);
+	box-shadow: none;
+	font-size: 14px !important;
+	font-weight: 800;
+	line-height: 1 !important;
+	text-decoration: none;
+	white-space: nowrap;
+	cursor: pointer;
+	transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 
-.admin-action-icon-btn,
-.admin-users-icon-btn {
+html body .admin-back-btn.admin-back-btn svg {
+	color: var(--text-primary);
+}
+
+html body .admin-back-btn.admin-back-btn span {
+	color: inherit !important;
+}
+
+html body .admin-back-btn.admin-back-btn:hover {
+	background: var(--bg-secondary) !important;
+	border-color: var(--border-accent) !important;
+	transform: none;
+}
+
+html body .admin-back-btn.admin-back-btn:focus-visible {
+	outline: 2px solid var(--border-focus) !important;
+	outline-offset: 2px;
+}
+
+html body .admin-excel-export-btn.admin-excel-export-btn {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 2.25rem;
-	height: 2.25rem;
-	padding: 0;
-	margin: 0;
-	border: none;
-	border-right: 1px solid var(--border-primary);
-	background: transparent;
+	gap: 8px;
+	height: 40px;
+	min-height: 40px;
+	padding: 0 16px !important;
+	border: 1px solid var(--border-secondary);
+	border-radius: var(--btn-desktop-radius);
+	background: var(--bg-elevated);
 	color: var(--text-primary);
+	box-shadow: none;
+	font-size: 14px !important;
+	font-weight: 800;
+	white-space: nowrap;
 	cursor: pointer;
-	transition:
-		background-color var(--transition-base),
-		color var(--transition-base);
+	transition: background-color 0.15s ease, transform 0.15s ease;
 }
 
-.admin-action-icon-btn:last-child,
-.admin-users-icon-btn:last-child {
-	border-right: none;
+html body .admin-excel-export-btn.admin-excel-export-btn:hover:not(:disabled) {
+	background: var(--bg-secondary) !important;
+	border-color: var(--border-accent) !important;
+	transform: none;
 }
 
-.admin-action-icon-btn:hover,
-.admin-users-icon-btn:hover {
-	background: var(--bg-tertiary);
-	color: var(--text-primary);
-}
-
-.admin-action-icon-btn:focus-visible,
-.admin-users-icon-btn:focus-visible {
-	outline: 2px solid var(--color-primary);
-	outline-offset: -2px;
-	z-index: 1;
-}
-
-.admin-action-icon-btn--success,
-.admin-users-icon-btn--success {
-	color: var(--color-success, #22c55e);
-}
-
-.admin-action-icon-btn--success:hover,
-.admin-users-icon-btn--success:hover {
-	background: rgba(34, 197, 94, 0.12);
-	color: var(--color-success, #22c55e);
-}
-
-.admin-action-icon-btn--danger,
-.admin-users-icon-btn--danger {
-	color: var(--color-error, #ef4444);
-}
-
-.admin-action-icon-btn--danger:hover,
-.admin-users-icon-btn--danger:hover {
-	background: rgba(239, 68, 68, 0.12);
-	color: var(--color-error, #ef4444);
-}
-
-.admin-action-icon-btn--grip {
-	cursor: grab;
-	touch-action: none;
-}
-
-.admin-action-icon-btn--grip:active {
-	cursor: grabbing;
-}
-
-.admin-action-bar--overlay,
-.admin-users-action-bar--overlay {
-	background: rgba(15, 23, 42, 0.78);
-	border-color: rgba(255, 255, 255, 0.22);
-	backdrop-filter: blur(8px);
-	-webkit-backdrop-filter: blur(8px);
-	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
-}
-
-.admin-action-bar--overlay .admin-action-icon-btn,
-.admin-action-bar--overlay .admin-users-icon-btn {
-	color: #f8fafc;
-	border-right-color: rgba(255, 255, 255, 0.14);
-}
-
-.admin-action-bar--overlay .admin-action-icon-btn:hover,
-.admin-action-bar--overlay .admin-users-icon-btn:hover {
-	background: rgba(255, 255, 255, 0.14);
-	color: #fff;
-}
-
-.admin-action-bar--overlay .admin-action-icon-btn--danger:hover,
-.admin-action-bar--overlay .admin-users-icon-btn--danger:hover {
-	background: rgba(239, 68, 68, 0.85);
-	color: #fff;
-}
-
-[data-theme="light"] .admin-action-bar,
-[data-theme="light"] .admin-users-action-bar {
-	background: #fff;
-}
-
-[data-theme="light"] .admin-action-icon-btn,
-[data-theme="light"] .admin-users-icon-btn {
-	color: #0f172a;
-}
-
-[data-theme="light"] .admin-action-icon-btn:hover,
-[data-theme="light"] .admin-users-icon-btn:hover {
-	background: rgba(15, 23, 42, 0.06);
-}
-
-[data-theme="light"] .admin-action-bar--overlay,
-[data-theme="light"] .admin-users-action-bar--overlay {
-	background: rgba(255, 255, 255, 0.94);
-	border-color: rgba(15, 23, 42, 0.14);
-	box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
-}
-
-[data-theme="light"] .admin-action-bar--overlay .admin-action-icon-btn,
-[data-theme="light"] .admin-action-bar--overlay .admin-users-icon-btn {
-	color: #0f172a;
-	border-right-color: rgba(15, 23, 42, 0.1);
-}
-
-/* Protecție: regulile globale .admin-container button nu trebuie să strice toolbar-ul */
-.admin-users-table .admin-users-action-bar,
-.admin-users-table .admin-action-bar {
-	background: var(--formely-surface, #ffffff);
-	border: 1px solid var(--border-primary, #cbd5e1);
-	box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
-}
-
-html[data-theme='dark'] .admin-users-table .admin-users-action-bar,
-html[data-theme='dark'] .admin-users-table .admin-action-bar {
-	background: #1e293b;
-	border-color: #475569;
-}
-
-.admin-users-table .admin-users-action-bar .admin-users-icon-btn,
-.admin-users-table .admin-users-action-bar .admin-action-icon-btn,
-.admin-container .admin-users-action-bar .admin-users-icon-btn,
-.admin-container .admin-users-action-bar .admin-action-icon-btn {
-	width: 2.25rem !important;
-	height: 2.25rem !important;
-	min-width: 2.25rem !important;
-	min-height: 2.25rem !important;
-	padding: 0 !important;
-	margin: 0 !important;
-	border-radius: 0 !important;
-	font-size: 0 !important;
-	line-height: 0 !important;
-	gap: 0 !important;
+html body .admin-excel-export-btn.admin-excel-export-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
 	box-shadow: none !important;
-	background: transparent !important;
-	border: none !important;
-	border-right: 1px solid var(--border-primary, #cbd5e1) !important;
-	color: #0f172a !important;
-	-webkit-tap-highlight-color: transparent;
 }
 
-html[data-theme='dark'] .admin-users-table .admin-users-action-bar .admin-users-icon-btn,
-html[data-theme='dark'] .admin-users-table .admin-users-action-bar .admin-action-icon-btn,
-html[data-theme='dark'] .admin-container .admin-users-action-bar .admin-users-icon-btn,
-html[data-theme='dark'] .admin-container .admin-users-action-bar .admin-action-icon-btn {
-	color: #e2e8f0 !important;
-	border-right-color: #475569 !important;
+html[data-theme='dark'] body .admin-back-btn.admin-back-btn {
+	border-color: var(--border-secondary) !important;
+	background: var(--bg-elevated) !important;
+	color: var(--text-primary) !important;
 }
 
-.admin-users-table .admin-users-action-bar .admin-users-icon-btn:last-child,
-.admin-users-table .admin-users-action-bar .admin-action-icon-btn:last-child {
-	border-right: none !important;
+/*
+ * Antetul cardului de echipă pe două rânduri: sus mutarea (stânga) și editare/ștergere (dreapta),
+ * ca pe cardurile de mape; dedesubt iconița și numele pe toată lățimea (înainte numele se rupea).
+ */
+html body .admin-team-card-compact .admin-team-card-compact__header {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	align-items: center;
+	column-gap: var(--space-3);
+	row-gap: var(--space-3);
 }
 
-.admin-users-table .admin-users-action-bar .admin-users-icon-btn svg,
-.admin-users-table .admin-users-action-bar .admin-action-icon-btn svg {
-	display: block;
-	flex-shrink: 0;
-	color: inherit;
+html body .admin-team-card-compact .admin-team-card-compact__header-main {
+	display: contents;
 }
 
-.admin-users-table .admin-users-action-bar .admin-users-icon-btn--success,
-.admin-users-table .admin-users-action-bar .admin-action-icon-btn--success {
-	color: #16a34a !important;
+html body .admin-team-card-compact .admin-team-card-compact__header-main > .va-drag-handle {
+	grid-column: 1;
+	grid-row: 1;
 }
 
-.admin-users-table .admin-users-action-bar .admin-users-icon-btn--danger,
-.admin-users-table .admin-users-action-bar .admin-action-icon-btn--danger {
-	color: #dc2626 !important;
+html body .admin-team-card-compact .admin-team-card-compact__header-actions {
+	grid-column: 3;
+	grid-row: 1;
+	width: auto;
+	justify-content: flex-end;
 }
 
-.admin-users-table .admin-users-action-bar .admin-users-icon-btn:hover,
-.admin-users-table .admin-users-action-bar .admin-action-icon-btn:hover {
-	background: rgba(15, 23, 42, 0.06) !important;
+html body .admin-team-card-compact .admin-team-card-compact__avatar {
+	grid-column: 1;
+	grid-row: 2;
 }
 
-html[data-theme='dark'] .admin-users-table .admin-users-action-bar .admin-users-icon-btn:hover,
-html[data-theme='dark'] .admin-users-table .admin-users-action-bar .admin-action-icon-btn:hover {
-	background: rgba(255, 255, 255, 0.08) !important;
+html body .admin-team-card-compact .admin-team-card-compact__title-wrap {
+	grid-column: 2 / -1;
+	grid-row: 2;
 }
 
-.admin-users-table .admin-users-action-bar .admin-users-icon-btn--danger:hover,
-.admin-users-table .admin-users-action-bar .admin-action-icon-btn--danger:hover {
-	background: rgba(220, 38, 38, 0.12) !important;
-	color: #dc2626 !important;
+/* fără mutare (ex. analist): primul rând are doar acțiunile sau dispare */
+html body .admin-team-card-compact .admin-team-card-compact__header:not(:has(.va-drag-handle)):not(:has(.admin-team-card-compact__header-actions)) .admin-team-card-compact__avatar,
+html body .admin-team-card-compact .admin-team-card-compact__header:not(:has(.va-drag-handle)):not(:has(.admin-team-card-compact__header-actions)) .admin-team-card-compact__title-wrap {
+	grid-row: 1;
+}
+
+/* editare și ștergere: același format ca butonul de mutare */
+html body .admin-team-card-compact .admin-team-card-compact__icon-btn.admin-team-card-compact__icon-btn {
+	/* !important: stratul global al butoanelor .admin-btn le face rotunde de 40px pe desktop */
+	width: 32px !important;
+	min-width: 32px !important;
+	height: 32px !important;
+	min-height: 32px !important;
+	padding: 0 !important;
+	border: 1px solid var(--btn-outline-border) !important;
+	border-radius: 8px !important;
+	background: var(--bg-elevated);
+	color: var(--text-primary);
+	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.14), 0 2px 8px rgba(15, 23, 42, 0.1);
+}
+
+html body .admin-team-card-compact .admin-team-card-compact__icon-btn.admin-team-card-compact__icon-btn:hover {
+	border-color: var(--btn-outline-border-hover) !important;
+}
+
+html body .admin-team-card-compact .admin-team-card-compact__icon-btn--danger.admin-team-card-compact__icon-btn--danger {
+	color: var(--color-error);
+}
+
+html body .admin-team-card-compact .admin-team-card-compact__icon-btn--danger.admin-team-card-compact__icon-btn--danger:hover {
+	border-color: var(--color-error) !important;
+	background: color-mix(in srgb, var(--color-error) 12%, var(--bg-elevated));
 }

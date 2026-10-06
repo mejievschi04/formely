@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use App\Jobs\RecalculateCourseProgressJob;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Concerns\InvalidatesTutorKnowledgeCache;
-use App\Jobs\SyncAiKnowledgeJob;
 
 class Module extends Model
 {
@@ -76,13 +76,10 @@ class Module extends Model
         static::saved(function ($module) {
             try {
                 self::clearTutorKnowledgeCache((int) ($module->course_id ?? 0));
-                SyncAiKnowledgeJob::dispatch(null, (int) ($module->course_id ?? 0), 'sync')->onConnection('background');
-                if ($module->course) {
-                    app(\App\Services\CourseProgressService::class)
-                        ->recalculateCourseProgress($module->course);
-                }
+                self::queueKnowledgeSync(null, (int) ($module->course_id ?? 0), 'sync');
+                RecalculateCourseProgressJob::queueFor((int) ($module->course_id ?? 0));
             } catch (\Throwable $e) {
-                \Log::warning('Module saved: recalculateCourseProgress failed', [
+                \Log::warning('Module saved: progress/knowledge refresh failed', [
                     'module_id' => $module->id,
                     'error' => $e->getMessage(),
                 ]);
@@ -92,13 +89,10 @@ class Module extends Model
         static::deleted(function ($module) {
             try {
                 self::clearTutorKnowledgeCache((int) ($module->course_id ?? 0));
-                SyncAiKnowledgeJob::dispatch(null, (int) ($module->course_id ?? 0), 'sync')->onConnection('background');
-                if ($module->course) {
-                    app(\App\Services\CourseProgressService::class)
-                        ->recalculateCourseProgress($module->course);
-                }
+                self::queueKnowledgeSync(null, (int) ($module->course_id ?? 0), 'sync');
+                RecalculateCourseProgressJob::queueFor((int) ($module->course_id ?? 0));
             } catch (\Throwable $e) {
-                \Log::warning('Module deleted: recalculateCourseProgress failed', [
+                \Log::warning('Module deleted: progress/knowledge refresh failed', [
                     'module_id' => $module->id,
                     'error' => $e->getMessage(),
                 ]);

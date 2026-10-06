@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { UserList } from '@phosphor-icons/react';
+import { UserList, X } from '@phosphor-icons/react';
 import { adminService } from '../../../services/api';
 import EventDescriptionExpandable from '../../common/EventDescriptionExpandable';
 import { useScrollResetOnOpen } from '../../../hooks/useScrollResetOnOpen';
@@ -81,20 +81,6 @@ const AdminEventDetailModal = ({ open, eventId, onClose, onEdit, readOnly = fals
 	}, [open]);
 
 	useEffect(() => {
-		if (!open) return;
-		const onKey = (e) => {
-			if (e.key !== 'Escape') return;
-			if (showParticipants) {
-				setShowParticipants(false);
-				return;
-			}
-			onClose();
-		};
-		document.addEventListener('keydown', onKey);
-		return () => document.removeEventListener('keydown', onKey);
-	}, [open, onClose, showParticipants]);
-
-	useEffect(() => {
 		if (!open) return undefined;
 		const prev = document.body.style.overflow;
 		document.body.style.overflow = 'hidden';
@@ -116,7 +102,7 @@ const AdminEventDetailModal = ({ open, eventId, onClose, onEdit, readOnly = fals
 					}
 				: prev,
 		);
-		window.dispatchEvent(new CustomEvent('formely-admin-events-refresh'));
+		window.dispatchEvent(new CustomEvent('volta-admin-events-refresh'));
 	}, []);
 
 	if (!open) return null;
@@ -136,9 +122,6 @@ const AdminEventDetailModal = ({ open, eventId, onClose, onEdit, readOnly = fals
 			<div
 				className="admin-event-modal-overlay va-cal-event-modal-overlay aev-detail-overlay"
 				role="presentation"
-				onClick={(e) => {
-					if (e.target === e.currentTarget) onClose();
-				}}
 			>
 				<div
 					className="admin-event-modal aev-detail-modal"
@@ -151,8 +134,8 @@ const AdminEventDetailModal = ({ open, eventId, onClose, onEdit, readOnly = fals
 						<h2 id="aev-detail-title" className="admin-event-modal-title">
 							{loading ? 'Se încarcă…' : event?.title || 'Eveniment'}
 						</h2>
-						<button type="button" className="admin-event-modal-close" onClick={onClose} title="Închide">
-							×
+						<button type="button" className="admin-event-modal-close va-close-btn" onClick={onClose} title="Închide" aria-label="Închide">
+							<X size={18} weight="bold" aria-hidden="true" />
 						</button>
 					</div>
 
@@ -243,7 +226,7 @@ const AdminEventDetailModal = ({ open, eventId, onClose, onEdit, readOnly = fals
 						{!readOnly && event && onEdit ? (
 							<button
 								type="button"
-								className="admin-event-btn-primary"
+								className="lms-btn-primary admin-event-btn-primary"
 								onClick={() => onEdit(event)}
 							>
 								Editează

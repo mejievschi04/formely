@@ -1,15 +1,8 @@
 /** Tipuri cu o singură variantă selectabilă. */
-import { getQuestionTypeLabel } from './questionTypeLabels';
+const SINGLE_SELECT_TYPES = new Set(['single_choice', 'true_false', 'yes_no']);
 
 export function getQuestionType(question) {
 	return question?.type || question?.question_type || 'multiple_choice';
-}
-
-/** Tipuri cu răspuns text liber (evaluare manuală). */
-const TEXT_ANSWER_TYPES = new Set(['short_answer', 'essay', 'fill_in_blank']);
-
-export function isTextAnswerQuestion(question) {
-	return TEXT_ANSWER_TYPES.has(getQuestionType(question));
 }
 
 /** Răspuns multiplu = mai multe variante corecte bifabile de student. */
@@ -18,11 +11,10 @@ export function isMultiSelectChoiceQuestion(question) {
 }
 
 export function getChoiceTypeLabel(question) {
-	const type = getQuestionType(question);
-	if (isTextAnswerQuestion(question)) {
-		return getQuestionTypeLabel(type, 'Răspuns scurt');
-	}
-	return getQuestionTypeLabel(type, 'Alegere');
+	if (isMultiSelectChoiceQuestion(question)) return 'Răspuns multiplu';
+	if (getQuestionType(question) === 'yes_no') return 'Da / Nu';
+	if (SINGLE_SELECT_TYPES.has(getQuestionType(question))) return 'Răspuns unic';
+	return 'Alegere';
 }
 
 export function normalizeAnswerIndex(value) {
@@ -37,9 +29,6 @@ export function normalizeMultiChoiceIndices(value) {
 }
 
 export function getCorrectChoiceIndices(question) {
-	if (Array.isArray(question?.correct_answer_display_indices) && question.correct_answer_display_indices.length > 0) {
-		return normalizeMultiChoiceIndices(question.correct_answer_display_indices);
-	}
 	if (Array.isArray(question?.correct_answer_indices) && question.correct_answer_indices.length > 0) {
 		return normalizeMultiChoiceIndices(question.correct_answer_indices);
 	}
@@ -51,6 +40,9 @@ export function getCorrectChoiceIndices(question) {
 }
 
 export function coerceChoiceAnswerForQuestion(question, value) {
+	const type = getQuestionType(question);
+	// Only choice answers are option indices. Sequences and written answers are payloads.
+	if (type !== 'multiple_choice' && !SINGLE_SELECT_TYPES.has(type)) return value;
 	if (!isMultiSelectChoiceQuestion(question)) {
 		if (Array.isArray(value)) {
 			return value.length > 0 ? normalizeAnswerIndex(value[0]) : undefined;
@@ -58,50 +50,15 @@ export function coerceChoiceAnswerForQuestion(question, value) {
 		const idx = normalizeAnswerIndex(value);
 		return idx !== null ? idx : value;
 	}
-	if (Array.isArray(question?.user_answer_display_indices) && question.user_answer_display_indices.length > 0) {
-		return normalizeMultiChoiceIndices(question.user_answer_display_indices);
-	}
 	if (Array.isArray(value)) return normalizeMultiChoiceIndices(value);
 	const single = normalizeAnswerIndex(value);
 	return single !== null ? [single] : [];
-}
-
-/** Indici în ordinea afișată (după submit / rezultate). */
-export function getUserChoiceDisplayIndices(question, value) {
-	if (Array.isArray(question?.user_answer_display_indices) && question.user_answer_display_indices.length > 0) {
-		return normalizeMultiChoiceIndices(question.user_answer_display_indices);
-	}
-	if (Array.isArray(question?.user_answer_indices) && question.user_answer_indices.length > 0) {
-		return normalizeMultiChoiceIndices(question.user_answer_indices);
-	}
-	if (!isMultiSelectChoiceQuestion(question)) {
-		const displayIdx = normalizeAnswerIndex(question?.user_answer_index);
-		if (displayIdx !== null) return [displayIdx];
-	}
-	if (value !== undefined && value !== null) {
-		return coerceChoiceAnswerForQuestion(question, value);
-	}
-	return [];
-}
-
-export function getUserChoiceDisplayLabels(question, displayIndices) {
-	if (Array.isArray(question?.user_answer_labels) && question.user_answer_labels.length > 0) {
-		return question.user_answer_labels.map((label) => String(label)).filter(Boolean);
-	}
-	const indices = displayIndices ?? getUserChoiceDisplayIndices(question);
-	if (!Array.isArray(question?.options) || question.options.length === 0) {
-		return [];
-	}
-	return indices.map((i) => question.options[i]).filter((label) => label != null && String(label).trim() !== '');
 }
 
 export function isChoiceAnswered(question, value) {
 	const type = getQuestionType(question);
 	if (type === 'matching' || type === 'ordering') {
 		return Array.isArray(value) && value.length > 0;
-	}
-	if (isTextAnswerQuestion(question)) {
-		return typeof value === 'string' && value.trim() !== '';
 	}
 	if (isMultiSelectChoiceQuestion(question)) {
 		return Array.isArray(value) && value.length > 0;

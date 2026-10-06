@@ -4,7 +4,7 @@
 $ErrorActionPreference = "Stop"
 
 # Navighează la directorul frontend
-Set-Location "$PSScriptRoot\frontend"
+Set-Location "$PSScriptRoot\volta-frontend"
 
 Write-Host "🚀 Starting frontend deployment..." -ForegroundColor Cyan
 

@@ -12,7 +12,7 @@
 	overflow: hidden;
 	border: 1px solid var(--border-primary);
 	border-radius: 10px;
-	background: #0f172a;
+	background: var(--bg-elevated);
 	cursor: grab;
 	touch-action: none;
 	user-select: none;
@@ -63,7 +63,7 @@
 
 .map-cover-focus-editor__zoom input {
 	width: 100%;
-	accent-color: var(--formely-primary, #0891b2);
+	accent-color: var(--color-brand-primary);
 }
 
 .map-cover-focus-editor__zoom-ends {
@@ -71,19 +71,4 @@
 	justify-content: space-between;
 	font-weight: 600;
 	color: var(--text-tertiary);
-}
-
-.map-cover-focus-editor.is-compact {
-	width: 200px;
-	gap: 6px;
-}
-
-.map-cover-focus-editor.is-compact .map-cover-focus-editor__stage {
-	width: 200px;
-	height: 126px;
-	aspect-ratio: auto;
-}
-
-.map-cover-focus-editor.is-compact .map-cover-focus-editor__zoom {
-	font-size: 0.68rem;
 }

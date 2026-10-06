@@ -21,7 +21,8 @@ import {
 	YAxis,
 } from 'recharts';
 import { adminService } from '../../../services/api';
-import { useToast } from '../../../contexts/ToastContext';
+
+import { useToast } from '../../../contexts/ToastContextShared.js';
 import {
 	buildStructuredExcelRows,
 	downloadStructuredExcel,
@@ -29,54 +30,27 @@ import {
 } from '../../../utils/statisticsExcelExport';
 import { stripRichTextToPlain } from '../../../utils/richTextContent';
 import RichTextHtml from '../../RichTextHtml';
-import TestResultsPanel, { rowMatchesResultFilters } from './TestResultsPanel';
+import TestResultsPanel from './TestResultsPanel';
+import { rowMatchesResultFilters } from './TestResultsPanelShared.js';
 import './TestStatisticsPanel.css';
 
 const TYPE_LABELS = {
 	multiple_choice: 'Răspuns multiplu',
 	single_choice: 'Răspuns unic',
 	true_false: 'Adevărat / Fals',
+	yes_no: 'Da / Nu',
 	matching: 'Potrivire',
 	ordering: 'Ordonare',
 };
 
 const SECTIONS = [
 	{ id: 'overview', label: 'Prezentare generală', icon: ChartPieSlice },
-	{ id: 'students', label: 'Elevi', icon: Users },
+	{ id: 'students', label: 'Utilizatori', icon: Users },
 	{ id: 'items', label: 'Analiză întrebări', icon: ListChecks },
 ];
 
 function typeLabel(type) {
 	return TYPE_LABELS[type] || type || 'Întrebare';
-}
-
-function difficultyTone(rate) {
-	if (rate == null) return 'neutral';
-	if (rate >= 70) return 'easy';
-	if (rate >= 40) return 'medium';
-	return 'hard';
-}
-
-function difficultyLabel(rate) {
-	const tone = difficultyTone(rate);
-	if (tone === 'easy') return 'Ușor';
-	if (tone === 'medium') return 'Mediu';
-	if (tone === 'hard') return 'Dificil';
-	return '—';
-}
-
-function discriminationLabel(index) {
-	if (index == null) return '—';
-	if (index >= 0.2) return 'Bună';
-	if (index >= 0.1) return 'Acceptabilă';
-	return 'Slabă';
-}
-
-function discriminationTone(index) {
-	if (index == null) return 'neutral';
-	if (index >= 0.2) return 'good';
-	if (index >= 0.1) return 'medium';
-	return 'poor';
 }
 
 function plainQuestionPreview(html, maxLen = 72) {
@@ -199,7 +173,7 @@ export default function TestStatisticsPanel({ testId, testTitle = 'Test' }) {
 		const slug = testTitle.toLowerCase().replace(/\s+/g, '-').slice(0, 40) || `test-${testId}`;
 		const kpiEntries = summary ? [
 			['Încercări', summary.attempts_count ?? 0],
-			['Elevi unici', summary.unique_students ?? 0],
+			['Utilizatori unici', summary.unique_students ?? 0],
 			['Rată promovare', passRate != null ? `${passRate}%` : '—'],
 			['Medie procent', summary.average_percentage != null ? `${summary.average_percentage}%` : '—'],
 			['Prag promovare', `${summary.passing_score ?? 70}%`],
@@ -225,7 +199,6 @@ export default function TestStatisticsPanel({ testId, testTitle = 'Test' }) {
 			q.skipped_count ?? 0,
 			q.correct_rate != null ? `${Math.round(q.correct_rate)}%` : '—',
 			q.difficulty_index != null ? Number(q.difficulty_index).toFixed(2) : '—',
-			q.discrimination_index != null ? Number(q.discrimination_index).toFixed(2) : '—',
 		]);
 
 		const rows = buildStructuredExcelRows({
@@ -233,11 +206,11 @@ export default function TestStatisticsPanel({ testId, testTitle = 'Test' }) {
 			periodFrom: dateFrom,
 			periodTo: dateTo,
 			kpiEntries,
-			tableHeaders: ['Finalizat', 'Elev', 'Email', 'Încercare', 'Scor', 'Punctaj maxim', 'Procent', 'Stare'],
+			tableHeaders: ['Finalizat', 'Utilizator', 'Email', 'Încercare', 'Scor', 'Punctaj maxim', 'Procent', 'Stare'],
 			tableRows: studentRows,
 			extraSections: questionExportRows.length ? [{
 				title: 'Analiză pe întrebări',
-				headers: ['#', 'Întrebare', 'Tip', 'Prezentări', 'Răspunsuri', 'Omise', 'Rată corect', 'Dificultate', 'Discriminare'],
+				headers: ['#', 'Întrebare', 'Tip', 'Prezentări', 'Răspunsuri', 'Omise', 'Rată corect', 'Dificultate'],
 				rows: questionExportRows,
 			}] : null,
 			extraMeta: [['Test', testTitle]],
@@ -308,12 +281,12 @@ export default function TestStatisticsPanel({ testId, testTitle = 'Test' }) {
 				) : (
 					<>
 						<div className="test-stats__kpis">
-							<KpiCard icon={Users} label="Încercări" value={summary.attempts_count} hint={`${summary.unique_students} elevi unici`} accent="#0891b2" />
+							<KpiCard icon={Users} label="Încercări" value={summary.attempts_count} hint={`${summary.unique_students} utilizatori unici`} accent="#6366f1" />
 							<KpiCard icon={CheckCircle} label="Rată promovare" value={passRate != null ? `${passRate}%` : '—'} hint={`${summary.pass_count} promovați`} accent="#10b981" />
-							<KpiCard icon={ChartBar} label="Medie" value={summary.average_percentage != null ? `${summary.average_percentage}%` : '—'} hint={`Scor mediu ${summary.average_score ?? '—'}`} accent="#0e7490" />
-							<KpiCard icon={ChartPieSlice} label="Interval" value={`${summary.low_percentage ?? '—'}–${summary.high_percentage ?? '—'}%`} hint={`Prag ${summary.passing_score ?? 70}%`} accent="#22d3ee" />
+							<KpiCard icon={ChartBar} label="Medie" value={summary.average_percentage != null ? `${summary.average_percentage}%` : '—'} hint={`Scor mediu ${summary.average_score ?? '—'}`} accent="#8b5cf6" />
+							<KpiCard icon={ChartPieSlice} label="Interval" value={`${summary.low_percentage ?? '—'}–${summary.high_percentage ?? '—'}%`} hint={`Prag ${summary.passing_score ?? 70}%`} accent="#0ea5e9" />
 							{summary.pending_review_count > 0 ? (
-								<KpiCard icon={WarningCircle} label="Verificare" value={summary.pending_review_count} hint="Încercări în așteptare" accent="#0e7490" />
+								<KpiCard icon={WarningCircle} label="Verificare" value={summary.pending_review_count} hint="Încercări în așteptare" accent="#f59e0b" />
 							) : null}
 						</div>
 
@@ -381,7 +354,7 @@ export default function TestStatisticsPanel({ testId, testTitle = 'Test' }) {
 													background: 'var(--bg-elevated)',
 												}}
 											/>
-											<Bar dataKey="count" fill="#0891b2" radius={[6, 6, 0, 0]} maxBarSize={48} />
+											<Bar dataKey="count" fill="#6366f1" radius={[6, 6, 0, 0]} maxBarSize={48} />
 										</BarChart>
 									</ResponsiveContainer>
 								</div>
@@ -465,8 +438,6 @@ export default function TestStatisticsPanel({ testId, testTitle = 'Test' }) {
 				) : (
 					<div className="test-stats__items">
 						{sortedQuestions.map((question, index) => {
-							const rate = question.correct_rate;
-							const tone = difficultyTone(rate);
 							return (
 								<article key={question.question_id || index} className="test-stats__item">
 									<div className="test-stats__item-head">
@@ -481,11 +452,6 @@ export default function TestStatisticsPanel({ testId, testTitle = 'Test' }) {
 										</h4>
 										<div className="test-stats__item-badges">
 											<span className="test-stats__badge is-type">{typeLabel(question.question_type)}</span>
-											{rate != null ? (
-												<span className={`test-stats__badge${tone === 'hard' ? ' is-hard' : tone === 'easy' ? ' is-easy' : ''}`}>
-													{difficultyLabel(rate)} · {Math.round(rate)}%
-												</span>
-											) : null}
 										</div>
 									</div>
 
@@ -496,40 +462,7 @@ export default function TestStatisticsPanel({ testId, testTitle = 'Test' }) {
 										{question.average_points_earned != null ? (
 											<span>Puncte medii: {Number(question.average_points_earned).toFixed(2)} / {question.points ?? 1}</span>
 										) : null}
-										{question.discrimination_index != null ? (
-											<span>
-												Discriminare: {Number(question.discrimination_index).toFixed(2)}
-												{' '}({discriminationLabel(question.discrimination_index)})
-											</span>
-										) : null}
 									</div>
-
-									{rate != null ? (
-										<div className="test-stats__difficulty">
-											<div className="test-stats__difficulty-top">
-												<span>Indice de dificultate</span>
-												<strong>{Number(question.difficulty_index ?? rate / 100).toFixed(2)}</strong>
-											</div>
-											<div className="test-stats__difficulty-track" aria-hidden>
-												<div className="test-stats__difficulty-fill" style={{ width: `${Math.max(0, Math.min(100, rate))}%` }} />
-											</div>
-										</div>
-									) : null}
-
-									{question.discrimination_index != null ? (
-										<div className={`test-stats__discrimination is-${discriminationTone(question.discrimination_index)}`}>
-											<div className="test-stats__difficulty-top">
-												<span>Indice de discriminare (grup superior 27% − grup inferior 27%)</span>
-												<strong>{Number(question.discrimination_index).toFixed(2)} · {discriminationLabel(question.discrimination_index)}</strong>
-											</div>
-											<div className="test-stats__difficulty-track" aria-hidden>
-												<div
-													className="test-stats__discrimination-fill"
-													style={{ width: `${Math.max(0, Math.min(100, (Number(question.discrimination_index) + 1) * 50))}%` }}
-												/>
-											</div>
-										</div>
-									) : null}
 
 									{Array.isArray(question.option_stats) && question.option_stats.length > 0 ? (
 										<div className="test-stats__options">

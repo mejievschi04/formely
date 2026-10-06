@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
-use App\Http\Controllers\Concerns\AssertsPlanEntitlements;
 use App\Http\Controllers\Controller;
 use App\Models\Question;
 use App\Models\QuestionBank;
@@ -16,8 +15,6 @@ use Illuminate\Support\Facades\Schema;
 
 class QuestionAdminController extends Controller
 {
-    use AssertsPlanEntitlements;
-
     /**
      * Move selected questions to another question bank (folder).
      */
@@ -103,6 +100,7 @@ class QuestionAdminController extends Controller
             });
         }
 
+        $perPageHint = null;
         if ($request->filled('ids')) {
             $ids = $request->input('ids');
             if (is_string($ids)) {
@@ -112,9 +110,6 @@ class QuestionAdminController extends Controller
             if ($ids !== []) {
                 $query->whereIn('id', $ids);
                 $perPageHint = count($ids);
-                if (! $request->filled('per_page')) {
-                    $request->merge(['per_page' => max(1, min($perPageHint, 200))]);
-                }
             }
         }
 
@@ -129,11 +124,6 @@ class QuestionAdminController extends Controller
 
         if ($request->filled('difficulty')) {
             $query->where('metadata->difficulty', trim((string) $request->difficulty));
-        }
-
-        if ($request->filled('tag')) {
-            $tag = trim((string) $request->tag);
-            $query->whereJsonContains('metadata->tags', $tag);
         }
 
         if ($request->filled('question_bank_id')) {
@@ -157,7 +147,7 @@ class QuestionAdminController extends Controller
             });
         }
 
-        $perPage = max(1, min((int) $request->input('per_page', 20), 100));
+        $perPage = max(1, min((int) $request->input('per_page', $perPageHint ?? 20), 200));
         $questions = $query->paginate($perPage);
 
         $bankIds = collect($questions->items())
@@ -196,7 +186,6 @@ class QuestionAdminController extends Controller
         $questions->getCollection()->transform(function ($question) use ($usageByBank) {
             $meta = is_array($question->metadata) ? $question->metadata : [];
             $difficulty = is_string($meta['difficulty'] ?? null) ? $meta['difficulty'] : null;
-            $tags = is_array($meta['tags'] ?? null) ? array_values(array_filter($meta['tags'])) : [];
 
             $usage = [
                 'count' => 0,
@@ -223,55 +212,11 @@ class QuestionAdminController extends Controller
             }
 
             $question->setAttribute('difficulty', $difficulty);
-            $question->setAttribute('tags', $tags);
             $question->setAttribute('usage', $usage);
             return $question;
         });
 
         return response()->json($questions);
-    }
-
-    /**
-     * Return distinct tags for filtering/suggestions.
-     */
-    public function tagSuggestions(Request $request)
-    {
-        $query = Question::query()->whereNotNull('metadata');
-
-        if (auth()->user()->isInstructor()) {
-            $uid = (int) auth()->id();
-            $query->where(function ($q) use ($uid) {
-                $q->whereHas('test', function ($qt) use ($uid) {
-                    $qt->where('created_by', $uid);
-                })->orWhereHas('questionBank', function ($qb) use ($uid) {
-                    $qb->where('created_by', $uid);
-                });
-            });
-        }
-
-        $items = $query->get(['metadata']);
-        $tags = [];
-        foreach ($items as $item) {
-            $meta = is_array($item->metadata) ? $item->metadata : [];
-            $list = is_array($meta['tags'] ?? null) ? $meta['tags'] : [];
-            foreach ($list as $tag) {
-                $t = trim((string) $tag);
-                if ($t !== '') {
-                    $tags[$t] = true;
-                }
-            }
-        }
-
-        $all = array_keys($tags);
-        sort($all);
-        $search = trim((string) $request->input('search', ''));
-        if ($search !== '') {
-            $all = array_values(array_filter($all, function ($tag) use ($search) {
-                return mb_stripos($tag, $search) !== false;
-            }));
-        }
-
-        return response()->json(['tags' => array_slice($all, 0, 100)]);
     }
 
     /**
@@ -307,6 +252,10 @@ class QuestionAdminController extends Controller
         if (array_key_exists('answers', $validated) && is_array($validated['answers'])) {
             $questionType = (string) ($validated['type'] ?? $question->type ?? 'multiple_choice');
             $validated['answers'] = $this->normalizeAnswersForType($questionType, $validated['answers']);
+        }
+
+        if (isset($validated['metadata']) && is_array($validated['metadata'])) {
+            unset($validated['metadata']['tags']);
         }
 
         try {
@@ -488,91 +437,38 @@ class QuestionAdminController extends Controller
             ];
         }
 
+        if ($type === 'yes_no') {
+            $noIsCorrect = false;
+            foreach ($normalized as $answer) {
+                $text = mb_strtolower(trim((string) ($answer['text'] ?? '')));
+                if (! empty($answer['is_correct']) && in_array($text, ['nu', 'no', 'fals', 'false'], true)) {
+                    $noIsCorrect = true;
+                    break;
+                }
+            }
+
+            return [
+                ['text' => 'Da', 'is_correct' => ! $noIsCorrect, 'order' => 0],
+                ['text' => 'Nu', 'is_correct' => $noIsCorrect, 'order' => 1],
+            ];
+        }
+
+        if (in_array($type, ['single_choice', 'true_false', 'yes_no'], true)) {
+            $correctIndex = null;
+            foreach ($normalized as $idx => $answer) {
+                if (! empty($answer['is_correct'])) {
+                    $correctIndex = $idx;
+                    break;
+                }
+            }
+
+            $correctIndex ??= 0;
+            foreach ($normalized as $idx => $answer) {
+                $normalized[$idx]['is_correct'] = $idx === $correctIndex;
+            }
+        }
+
         return $normalized;
-    }
-
-    public function improveWithAi(Request $request, int $id)
-    {
-        $this->assertCompanyFeature('ai_test_generation');
-
-        $question = Question::with(['test', 'questionBank'])->findOrFail($id);
-        if (auth()->user()->isInstructor()) {
-            $ok = ($question->test_id && $question->test && (int) $question->test->created_by === (int) auth()->id())
-                || ($question->question_bank_id && $question->questionBank && (int) $question->questionBank->created_by === (int) auth()->id());
-            if (!$ok) {
-                abort(403, 'Acces interzis.');
-            }
-        }
-
-        $validated = $request->validate([
-            'instruction' => 'nullable|string|max:1000',
-        ]);
-
-        $instruction = trim((string) ($validated['instruction'] ?? ''));
-        $prompt = "Îmbunătățește următoarea întrebare pentru claritate pedagogică, fără să schimbi subiectul. Răspunde DOAR JSON valid în format:\n";
-        $prompt .= "{\"content\":\"...\",\"answers\":[{\"text\":\"...\",\"is_correct\":true}],\"explanation\":\"...\",\"difficulty\":\"easy|medium|hard\",\"tags\":[\"...\"]}\n\n";
-        $prompt .= "Întrebare curentă:\n" . json_encode([
-            'type' => $question->type,
-            'content' => $question->content,
-            'answers' => $question->answers,
-            'explanation' => $question->explanation,
-            'metadata' => $question->metadata,
-        ], JSON_UNESCAPED_UNICODE);
-        if ($instruction !== '') {
-            $prompt .= "\nInstrucțiune suplimentară: {$instruction}";
-        }
-
-        $raw = $this->callAi($prompt);
-        $data = $this->decodeJsonObject($raw);
-        if (!$data) {
-            return response()->json(['error' => 'Răspuns AI invalid pentru improve.'], 422);
-        }
-
-        return response()->json([
-            'draft' => [
-                'content' => (string) ($data['content'] ?? $question->content),
-                'answers' => is_array($data['answers'] ?? null) ? $data['answers'] : ($question->answers ?? []),
-                'explanation' => (string) ($data['explanation'] ?? ($question->explanation ?? '')),
-                'metadata' => [
-                    'difficulty' => (string) ($data['difficulty'] ?? (($question->metadata['difficulty'] ?? '') ?: '')),
-                    'tags' => is_array($data['tags'] ?? null) ? $data['tags'] : (is_array($question->metadata['tags'] ?? null) ? $question->metadata['tags'] : []),
-                ],
-            ],
-        ]);
-    }
-
-    public function autoTagWithAi(int $id)
-    {
-        $this->assertCompanyFeature('ai_test_generation');
-
-        $question = Question::with(['test', 'questionBank'])->findOrFail($id);
-        if (auth()->user()->isInstructor()) {
-            $ok = ($question->test_id && $question->test && (int) $question->test->created_by === (int) auth()->id())
-                || ($question->question_bank_id && $question->questionBank && (int) $question->questionBank->created_by === (int) auth()->id());
-            if (!$ok) {
-                abort(403, 'Acces interzis.');
-            }
-        }
-
-        $prompt = "Generează 3-6 tag-uri scurte pentru întrebarea de mai jos. Răspunde strict JSON: {\"tags\":[\"tag1\",\"tag2\"]}\n\n";
-        $prompt .= json_encode([
-            'type' => $question->type,
-            'content' => $question->content,
-            'answers' => $question->answers,
-            'explanation' => $question->explanation,
-        ], JSON_UNESCAPED_UNICODE);
-
-        $raw = $this->callAi($prompt);
-        $data = $this->decodeJsonObject($raw);
-        if (!$data || !is_array($data['tags'] ?? null)) {
-            return response()->json(['error' => 'Răspuns AI invalid pentru auto-tag.'], 422);
-        }
-
-        $tags = array_values(array_unique(array_filter(array_map(function ($t) {
-            return trim((string) $t);
-        }, $data['tags']))));
-
-        return response()->json(['tags' => $tags]);
     }
 
     private function decodeJsonObject(string $response): ?array

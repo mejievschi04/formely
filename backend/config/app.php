@@ -41,6 +41,12 @@ return [
 
     'debug' => (bool) env('APP_DEBUG', false),
 
+    // Afișează detaliile erorii în /api/health și când APP_DEBUG e oprit (doar pentru depanare).
+    'expose_api_errors' => filter_var(env('FORMELY_EXPOSE_API_ERRORS', false), FILTER_VALIDATE_BOOLEAN),
+
+    // Permite `volta:backup-restore` în producție.
+    'allow_lms_backup_restore' => filter_var(env('ALLOW_LMS_BACKUP_RESTORE', false), FILTER_VALIDATE_BOOLEAN),
+
     /*
     |--------------------------------------------------------------------------
     | Application URL

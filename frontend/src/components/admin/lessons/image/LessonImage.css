@@ -1,0 +1,80 @@
+.lesson-image {
+	display: flex;
+	width: 100%;
+	max-width: 100%;
+	margin: 0.8em 0;
+}
+
+.lesson-image.is-left,
+.lesson-image.is-inline {
+	justify-content: flex-start;
+}
+
+.lesson-image.is-center {
+	justify-content: center;
+}
+
+.lesson-image.is-right {
+	justify-content: flex-end;
+}
+
+.lesson-image.is-full {
+	justify-content: stretch;
+}
+
+.lesson-image-frame {
+	position: relative;
+	width: max-content;
+	max-width: 100%;
+	line-height: 0;
+}
+
+.lesson-image.is-full .lesson-image-frame {
+	width: 100%;
+}
+
+.lesson-image-frame img {
+	display: block;
+	width: auto;
+	max-width: 100%;
+	height: auto;
+	border-radius: 8px;
+	cursor: grab;
+	user-select: none;
+}
+
+.lesson-image-frame.is-sized img,
+.lesson-image.is-full .lesson-image-frame img {
+	width: 100%;
+}
+
+.lesson-image.is-resizing .lesson-image-frame img,
+.lesson-image-frame img:active {
+	cursor: grabbing;
+}
+
+.lesson-tiptap .ProseMirror .ProseMirror-selectednode {
+	outline: none;
+}
+
+.lesson-image.is-selected .lesson-image-frame {
+	outline: 1px solid var(--border-accent);
+	outline-offset: 0;
+}
+
+.lesson-image-handle {
+	position: absolute;
+	z-index: 2;
+	box-sizing: border-box;
+	width: 9px;
+	height: 9px;
+	border: 1px solid var(--text-primary);
+	border-radius: 50%;
+	background: var(--color-brand-primary);
+	touch-action: none;
+}
+
+.lesson-image-handle.is-nw { top: -5px; left: -5px; cursor: nwse-resize; }
+.lesson-image-handle.is-ne { top: -5px; right: -5px; cursor: nesw-resize; }
+.lesson-image-handle.is-se { right: -5px; bottom: -5px; cursor: nwse-resize; }
+.lesson-image-handle.is-sw { bottom: -5px; left: -5px; cursor: nesw-resize; }

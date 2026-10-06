@@ -33,14 +33,17 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Fără ruta încorporată /storage/{path} (URL-uri semnate, nefolosite): ea acoperea ruta din
+            // routes/web.php care servește discul public când lipsește legătura public/storage (ex. e2e).
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],
 
         'public' => [
             'driver' => 'local',
-            'root' => storage_path('app/public'),
+            // testele e2e folosesc alt folder, ca fișierele încărcate să nu ajungă în cel local
+            'root' => env('PUBLIC_STORAGE_ROOT') ?: storage_path('app/public'),
             'url' => env('APP_URL').'/storage',
             'visibility' => 'public',
             'throw' => false,

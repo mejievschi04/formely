@@ -1,30 +1,21 @@
+import '../styles/exam-results-modern.css';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
-	ArrowClockwise,
 	CheckCircle,
-	Clock,
 	Eye,
 	MagnifyingGlass,
-	Medal,
 	WarningCircle,
 	XCircle,
 } from '@phosphor-icons/react';
-import { catalogExamResultsService, examResultsService } from '../services/api';
+import { examResultsService } from '../services/api';
 import { handleApiError } from '../utils/errorHandler';
 import {
-	getChoiceTypeLabel,
 	getCorrectChoiceIndices,
-	getUserChoiceDisplayIndices,
-	getUserChoiceDisplayLabels,
 	isMultiSelectChoiceQuestion,
 	normalizeMultiChoiceIndices,
 } from '../utils/examChoiceQuestions';
 import RichTextHtml from '../components/RichTextHtml';
-
-const PASSING_ACCENT = '#22c55e';
-const FAILING_ACCENT = '#ef4444';
-const REVIEW_ACCENT = '#0e7490';
 
 function asArray(value) {
 	return Array.isArray(value) ? value : [];
@@ -41,79 +32,52 @@ function normalizeAnswerIndex(value) {
 	return Number.isNaN(parsed) ? null : parsed;
 }
 
-function formatDateShort(value) {
-	if (!value) return '—';
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return '—';
-	return new Intl.DateTimeFormat('ro-RO', {
-		day: '2-digit',
-		month: 'short',
-	}).format(date);
-}
-
-function formatDate(value) {
-	if (!value) return 'Data indisponibila';
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return 'Data indisponibila';
-	return new Intl.DateTimeFormat('ro-RO', {
-		day: '2-digit',
-		month: 'short',
-		year: 'numeric',
-		hour: '2-digit',
-		minute: '2-digit',
-	}).format(date);
-}
-
 function getResultTitle(result) {
-	return result?.test?.title || result?.exam?.title || 'Test';
+	return result?.exam?.title || result?.test?.title || 'Test';
 }
 
 function getCourseTitle(result) {
-	return result?.test?.course?.title || result?.exam?.course?.title || 'Fara curs';
-}
-
-function isTestResultRow(result) {
-	return result?.type === 'test' || Boolean(result?.test_id);
+	return result?.exam?.course?.title || result?.test?.course?.title || 'Fără curs';
 }
 
 function isPendingReview(result) {
-	return Boolean(result?.needs_manual_review || result?.status === 'pending_review');
+	return Boolean((result?.needs_manual_review || result?.status === 'pending_review') && !result?.reviewed_at);
 }
 
 function getResultState(result) {
-	if (isPendingReview(result) && !result?.reviewed_at) {
-		return {
-			key: 'review',
-			label: 'In verificare',
-			tone: 'review',
-			icon: <Clock size={16} weight="bold" aria-hidden />,
-			accent: REVIEW_ACCENT,
-		};
+	if (isPendingReview(result)) {
+		return { key: 'pending', label: 'În curs de corectare' };
 	}
-
 	if (result?.passed) {
-		return {
-			key: 'passed',
-			label: 'Promovat',
-			tone: 'passed',
-			icon: <CheckCircle size={16} weight="bold" aria-hidden />,
-			accent: PASSING_ACCENT,
-		};
+		return { key: 'passed', label: 'Promovat' };
 	}
-
-	return {
-		key: 'failed',
-		label: 'Nepromovat',
-		tone: 'failed',
-		icon: <XCircle size={16} weight="bold" aria-hidden />,
-		accent: FAILING_ACCENT,
-	};
+	return { key: 'failed', label: 'Nepromovat' };
 }
 
-function getManualEntry(result, questionId) {
-	const scores = result?.manual_review_scores;
-	if (!scores || typeof scores !== 'object') return null;
-	return scores[questionId] ?? scores[String(questionId)] ?? null;
+function testIdentity(result) {
+	if (result?.test_id) return `test:${result.test_id}`;
+	if (result?.exam_id) return `exam:${result.exam_id}`;
+	return `${result?.type || 'exam'}:${result?.id}`;
+}
+
+function latestResultPerTest(list) {
+	const byTest = new Map();
+	list.forEach((row) => {
+		const key = testIdentity(row);
+		const current = byTest.get(key);
+		if (!current) {
+			byTest.set(key, row);
+			return;
+		}
+		const currentTime = new Date(current.completed_at || 0).getTime();
+		const nextTime = new Date(row.completed_at || 0).getTime();
+		const currentAttempt = Number(current.attempt_number) || 0;
+		const nextAttempt = Number(row.attempt_number) || 0;
+		if (nextTime > currentTime || (nextTime === currentTime && nextAttempt > currentAttempt)) {
+			byTest.set(key, row);
+		}
+	});
+	return [...byTest.values()];
 }
 
 function renderValueList(values, itemLookup) {
@@ -124,18 +88,21 @@ function renderValueList(values, itemLookup) {
 	return labels.length ? labels.join(' → ') : 'Fără răspuns';
 }
 
-function countAutoGradedQuestions(questions) {
-	const graded = questions.filter((q) => typeof q?.is_correct === 'boolean');
-	const correct = graded.filter((q) => q.is_correct).length;
-	return { graded: graded.length, correct, total: questions.length };
-}
-
 function QuestionReview({ question, index, result, submittedOnly = false }) {
 	const type = question.type || question.question_type || 'multiple_choice';
 	const userAnswer = question.user_answer ?? result?.answers?.[question.id] ?? result?.answers?.[String(question.id)];
-	const userAnswerIndices = getUserChoiceDisplayIndices(question);
-	const userAnswerLabels = getUserChoiceDisplayLabels(question, userAnswerIndices);
-	const correctIndices = getCorrectChoiceIndices(question);
+	const multi = isMultiSelectChoiceQuestion({ type });
+	const userAnswerIndices = Array.isArray(question.user_answer_indices)
+		? normalizeMultiChoiceIndices(question.user_answer_indices)
+		: multi
+			? normalizeMultiChoiceIndices(userAnswer)
+			: (() => {
+				const idx = normalizeAnswerIndex(question.user_answer_index ?? userAnswer);
+				return idx !== null ? [idx] : [];
+			})();
+	const correctIndices = Array.isArray(question.correct_answer_indices)
+		? normalizeMultiChoiceIndices(question.correct_answer_indices)
+		: getCorrectChoiceIndices(question);
 	const options = asArray(question.answers).length
 		? asArray(question.answers)
 		: asArray(question.options).map((text, answerIndex) => ({
@@ -146,21 +113,9 @@ function QuestionReview({ question, index, result, submittedOnly = false }) {
 			is_selected: userAnswerIndices.includes(answerIndex),
 		}));
 	const hasOptions = options.length > 0 && !['matching', 'ordering'].includes(type);
-	const correctness = question.is_correct;
-	const hasAutoStatus = !submittedOnly && typeof correctness === 'boolean';
-	const hasStoredAnswer = userAnswerLabels.length > 0 || userAnswerIndices.length > 0;
-	const manualEntry = getManualEntry(result, question.id);
-	const manualScore = typeof manualEntry === 'object' ? manualEntry?.score : manualEntry;
-	const manualFeedback = typeof manualEntry === 'object' ? manualEntry?.feedback : null;
-	const statusClass = submittedOnly
-		? 'submitted'
-		: (!hasAutoStatus
-		? 'pending'
-		: correctness
-			? 'correct'
-			: hasStoredAnswer
-				? 'incorrect'
-				: 'pending');
+	const correctness = typeof question.is_correct === 'boolean' ? question.is_correct : null;
+	const hasAutoStatus = typeof correctness === 'boolean';
+	const statusClass = hasAutoStatus ? (correctness ? 'correct' : 'incorrect') : 'submitted';
 	const matching = question.matching;
 	const ordering = question.ordering;
 	const rightLookup = useMemo(
@@ -173,29 +128,12 @@ function QuestionReview({ question, index, result, submittedOnly = false }) {
 	);
 
 	return (
-		<article className={`exam-result-question ${statusClass}`}>
-			<div className="exam-result-question-header">
-				<div>
-					<div className="exam-result-question-number">
-						Întrebarea {index + 1}
-					</div>
-					{hasOptions && (
-						<span className="exam-result-question-type">{getChoiceTypeLabel({ type })}</span>
-					)}
-					{!hasOptions && type === 'short_answer' && (
-						<span className="exam-result-question-type">{getChoiceTypeLabel({ type })}</span>
-					)}
-					<div className="exam-result-question-points">
-						{question.points || 1} {(question.points || 1) === 1 ? 'punct' : 'puncte'}
-					</div>
-				</div>
-				{hasAutoStatus ? (
-					<span className={`exam-result-question-status ${statusClass}`}>
-						{correctness ? 'Corect' : hasStoredAnswer ? 'Incorect' : 'Fără răspuns salvat'}
-					</span>
-				) : submittedOnly ? null : (
-					<span className="exam-result-question-status pending">Evaluare manuala</span>
-				)}
+		<article className={`student-exam-feedback-item exam-result-question ${statusClass}`}>
+			<div className="student-exam-feedback-item-header">
+				<span className="student-exam-feedback-item-number">{index + 1}</span>
+				<span className="student-exam-feedback-item-status">
+					{hasAutoStatus ? (correctness ? '✓ Corect' : '✗ Incorect') : 'Răspuns trimis'}
+				</span>
 			</div>
 
 			<RichTextHtml
@@ -203,12 +141,6 @@ function QuestionReview({ question, index, result, submittedOnly = false }) {
 				className="exam-result-question-text"
 				fallback={<div className="exam-result-question-text">Întrebare fără conținut</div>}
 			/>
-
-			{hasOptions && userAnswerLabels.length > 0 && (
-				<p className="exam-result-user-answer-summary">
-					<strong>Răspunsul tău:</strong> {userAnswerLabels.join('; ')}
-				</p>
-			)}
 
 			{hasOptions && (
 				<div className="exam-result-answers">
@@ -220,25 +152,24 @@ function QuestionReview({ question, index, result, submittedOnly = false }) {
 						if (submittedOnly && !selected) {
 							return null;
 						}
-						const correct = submittedOnly
-							? false
-							: (fromApiAnswers
+						const correct = fromApiAnswers
 							? Boolean(answer.is_correct)
-							: correctIndices.includes(answerIndex));
+							: (!submittedOnly && correctIndices.includes(answerIndex));
 						const answerText = answer.answer_text || answer.text || answer.content || `Varianta ${answerIndex + 1}`;
+						const tone = correct ? 'correct' : selected ? 'user-incorrect' : 'default';
 						return (
 							<div
 								key={answer.id ?? answerIndex}
-								className={`exam-result-answer ${submittedOnly ? 'submitted' : (correct ? 'correct' : selected ? 'user-incorrect' : 'default')}`}
+								className={`exam-result-answer ${tone}`}
 							>
-								{!submittedOnly && (
-								<span className="exam-result-answer-marker" aria-hidden>
-									{correct ? <CheckCircle size={18} weight="bold" /> : selected ? <XCircle size={18} weight="bold" /> : null}
-								</span>
+								{(correct || selected) && (
+									<span className="exam-result-answer-marker" aria-hidden>
+										{correct ? <CheckCircle size={18} weight="bold" /> : <XCircle size={18} weight="bold" />}
+									</span>
 								)}
 								<span className="exam-result-answer-text">{answerText}</span>
 								{selected && <span className="exam-result-answer-label user">Răspunsul tău</span>}
-								{!submittedOnly && correct && !selected && <span className="exam-result-answer-label">Variantă corectă</span>}
+								{!submittedOnly && correct && <span className="exam-result-answer-label">Corect</span>}
 							</div>
 						);
 					})}
@@ -286,87 +217,25 @@ function QuestionReview({ question, index, result, submittedOnly = false }) {
 				</div>
 			)}
 
-			{manualScore !== null && manualScore !== undefined && (
-				<div className="exam-result-manual-review reviewed">
-					Punctaj manual: {manualScore}
-					{manualFeedback ? <span> - {manualFeedback}</span> : null}
-				</div>
-			)}
-
-			{!submittedOnly && question.explanation && (
-				<div className="exam-result-explanation">
-					<strong>Explicatie:</strong>{' '}
-					<RichTextHtml html={question.explanation} className="exam-result-explanation-body" />
-				</div>
-			)}
 		</article>
 	);
 }
 
-function isCatalogExamResultRow(result) {
-	return result?.type === 'exam' || (Boolean(result?.exam_id) && !result?.test_id);
-}
-
-function ScoreRing({ value, tone = 'passed', size = 72, className = '' }) {
-	const pct = Math.min(100, Math.max(0, toNumber(value)));
-	return (
-		<div
-			className={`exam-results-score-ring tone-${tone} ${className}`.trim()}
-			style={{ '--ring-pct': pct, '--ring-size': `${size}px` }}
-			role="img"
-			aria-label={`Scor ${pct} procente`}
-		>
-			<span>{pct}%</span>
-		</div>
-	);
-}
-
-const FILTER_OPTIONS = [
-	{ value: 'all', label: 'Toate' },
-	{ value: 'passed', label: 'Promovate' },
-	{ value: 'failed', label: 'Nepromovate' },
-	{ value: 'review', label: 'Review' },
+const STATUS_FILTERS = [
+	{ id: 'all', label: 'Toate' },
+	{ id: 'passed', label: 'Promovate' },
+	{ id: 'failed', label: 'Nepromovate' },
 ];
 
-const RESULTS_PAGE_VARIANTS = {
-	tests: {
-		service: examResultsService,
-		filterRow: isTestResultRow,
-		keyPrefix: 'test',
-		title: 'Rezultate teste',
-		historyLabel: 'Istoric rezultate teste',
-		searchPlaceholder: 'Cauta dupa test sau curs',
-		emptyTitle: 'Nu ai rezultate inca',
-		emptyText: 'Finalizeaza un test pentru a vedea scorul aici.',
-		emptyLink: '/courses',
-		emptyLinkLabel: 'Mergi la cursuri',
-		errorList: 'Nu s-au putut incarca rezultatele testelor.',
-		getContextLabel: getCourseTitle,
-	},
-	catalogExams: {
-		service: catalogExamResultsService,
-		filterRow: isCatalogExamResultRow,
-		keyPrefix: 'exam',
-		title: 'Rezultate examene',
-		historyLabel: 'Istoric rezultate examene',
-		searchPlaceholder: 'Cauta dupa examen',
-		emptyTitle: 'Nu ai rezultate la examene inca',
-		emptyText: 'Finalizeaza un examen din catalog pentru a vedea scorul aici.',
-		emptyLink: '/courses',
-		emptyLinkLabel: 'Mergi la examene',
-		errorList: 'Nu s-au putut incarca rezultatele examenelor.',
-		getContextLabel: () => 'Examen catalog',
-	},
-};
+const SORT_FILTERS = [
+	{ id: 'recent', label: 'Recente' },
+	{ id: 'oldest', label: 'Vechi' },
+];
 
-const ExamResultsPage = ({ variant = 'tests' }) => {
-	const pageConfig = RESULTS_PAGE_VARIANTS[variant] || RESULTS_PAGE_VARIANTS.tests;
+const ExamResultsPage = () => {
 	const [results, setResults] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
-	const [selectedKey, setSelectedKey] = useState(null);
-	const [selectedResult, setSelectedResult] = useState(null);
-	const [loadingDetails, setLoadingDetails] = useState(false);
 	const [query, setQuery] = useState('');
 	const [filterStatus, setFilterStatus] = useState('all');
 	const [sortBy, setSortBy] = useState('recent');
@@ -375,63 +244,33 @@ const ExamResultsPage = ({ variant = 'tests' }) => {
 		try {
 			setLoading(true);
 			setError(null);
-			const data = await pageConfig.service.getAll();
-			const list = (Array.isArray(data) ? data : []).filter(pageConfig.filterRow);
-			setResults(list);
-			if (!selectedKey && list.length > 0) {
-				const first = list[0];
-				setSelectedKey(`${pageConfig.keyPrefix}:${first.id}`);
-			}
+			const data = await examResultsService.getAll({ view: 'cards' });
+			const list = latestResultPerTest(Array.isArray(data) ? data : []);
+			const detailed = await Promise.all(list.map(async (row) => {
+				if (Array.isArray(row?.exam?.questions)) {
+					return row;
+				}
+				try {
+					const details = await examResultsService.getById(row.id, row.type);
+					return { ...row, ...details };
+				} catch (detailError) {
+					handleApiError(detailError, 'fetchResultDetails');
+					return row;
+				}
+			}));
+			setResults(detailed);
 		} catch (err) {
 			handleApiError(err, 'fetchExamResults');
-			setError(pageConfig.errorList);
+			setError('Nu s-au putut încărca rezultatele testelor.');
 		} finally {
 			setLoading(false);
 		}
 	};
 
 	useEffect(() => {
-		setSelectedKey(null);
-		setSelectedResult(null);
 		loadResults();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [variant]);
-
-	const selectedListResult = useMemo(() => {
-		if (!selectedKey) return null;
-		return results.find((result) => `${pageConfig.keyPrefix}:${result.id}` === selectedKey) || null;
-	}, [results, selectedKey, pageConfig.keyPrefix]);
-
-	useEffect(() => {
-		if (!selectedListResult) {
-			setSelectedResult(null);
-			return;
-		}
-
-		let cancelled = false;
-		const fetchDetails = async () => {
-			try {
-				setLoadingDetails(true);
-				const details = await pageConfig.service.getById(selectedListResult.id);
-				if (!cancelled) {
-					setSelectedResult(details);
-				}
-			} catch (err) {
-				handleApiError(err, 'fetchResultDetails');
-				if (!cancelled) {
-					setSelectedResult(selectedListResult);
-					setError('Detaliile rezultatului selectat nu s-au putut incarca complet.');
-				}
-			} finally {
-				if (!cancelled) setLoadingDetails(false);
-			}
-		};
-
-		fetchDetails();
-		return () => {
-			cancelled = true;
-		};
-	}, [selectedListResult, pageConfig]);
+	}, []);
 
 	const filteredResults = useMemo(() => {
 		const needle = query.trim().toLowerCase();
@@ -440,64 +279,21 @@ const ExamResultsPage = ({ variant = 'tests' }) => {
 				const state = getResultState(result).key;
 				if (filterStatus !== 'all' && state !== filterStatus) return false;
 				if (!needle) return true;
-				return `${getResultTitle(result)} ${pageConfig.getContextLabel(result)}`.toLowerCase().includes(needle);
+				return `${getResultTitle(result)} ${getCourseTitle(result)}`.toLowerCase().includes(needle);
 			})
 			.sort((a, b) => {
 				const dateA = new Date(a.completed_at || 0).getTime();
 				const dateB = new Date(b.completed_at || 0).getTime();
 				return sortBy === 'oldest' ? dateA - dateB : dateB - dateA;
 			});
-	}, [results, query, filterStatus, sortBy, pageConfig]);
-
-	const stats = useMemo(() => {
-		const passed = results.filter((result) => getResultState(result).key === 'passed').length;
-		const review = results.filter((result) => getResultState(result).key === 'review').length;
-		const failed = results.filter((result) => getResultState(result).key === 'failed').length;
-		const average = results.length
-			? Math.round(results.reduce((sum, result) => sum + toNumber(result.percentage), 0) / results.length)
-			: 0;
-		return { passed, failed, review, average };
-	}, [results]);
-
-	const activeResult = selectedResult || selectedListResult;
-	const submittedOnly = Boolean(activeResult?.show_only_submitted_answers);
-	const activeState = getResultState(activeResult);
-	const questions = asArray(activeResult?.exam?.questions);
-	const questionStats = useMemo(() => countAutoGradedQuestions(questions), [questions]);
-	const overallFeedback = activeResult?.manual_review_scores?._meta?.overall_feedback || null;
-	const officialCorrect = toNumber(activeResult?.correct_answers_count);
-	const officialTotal = toNumber(activeResult?.total_questions);
-	const hasOfficialBreakdown = officialTotal > 0 && activeResult?.correct_answers_count != null;
-	const breakdownMismatch = hasOfficialBreakdown
-		&& questionStats.graded > 0
-		&& officialCorrect !== questionStats.correct;
-	const scoreMismatch = hasOfficialBreakdown
-		&& questionStats.graded > 0
-		&& officialCorrect === 0
-		&& toNumber(activeResult?.percentage) >= 50;
+	}, [results, query, filterStatus, sortBy]);
 
 	if (loading) {
 		return (
-			<div className="exam-results-page exam-results-page--loading">
-				<header className="exam-results-hero">
-					<div className="exam-results-skeleton exam-results-skeleton-tabs" />
-					<div className="exam-results-skeleton exam-results-skeleton-title" />
-					<div className="exam-results-kpi-grid">
-						{[1, 2, 3, 4, 5].map((i) => (
-							<div key={i} className="exam-results-skeleton exam-results-skeleton-kpi" />
-						))}
-					</div>
-				</header>
-				<div className="exam-results-workspace">
-					<aside className="exam-results-rail">
-						<div className="exam-results-skeleton exam-results-skeleton-block" />
-					</aside>
-					<main className="exam-results-stage">
-						<div className="exam-results-loading">
-							<div className="lms-spinner" />
-							<p>Se incarca rezultatele...</p>
-						</div>
-					</main>
+			<div className="exam-results-page">
+				<div className="exam-results-loading">
+					<div className="lms-spinner" />
+					<p>Se încarcă rezultatele...</p>
 				</div>
 			</div>
 		);
@@ -505,54 +301,9 @@ const ExamResultsPage = ({ variant = 'tests' }) => {
 
 	return (
 		<div className="exam-results-page">
-			<header className="exam-results-hero">
-				<nav className="exam-results-tabs" aria-label="Tip rezultate">
-					<NavLink
-						to="/exam-results"
-						end
-						className={({ isActive }) => `exam-results-tab${isActive ? ' active' : ''}`}
-					>
-						Rezultate teste
-					</NavLink>
-					<NavLink
-						to="/catalog-exam-results"
-						end
-						className={({ isActive }) => `exam-results-tab${isActive ? ' active' : ''}`}
-					>
-						Rezultate examene
-					</NavLink>
-				</nav>
-
-				<div className="exam-results-hero-copy">
-					<h1 className="exam-results-hero-title">{pageConfig.title}</h1>
-				</div>
-
-				<div className="exam-results-kpi-grid" aria-label="Statistici rezultate">
-					<article className="exam-results-kpi">
-						<span className="exam-results-kpi-label">Total incercari</span>
-						<strong className="exam-results-kpi-value">{results.length}</strong>
-					</article>
-					<article className="exam-results-kpi is-success">
-						<span className="exam-results-kpi-label">Promovate</span>
-						<strong className="exam-results-kpi-value">{stats.passed}</strong>
-					</article>
-					<article className="exam-results-kpi">
-						<span className="exam-results-kpi-label">Nepromovate</span>
-						<strong className="exam-results-kpi-value">{stats.failed}</strong>
-					</article>
-					<article className="exam-results-kpi is-warning">
-						<span className="exam-results-kpi-label">In review</span>
-						<strong className="exam-results-kpi-value">{stats.review}</strong>
-					</article>
-					<article className="exam-results-kpi is-accent">
-						<span className="exam-results-kpi-label">
-							<Medal size={16} weight="duotone" aria-hidden />
-							Medie generala
-						</span>
-						<strong className="exam-results-kpi-value">{stats.average}%</strong>
-					</article>
-				</div>
-			</header>
+			<section className="exam-results-page-header exam-results-page-header--simple">
+				<h1 className="exam-results-page-title">Rezultate teste</h1>
+			</section>
 
 			{error && (
 				<div className="exam-results-error">
@@ -561,194 +312,103 @@ const ExamResultsPage = ({ variant = 'tests' }) => {
 				</div>
 			)}
 
-			<div className="exam-results-workspace">
-				<aside className="exam-results-rail" aria-label={pageConfig.historyLabel}>
-					<div className="exam-results-rail-head">
-						<h2 className="exam-results-rail-title">
-							Istoric
-							{results.length > 0 && (
-								<span className="exam-results-count-badge">{filteredResults.length}</span>
-							)}
-						</h2>
-						<button type="button" className="exam-results-icon-btn" onClick={loadResults} aria-label="Reincarca rezultate">
-							<ArrowClockwise size={16} weight="bold" aria-hidden />
+			<div className="exam-results-controls">
+				<div className="exam-results-button-row" role="group" aria-label="Filtru teste">
+					{STATUS_FILTERS.map((filter) => (
+						<button
+							key={filter.id}
+							type="button"
+							className={`exam-results-filter-btn ${filterStatus === filter.id ? 'is-active' : ''}`}
+							aria-pressed={filterStatus === filter.id}
+							onClick={() => setFilterStatus(filter.id)}
+						>
+							{filter.label}
 						</button>
-					</div>
+					))}
+				</div>
+				<div className="exam-results-button-row" role="group" aria-label="Ordine teste">
+					{SORT_FILTERS.map((filter) => (
+						<button
+							key={filter.id}
+							type="button"
+							className={`exam-results-filter-btn ${sortBy === filter.id ? 'is-active' : ''}`}
+							aria-pressed={sortBy === filter.id}
+							onClick={() => setSortBy(filter.id)}
+						>
+							{filter.label}
+						</button>
+					))}
+				</div>
+				<div className="exam-results-search">
+					<MagnifyingGlass size={18} weight="bold" aria-hidden />
+					<input
+						type="search"
+						value={query}
+						onChange={(event) => setQuery(event.target.value)}
+						placeholder="Caută după test sau curs"
+						aria-label="Caută teste"
+					/>
+				</div>
+			</div>
 
-					<div className="exam-results-search">
-						<MagnifyingGlass size={16} weight="bold" aria-hidden />
-						<input
-							type="search"
-							value={query}
-							onChange={(event) => setQuery(event.target.value)}
-							placeholder={pageConfig.searchPlaceholder}
-						/>
-					</div>
-
-					<div className="exam-results-filter-chips" aria-label="Filtre rezultate">
-						{FILTER_OPTIONS.map((option) => (
-							<button
-								key={option.value}
-								type="button"
-								className={`exam-results-filter-chip${filterStatus === option.value ? ' active' : ''}`}
-								onClick={() => setFilterStatus(option.value)}
-							>
-								{option.label}
-							</button>
-						))}
-					</div>
-
-					<div className="exam-results-sort-row">
-						<span>Sortare</span>
-						<select value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="exam-results-select" aria-label="Sortare rezultate">
-							<option value="recent">Cele mai recente</option>
-							<option value="oldest">Cele mai vechi</option>
-						</select>
-					</div>
-
-					{filteredResults.length > 0 ? (
-						<div className="exam-results-rail-list">
-							{filteredResults.map((result) => {
-								const state = getResultState(result);
-								const key = `${pageConfig.keyPrefix}:${result.id}`;
-								const isSelected = selectedKey === key;
-								return (
-									<button
-										key={key}
-										type="button"
-										onClick={() => setSelectedKey(key)}
-										className={`exam-result-row tone-${state.tone}${isSelected ? ' selected' : ''}`}
-										aria-current={isSelected ? 'true' : undefined}
-									>
-										<ScoreRing value={result.percentage} tone={state.tone} size={44} className="exam-result-row-ring" />
-										<div className="exam-result-row-body">
-											<div className="exam-result-row-title">{getResultTitle(result)}</div>
-											<div className="exam-result-row-meta">
-												<span>{formatDateShort(result.completed_at)}</span>
-												<span>Incercarea #{result.attempt_number || 1}</span>
-											</div>
+			{filteredResults.length > 0 ? (
+				<div className="exam-results-stack">
+					{filteredResults.map((result) => {
+						const state = getResultState(result);
+						const percent = Math.round(toNumber(result.percentage));
+						const questions = asArray(result?.exam?.questions);
+						const submittedOnly = Boolean(result?.show_only_submitted_answers);
+						return (
+							<article key={`${result.type || 'exam'}:${result.id}`} className="student-exam-results exam-results-test-card">
+								<h2 className="exam-results-test-title">{getResultTitle(result)}</h2>
+								<p className="exam-results-test-course">{getCourseTitle(result)}</p>
+								<div className={`student-exam-result-header ${state.key}`}>
+									<div className="student-exam-result-icon">{state.key === 'passed' ? '✓' : state.key === 'pending' ? '⏳' : '✗'}</div>
+									<div className="student-exam-result-title">
+										{state.key === 'pending' ? state.label : `${percent}% ${state.label}`}
+									</div>
+								</div>
+								<div className="student-exam-result-stats">
+									<div className="student-exam-result-stat">
+										<div className="student-exam-result-stat-label">Scor</div>
+										<div className="student-exam-result-stat-value">
+											{toNumber(result.score)} / {toNumber(result.total_points ?? result.max_score)}
 										</div>
-										<span className={`exam-result-row-badge tone-${state.tone}`}>{state.label}</span>
-									</button>
-								);
-							})}
-						</div>
-					) : (
-						<div className="exam-results-empty exam-results-empty--rail">
-							<Eye size={32} weight="duotone" aria-hidden />
-							<div className="exam-results-empty-title">
-								{results.length === 0 ? pageConfig.emptyTitle : 'Niciun rezultat la filtre'}
-							</div>
-							<div className="exam-results-empty-text">
-								{results.length === 0 ? pageConfig.emptyText : 'Schimba filtrul sau cautarea.'}
-							</div>
-							{results.length === 0 && (
-								<Link to={pageConfig.emptyLink} className="lms-btn-primary">{pageConfig.emptyLinkLabel}</Link>
-							)}
-						</div>
-					)}
-				</aside>
-
-				<main className={`exam-results-stage tone-${activeState.tone}`}>
-					{activeResult ? (
-						<>
-							<div className="exam-results-report-head">
-								<ScoreRing value={activeResult.percentage} tone={activeState.tone} size={104} />
-								<div className="exam-results-report-head-copy">
-									<span className={`exam-result-status-badge ${activeState.tone}`}>
-										{activeState.icon}
-										{activeState.label}
-									</span>
-									<h2>{getResultTitle(activeResult)}</h2>
-									<p>{pageConfig.getContextLabel(activeResult)} · {formatDate(activeResult.completed_at)}</p>
+									</div>
 								</div>
-							</div>
-
-							<div className="exam-results-report-metrics">
-								<div className="exam-results-metric">
-									<span>Scor</span>
-									<strong>{toNumber(activeResult.score)} / {toNumber(activeResult.total_points ?? activeResult.max_score)}</strong>
-								</div>
-								<div className="exam-results-metric">
-									<span>Corecte</span>
-									<strong>
-										{hasOfficialBreakdown
-											? `${officialCorrect} / ${officialTotal}`
-											: questionStats.graded > 0
-												? `${questionStats.correct} / ${questionStats.graded}`
-												: '—'}
-									</strong>
-								</div>
-								<div className="exam-results-metric">
-									<span>Incercare</span>
-									<strong>#{activeResult.attempt_number || 1}</strong>
-								</div>
-							</div>
-
-							{overallFeedback && (
-								<div className="exam-result-manual-review reviewed">
-									Feedback general: {overallFeedback}
-								</div>
-							)}
-							{(breakdownMismatch || scoreMismatch) && (
-								<div className="exam-results-error exam-results-error--inline" role="status">
-									<WarningCircle size={20} weight="bold" aria-hidden />
-									<span>
-										Scorul afișat ({toNumber(activeResult.percentage)}%) nu corespunde răspunsurilor salvate
-										{hasOfficialBreakdown
-											? ` (${officialCorrect}/${officialTotal} corecte).`
-											: ` (${questionStats.correct}/${questionStats.graded} corecte la reevaluare).`}
-										{' '}Dacă e un rezultat vechi de test, refă încercarea pentru date coerente.
-									</span>
-								</div>
-							)}
-
-							{loadingDetails ? (
-								<div className="exam-results-loading compact">
-									<div className="lms-spinner" />
-									<p>Se incarca detaliile...</p>
-								</div>
-							) : questions.length > 0 ? (
-								<div className="exam-results-questions-block">
-									<h3 className="exam-result-questions-title">
-										Raspunsurile tale
-										{questionStats.graded > 0 && !submittedOnly && (
-											<span className="exam-result-questions-count">
-												{questionStats.correct} corecte · {questionStats.graded - questionStats.correct} gresite
-											</span>
-										)}
-									</h3>
-									<div className="exam-result-questions">
+								{questions.length > 0 ? (
+									<div className="student-exam-final-feedback">
 										{questions.map((question, index) => (
 											<QuestionReview
 												key={question.id ?? index}
 												question={question}
 												index={index}
-												result={activeResult}
+												result={result}
 												submittedOnly={submittedOnly}
 											/>
 										))}
 									</div>
-								</div>
-							) : (
-								<div className="exam-results-empty exam-results-empty--stage">
-									<Eye size={34} weight="duotone" aria-hidden />
-									<div className="exam-results-empty-title">Detaliile intrebarilor nu sunt disponibile</div>
-									<div className="exam-results-empty-text">Rezumatul rezultatului este afisat corect mai sus.</div>
-								</div>
-							)}
-						</>
-					) : (
-						<div className="exam-results-empty exam-results-empty--stage">
-							<div className="exam-results-empty-icon" aria-hidden>
-								<Eye size={32} weight="duotone" />
-							</div>
-							<div className="exam-results-empty-title">Selecteaza o incercare</div>
-							<div className="exam-results-empty-text">Alege un rezultat din lista din stanga pentru a vedea raportul complet.</div>
-						</div>
+								) : (
+									<p className="exam-results-test-missing">Detaliile întrebărilor nu sunt disponibile.</p>
+								)}
+							</article>
+						);
+					})}
+				</div>
+			) : (
+				<div className="exam-results-empty">
+					<Eye size={34} weight="duotone" aria-hidden />
+					<div className="exam-results-empty-title">
+						{results.length === 0 ? 'Nu ai rezultate încă' : 'Niciun test pentru filtrele alese'}
+					</div>
+					<div className="exam-results-empty-text">
+						{results.length === 0 ? 'Finalizează un test pentru a vedea scorul aici.' : 'Schimbă filtrul sau căutarea.'}
+					</div>
+					{results.length === 0 && (
+						<Link to="/courses" className="lms-btn-primary">Mergi la cursuri</Link>
 					)}
-				</main>
-			</div>
+				</div>
+			)}
 		</div>
 	);
 };

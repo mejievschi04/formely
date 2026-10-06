@@ -1,26 +1,36 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { adminService } from '../../../../services/api';
-import { useToast } from '../../../../contexts/ToastContext';
+import { X } from '@phosphor-icons/react';
+
+import { useToast } from '../../../../contexts/ToastContextShared.js';
 import ConfirmModal from '../../../../components/common/ConfirmModal';
 import Modal from '../../../../components/common/Modal';
 import QuestionItemCard from './QuestionItemCard';
 import AIGenerateQuestionsModal from './AIGenerateQuestionsModal';
-import { isAiEnabled, notifyAiComingSoon, canUseAiFeature, notifyAiPlanLocked } from '../../../../utils/aiAvailability';
-import { useAuth } from '../../../../contexts/AuthContext';
+import { DEFAULT_AI_QUESTION_TYPES } from './AIGenerateQuestionsModalShared.js';
+import { isVoltEnabled, notifyVoltComingSoon } from '../../../../utils/voltAvailability';
 
-import {
-	QUESTION_TYPE_GLOSSARY,
-	QUESTION_TYPE_SELECT_OPTIONS,
-} from '../../../../utils/questionTypeLabels';
+const QUESTION_TYPE_OPTIONS = [
+	{ value: 'multiple_choice', label: 'Răspuns multiplu' },
+	{ value: 'single_choice', label: 'Răspuns unic' },
+	{ value: 'true_false', label: 'Adevărat/Fals' },
+	{ value: 'yes_no', label: 'Da / Nu' },
+	{ value: 'matching', label: 'Potrivire' },
+	{ value: 'ordering', label: 'Ordonare' },
+];
 
 const getQuestionTypeDefaults = (type) => {
-	if (type === 'short_answer') {
-		return [];
-	}
 	if (type === 'true_false') {
 		return [
 			{ text: 'Adevărat', is_correct: true },
 			{ text: 'Fals', is_correct: false },
+		];
+	}
+
+	if (type === 'yes_no') {
+		return [
+			{ text: 'Da', is_correct: true },
+			{ text: 'Nu', is_correct: false },
 		];
 	}
 
@@ -66,10 +76,26 @@ const normalizeQuestionAnswers = (type, answers) => {
 		}));
 	}
 
-	if (type === 'true_false') {
-		return list.slice(0, 2).map((answer, index) => ({
-			text: answer?.text ?? (index === 0 ? 'Adevărat' : 'Fals'),
-			is_correct: index === 0 ? !!answer?.is_correct : !!answer?.is_correct,
+	if (type === 'true_false' || type === 'yes_no') {
+		const labels = type === 'yes_no' ? ['Da', 'Nu'] : ['Adevărat', 'Fals'];
+		const correct = list.find((answer) => answer?.is_correct);
+		const correctText = String(correct?.text || '').trim().toLowerCase();
+		const secondIsCorrect = type === 'yes_no'
+			? ['nu', 'no', 'fals', 'false'].includes(correctText)
+			: (list.slice(0, 2).findIndex((answer) => !!answer?.is_correct) === 1);
+		return labels.map((text, index) => ({
+			text,
+			is_correct: secondIsCorrect ? index === 1 : index === 0,
+		}));
+	}
+
+	if (type === 'single_choice') {
+		const firstCorrectIndex = list.findIndex((answer) => !!answer?.is_correct);
+		const correctIndex = firstCorrectIndex >= 0 ? firstCorrectIndex : 0;
+		return list.map((answer, index) => ({
+			text: answer?.text ?? '',
+			is_correct: index === correctIndex,
+			order: typeof answer?.order === 'number' ? answer.order : index,
 		}));
 	}
 
@@ -82,8 +108,6 @@ const normalizeQuestionAnswers = (type, answers) => {
 
 const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 	const { showToast } = useToast();
-	const { user } = useAuth();
-	const aiTestAllowed = canUseAiFeature(user, 'ai_test_generation');
 	const [editingQuestion, setEditingQuestion] = useState(null);
 	const [questionFormErrors, setQuestionFormErrors] = useState({ content: '', answers: '', correct: '' });
 	const [questionForm, setQuestionForm] = useState({
@@ -94,7 +118,6 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 		explanation: '',
 		metadata: {
 			difficulty: '',
-			tags: [],
 		},
 	});
 
@@ -103,21 +126,22 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 	const [previewQuestion, setPreviewQuestion] = useState(null);
 	const [previewShowCorrect, setPreviewShowCorrect] = useState(false);
 	const [duplicateLoading, setDuplicateLoading] = useState(false);
-	// AI generation state
+	// Volt generation state
 	const [showAIModal, setShowAIModal] = useState(false);
 	const [aiGenerating, setAiGenerating] = useState(false);
 	const [aiError, setAiError] = useState(null);
 	const [aiCourses, setAiCourses] = useState([]);
 	const [aiCoursesLoading, setAiCoursesLoading] = useState(false);
 	const [aiSelectedCourseId, setAiSelectedCourseId] = useState('');
-	const [aiReviewStarted, setAiReviewStarted] = useState(false);
-	const [aiCurrentDraftQuestion, setAiCurrentDraftQuestion] = useState(null);
-	const [aiApprovedQuestions, setAiApprovedQuestions] = useState([]);
+	const [, setAiReviewStarted] = useState(false);
+	const [, setAiCurrentDraftQuestion] = useState(null);
+	const [, setAiApprovedQuestions] = useState([]);
 	const [aiGeneratedCount, setAiGeneratedCount] = useState(0);
+	const [aiGeneratedPreviews, setAiGeneratedPreviews] = useState([]);
 	const [aiOptions, setAiOptions] = useState({
 		numberOfQuestions: 10,
 		difficulty: 'medium',
-		questionTypes: ['multiple_choice']
+		questionTypes: [...DEFAULT_AI_QUESTION_TYPES]
 	});
 
 	// Load existing questions if editing
@@ -139,7 +163,7 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 					setAiCourses(list);
 				}
 			} catch (err) {
-				console.error('Error fetching courses for AI generation:', err);
+				console.error('Error fetching courses for Formely AI generation:', err);
 				if (!cancelled) {
 					setAiCourses([]);
 				}
@@ -200,24 +224,7 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 		}
 	};
 
-	const fetchAiDraftQuestion = async (actualBankId, approvedQuestions = [], courseIdOverride = null) => {
-		const validCourseId = resolveValidCourseId(courseIdOverride);
-		if (!validCourseId) {
-			throw new Error('Alege un curs valid înainte de generare.');
-		}
 
-		const result = await adminService.previewQuestionsWithAi(actualBankId, {
-			course_id: validCourseId,
-			numberOfQuestions: 1,
-			difficulty: aiOptions.difficulty,
-			questionTypes: aiOptions.questionTypes,
-			instructions: '',
-			approvedQuestions: approvedQuestions.map((q) => q.content || q.text || '').filter(Boolean),
-		});
-
-		const draft = Array.isArray(result?.draft) ? result.draft : [];
-		return draft[0] || null;
-	};
 
 	const fetchQuestions = async () => {
 		try {
@@ -276,7 +283,10 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 			return;
 		}
 
-		if (questionForm.type === 'multiple_choice' && !questionForm.answers.some((a) => a.is_correct)) {
+		if (
+			(questionForm.type === 'multiple_choice' || questionForm.type === 'single_choice' || questionForm.type === 'true_false' || questionForm.type === 'yes_no') &&
+			!questionForm.answers.some((a) => a.is_correct)
+		) {
 			setQuestionFormErrors((prev) => ({ ...prev, correct: 'Selectează cel puțin un răspuns corect' }));
 			return;
 		}
@@ -299,7 +309,6 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 
 		try {
 			const metaDifficulty = questionForm.metadata?.difficulty || '';
-			const metaTags = Array.isArray(questionForm.metadata?.tags) ? questionForm.metadata.tags : [];
 			const normalizedAnswers = normalizeQuestionAnswers(questionForm.type, questionForm.answers);
 
 			const questionData = {
@@ -310,7 +319,6 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 				explanation: questionForm.explanation || '',
 				metadata: {
 					difficulty: metaDifficulty || null,
-					tags: metaTags,
 				},
 			};
 
@@ -348,7 +356,6 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 				explanation: '',
 				metadata: {
 					difficulty: '',
-					tags: [],
 				},
 			});
 			setQuestionFormErrors({ content: '', answers: '', correct: '' });
@@ -393,11 +400,6 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 		const question = data.questions?.[index];
 		if (question) {
 			const meta = question.metadata || {};
-			const tags = Array.isArray(meta.tags)
-				? meta.tags
-				: typeof meta.tags === 'string'
-					? meta.tags.split(',').map((t) => t.trim()).filter(Boolean)
-					: [];
 
 			setQuestionForm({
 				type: question.type || 'multiple_choice',
@@ -407,7 +409,6 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 				explanation: question.explanation || '',
 				metadata: {
 					difficulty: meta.difficulty || '',
-					tags,
 				},
 			});
 			setEditingQuestion(index);
@@ -420,11 +421,6 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 
 		const answers = normalizeQuestionAnswers(question.type || 'multiple_choice', question.answers || []);
 		const meta = question.metadata || {};
-		const tags = Array.isArray(meta.tags)
-			? [...meta.tags]
-			: typeof meta.tags === 'string'
-				? meta.tags.split(',').map((t) => t.trim()).filter(Boolean)
-				: [];
 
 		const questionData = {
 			type: question.type || 'multiple_choice',
@@ -434,7 +430,6 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 			explanation: question.explanation || '',
 			metadata: {
 				difficulty: meta.difficulty || null,
-				tags,
 			},
 		};
 
@@ -503,120 +498,30 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 	};
 
 	const handleOpenAIModal = () => {
-		if (!aiTestAllowed) {
-			if (!isAiEnabled()) notifyAiComingSoon(showToast);
-			else notifyAiPlanLocked(showToast);
+		if (!isVoltEnabled('ai_test_generation')) {
+			notifyVoltComingSoon(showToast);
 			return;
 		}
 		setAiOptions({
 			numberOfQuestions: 10,
 			difficulty: 'medium',
-			questionTypes: ['multiple_choice']
+			questionTypes: [...DEFAULT_AI_QUESTION_TYPES]
 		});
 		setAiError(null);
 		setAiReviewStarted(false);
 		setAiCurrentDraftQuestion(null);
 		setAiApprovedQuestions([]);
 		setAiGeneratedCount(0);
+		setAiGeneratedPreviews([]);
 		if (!aiSelectedCourseId && aiCourses.length > 0) {
 			setAiSelectedCourseId(String(aiCourses[0].id));
 		}
 		setShowAIModal(true);
 	};
 
-	const startAiReview = async (overrideCourseId = null) => {
-		const effectiveCourseId = resolveValidCourseId(overrideCourseId);
-		if (!effectiveCourseId) {
-			showToast('Alege mai întâi un curs sursă', 'error');
-			return;
-		}
 
-		setAiReviewStarted(true);
-		setAiCurrentDraftQuestion(null);
-		try {
-			setAiGenerating(true);
-			setAiError(null);
 
-			const actualBankId = await ensureBankExists();
-			if (!actualBankId) {
-				setAiReviewStarted(false);
-				return;
-			}
 
-			const draft = await fetchAiDraftQuestion(actualBankId, [], effectiveCourseId);
-			if (!draft) {
-				throw new Error('AI nu a returnat nicio întrebare.');
-			}
-			setAiCurrentDraftQuestion(draft);
-			setAiGeneratedCount(1);
-		} catch (err) {
-			console.error('Error generating questions:', err);
-			const message = err.response?.data?.error || err.response?.data?.message || err.message || 'Eroare la generarea întrebărilor cu AI';
-			setAiError(message);
-			setAiReviewStarted(false);
-			showToast(message, 'error');
-		} finally {
-			setAiGenerating(false);
-		}
-	};
-
-	const advanceAiDraft = async (shouldApprove = false) => {
-		if (!aiCurrentDraftQuestion) return;
-
-		const nextApproved = shouldApprove ? [...aiApprovedQuestions, aiCurrentDraftQuestion] : aiApprovedQuestions;
-		const nextApprovedCount = nextApproved.length;
-		const target = aiTargetCount;
-
-		if (shouldApprove && nextApprovedCount >= target) {
-			try {
-				setAiGenerating(true);
-				const actualBankId = await ensureBankExists();
-				if (!actualBankId) return;
-				await adminService.addQuestionsToBankBulk(actualBankId, nextApproved);
-				showToast(`Au fost salvate ${nextApproved.length} întrebări aprobate.`, 'success');
-				setShowAIModal(false);
-				setAiReviewStarted(false);
-				setAiCurrentDraftQuestion(null);
-				setAiApprovedQuestions([]);
-				setAiGeneratedCount(0);
-				setAiError(null);
-				const updated = await adminService.getQuestionBankQuestions(actualBankId);
-				onUpdate({ questions: Array.isArray(updated) ? updated : (updated?.data || []) });
-			} catch (err) {
-				console.error('Error saving approved questions:', err);
-				const message = err.response?.data?.message || err.response?.data?.error || err.message || 'Nu am putut salva întrebările aprobate.';
-				setAiError(message);
-				showToast(message, 'error');
-			} finally {
-				setAiGenerating(false);
-			}
-			return;
-		}
-
-		try {
-			setAiGenerating(true);
-			const actualBankId = await ensureBankExists();
-			if (!actualBankId) {
-				setAiReviewStarted(false);
-				return;
-			}
-			const draft = await fetchAiDraftQuestion(actualBankId, nextApproved, effectiveCourseId);
-			if (!draft) {
-				throw new Error('AI nu a returnat o întrebare nouă.');
-			}
-			setAiApprovedQuestions(nextApproved);
-			setAiCurrentDraftQuestion(draft);
-			setAiGeneratedCount((prev) => prev + 1);
-		} catch (err) {
-			console.error('Error advancing AI draft:', err);
-			const message = err.response?.data?.error || err.response?.data?.message || err.message || 'Eroare la generarea următoarei întrebări.';
-			setAiError(message);
-			setAiReviewStarted(false);
-			showToast(message, 'error');
-		} finally {
-			setAiGenerating(false);
-		}
-	};
 
 	const startAiAutoGenerate = async (overrideCourseId = null, requestedCount = null) => {
 		const effectiveCourseId = resolveValidCourseId(overrideCourseId);
@@ -639,7 +544,7 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 				return;
 			}
 
-			const result = await adminService.previewQuestionsWithAi(actualBankId, {
+			const result = await adminService.previewQuestionsWithVolt(actualBankId, {
 				course_id: effectiveCourseId,
 				numberOfQuestions: targetCount,
 				difficulty: aiOptions.difficulty,
@@ -649,8 +554,17 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 
 			const generatedQuestions = Array.isArray(result?.draft) ? result.draft : [];
 			if (!generatedQuestions.length) {
-				throw new Error('AI nu a returnat nicio întrebare.');
+				throw new Error('Formely AI nu a returnat nicio întrebare.');
 			}
+
+			setAiGeneratedCount(generatedQuestions.length);
+			setAiGeneratedPreviews(
+				generatedQuestions.map((question, index) => ({
+					index: index + 1,
+					content: question.content || question.question || '',
+					type: question.type || 'multiple_choice',
+				}))
+			);
 
 			await adminService.addQuestionsToBankBulk(actualBankId, generatedQuestions);
 			showToast(`Au fost generate și salvate ${generatedQuestions.length} întrebări.`, 'success');
@@ -658,12 +572,13 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 			setAiCurrentDraftQuestion(null);
 			setAiApprovedQuestions([]);
 			setAiGeneratedCount(0);
+			setAiGeneratedPreviews([]);
 			setAiError(null);
 			const updated = await adminService.getQuestionBankQuestions(actualBankId);
 			onUpdate({ questions: Array.isArray(updated) ? updated : (updated?.data || []) });
 		} catch (err) {
 			console.error('Error generating questions:', err);
-			const message = err.response?.data?.error || err.response?.data?.message || err.message || 'Eroare la generarea întrebărilor cu AI';
+			const message = err.response?.data?.error || err.response?.data?.message || err.message || 'Eroare la generarea întrebărilor cu Formely AI';
 			setAiError(message);
 			setAiReviewStarted(false);
 			showToast(message, 'error');
@@ -690,19 +605,17 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 				{/* Left: Form (scrollable) */}
 				<div className="step2-form-column">
 					<div className="admin-course-builder-form">
-						{/* AI generation button */}
+						{/* Volt generation button */}
 						<div className="admin-form-section" style={{ marginBottom: '1.5rem' }}>
 							<div className="admin-form-section-header">
 								<h3 className="admin-form-section-title">Adaugă Întrebări</h3>
-								{aiTestAllowed ? (
 								<button
 									type="button"
 									className="lms-btn-primary"
 									onClick={handleOpenAIModal}
 								>
-									🤖 Generează cu AI
+									🤖 Generează cu Formely AI
 								</button>
-								) : null}
 							</div>
 						</div>
 
@@ -726,11 +639,14 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 								});
 							}}
 						>
-							{QUESTION_TYPE_SELECT_OPTIONS.map((option) => (
-								<option key={option.value} value={option.value}>{option.label}</option>
-							))}
+							<option value="multiple_choice">Răspuns multiplu</option>
+							<option value="single_choice">Răspuns unic</option>
+							<option value="true_false">Adevărat/Fals</option>
+							<option value="yes_no">Da / Nu</option>
+							<option value="matching">Potrivire</option>
+							<option value="ordering">Ordonare</option>
 						</select>
-						<p className="admin-form-hint">{QUESTION_TYPE_GLOSSARY} Potrivire = perechi; Ordonare = elemente în ordine.</p>
+						<p className="admin-form-hint">Răspuns multiplu = una sau mai multe variante corecte; Răspuns unic = o singură variantă corectă; Adevărat/Fals = două opțiuni; Potrivire = perechi; Ordonare = elemente mutate în ordine.</p>
 					</div>
 
 					<div className="admin-form-group">
@@ -787,7 +703,7 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 											/>
 											<button
 												type="button"
-												className="lms-btn-secondary lms-btn-sm va-btn-danger"
+												className="lms-btn-secondary lms-btn-sm va-btn-delete va-btn-danger"
 												onClick={() => removeAnswer(index)}
 											>
 												🗑️
@@ -839,7 +755,7 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 												</button>
 												<button
 													type="button"
-													className="lms-btn-secondary lms-btn-sm va-btn-danger"
+													className="lms-btn-secondary lms-btn-sm va-btn-delete va-btn-danger"
 													onClick={() => removeAnswer(index)}
 												>
 													🗑️
@@ -854,6 +770,7 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 										<div key={index} className="admin-answer-item">
 											<input
 												type={questionForm.type === 'multiple_choice' ? 'checkbox' : 'radio'}
+												name={questionForm.type !== 'multiple_choice' ? 'question-form-correct-answer' : undefined}
 												className="admin-answer-checkbox"
 												checked={answer.is_correct}
 												onChange={(e) => {
@@ -872,12 +789,12 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 												value={answer.text || ''}
 												onChange={(e) => updateAnswer(index, 'text', e.target.value)}
 												placeholder={`Răspuns ${index + 1}`}
-												disabled={questionForm.type === 'true_false'}
+												disabled={questionForm.type === 'true_false' || questionForm.type === 'yes_no'}
 											/>
-											{questionForm.type !== 'true_false' && (
+											{questionForm.type !== 'true_false' && questionForm.type !== 'yes_no' && (
 												<button
 													type="button"
-													className="lms-btn-secondary lms-btn-sm va-btn-danger"
+													className="lms-btn-secondary lms-btn-sm va-btn-delete va-btn-danger"
 													onClick={() => removeAnswer(index)}
 												>
 													🗑️
@@ -888,7 +805,7 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 								</div>
 							)}
 
-							{questionForm.type !== 'true_false' && (
+							{questionForm.type !== 'true_false' && questionForm.type !== 'yes_no' && (
 								<button
 									type="button"
 									className="lms-btn-secondary lms-btn-sm"
@@ -940,34 +857,12 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 					</div>
 
 					<div className="admin-form-group">
-						<label className="admin-form-label">Tag-uri</label>
-						<input
-							type="text"
-							className="admin-form-input"
-							value={(questionForm.metadata?.tags || []).join(', ')}
-							onChange={(e) =>
-								setQuestionForm({
-									...questionForm,
-									metadata: {
-										...(questionForm.metadata || {}),
-										tags: e.target.value
-											.split(',')
-											.map((t) => t.trim())
-											.filter(Boolean),
-									},
-								})
-							}
-							placeholder="Etichete separate prin virgulă"
-						/>
-					</div>
-
-					<div className="admin-form-group">
-						<label className="admin-form-label">Explicație (feedback)</label>
+						<label className="admin-form-label">Sursă</label>
 						<textarea
 							className="admin-form-textarea"
 							value={questionForm.explanation}
 							onChange={(e) => setQuestionForm({ ...questionForm, explanation: e.target.value })}
-							placeholder="Explicație pentru răspunsul corect..."
+							placeholder="De unde este materialul din curs..."
 							rows={2}
 						/>
 						<p className="admin-form-hint">Afișat elevului după răspuns; îmbunătățește învățarea.</p>
@@ -995,7 +890,6 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 									explanation: '',
 									metadata: {
 											difficulty: '',
-											tags: [],
 										},
 									});
 								}}
@@ -1039,7 +933,7 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 							<div className="lms-empty-icon">📝</div>
 							<h3 className="lms-empty-title">Nicio întrebare încă</h3>
 							<p className="lms-empty-description">
-								Adaugă prima întrebare folosind formularul alăturat sau generează cu AI
+								Adaugă prima întrebare folosind formularul alăturat sau generează cu Formely AI
 							</p>
 						</div>
 					)}
@@ -1057,6 +951,9 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 				aiOptions={aiOptions}
 				setAiOptions={setAiOptions}
 				aiError={aiError}
+				aiGeneratedCount={aiGeneratedCount}
+				aiTargetCount={aiTargetCount}
+				aiGeneratedPreviews={aiGeneratedPreviews}
 				onClose={() => setShowAIModal(false)}
 				onStartReview={startAiAutoGenerate}
 			/>
@@ -1077,14 +974,14 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 						</h2>
 						<button
 							type="button"
-							className="qb-student-preview-close"
+							className="qb-student-preview-close va-close-btn"
 							onClick={() => {
 								setPreviewQuestion(null);
 								setPreviewShowCorrect(false);
 							}}
 							aria-label="Închide"
 						>
-							×
+							<X size={18} weight="bold" aria-hidden="true" />
 						</button>
 					</div>
 					<label className="qb-student-preview-toggle">

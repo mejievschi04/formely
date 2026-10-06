@@ -1,8 +1,11 @@
+import { notifyAdminEventsRefresh } from './AdminCalendarDrawerShared.js';
+import { X } from '@phosphor-icons/react';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useNavigate } from 'react-router-dom';
-import { adminService, eventsService } from '../../services/api';
-import { useAuth } from '../../contexts/AuthContext';
+import { Link } from 'react-router-dom';
+import { adminService } from '../../services/api';
+
+import { useAuth } from '../../contexts/AuthContextShared.js';
 import AdminEventFormModal from './events/AdminEventFormModal';
 import AdminEventDetailModal from './events/AdminEventDetailModal';
 import { useScrollResetOnOpen } from '../../hooks/useScrollResetOnOpen';
@@ -44,18 +47,14 @@ function getEventsForDate(events, date) {
 	});
 }
 
-export function notifyAdminEventsRefresh() {
-	window.dispatchEvent(new CustomEvent('formely-admin-events-refresh'));
-}
 
-const AdminCalendarDrawer = ({ open, onClose, variant = 'admin' }) => {
-	const isStudentVariant = variant === 'student';
-	const navigate = useNavigate();
+
+const AdminCalendarDrawer = ({ open, onClose }) => {
 	const { canMutateInAdminArea, user } = useAuth();
-	const allowAdminCalendarEdit = canMutateInAdminArea && !isStudentVariant;
+	const allowAdminCalendarEdit = canMutateInAdminArea;
 	const panelRef = useRef(null);
 	const [events, setEvents] = useState([]);
-	const [loading, setLoading] = useState(false);
+	const [, setLoading] = useState(false);
 	const [currentDate, setCurrentDate] = useState(() => new Date());
 	const [showModal, setShowModal] = useState(false);
 	const [editingEvent, setEditingEvent] = useState(null);
@@ -67,28 +66,18 @@ const AdminCalendarDrawer = ({ open, onClose, variant = 'admin' }) => {
 	const loadEvents = useCallback(async () => {
 		try {
 			setLoading(true);
-			if (isStudentVariant) {
-				const raw = await eventsService.getAll({
-					sort_by: 'start_date',
-					sort_direction: 'asc',
-					per_page: 500,
-				});
-				const list = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
-				setEvents(list);
-			} else {
-				const data = await adminService.getEvents({
-					sort_by: 'start_date',
-					sort_direction: 'asc',
-				});
-				setEvents(Array.isArray(data) ? data : data?.data || []);
-			}
+			const data = await adminService.getEvents({
+				sort_by: 'start_date',
+				sort_direction: 'asc',
+			});
+			setEvents(Array.isArray(data) ? data : data?.data || []);
 		} catch (e) {
 			console.error(e);
 			setEvents([]);
 		} finally {
 			setLoading(false);
 		}
-	}, [isStudentVariant]);
+	}, []);
 
 	useEffect(() => {
 		if (open) {
@@ -135,10 +124,6 @@ const AdminCalendarDrawer = ({ open, onClose, variant = 'admin' }) => {
 	const handleEventChipClick = (e, event) => {
 		e.stopPropagation();
 		if (!event?.id) return;
-		if (isStudentVariant) {
-			handleStudentChipClick(e, event);
-			return;
-		}
 		setViewingEventId(event.id);
 	};
 
@@ -148,13 +133,6 @@ const AdminCalendarDrawer = ({ open, onClose, variant = 'admin' }) => {
 		setEditingEvent(event);
 		setPrefill(null);
 		setShowModal(true);
-	};
-
-	const handleStudentChipClick = (e, event) => {
-		e.stopPropagation();
-		if (!event?.id) return;
-		navigate(`/events/${event.id}`);
-		onClose();
 	};
 
 	const handleSaved = () => {
@@ -184,8 +162,8 @@ const AdminCalendarDrawer = ({ open, onClose, variant = 'admin' }) => {
 						<h2 className="va-cal-drawer-title">Calendar</h2>
 						<p className="va-cal-drawer-sub">Evenimente planificate</p>
 					</div>
-					<button type="button" className="va-cal-drawer-close" onClick={onClose} aria-label="Închide">
-						×
+					<button type="button" className="va-cal-drawer-close va-close-btn" onClick={onClose} aria-label="Închide">
+						<X size={18} weight="bold" aria-hidden="true" />
 					</button>
 				</div>
 
@@ -193,7 +171,7 @@ const AdminCalendarDrawer = ({ open, onClose, variant = 'admin' }) => {
 					{allowAdminCalendarEdit && (
 						<button
 							type="button"
-							className="va-cal-drawer-btn-primary"
+							className="lms-btn-primary va-cal-drawer-btn-primary"
 							onClick={() => {
 								setEditingEvent(null);
 								setPrefill(null);
@@ -204,11 +182,11 @@ const AdminCalendarDrawer = ({ open, onClose, variant = 'admin' }) => {
 						</button>
 					)}
 					<Link
-						to={isStudentVariant ? '/events' : '/admin/events'}
+						to="/admin/events"
 						className="va-cal-drawer-link-all"
 						onClick={onClose}
 					>
-						{isStudentVariant ? 'Toate evenimentele →' : 'Listă evenimente →'}
+						Listă evenimente →
 					</Link>
 				</div>
 
@@ -293,20 +271,18 @@ const AdminCalendarDrawer = ({ open, onClose, variant = 'admin' }) => {
 					</div>
 				</div>
 
-				{!isStudentVariant && user?.actualRole === 'analyst' && (
+				{user?.actualRole === 'analyst' && (
 					<p className="va-cal-drawer-hint">Cont analist: poți vedea calendarul; crearea evenimentelor este dezactivată.</p>
 				)}
 			</aside>
 
-			{!isStudentVariant && (
-				<AdminEventDetailModal
+			<AdminEventDetailModal
 					open={viewingEventId != null}
 					eventId={viewingEventId}
 					onClose={() => setViewingEventId(null)}
 					onEdit={allowAdminCalendarEdit ? handleEditFromDetail : undefined}
 					readOnly={!allowAdminCalendarEdit}
 				/>
-			)}
 
 			{showModal && allowAdminCalendarEdit && (
 				<AdminEventFormModal

@@ -40,7 +40,7 @@ class CompanySuspendMidSessionTest extends TestCase
         $user = User::factory()->create([
             'email' => 'owner@trial.example',
             'password' => Hash::make('Password1'),
-            'role' => UserRoles::COMPANY_OWNER,
+            'role' => UserRoles::ADMIN,
             'company_id' => $company->id,
             'status' => 'active',
         ]);

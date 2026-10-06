@@ -1,24 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
-import { useAuth } from '../../contexts/AuthContext';
-import AICourseChat from '../../components/admin/ai/AICourseChat';
-import { canUseAiFeature, isAiEnabled } from '../../utils/aiAvailability';
+
+import { useToast } from '../../contexts/ToastContextShared.js';
+
+import { useAuth } from '../../contexts/AuthContextShared.js';
 import './CourseCreationPage.css';
+
+const TITLE_ID = 'course-create-title';
+const TITLE_HINT_ID = 'course-create-title-hint';
+const TITLE_ERROR_ID = 'course-create-title-error';
+const DESC_ID = 'course-create-description';
+const FORM_ERROR_ID = 'course-create-form-error';
+const PRIMARY_HINT_ID = 'course-create-primary-hint';
 
 const CourseCreationPage = () => {
 	const navigate = useNavigate();
 	const { showToast } = useToast();
-	const { canMutateInAdminArea, user } = useAuth();
-	const aiCreatorAllowed = isAiEnabled() && canUseAiFeature(user, 'ai_creator');
+	const { canMutateInAdminArea } = useAuth();
+	const titleInputRef = useRef(null);
 
 	const [title, setTitle] = useState('');
 	const [description, setDescription] = useState('');
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
-	const [creationMode, setCreationMode] = useState('manual');
-	const [showAiCourseChat, setShowAiCourseChat] = useState(false);
+	const [titleError, setTitleError] = useState('');
 
 	useEffect(() => {
 		if (!canMutateInAdminArea) {
@@ -29,9 +35,11 @@ const CourseCreationPage = () => {
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 		setError('');
+		setTitleError('');
 		const t = title?.trim();
 		if (!t) {
-			setError('Titlul este obligatoriu.');
+			setTitleError('Titlul este obligatoriu.');
+			titleInputRef.current?.focus();
 			return;
 		}
 
@@ -68,13 +76,7 @@ const CourseCreationPage = () => {
 		}
 	};
 
-	const handleAiCourseGenerated = (course) => {
-		if (course?.id) {
-			setShowAiCourseChat(false);
-			showToast('Curs creat asistat de AI.', 'success');
-			navigate(`/admin/courses/${course.id}/builder`);
-		}
-	};
+	const primaryHint = loading ? 'Se creează cursul. Așteaptă finalizarea.' : null;
 
 	if (!canMutateInAdminArea) {
 		return null;
@@ -82,21 +84,11 @@ const CourseCreationPage = () => {
 
 	return (
 		<div className="admin-container course-creation-simple-page">
-			{showAiCourseChat && (
-				<div className="ai-chat-modal-overlay" onClick={() => setShowAiCourseChat(false)}>
-					<div className="ai-chat-modal" onClick={(e) => e.stopPropagation()}>
-						<AICourseChat
-							onCourseGenerated={handleAiCourseGenerated}
-							onClose={() => setShowAiCourseChat(false)}
-						/>
-					</div>
-				</div>
-			)}
 			<div className="course-creation-simple-card">
 				<header className="course-creation-simple-header">
 					<button
 						type="button"
-						className="course-creation-simple-back"
+						className="course-creation-simple-back va-btn-back admin-back-btn"
 						onClick={() => navigate('/admin/courses')}
 						aria-label="Înapoi la cursuri"
 					>
@@ -104,61 +96,45 @@ const CourseCreationPage = () => {
 					</button>
 					<h1 className="course-creation-simple-title">Creează curs nou</h1>
 					<p className="course-creation-simple-subtitle">
-						Pornește un curs Formely, apoi continuă în Builder.
+						Completezi titlul și descrierea, apoi continui în Builder.
 					</p>
 				</header>
 
-				<form onSubmit={handleSubmit} className="course-creation-simple-form">
-					<div className="course-creation-mode-switch">
-						<button
-							type="button"
-							className={`course-creation-mode-card${creationMode === 'manual' ? ' is-active' : ''}`}
-							onClick={() => {
-								setCreationMode('manual');
-								setShowAiCourseChat(false);
+				<form onSubmit={handleSubmit} className="course-creation-simple-form" noValidate>
+					<div className="course-creation-simple-field">
+						<label className="course-creation-simple-label" htmlFor={TITLE_ID}>
+							Titlu curs <span className="course-creation-simple-required">*</span>
+						</label>
+						<input
+							id={TITLE_ID}
+							ref={titleInputRef}
+							type="text"
+							placeholder="Titlul cursului"
+							value={title}
+							onChange={(e) => {
+								setTitle(e.target.value);
+								if (titleError) setTitleError('');
 							}}
+							className="course-creation-simple-input"
+							autoFocus
 							disabled={loading}
-						>
-							<span className="course-creation-mode-card-label">Curs</span>
-							<span className="course-creation-mode-card-title">Creează manual</span>
-							<span className="course-creation-mode-card-desc">Completezi titlul și descrierea, apoi intri în Builder.</span>
-						</button>
-						{aiCreatorAllowed ? (
-						<button
-							type="button"
-							className={`course-creation-mode-card${creationMode === 'ai' ? ' is-active' : ''}`}
-							onClick={() => {
-								setCreationMode('ai');
-								setShowAiCourseChat(true);
-							}}
-							disabled={loading}
-						>
-							<span className="course-creation-mode-card-label">AI</span>
-							<span className="course-creation-mode-card-title">Creează cu AI</span>
-							<span className="course-creation-mode-card-desc">AI îți construiește cursul complet cu module și lecții.</span>
-						</button>
+							required
+							aria-required="true"
+							aria-invalid={titleError ? 'true' : 'false'}
+							aria-describedby={`${TITLE_HINT_ID}${titleError ? ` ${TITLE_ERROR_ID}` : ''}`}
+						/>
+						<p id={TITLE_HINT_ID} className="course-creation-simple-hint">După creare poți adăuga lecții și teste.</p>
+						{titleError ? (
+							<p id={TITLE_ERROR_ID} className="course-creation-simple-error" role="alert">
+								{titleError}
+							</p>
 						) : null}
 					</div>
 
 					<div className="course-creation-simple-field">
-						<label className="course-creation-simple-label">
-							Titlu curs <span className="course-creation-simple-required">*</span>
-						</label>
-						<input
-							type="text"
-							placeholder="Titlul cursului"
-							value={title}
-							onChange={(e) => setTitle(e.target.value)}
-							className="course-creation-simple-input"
-							autoFocus
-							disabled={loading}
-						/>
-						<p className="course-creation-simple-hint">După creare poți adăuga lecții și teste.</p>
-					</div>
-
-					<div className="course-creation-simple-field">
-						<label className="course-creation-simple-label">Descriere</label>
+						<label className="course-creation-simple-label" htmlFor={DESC_ID}>Descriere</label>
 						<textarea
+							id={DESC_ID}
 							placeholder="Scopul și conținutul cursului (opțional)"
 							value={description}
 							onChange={(e) => setDescription(e.target.value)}
@@ -168,7 +144,13 @@ const CourseCreationPage = () => {
 						/>
 					</div>
 
-					{error && <div className="course-creation-simple-error" role="alert">{error}</div>}
+					{error ? (
+						<div id={FORM_ERROR_ID} className="course-creation-simple-error" role="alert">{error}</div>
+					) : null}
+
+					{primaryHint ? (
+						<p id={PRIMARY_HINT_ID} className="course-creation-availability" role="status">{primaryHint}</p>
+					) : null}
 
 					<div className="course-creation-simple-actions">
 						<button
@@ -180,12 +162,12 @@ const CourseCreationPage = () => {
 							Anulare
 						</button>
 						<button
-							type={creationMode === 'ai' ? 'button' : 'submit'}
-							className="course-creation-simple-btn-primary"
-							onClick={creationMode === 'ai' ? () => setShowAiCourseChat(true) : undefined}
+							type="submit"
+							className="lms-btn-primary course-creation-simple-btn-primary"
 							disabled={loading}
+							aria-describedby={primaryHint ? PRIMARY_HINT_ID : (error ? FORM_ERROR_ID : undefined)}
 						>
-							{loading ? 'Se creează...' : creationMode === 'ai' ? 'Deschide asistentul AI' : 'Creează curs'}
+							{loading ? 'Se creează...' : 'Creează curs'}
 						</button>
 					</div>
 				</form>

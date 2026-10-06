@@ -3,7 +3,6 @@
 namespace App\Support;
 
 use App\Models\Course;
-use Illuminate\Support\Facades\Schema;
 
 class CourseViews
 {
@@ -12,11 +11,11 @@ class CourseViews
      */
     public static function recordView(Course $course, bool $isStaff): void
     {
-        if ($isStaff || ! Schema::hasColumn('courses', 'views_count')) {
+        if ($isStaff || ! SchemaCache::hasColumn('courses', 'views_count')) {
             return;
         }
 
-        if (Schema::hasColumn('courses', 'status') && ($course->status ?? 'draft') !== 'published') {
+        if (SchemaCache::hasColumn('courses', 'status') && ($course->status ?? 'draft') !== 'published') {
             return;
         }
 
@@ -25,7 +24,7 @@ class CourseViews
 
     public static function countForCourse(Course $course): int
     {
-        if (! Schema::hasColumn('courses', 'views_count')) {
+        if (! SchemaCache::hasColumn('courses', 'views_count')) {
             return 0;
         }
 

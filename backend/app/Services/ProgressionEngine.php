@@ -15,8 +15,26 @@ use Illuminate\Support\Facades\DB;
  */
 class ProgressionEngine
 {
-    public function __construct(protected DripContentService $dripContentService)
+    /**
+     * Memorie pe durata cererii, ca deblocarea fiecărei lecții să nu mai facă query-uri proprii.
+     * Structura cursului nu se schimbă într-o cerere de cursant; progresul cursantului se golește
+     * prin forgetUser() (apelat de CourseProgressService când marchează o lecție).
+     */
+    /** @var array<string, \Illuminate\Support\Collection> lecții publicate pe scop (curs sau modul) */
+    private array $publishedLessonsByScope = [];
+
+    /** @var array<int, \Illuminate\Support\Collection> module pe curs */
+    private array $modulesByCourse = [];
+
+    /** @var array<int, \Illuminate\Support\Collection> teste obligatorii la nivel de modul, pe curs */
+    private array $requiredModuleTestsByCourse = [];
+
+    /** @var array<int, array<int, true>> lecții terminate, pe cursant */
+    private array $completedLessonsByUser = [];
+
+    public function forgetUser(int $userId): void
     {
+        unset($this->completedLessonsByUser[$userId]);
     }
 
     public function isLessonUnlocked(User $user, Lesson $lesson, Course $course): bool
@@ -29,14 +47,6 @@ class ProgressionEngine
             return true;
         }
 
-        if (! $this->isUnlockAfterLessonRequirementMet($user, $lesson->unlock_after_lesson_id, $course)) {
-            return false;
-        }
-
-        if (! $this->dripContentService->isLessonReleased($user, $course, $lesson)) {
-            return false;
-        }
-
         return $this->checkSequentialUnlock($user, $lesson, $course);
     }
 
@@ -46,12 +56,8 @@ class ProgressionEngine
             return true;
         }
 
-        if (! $this->isUnlockAfterLessonRequirementMet($user, $module->unlock_after_lesson_id, $course)) {
-            return false;
-        }
-
-        if (! $this->dripContentService->isModuleReleased($user, $course, $module)) {
-            return false;
+        if ($module->is_locked) {
+            return $this->checkSequentialModuleUnlock($user, $module, $course);
         }
 
         return $this->checkSequentialModuleUnlock($user, $module, $course);
@@ -80,7 +86,12 @@ class ProgressionEngine
                 ->first();
 
             if ($previousTest) {
-                $hasPassed = $this->hasUserPassedTest($user, $previousTest->test_id, $courseTest->passing_score);
+                $hasPassed = $this->hasUserPassedTest(
+                    $user,
+                    (int) $previousTest->test_id,
+                    (int) ($previousTest->passing_score ?? 70),
+                    (int) $course->id
+                );
                 if (!$hasPassed) {
                     return false;
                 }
@@ -88,7 +99,15 @@ class ProgressionEngine
         }
 
         if ($courseTest->unlock_after_test_id) {
-            $hasPassed = $this->hasUserPassedTest($user, $courseTest->unlock_after_test_id, $courseTest->passing_score);
+            $prerequisite = CourseTest::where('course_id', $course->id)
+                ->where('test_id', $courseTest->unlock_after_test_id)
+                ->first();
+            $hasPassed = $this->hasUserPassedTest(
+                $user,
+                (int) $courseTest->unlock_after_test_id,
+                (int) ($prerequisite->passing_score ?? $courseTest->passing_score ?? 70),
+                (int) $course->id
+            );
             if (!$hasPassed) {
                 return false;
             }
@@ -119,18 +138,15 @@ class ProgressionEngine
             return true;
         }
 
-        $previousLesson = Lesson::where('module_id', $lesson->module_id)
-            ->where('order', '<', $lesson->order)
-            ->whereIn('status', ['published', 'draft'])
-            ->orderBy('order', 'desc')
+        // Lecția publicată imediat anterioară în același modul (sau printre lecțiile fără modul ale cursului)
+        $order = (int) ($lesson->order ?? 0);
+        $previousLesson = $this->publishedLessonsInScope($lesson->module_id ? (int) $lesson->module_id : null, (int) $course->id)
+            ->filter(fn ($row) => (int) $row->id !== (int) $lesson->id && $row->order !== null && (int) $row->order < $order)
+            ->sortBy([['order', 'desc'], ['id', 'desc']])
             ->first();
 
         if ($previousLesson) {
-            return DB::table('lesson_progress')
-                ->where('user_id', $user->id)
-                ->where('lesson_id', $previousLesson->id)
-                ->where('completed', true)
-                ->exists();
+            return $this->userHasCompletedLesson($user, (int) $previousLesson->id);
         }
 
         return true;
@@ -146,39 +162,29 @@ class ProgressionEngine
             return true;
         }
 
-        $previousModule = Module::where('course_id', $course->id)
-            ->where('order', '<', $module->order)
-            ->whereIn('status', ['published', 'draft'])
-            ->orderBy('order', 'desc')
+        $previousModule = $this->modulesForCourse((int) $course->id)
+            ->filter(fn ($row) => $row->order !== null && $module->order !== null && (int) $row->order < (int) $module->order)
+            ->sortByDesc('order')
             ->first();
 
         if ($previousModule) {
-            $lessons = $previousModule->lessons()->whereIn('status', ['published', 'draft'])->get();
-            foreach ($lessons as $lesson) {
-                $isCompleted = DB::table('lesson_progress')
-                    ->where('user_id', $user->id)
-                    ->where('lesson_id', $lesson->id)
-                    ->where('completed', true)
-                    ->exists();
-                if (!$isCompleted) {
+            foreach ($this->publishedLessonsInScope((int) $previousModule->id, (int) $course->id) as $lesson) {
+                if (! $this->userHasCompletedLesson($user, (int) $lesson->id)) {
                     return false;
                 }
             }
 
-            $requiredTests = CourseTest::where('course_id', $course->id)
-                ->where('scope', 'module')
-                ->where('scope_id', $previousModule->id)
-                ->where('required', true)
-                ->get();
+            $requiredTests = $this->requiredModuleTestsForCourse((int) $course->id)
+                ->where('scope_id', (int) $previousModule->id);
             foreach ($requiredTests as $courseTest) {
                 $test = $courseTest->test;
                 if ($test && $test->status === 'published') {
-                    $hasPassed = DB::table('test_results')
-                        ->where('user_id', $user->id)
-                        ->where('test_id', $test->id)
-                        ->where('percentage', '>=', $courseTest->passing_score)
-                        ->where('passed', true)
-                        ->exists();
+                    $hasPassed = $this->hasUserPassedTest(
+                        $user,
+                        (int) $test->id,
+                        (int) ($courseTest->passing_score ?? 70),
+                        (int) $course->id
+                    );
                     if (!$hasPassed) {
                         return false;
                     }
@@ -191,41 +197,85 @@ class ProgressionEngine
         return true;
     }
 
-    protected function hasUserPassedTest(User $user, int $testId, int $passingScore = 70): bool
+    protected function userHasCompletedLesson(User $user, int $lessonId): bool
+    {
+        $userId = (int) $user->id;
+        if (! isset($this->completedLessonsByUser[$userId])) {
+            $completed = [];
+            $rows = DB::table('lesson_progress')
+                ->where('user_id', $userId)
+                ->where(fn ($q) => $q->where('completed', true)->orWhere('progress_percentage', '>=', 100))
+                ->pluck('lesson_id');
+            foreach ($rows as $id) {
+                $completed[(int) $id] = true;
+            }
+            $this->completedLessonsByUser[$userId] = $completed;
+        }
+
+        return isset($this->completedLessonsByUser[$userId][$lessonId]);
+    }
+
+    /**
+     * Lecțiile publicate dintr-un modul sau, fără modul, cele de la rădăcina cursului.
+     */
+    private function publishedLessonsInScope(?int $moduleId, int $courseId)
+    {
+        $key = $moduleId ? "m{$moduleId}" : "c{$courseId}";
+        if (isset($this->publishedLessonsByScope[$key])) {
+            return $this->publishedLessonsByScope[$key];
+        }
+
+        // O singură interogare pentru tot cursul (lecțiile din modulele lui + cele fără modul), apoi pe
+        // module în memorie: înainte era câte o interogare pentru fiecare modul.
+        $moduleIds = $this->modulesForCourse($courseId)->pluck('id')->map(fn ($id) => (int) $id)->all();
+        if (! $moduleId || in_array($moduleId, $moduleIds, true)) {
+            $lessons = Lesson::query()
+                ->where('status', 'published')
+                ->where(function ($q) use ($courseId, $moduleIds) {
+                    $q->where(fn ($root) => $root->whereNull('module_id')->where('course_id', $courseId));
+                    if ($moduleIds !== []) {
+                        $q->orWhereIn('module_id', $moduleIds);
+                    }
+                })
+                ->get(['id', 'order', 'module_id']);
+
+            $this->publishedLessonsByScope["c{$courseId}"] = $lessons->whereNull('module_id')->values();
+            foreach ($moduleIds as $id) {
+                $this->publishedLessonsByScope["m{$id}"] = $lessons->where('module_id', $id)->values();
+            }
+        }
+
+        // Modul care nu aparține cursului (date inconsecvente): îl încărcăm separat, ca înainte.
+        return $this->publishedLessonsByScope[$key] ??= Lesson::query()
+            ->where('status', 'published')
+            ->where('module_id', $moduleId)
+            ->get(['id', 'order', 'module_id']);
+    }
+
+    private function modulesForCourse(int $courseId)
+    {
+        return $this->modulesByCourse[$courseId] ??= Module::query()
+            ->where('course_id', $courseId)
+            ->whereIn('status', ['published', 'draft'])
+            ->get(['id', 'order']);
+    }
+
+    private function requiredModuleTestsForCourse(int $courseId)
+    {
+        return $this->requiredModuleTestsByCourse[$courseId] ??= CourseTest::query()
+            ->with('test:id,status')
+            ->where('course_id', $courseId)
+            ->where('scope', 'module')
+            ->where('required', true)
+            ->get();
+    }
+
+    protected function hasUserPassedTest(User $user, int $testId, int $passingScore = 70, ?int $courseId = null): bool
     {
         return DB::table('test_results')
             ->where('user_id', $user->id)
             ->where('test_id', $testId)
-            ->where('percentage', '>=', $passingScore)
             ->where('passed', true)
-            ->exists();
-    }
-
-    protected function isUnlockAfterLessonRequirementMet(User $user, mixed $unlockAfterLessonId, Course $course): bool
-    {
-        if ($unlockAfterLessonId === null || $unlockAfterLessonId === '' || (int) $unlockAfterLessonId <= 0) {
-            return true;
-        }
-
-        $prerequisite = Lesson::with('module:id,course_id')->find((int) $unlockAfterLessonId);
-        if (! $prerequisite) {
-            return true;
-        }
-
-        $prerequisiteCourseId = (int) ($prerequisite->course_id ?: $prerequisite->module?->course_id);
-        if ($prerequisiteCourseId > 0 && $prerequisiteCourseId !== (int) $course->id) {
-            return true;
-        }
-
-        return $this->hasUserCompletedLesson($user, $prerequisite->id);
-    }
-
-    protected function hasUserCompletedLesson(User $user, int $lessonId): bool
-    {
-        return DB::table('lesson_progress')
-            ->where('user_id', $user->id)
-            ->where('lesson_id', $lessonId)
-            ->where('completed', true)
             ->exists();
     }
 }

@@ -1,21 +1,47 @@
 import React from 'react';
-import { getDashboardActivityActionLabel } from '../../utils/activityLogLabels';
+import { BookOpen, CheckCircle, ClipboardText, Pulse, UserPlus } from '@phosphor-icons/react';
+import './AdminInsightLists.css';
+
+/** Pictograma și tonul de culoare pentru tipurile trimise de dashboard (recent_activities). */
+const ACTIVITY_KIND = {
+	completion: { Icon: CheckCircle, tone: 'is-success' },
+	lesson_completed: { Icon: BookOpen, tone: 'is-success' },
+	enrollment: { Icon: UserPlus, tone: 'is-info' },
+	exam_submitted: { Icon: ClipboardText, tone: 'is-warning' },
+};
+
+const formatTimeAgo = (date) => {
+	const then = new Date(date);
+	if (Number.isNaN(then.getTime())) return '';
+	const diffMins = Math.floor((Date.now() - then.getTime()) / 60000);
+	if (diffMins < 1) return 'acum';
+	if (diffMins < 60) return `acum ${diffMins} min`;
+	const diffHours = Math.floor(diffMins / 60);
+	if (diffHours < 24) return `acum ${diffHours} h`;
+	const diffDays = Math.floor(diffHours / 24);
+	if (diffDays < 7) return `acum ${diffDays} ${diffDays === 1 ? 'zi' : 'zile'}`;
+	return then.toLocaleDateString('ro-RO');
+};
+
+const Header = () => (
+	<div className="admin-widget-header">
+		<h3>Activitate recentă</h3>
+		<p className="admin-widget-subtitle">Ultimele evenimente de pe platformă</p>
+	</div>
+);
 
 const ActivityFeed = ({ activities, loading }) => {
 	if (loading) {
 		return (
-			<div className="admin-section-card">
-				<div className="admin-widget-header">
-					<h3>Recent Activity</h3>
-				</div>
+			<div className="admin-section-card" aria-busy>
+				<Header />
 				<div className="admin-activity-list">
 					{Array.from({ length: 5 }).map((_, index) => (
-						<div key={index} className="admin-activity-item admin-skeleton">
-							<div className="admin-activity-avatar admin-skeleton"></div>
+						<div key={index} className="admin-activity-item" aria-hidden>
+							<div className="admin-activity-avatar" />
 							<div className="admin-activity-content">
-								<div className="admin-activity-header admin-skeleton"></div>
-								<div className="admin-activity-description admin-skeleton"></div>
-								<div className="admin-activity-time admin-skeleton"></div>
+								<div className="admin-skeleton-line" />
+								<div className="admin-skeleton-line" />
 							</div>
 						</div>
 					))}
@@ -27,97 +53,43 @@ const ActivityFeed = ({ activities, loading }) => {
 	if (!activities || activities.length === 0) {
 		return (
 			<div className="admin-section-card">
-				<div className="admin-widget-header">
-					<h3>Recent Activity</h3>
-				</div>
+				<Header />
 				<div className="admin-widget-empty">
-					<p>Nu există activitate recentă de afișat</p>
+					<p>Nu există activitate recentă de afișat.</p>
 				</div>
 			</div>
 		);
 	}
 
-	const getActivityIcon = (type) => {
-		const icons = {
-			enrollment: '👤',
-			completion: '✅',
-			payment: '💳',
-			course_created: '📚',
-			user_registered: '🆕',
-			exam_submitted: '📝',
-			test: '📝',
-			course_published: '🚀',
-			user_invited: '📧',
-		};
-		return icons[type] || '📋';
-	};
-
-	const getActivityColor = (type) => {
-		const colors = {
-			enrollment: 'var(--admin-info)',
-			completion: 'var(--admin-success)',
-			payment: 'var(--admin-primary)',
-			course_created: 'var(--admin-primary)',
-			user_registered: 'var(--admin-success)',
-			exam_submitted: 'var(--admin-warning)',
-			test: 'var(--admin-warning)',
-			course_published: 'var(--admin-primary)',
-			user_invited: 'var(--admin-info)',
-		};
-		return colors[type] || 'var(--admin-neutral-400)';
-	};
-
-	const formatTimeAgo = (date) => {
-		const now = new Date();
-		const then = new Date(date);
-		const diffMs = now - then;
-		const diffMins = Math.floor(diffMs / 60000);
-		const diffHours = Math.floor(diffMs / 3600000);
-		const diffDays = Math.floor(diffMs / 86400000);
-
-		if (diffMins < 1) return 'Acum';
-		if (diffMins < 60) return `acum ${diffMins}m`;
-		if (diffHours < 24) return `acum ${diffHours}h`;
-		if (diffDays < 7) return `acum ${diffDays}z`;
-		return then.toLocaleDateString();
-	};
-
 	return (
 		<div className="admin-section-card">
-			<div className="admin-widget-header">
-				<h3>Activitate recentă</h3>
-			</div>
+			<Header />
 			<div className="admin-activity-list">
-				{activities.slice(0, 8).map((activity, index) => (
-					<div key={activity.id || index} className="admin-activity-item">
-						<div
-							className="admin-activity-avatar"
-							style={{ backgroundColor: getActivityColor(activity.type) }}
-						>
-							{getActivityIcon(activity.type)}
-						</div>
-						<div className="admin-activity-content">
-							<div className="admin-activity-header">
-								<span className="admin-activity-actor">
-									{activity.actor || 'Sistem'}
-								</span>
-								<span className="admin-activity-action">
-									{getDashboardActivityActionLabel(activity)}
-								</span>
+				{activities.slice(0, 8).map((activity, index) => {
+					const { Icon, tone } = ACTIVITY_KIND[activity.type] || { Icon: Pulse, tone: '' };
+					const when = activity.created_at || activity.timestamp;
+					return (
+						<div key={activity.id || index} className="admin-activity-item">
+							<div className={`admin-activity-avatar ${tone}`}>
+								<Icon size={18} weight="bold" aria-hidden />
 							</div>
-							<div className="admin-activity-description">
-								{activity.description || activity.message}
-							</div>
-							<div className="admin-activity-time">
-								{formatTimeAgo(activity.created_at || activity.timestamp)}
+							<div className="admin-activity-content">
+								{/* Descrierea conține deja numele persoanei */}
+								<div className="admin-activity-description">
+									{activity.description || activity.message}
+								</div>
+								{when ? (
+									<time className="admin-activity-time" dateTime={when}>
+										{formatTimeAgo(when)}
+									</time>
+								) : null}
 							</div>
 						</div>
-					</div>
-				))}
+					);
+				})}
 			</div>
 		</div>
 	);
 };
 
 export default ActivityFeed;
-

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use App\Models\Company;
 use App\Models\Course;
 use App\Models\ContentBlock;
 use App\Models\Module;
@@ -13,18 +12,20 @@ use App\Models\Lesson;
 use App\Models\User;
 use App\Services\AIKnowledgeService;
 use App\Services\CourseBuilderService;
-use App\Services\AiPromptService;
-use App\Services\AiDataInsightService;
+use App\Services\VoltDataInsightService;
+use App\Services\VoltPromptService;
 use App\Support\LearningVisibility;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaCache;
 use Illuminate\Support\Str;
 use Illuminate\Http\UploadedFile;
 
 class AIController extends Controller
 {
+    use \App\Http\Controllers\Concerns\AssertsPlanEntitlements;
+
     private const DEFAULT_MIN_LESSON_LINES = 10;
 
     private $apiKey;
@@ -35,7 +36,7 @@ class AIController extends Controller
     private $provider; // 'openai', 'groq', 'huggingface'
     private $courseBuilderService;
     private AIKnowledgeService $knowledgeService;
-    private AiDataInsightService $dataInsightService;
+    private VoltDataInsightService $dataInsightService;
     
     // Lista de modele Groq în ordinea preferinței (fallback chain)
     private $groqModelFallbackChain = [
@@ -44,14 +45,14 @@ class AIController extends Controller
     ];
     private $currentModelIndex = 0;
 
-    public function __construct(CourseBuilderService $courseBuilderService, AIKnowledgeService $knowledgeService, AiDataInsightService $dataInsightService)
+    public function __construct(CourseBuilderService $courseBuilderService, AIKnowledgeService $knowledgeService, VoltDataInsightService $dataInsightService)
     {
         $this->courseBuilderService = $courseBuilderService;
         $this->knowledgeService = $knowledgeService;
         $this->dataInsightService = $dataInsightService;
         
         // Verifică ce provider este configurat
-        $this->provider = env('AI_PROVIDER', 'groq'); // Default: Groq
+        $this->provider = config('ai.provider', 'groq'); // Default: Groq
         
         $this->initializeProvider($this->provider);
     }
@@ -68,26 +69,26 @@ class AIController extends Controller
 
         switch ($normalizedProvider) {
             case 'openai':
-                $this->apiKey = (string) env('OPENAI_API_KEY', '');
-                $this->apiUrl = rtrim((string) env('OPENAI_API_URL', 'https://api.openai.com/v1'), '/');
-                $this->model = (string) env('OPENAI_MODEL', 'gpt-4o-mini');
+                $this->apiKey = (string) config('ai.openai.api_key', '');
+                $this->apiUrl = rtrim((string) config('ai.openai.api_url', 'https://api.openai.com/v1'), '/');
+                $this->model = (string) config('ai.openai.model', 'gpt-4o-mini');
                 $this->hfApiKey = null;
                 $this->hfApiUrl = null;
                 break;
 
             case 'huggingface':
-                $this->hfApiKey = (string) env('HUGGINGFACE_API_KEY', '');
-                $this->hfApiUrl = rtrim((string) env('HUGGINGFACE_API_URL', 'https://router.huggingface.co'), '/');
-                $this->model = (string) env('HUGGINGFACE_MODEL', 'meta-llama/Meta-Llama-3.1-8B-Instruct');
+                $this->hfApiKey = (string) config('ai.huggingface.api_key', '');
+                $this->hfApiUrl = rtrim((string) config('ai.huggingface.api_url', 'https://router.huggingface.co'), '/');
+                $this->model = (string) config('ai.huggingface.model', 'meta-llama/Meta-Llama-3.1-8B-Instruct');
                 $this->apiKey = null;
                 $this->apiUrl = null;
                 break;
 
             case 'groq':
             default:
-                $this->apiKey = (string) env('GROQ_API_KEY', '');
-                $this->apiUrl = rtrim((string) env('GROQ_API_URL', 'https://api.groq.com/openai/v1'), '/');
-                $this->model = (string) env('GROQ_CREATOR_MODEL', env('GROQ_MODEL', 'llama-3.1-8b-instant'));
+                $this->apiKey = (string) config('ai.groq.api_key', '');
+                $this->apiUrl = rtrim((string) config('ai.groq.api_url', 'https://api.groq.com/openai/v1'), '/');
+                $this->model = (string) (config('ai.groq.creator_model') ?: config('ai.groq.model', 'llama-3.1-8b-instant'));
                 $this->groqModelFallbackChain = $this->buildGroqModelFallbackChain();
                 $this->hfApiKey = null;
                 $this->hfApiUrl = null;
@@ -104,9 +105,9 @@ class AIController extends Controller
             'mixtral-8x7b-32768',
         ];
 
-        $primary = trim((string) env('GROQ_CREATOR_MODEL', env('GROQ_MODEL', 'llama-3.1-8b-instant')));
-        $quality = trim((string) env('GROQ_CREATOR_QUALITY_MODEL', ''));
-        $fallbackRaw = (string) env('GROQ_FALLBACK_MODELS', '');
+        $primary = trim((string) (config('ai.groq.creator_model') ?: config('ai.groq.model', 'llama-3.1-8b-instant')));
+        $quality = trim((string) config('ai.groq.creator_quality_model', ''));
+        $fallbackRaw = (string) config('ai.groq.fallback_models', '');
         $fallbackList = array_map('trim', explode(',', $fallbackRaw));
 
         foreach (array_merge([$primary, $quality], $fallbackList) as $candidate) {
@@ -131,30 +132,16 @@ class AIController extends Controller
 
     private function getMinLessonLines(): int
     {
-        return max(6, (int) env('AI_MIN_LESSON_LINES', self::DEFAULT_MIN_LESSON_LINES));
+        return max(1, (int) (config('ai.min_lesson_lines') ?? self::DEFAULT_MIN_LESSON_LINES));
     }
     
     /**
-     * Extract text from an uploaded document so AI can use it as course source.
+     * Extract text from an uploaded document so Volt can use it as course source.
      */
     public function extractDocumentContext(Request $request)
     {
         if (!$this->canUseTutor()) {
-            abort(403, 'Doar staff-ul cu drept de editare poate folosi AI pentru documente.');
-        }
-
-        $user = $request->user();
-        $company = $user?->company_id
-            ? Company::withoutGlobalScopes()->find($user->company_id)
-            : null;
-        $entitlements = app(\App\Services\PlanEntitlementService::class);
-        $aiAllowed = $company && (
-            $entitlements->companyCan($company, 'ai_builder')
-            || $entitlements->companyCan($company, 'ai_creator')
-            || $entitlements->companyCan($company, 'ai_test_generation')
-        );
-        if (! $aiAllowed) {
-            abort(403, 'Această funcție Formely AI nu este inclusă în planul organizației.');
+            abort(403, 'Doar administratorii pot folosi Formely AI pentru documente.');
         }
 
         $validated = $request->validate([
@@ -179,64 +166,22 @@ class AIController extends Controller
 
     public function generateCourse(Request $request)
     {
-        return $this->streamResponse($request, 'course');
+        $requestedType = (string) $request->input('type', 'course');
+        $type = in_array($requestedType, ['course', 'tutor', 'test'], true) ? $requestedType : 'course';
+
+        // Formely: fiecare mod AI e inclus doar în anumite planuri.
+        $this->assertCompanyFeature(match ($type) {
+            'test' => 'ai_test_generation',
+            'course' => 'ai_creator',
+            default => 'ai_builder',
+        });
+
+        return $this->streamResponse($request, $type);
     }
 
     public function generateTest(Request $request)
     {
         return $this->streamResponse($request, 'test');
-    }
-
-    /**
-     * Student-facing tutor chat for a lesson (streaming).
-     */
-    public function studentTutor(Request $request, int $lessonId)
-    {
-        $user = $request->user();
-        if (! $user) {
-            abort(401, 'Autentificare necesară.');
-        }
-
-        $lesson = Lesson::with(['module.course', 'course'])->findOrFail($lessonId);
-        $course = $lesson->module?->course ?: $lesson->course;
-        if (! $course) {
-            abort(400, 'Lecția nu aparține unui curs.');
-        }
-
-        if (! $course->aiTutorSettings()['enabled']) {
-            abort(403, 'Tutorul AI nu este activ pentru acest curs.');
-        }
-
-        $company = $course->company_id
-            ? Company::withoutGlobalScopes()->find($course->company_id)
-            : ($user->company_id ? Company::withoutGlobalScopes()->find($user->company_id) : null);
-        if (! $company || ! app(\App\Services\PlanEntitlementService::class)->companyCan($company, 'ai_tutor')) {
-            abort(403, 'Tutorul AI nu este inclus în planul organizației.');
-        }
-
-        if (! $user->isLearningActivityExempt()) {
-            if ($course->status !== 'published') {
-                abort(403, 'Cursul nu este disponibil.');
-            }
-            if (Schema::hasColumn('lessons', 'status') && ($lesson->status ?? 'published') !== 'published') {
-                abort(403, 'Lecția nu este disponibilă.');
-            }
-
-            $progressService = app(\App\Services\CourseProgressService::class);
-            $isUnlocked = $lesson->is_preview
-                || $progressService->isLessonUnlocked($user, $lesson, $lesson->module, $course);
-            if (! $isUnlocked) {
-                abort(403, 'Nu ai acces la această lecție.');
-            }
-        }
-
-        $request->merge([
-            'lessonId' => $lessonId,
-            'courseId' => $course->id,
-            'mode' => 'student_tutor',
-        ]);
-
-        return $this->streamResponse($request, 'tutor');
     }
 
     public function generateLessonStudyTool(Request $request, int $lessonId)
@@ -246,7 +191,8 @@ class AIController extends Controller
         }
 
         if (!$this->apiKey) {
-            return response()->json(['error' => 'AI API key not configured'], 500);
+            // 503: serviciul AI nu e disponibil (configurare), nu o eroare a serverului
+            return response()->json(['error' => 'Formely AI nu este configurat: lipsește cheia AI.'], 503);
         }
 
         $validated = $request->validate([
@@ -256,8 +202,8 @@ class AIController extends Controller
         $isStaff = auth()->user()?->isAdmin() || auth()->user()?->isInstructor();
         $lessonQuery = Lesson::query()
             ->with([
-                'course:id,title,status,company_id',
-                'module.course:id,title,status,company_id',
+                'course:id,title,status',
+                'module:id,title',
                 'contentBlocks' => function ($query) {
                     $query->where(function ($q) {
                         $q->where('visible', true)->orWhereNull('visible');
@@ -266,37 +212,19 @@ class AIController extends Controller
             ]);
 
         if (!$isStaff) {
-            if (Schema::hasColumn('lessons', 'status')) {
+            if (SchemaCache::hasColumn('lessons', 'status')) {
                 $lessonQuery->where('status', 'published');
             }
-            if (Schema::hasColumn('courses', 'status')) {
+            if (SchemaCache::hasColumn('courses', 'status')) {
                 $lessonQuery->whereHas('course', fn ($q) => $q->where('status', 'published'));
             }
         }
 
         $lesson = $lessonQuery->findOrFail($lessonId);
         $user = auth()->user();
-        $course = $lesson->course ?: $lesson->module?->course;
-        if (! $course) {
-            return response()->json(['error' => 'Lecția nu aparține unui curs.'], 400);
+        if (! LearningVisibility::learnerMaySeeLessonBody($user, $lesson, $lesson->course)) {
+            return response()->json(['error' => 'Nu ai acces la această lecție.'], 403);
         }
-
-        $company = $course->company_id
-            ? Company::withoutGlobalScopes()->find($course->company_id)
-            : ($user?->company_id ? Company::withoutGlobalScopes()->find($user->company_id) : null);
-        if (! $company || ! app(\App\Services\PlanEntitlementService::class)->companyCan($company, 'ai_tutor')) {
-            return response()->json(['error' => 'Formely AI nu este inclus în planul organizației.'], 403);
-        }
-
-        if ($user && ! $user->isLearningActivityExempt()) {
-            $progressService = app(\App\Services\CourseProgressService::class);
-            $isUnlocked = (bool) ($lesson->is_preview ?? false)
-                || $progressService->isLessonUnlocked($user, $lesson, $lesson->module, $course);
-            if (! $isUnlocked) {
-                return response()->json(['error' => 'Nu ai acces la această lecție.'], 403);
-            }
-        }
-
         $lessonText = $this->extractStudyToolLessonText($lesson);
 
         if (mb_strlen($lessonText) < 80) {
@@ -334,74 +262,11 @@ class AIController extends Controller
         }
     }
 
-    /**
-     * Build the exact message payload used by the tutor job.
-     */
-    private function buildTutorJobPayload(Request $request, string $prompt): array
-    {
-        $messages = $request->input('messages', []);
-        $courseId = $request->input('courseId');
-        $lessonId = $request->input('lessonId');
-        $mode = (string) $request->input('mode', 'admin_tutor');
-        $intent = $this->determineTutorIntent($prompt);
-
-        $tutorContext = $this->buildTutorContext($request, $prompt);
-        if ($this->shouldUseUltraShortTutorMode($prompt, $tutorContext)) {
-            $mode .= ':ultra_short';
-        }
-
-        if ($intent !== 'answer') {
-            $mode .= ':' . $intent;
-        }
-
-        $systemPrompt = $this->getSystemPrompt('tutor', $courseId, false, $mode);
-        if ($tutorContext) {
-            $systemPrompt = $this->appendTutorPreferencesToPrompt($systemPrompt, $tutorContext);
-            $systemPrompt .= "\n\nContext din baza de date (folosește-l ca sursă principală și nu spune că nu ai acces la date dacă există context):\n"
-                . json_encode($tutorContext, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
-                . "\n\n" . $this->buildPlatformDataInstructions();
-        }
-
-        $attachments = $request->input('attachments', []);
-        if (is_array($attachments) && !empty($attachments)) {
-            $systemPrompt .= "\n\nDocumente atașate de administrator (folosește-le ca sursă adițională pentru răspuns):\n"
-                . $this->formatAttachmentContext($attachments);
-        }
-
-        return [
-            'mode' => $mode,
-            'messages' => $this->formatMessages($systemPrompt, $messages, $prompt),
-            'context_chunks' => $tutorContext['context_chunks'] ?? [],
-            'intent' => $intent,
-        ];
-    }
-
     private function canUseTutor(): bool
     {
         $user = auth()->user();
 
         return $user && ($user->isAdmin() || $user->isInstructor());
-    }
-
-    private function assertCompanyAiFeature(string $feature): void
-    {
-        $user = auth()->user();
-        if (! $user) {
-            abort(401);
-        }
-        $company = $user->company_id
-            ? Company::withoutGlobalScopes()->find($user->company_id)
-            : null;
-        if (! $company || ! app(\App\Services\PlanEntitlementService::class)->companyCan($company, $feature)) {
-            abort(403, 'Această funcție Formely AI nu este inclusă în planul organizației.');
-        }
-    }
-
-    private function isStudentTutorRequest(Request $request, string $type = ''): bool
-    {
-        $mode = (string) $request->input('mode', $type === 'tutor' ? 'admin_tutor' : '');
-
-        return str_starts_with($mode, 'student_tutor');
     }
 
     private function determineTutorIntent(string $prompt): string
@@ -515,6 +380,26 @@ class AIController extends Controller
     }
 
     /**
+     * Detect "request too large" errors (HTTP 413) — usually max_tokens exceeds the
+     * model's tokens-per-minute (TPM) limit. Falling back to a higher-TPM model fixes it.
+     */
+    private function isRequestTooLargeError(int $statusCode, string $errorBody): bool
+    {
+        if ($statusCode === 413) {
+            return true;
+        }
+
+        $normalized = strtolower($errorBody);
+        foreach (['request too large', 'tokens per minute (tpm)', 'reduce the length'] as $needle) {
+            if (str_contains($normalized, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Detect unavailable/deprecated model errors so we can fallback.
      */
     private function isModelUnavailableError(int $statusCode, string $errorBody): bool
@@ -553,36 +438,55 @@ class AIController extends Controller
         return $fallback;
     }
 
+    private function looksLikeTruncatedJson(string $content): bool
+    {
+        $trimmed = trim($content);
+        if ($trimmed === '') {
+            return false;
+        }
+
+        if (str_starts_with($trimmed, '```')) {
+            // Fence deschis fără fence de închidere după prima linie => răspuns tăiat.
+            return strpos($trimmed, '```', 3) === false;
+        }
+
+        return str_starts_with($trimmed, '{') && !str_ends_with($trimmed, '}');
+    }
+
     /**
      * Generate guided course creation without streaming, so we can validate the final JSON before saving.
      */
     private function generateGuidedCourseCreationJson(array $messages, ?int $teacherId = null, ?int $courseId = null, string $mode = ''): array
     {
         $providerName = $this->provider === 'groq' ? 'Groq' : 'OpenAI';
+        // Generarea ghidată face mai multe request-uri + backoff la rate limit; poate depăși 30s.
+        @set_time_limit(0);
         $useHighQualityCreatorModel = $this->shouldUseHighQualityCreatorModel($messages, $mode);
-        $defaultTimeout = max(30, (int) env('AI_REQUEST_TIMEOUT', 180));
-        $guidedTimeoutRaw = (int) env('AI_GUIDED_CREATION_TIMEOUT', 0);
+        $defaultTimeout = max(30, (int) config('ai.timeouts.request', 180));
+        $guidedTimeoutRaw = (int) config('ai.timeouts.guided_creation', 0);
         $timeout = $guidedTimeoutRaw <= 0 ? $defaultTimeout : max($defaultTimeout, $guidedTimeoutRaw);
-        $connectTimeout = max(5, (int) env('AI_CONNECT_TIMEOUT', 15));
+        $connectTimeout = max(5, (int) config('ai.timeouts.connect', 15));
         // Full guided courses need large JSON (2+ modules, 2+ lessons each, long HTML per lesson).
         // Defaults around 1100–1200 truncate output → invalid JSON or validation failure.
-        $maxTokens = max(700, (int) env('AI_GUIDED_MAX_TOKENS', 8192));
+        // Plafon dur 8192: multe modele Groq (ex. llama-4-scout) resping max_tokens > 8192 (HTTP 400),
+        // iar pe tier-ul gratuit max_tokens + input trebuie să încapă în limita TPM a modelului.
+        $maxTokens = max(700, min(8192, (int) config('ai.max_tokens.guided', 8192)));
         if ($maxTokens < 4000) {
-            Log::warning("{$providerName} guided course: AI_GUIDED_MAX_TOKENS is low; increase toward 8192+ if courses fail to save", [
+            Log::warning("{$providerName} guided course: AI_GUIDED_MAX_TOKENS is low; increase toward 8192 if courses fail to save", [
                 'max_tokens' => $maxTokens,
             ]);
         }
 
         $effectiveModel = $this->model;
         if ($this->provider === 'groq') {
-            $effectiveModel = env('GROQ_CREATOR_MODEL', $effectiveModel);
+            $effectiveModel = (config('ai.groq.creator_model') ?: $effectiveModel);
             if ($useHighQualityCreatorModel) {
-                $effectiveModel = env('GROQ_CREATOR_QUALITY_MODEL', $effectiveModel);
+                $effectiveModel = (config('ai.groq.creator_quality_model') ?: $effectiveModel);
             }
         } elseif ($this->provider === 'openai') {
-            $effectiveModel = env('OPENAI_CREATOR_MODEL', $effectiveModel);
+            $effectiveModel = (config('ai.openai.creator_model') ?: $effectiveModel);
             if ($useHighQualityCreatorModel) {
-                $effectiveModel = env('OPENAI_CREATOR_QUALITY_MODEL', $effectiveModel);
+                $effectiveModel = (config('ai.openai.creator_quality_model') ?: $effectiveModel);
             }
         }
 
@@ -631,7 +535,7 @@ class AIController extends Controller
                         ->timeout($timeout)
                         ->connectTimeout($connectTimeout)
                         ->withOptions([
-                            'verify' => filter_var(env('AI_VERIFY_SSL', true), FILTER_VALIDATE_BOOLEAN),
+                            'verify' => (bool) config('ai.verify_ssl', true),
                         ])
                         ->post("{$this->apiUrl}/chat/completions", $payload);
 
@@ -640,11 +544,13 @@ class AIController extends Controller
                         $statusCode = $request->status();
                         $isModelNotFound = $this->isModelUnavailableError($statusCode, $errorBody);
                         $isRateLimit = $this->isRateLimitError($statusCode, $errorBody);
+                        $isRequestTooLarge = $this->isRequestTooLargeError($statusCode, $errorBody);
 
-                        if ($this->provider === 'groq' && ($isModelNotFound || $isRateLimit) && $attemptIndex < count($attemptModels) - 1) {
+                        if ($this->provider === 'groq' && ($isModelNotFound || $isRateLimit || $isRequestTooLarge) && $attemptIndex < count($attemptModels) - 1) {
                             Log::warning("{$providerName} guided request retrying with fallback model", [
                                 'status' => $statusCode,
                                 'model' => $modelToUse,
+                                'reason' => $isRequestTooLarge ? 'request_too_large' : ($isModelNotFound ? 'model_not_found' : 'rate_limit'),
                                 'error' => substr($errorBody, 0, 300),
                             ]);
                             continue 2;
@@ -661,8 +567,27 @@ class AIController extends Controller
                     $courseData = $this->extractFirstJsonObjectFromText($content);
                     if (!$courseData) {
                         $fallbackText = trim($content);
+
+                        if ($this->looksLikeTruncatedJson($fallbackText)) {
+                            Log::warning("{$providerName} guided course response was truncated; forcing auto-regeneration", [
+                                'model' => $modelToUse,
+                                'regen_attempt' => $regenAttempt + 1,
+                                'response_preview' => substr($fallbackText, 0, 500),
+                            ]);
+
+                            if ($regenAttempt < ($autoValidationRetries - 1)) {
+                                $modelMessages[] = [
+                                    'role' => 'user',
+                                    'content' => 'Răspunsul anterior a fost tăiat și JSON-ul este incomplet. Refă TOT cursul ca JSON valid, compact, fără markdown, fără ```json, dar păstrează lecțiile utile și structura completă.',
+                                ];
+                                continue;
+                            }
+
+                            throw new \Exception('Formely AI a generat un JSON incomplet. Încearcă un curs mai mic (ex. 2 module x 2 lecții) sau crește limita AI_GUIDED_MAX_TOKENS.');
+                        }
+
                         $clarificationQuestion = $fallbackText !== ''
-                            ? Str::limit($fallbackText, 300, '')
+                            ? Str::limit(strip_tags($fallbackText), 240, '')
                             : 'Am nevoie de o singură clarificare ca să continui cu cursul.';
 
                         Log::warning("{$providerName} guided course response was not JSON; returning clarification fallback", [
@@ -737,7 +662,7 @@ class AIController extends Controller
                     $validatedJson = json_encode($validated, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                     $createdCourse = $this->createOrUpdateCourseFromResponse($validatedJson, $teacherId, $courseId);
                     if (!$createdCourse) {
-                        throw new \Exception('Course could not be created from AI response');
+                        throw new \Exception('Course could not be created from Formely AI response');
                     }
 
                     $isUpdate = $courseId !== null;
@@ -760,7 +685,7 @@ class AIController extends Controller
             }
         }
 
-        throw $lastError ?: new \Exception('AI course generation failed');
+        throw $lastError ?: new \Exception('Formely AI course generation failed');
     }
 
     private function shouldUseUltraShortTutorMode(string $prompt, array $tutorContext): bool
@@ -828,193 +753,6 @@ class AIController extends Controller
         return false;
     }
 
-    /**
-     * Instrucțiuni stricte pentru folosirea datelor reale din `platform_data`.
-     */
-    private function buildPlatformDataInstructions(): string
-    {
-        return implode("\n", [
-            'REGULI PENTRU DATE (foarte important):',
-            '- Ai acces la date reale din baza de date a platformei în câmpul `platform_data` din contextul de mai sus (utilizatori, profiluri elevi, elevi în risc, Ask Your Data, cursuri, înscrieri, teste, examene, evenimente, timp de învățare, activitate recentă).',
-            '- Pentru întrebări de business/analitice de tip „ce merge prost?”, „ce cursuri au engagement slab?”, „ce teste trebuie revizuite?”, folosește `platform_data.ask_your_data`.',
-            '- Pentru întrebări despre elevi în risc, folosește `platform_data.risk_analysis` și `platform_data.focused_data.students_needing_attention`: include nivelul de risc, scorul, motivele și acțiunile recomandate.',
-            '- Pentru întrebări despre un elev/curs/test anume, caută întâi în `platform_data.focused_data.matching_students`, `matching_courses` și `matching_tests`, apoi în `student_profiles` și în restul snapshot-ului.',
-            '- Răspunde DIRECT folosind aceste cifre. NU întreba administratorul de date pe care le poți deduce din `platform_data`, `focused_data`, `student_profiles` sau din context.',
-            '- Când dai cifre, fii concret (ex: „Ai 124 elevi, dintre care 89 activi în ultimele 30 de zile”).',
-            '- Dacă identifici un elev, poți folosi numele, emailul, cursurile înscrise, progresul, testele recente, scorurile și ultima activitate disponibile în context.',
-            '- Dacă o valoare lipsește (null) sau secțiunea nu există, spune pe scurt că acea informație nu este disponibilă în date — fără a inventa.',
-            '- Pentru rapoarte detaliate sau export, sugerează butonul „Excel” din chat.',
-            '- Răspunde în limba română, clar și concis.',
-        ]);
-    }
-
-    private function extractStudyToolLessonText(Lesson $lesson): string
-    {
-        $parts = [];
-
-        foreach ($lesson->contentBlocks ?? [] as $block) {
-            $payload = is_array($block->payload ?? null) ? $block->payload : [];
-            $metadata = is_array($block->metadata ?? null) ? $block->metadata : [];
-            $candidates = [
-                $payload['content'] ?? null,
-                $payload['text'] ?? null,
-                $payload['html'] ?? null,
-                $payload['description'] ?? null,
-                $payload['transcript'] ?? null,
-                $payload['instructions'] ?? null,
-                $metadata['description'] ?? null,
-                $metadata['transcript'] ?? null,
-                $block->source ?? null,
-            ];
-
-            foreach ($candidates as $candidate) {
-                $text = $this->studyToolPlainText($candidate);
-                if ($text !== '') {
-                    $parts[] = $text;
-                }
-            }
-        }
-
-        $legacyText = $this->studyToolPlainText($lesson->content ?? '');
-        if ($legacyText !== '') {
-            $parts[] = $legacyText;
-        }
-
-        return mb_substr(trim(implode("\n\n", array_unique($parts))), 0, 14000);
-    }
-
-    private function studyToolPlainText(mixed $value): string
-    {
-        if (is_array($value)) {
-            $value = implode(' ', array_map(fn ($item) => is_scalar($item) ? (string) $item : json_encode($item, JSON_UNESCAPED_UNICODE), $value));
-        }
-
-        if (!is_string($value) || trim($value) === '') {
-            return '';
-        }
-
-        return trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8')) ?? '');
-    }
-
-    private function buildStudyToolPrompt(Lesson $lesson, string $lessonText, string $tool): string
-    {
-        $schemas = [
-            'summary' => '{"title":"string","summary":"5-8 propoziții","key_points":["..."],"takeaway":"string"}',
-            'explain' => '{"title":"string","simple_explanation":"explicație pe înțelesul unui începător","analogy":"string","steps":["..."],"common_confusions":["..."]}',
-            'flashcards' => '{"title":"string","flashcards":[{"front":"întrebare/termen","back":"răspuns/explicație"}]}',
-            'quiz' => '{"title":"string","questions":[{"question":"...","options":["A","B","C","D"],"correct_index":0,"explanation":"..."}]}',
-            'study_plan' => '{"title":"string","duration_minutes":25,"steps":[{"label":"...","minutes":5,"instruction":"..."}],"review_focus":["..."]}',
-        ];
-
-        $toolLabels = [
-            'summary' => 'rezumat clar al lecției',
-            'explain' => 'explicație simplificată',
-            'flashcards' => 'flashcards pentru recapitulare',
-            'quiz' => 'quiz rapid de verificare',
-            'study_plan' => 'plan scurt de recapitulare',
-        ];
-
-        return "Ești Formely AI, asistent de studiu pentru Formely.\n"
-            . "Generează {$toolLabels[$tool]} folosind STRICT conținutul lecției de mai jos. Nu inventa informații externe.\n"
-            . "Răspunde STRICT JSON valid cu schema: {$schemas[$tool]}.\n"
-            . "Reguli: limba română; concis; orientat pe învățare; dacă faci quiz, exact 5 întrebări cu 4 opțiuni fiecare; dacă faci flashcards, 8-12 carduri.\n\n"
-            . "Curs: " . ($lesson->course?->title ?? 'Curs') . "\n"
-            . "Modul: " . ($lesson->module?->title ?? 'Fără modul') . "\n"
-            . "Lecție: {$lesson->title}\n\n"
-            . "CONȚINUT LECȚIE:\n{$lessonText}";
-    }
-
-    private function callStudyToolAi(string $prompt): string
-    {
-        $headers = [
-            'Content-Type' => 'application/json',
-        ];
-        if (!empty($this->apiKey)) {
-            $headers['Authorization'] = "Bearer {$this->apiKey}";
-        }
-
-        $response = Http::withHeaders($headers)->withOptions([
-            'verify' => (bool) config('ai.verify_ssl', true),
-        ])->timeout(90)->post("{$this->apiUrl}/chat/completions", [
-            'model' => $this->model,
-            'messages' => [
-                [
-                    'role' => 'system',
-                    'content' => 'Ești Formely AI, asistent educațional. Returnezi doar JSON valid.',
-                ],
-                [
-                    'role' => 'user',
-                    'content' => $prompt,
-                ],
-            ],
-            'temperature' => 0.25,
-            'max_tokens' => 1800,
-            'response_format' => ['type' => 'json_object'],
-        ]);
-
-        if (!$response->successful()) {
-            throw new \RuntimeException('AI study tool error: ' . $response->body());
-        }
-
-        $content = $response->json('choices.0.message.content');
-        if (!is_string($content) || trim($content) === '') {
-            throw new \RuntimeException('Răspuns AI gol.');
-        }
-
-        return $content;
-    }
-
-    private function decodeStudyToolJson(string $raw): ?array
-    {
-        $parsed = json_decode($raw, true);
-        if (json_last_error() === JSON_ERROR_NONE && is_array($parsed)) {
-            return $parsed;
-        }
-
-        if (preg_match('/\{[\s\S]*\}/', $raw, $matches)) {
-            $parsed = json_decode($matches[0], true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($parsed)) {
-                return $parsed;
-            }
-        }
-
-        return null;
-    }
-
-    private function normalizeStudyToolResult(string $tool, array $data): array
-    {
-        return match ($tool) {
-            'summary' => [
-                'title' => (string) ($data['title'] ?? 'Rezumat'),
-                'summary' => (string) ($data['summary'] ?? ''),
-                'key_points' => array_values(array_slice($data['key_points'] ?? [], 0, 10)),
-                'takeaway' => (string) ($data['takeaway'] ?? ''),
-            ],
-            'explain' => [
-                'title' => (string) ($data['title'] ?? 'Explicație simplă'),
-                'simple_explanation' => (string) ($data['simple_explanation'] ?? ''),
-                'analogy' => (string) ($data['analogy'] ?? ''),
-                'steps' => array_values(array_slice($data['steps'] ?? [], 0, 8)),
-                'common_confusions' => array_values(array_slice($data['common_confusions'] ?? [], 0, 6)),
-            ],
-            'flashcards' => [
-                'title' => (string) ($data['title'] ?? 'Flashcards'),
-                'flashcards' => array_values(array_slice($data['flashcards'] ?? [], 0, 12)),
-            ],
-            'quiz' => [
-                'title' => (string) ($data['title'] ?? 'Quiz rapid'),
-                'questions' => array_values(array_slice($data['questions'] ?? [], 0, 5)),
-            ],
-            'study_plan' => [
-                'title' => (string) ($data['title'] ?? 'Plan de recapitulare'),
-                'duration_minutes' => (int) ($data['duration_minutes'] ?? 25),
-                'steps' => array_values(array_slice($data['steps'] ?? [], 0, 8)),
-                'review_focus' => array_values(array_slice($data['review_focus'] ?? [], 0, 8)),
-            ],
-            default => $data,
-        };
-    }
-
     private function detectDocumentType(UploadedFile $file, string $mime): string
     {
         $name = strtolower((string) $file->getClientOriginalName());
@@ -1035,13 +773,17 @@ class AIController extends Controller
             return 'txt';
         }
 
+        if (str_ends_with($name, '.csv') || in_array($mime, ['text/csv', 'application/csv', 'application/vnd.ms-excel'], true)) {
+            return 'csv';
+        }
+
         return 'file';
     }
 
     private function extractDocumentText(UploadedFile $file, string $type, string $mime): string
     {
         return match ($type) {
-            'txt' => (string) @file_get_contents($file->getRealPath()) ?: '',
+            'txt', 'csv' => (string) @file_get_contents($file->getRealPath()) ?: '',
             'docx' => $this->extractDocxText($file->getRealPath()),
             'pdf' => $this->extractPdfTextBestEffort($file->getRealPath()),
             default => '',
@@ -1239,7 +981,194 @@ class AIController extends Controller
 
     private function buildGuidedBriefPrompt(array $brief): string
     {
-        return AiPromptService::buildGuidedBriefPrompt($brief);
+        return VoltPromptService::buildGuidedBriefPrompt($brief);
+    }
+
+    private function extractStudyToolLessonText(Lesson $lesson): string
+    {
+        $parts = [];
+
+        foreach ($lesson->contentBlocks ?? [] as $block) {
+            $payload = is_array($block->payload ?? null) ? $block->payload : [];
+            $metadata = is_array($block->metadata ?? null) ? $block->metadata : [];
+            $candidates = [
+                $payload['content'] ?? null,
+                $payload['text'] ?? null,
+                $payload['html'] ?? null,
+                $payload['description'] ?? null,
+                $payload['transcript'] ?? null,
+                $payload['instructions'] ?? null,
+                $metadata['description'] ?? null,
+                $metadata['transcript'] ?? null,
+                $block->source ?? null,
+            ];
+
+            foreach ($candidates as $candidate) {
+                $text = $this->studyToolPlainText($candidate);
+                if ($text !== '') {
+                    $parts[] = $text;
+                }
+            }
+        }
+
+        $legacyText = $this->studyToolPlainText($lesson->content ?? '');
+        if ($legacyText !== '') {
+            $parts[] = $legacyText;
+        }
+
+        return mb_substr(trim(implode("\n\n", array_unique($parts))), 0, 14000);
+    }
+
+    private function studyToolPlainText(mixed $value): string
+    {
+        if (is_array($value)) {
+            $value = implode(' ', array_map(fn ($item) => is_scalar($item) ? (string) $item : json_encode($item, JSON_UNESCAPED_UNICODE), $value));
+        }
+
+        if (!is_string($value) || trim($value) === '') {
+            return '';
+        }
+
+        return trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8')) ?? '');
+    }
+
+    private function buildStudyToolPrompt(Lesson $lesson, string $lessonText, string $tool): string
+    {
+        $schemas = [
+            'summary' => '{"title":"string","summary":"5-8 propoziții","key_points":["..."],"takeaway":"string"}',
+            'explain' => '{"title":"string","simple_explanation":"explicație pe înțelesul unui începător","analogy":"string","steps":["..."],"common_confusions":["..."]}',
+            'flashcards' => '{"title":"string","flashcards":[{"front":"întrebare/termen","back":"răspuns/explicație"}]}',
+            'quiz' => '{"title":"string","questions":[{"question":"...","options":["A","B","C","D"],"correct_index":0,"explanation":"..."}]}',
+            'study_plan' => '{"title":"string","duration_minutes":25,"steps":[{"label":"...","minutes":5,"instruction":"..."}],"review_focus":["..."]}',
+        ];
+
+        $toolLabels = [
+            'summary' => 'rezumat clar al lecției',
+            'explain' => 'explicație simplificată',
+            'flashcards' => 'flashcards pentru recapitulare',
+            'quiz' => 'quiz rapid de verificare',
+            'study_plan' => 'plan scurt de recapitulare',
+        ];
+
+        return "Ești Formely AI, asistent de studiu pentru Formely.\n"
+            . "Generează {$toolLabels[$tool]} folosind STRICT conținutul lecției de mai jos. Nu inventa informații externe.\n"
+            . "Răspunde STRICT JSON valid cu schema: {$schemas[$tool]}.\n"
+            . "Reguli: limba română; concis; orientat pe învățare; dacă faci quiz, exact 5 întrebări cu 4 opțiuni fiecare; dacă faci flashcards, 8-12 carduri.\n\n"
+            . "Curs: " . ($lesson->course?->title ?? 'Curs') . "\n"
+            . "Modul: " . ($lesson->module?->title ?? 'Fără modul') . "\n"
+            . "Lecție: {$lesson->title}\n\n"
+            . "CONȚINUT LECȚIE:\n{$lessonText}";
+    }
+
+    private function callStudyToolAi(string $prompt): string
+    {
+        $headers = [
+            'Content-Type' => 'application/json',
+        ];
+        if (!empty($this->apiKey)) {
+            $headers['Authorization'] = "Bearer {$this->apiKey}";
+        }
+
+        $response = Http::withHeaders($headers)->withOptions([
+            'verify' => (bool) config('ai.verify_ssl', true),
+        ])->timeout(90)->post("{$this->apiUrl}/chat/completions", [
+            'model' => $this->model,
+            'messages' => [
+                [
+                    'role' => 'system',
+                    'content' => 'Ești Formely AI, asistent educațional. Returnezi doar JSON valid.',
+                ],
+                [
+                    'role' => 'user',
+                    'content' => $prompt,
+                ],
+            ],
+            'temperature' => 0.25,
+            'max_tokens' => 1800,
+            'response_format' => ['type' => 'json_object'],
+        ]);
+
+        if (!$response->successful()) {
+            throw new \RuntimeException('AI study tool error: ' . $response->body());
+        }
+
+        $content = $response->json('choices.0.message.content');
+        if (!is_string($content) || trim($content) === '') {
+            throw new \RuntimeException('Răspuns AI gol.');
+        }
+
+        return $content;
+    }
+
+    private function decodeStudyToolJson(string $raw): ?array
+    {
+        $parsed = json_decode($raw, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($parsed)) {
+            return $parsed;
+        }
+
+        if (preg_match('/\{[\s\S]*\}/', $raw, $matches)) {
+            $parsed = json_decode($matches[0], true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($parsed)) {
+                return $parsed;
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeStudyToolResult(string $tool, array $data): array
+    {
+        return match ($tool) {
+            'summary' => [
+                'title' => (string) ($data['title'] ?? 'Rezumat'),
+                'summary' => (string) ($data['summary'] ?? ''),
+                'key_points' => array_values(array_slice($data['key_points'] ?? [], 0, 10)),
+                'takeaway' => (string) ($data['takeaway'] ?? ''),
+            ],
+            'explain' => [
+                'title' => (string) ($data['title'] ?? 'Explicație simplă'),
+                'simple_explanation' => (string) ($data['simple_explanation'] ?? ''),
+                'analogy' => (string) ($data['analogy'] ?? ''),
+                'steps' => array_values(array_slice($data['steps'] ?? [], 0, 8)),
+                'common_confusions' => array_values(array_slice($data['common_confusions'] ?? [], 0, 6)),
+            ],
+            'flashcards' => [
+                'title' => (string) ($data['title'] ?? 'Flashcards'),
+                'flashcards' => array_values(array_slice($data['flashcards'] ?? [], 0, 12)),
+            ],
+            'quiz' => [
+                'title' => (string) ($data['title'] ?? 'Quiz rapid'),
+                'questions' => array_values(array_slice($data['questions'] ?? [], 0, 5)),
+            ],
+            'study_plan' => [
+                'title' => (string) ($data['title'] ?? 'Plan de recapitulare'),
+                'duration_minutes' => (int) ($data['duration_minutes'] ?? 25),
+                'steps' => array_values(array_slice($data['steps'] ?? [], 0, 8)),
+                'review_focus' => array_values(array_slice($data['review_focus'] ?? [], 0, 8)),
+            ],
+            default => $data,
+        };
+    }
+
+    /**
+     * Instrucțiuni stricte pentru folosirea datelor reale din `platform_data`.
+     */
+    private function buildPlatformDataInstructions(): string
+    {
+        return implode("\n", [
+            'REGULI PENTRU DATE (foarte important):',
+            '- Ai acces la date reale din baza de date a platformei în câmpul `platform_data` din contextul de mai sus (utilizatori, profiluri elevi, elevi în risc, Ask Your Data, cursuri, înscrieri, teste, examene, evenimente, timp de învățare, activitate recentă).',
+            '- Pentru întrebări de business/analitice de tip „ce merge prost?”, „ce cursuri au engagement slab?”, „ce teste trebuie revizuite?”, folosește `platform_data.ask_your_data`.',
+            '- Pentru întrebări despre elevi în risc, folosește `platform_data.risk_analysis` și `platform_data.focused_data.students_needing_attention`: include nivelul de risc, scorul, motivele și acțiunile recomandate.',
+            '- Pentru întrebări despre un elev/curs/test anume, caută întâi în `platform_data.focused_data.matching_students`, `matching_courses` și `matching_tests`, apoi în `student_profiles` și în restul snapshot-ului.',
+            '- Răspunde DIRECT folosind aceste cifre. NU întreba administratorul de date pe care le poți deduce din `platform_data`, `focused_data`, `student_profiles` sau din context.',
+            '- Când dai cifre, fii concret (ex: „Ai 124 elevi, dintre care 89 activi în ultimele 30 de zile”).',
+            '- Dacă identifici un elev, poți folosi numele, emailul, cursurile înscrise, progresul, testele recente, scorurile și ultima activitate disponibile în context.',
+            '- Dacă o valoare lipsește (null) sau secțiunea nu există, spune pe scurt că acea informație nu este disponibilă în date — fără a inventa.',
+            '- Pentru rapoarte detaliate sau export, sugerează butonul „Excel” din chat.',
+            '- Răspunde în limba română, clar și concis.',
+        ]);
     }
 
     /**
@@ -1351,46 +1280,7 @@ class AIController extends Controller
                 ->all();
         }
 
-        $tutorPreferences = $this->resolveTutorPreferencesForContext($matchedCourse, $courseId);
-        if (! empty($tutorPreferences)) {
-            $context['tutor_preferences'] = $tutorPreferences;
-        }
-
         return $context;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function resolveTutorPreferencesForContext(?array $matchedCourse, mixed $courseId): array
-    {
-        $resolvedCourseId = (int) ($matchedCourse['id'] ?? $courseId ?? 0);
-        if ($resolvedCourseId <= 0) {
-            return [];
-        }
-
-        $course = Course::find($resolvedCourseId);
-        if (! $course) {
-            return [];
-        }
-
-        $prefs = $course->aiTutorSettings();
-        unset($prefs['enabled']);
-
-        return $prefs;
-    }
-
-    private function appendTutorPreferencesToPrompt(string $systemPrompt, ?array $tutorContext): string
-    {
-        $prefs = is_array($tutorContext['tutor_preferences'] ?? null)
-            ? $tutorContext['tutor_preferences']
-            : [];
-        if (empty($prefs)) {
-            return $systemPrompt;
-        }
-
-        return $systemPrompt . "\n\nPreferințe tutor curs (respectă-le strict):\n"
-            . json_encode($prefs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
     private function getTutorCourseCatalog(bool $canSeeDrafts): array
@@ -1403,7 +1293,7 @@ class AIController extends Controller
                 ->withCount(['modules', 'lessons'])
                 ->orderBy('title');
 
-            if (!$canSeeDrafts && Schema::hasColumn('courses', 'status')) {
+            if (!$canSeeDrafts && SchemaCache::hasColumn('courses', 'status')) {
                 $query->where('status', 'published');
             }
 
@@ -1457,7 +1347,7 @@ class AIController extends Controller
                     },
                 ]);
 
-            if (!$canSeeDrafts && Schema::hasColumn('courses', 'status')) {
+            if (!$canSeeDrafts && SchemaCache::hasColumn('courses', 'status')) {
                 $query->whereHas('course', function ($q) {
                     $q->where('status', 'published');
                 });
@@ -1502,7 +1392,7 @@ class AIController extends Controller
                 },
             ]);
 
-        if (!$canSeeDrafts && Schema::hasColumn('courses', 'status')) {
+        if (!$canSeeDrafts && SchemaCache::hasColumn('courses', 'status')) {
             $query->whereHas('course', function ($courseQuery) {
                 $courseQuery->where('status', 'published');
             });
@@ -1767,47 +1657,6 @@ class AIController extends Controller
         }
 
         return $deduped;
-    }
-
-    public function validateTutorAnswerAgainstChunks(string $aiAnswer, array $chunks): bool
-    {
-        $answer = $this->normalizeTutorText($aiAnswer);
-        if ($answer === '') {
-            return false;
-        }
-
-        if (empty($chunks)) {
-            return false;
-        }
-
-        foreach ($chunks as $chunk) {
-            $chunkText = $this->normalizeTutorText((string) ($chunk['text'] ?? ''));
-            if ($chunkText === '') {
-                continue;
-            }
-
-            $snippet = mb_substr($chunkText, 0, 50);
-            if ($snippet !== '' && str_contains($answer, $snippet)) {
-                return true;
-            }
-
-            $chunkTokens = array_values(array_filter(preg_split('/\s+/u', $chunkText) ?: []));
-            $matches = 0;
-            foreach (array_slice($chunkTokens, 0, 10) as $token) {
-                if (mb_strlen($token) < 4) {
-                    continue;
-                }
-                if (str_contains($answer, $token)) {
-                    $matches++;
-                }
-            }
-
-            if ($matches >= 3) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private function findCourseFromPrompt(string $prompt, $availableCourses): ?array
@@ -2132,72 +1981,11 @@ class AIController extends Controller
         return mb_substr($text, 0, 1800);
     }
 
-    private function escapeTutorLike(string $value): string
-    {
-        return addcslashes($value, '%_\\');
-    }
-
-    private function formatTutorCourse(Course $course): array
-    {
-        return [
-            'id' => $course->id,
-            'title' => $course->title,
-            'description' => $course->description,
-            'level' => $course->level,
-            'status' => $course->status,
-            'teacher' => $course->teacher ? [
-                'id' => $course->teacher->id ?? null,
-                'name' => $course->teacher->name ?? null,
-            ] : null,
-            'module_count' => count($course->modules ?? []),
-            'lesson_count' => count($course->lessons ?? []),
-        ];
-    }
-
-    private function formatTutorLesson(Lesson $lesson): array
-    {
-        return [
-            'id' => $lesson->id,
-            'title' => $lesson->title,
-            'type' => $lesson->type,
-            'order' => $lesson->order,
-            'course_id' => $lesson->course_id,
-            'module_id' => $lesson->module_id,
-            'updated_at' => $lesson->updated_at?->toIso8601String(),
-        ];
-    }
-
     private function streamResponse(Request $request, $type)
     {
-        $isStudentTutor = $this->isStudentTutorRequest($request, (string) $type);
-        if ($isStudentTutor) {
-            if (! $request->user()) {
-                abort(401, 'Autentificare necesară.');
-            }
-        } elseif (! $this->canUseTutor()) {
-            abort(403, 'Doar staff-ul cu drept de editare poate folosi Formely AI.');
-        }
-
-        if (! $isStudentTutor) {
-            $modeHint = (string) $request->input('mode', '');
-            $feature = match (true) {
-                str_contains($modeHint, 'builder') => 'ai_builder',
-                str_contains($modeHint, 'guided_creation') => 'ai_creator',
-                $type === 'test' => 'ai_test_generation',
-                $type === 'course' => 'ai_creator',
-                default => 'ai_builder',
-            };
-            $this->assertCompanyAiFeature($feature);
-        }
-
         if (!$this->apiKey) {
-            $providerName = ucfirst($this->provider);
-            if ($this->provider === 'groq') {
-                $providerName = 'Groq';
-            }
-            return response()->json([
-                'error' => $providerName . ' API key not configured'
-            ], 500);
+            // 503: serviciul AI nu e disponibil (configurare), nu o eroare a serverului
+            return response()->json(['error' => 'Formely AI nu este configurat: lipsește cheia AI.'], 503);
         }
 
         $prompt = $request->input('prompt');
@@ -2214,7 +2002,7 @@ class AIController extends Controller
         // Verifică dacă utilizatorul vrea să clarifice ceva sau să modifice
         $isClarification = $this->isClarificationRequest($prompt, $messages);
         
-        Log::info('AI generation request', [
+        Log::info('Formely AI generation request', [
             'type' => $type,
             'prompt' => substr($prompt, 0, 100),
             'has_messages' => count($messages) > 0,
@@ -2232,10 +2020,15 @@ class AIController extends Controller
             $guidedBrief = $this->normalizeGuidedBrief($request->input('guided_brief'));
         }
         $tutorContext = null;
-        if ($type === 'tutor' || str_starts_with($mode, 'admin_tutor') || str_starts_with($mode, 'student_tutor')) {
+        $isTutorFlow = $type === 'tutor' || str_starts_with($mode, 'admin_tutor') || str_starts_with($mode, 'student_tutor');
+        if ($isTutorFlow) {
             $tutorContext = $this->buildTutorContext($request, $prompt);
-            if ($type === 'tutor') {
-                if ($this->shouldUseUltraShortTutorMode($prompt, $tutorContext) && !str_contains($mode, ':ultra_short')) {
+            if ($type === 'tutor' || str_starts_with($mode, 'admin_tutor') || str_starts_with($mode, 'student_tutor')) {
+                if (
+                    $this->shouldUseUltraShortTutorMode($prompt, $tutorContext)
+                    && !$this->isAnalyticsQuestion($prompt)
+                    && !str_contains($mode, ':ultra_short')
+                ) {
                     $mode .= ':ultra_short';
                 }
 
@@ -2249,9 +2042,9 @@ class AIController extends Controller
         // Construiește prompt-ul pentru generare (fără parametrul isClarification - modelul decide singur)
         $systemPrompt = $this->getSystemPrompt($type, $courseId, $isClarification, $mode);
         if ($tutorContext) {
-            $systemPrompt = $this->appendTutorPreferencesToPrompt($systemPrompt, $tutorContext);
             $systemPrompt .= "\n\nContext din baza de date (folosește-l ca sursă principală și nu spune că nu ai acces la date dacă există context):\n"
-                . json_encode($tutorContext, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                . json_encode($tutorContext, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+                . "\n\n" . $this->buildPlatformDataInstructions();
         }
         if ($guidedBrief) {
             $systemPrompt .= $this->buildGuidedBriefPrompt($guidedBrief);
@@ -2279,40 +2072,65 @@ class AIController extends Controller
         // Formatează mesajele pentru Hugging Face
         $formattedMessages = $this->formatMessages($systemPrompt, $messages, $prompt);
 
-        $isGuidedCourseCreation = $type === 'course' && str_contains((string) $mode, 'guided_creation') && ($this->provider === 'openai' || $this->provider === 'groq');
+		$isGuidedCourseCreation = $type === 'course' && str_contains((string) $mode, 'guided_creation') && ($this->provider === 'openai' || $this->provider === 'groq');
         if ($isGuidedCourseCreation) {
-            try {
-                $guidedResult = $this->generateGuidedCourseCreationJson($formattedMessages, $teacherId, $courseId, $mode);
-                return response()->json($guidedResult);
-            } catch (\Throwable $e) {
-                if ($this->isRateLimitError(0, (string) $e->getMessage())) {
-                    $retryAfterSeconds = $this->extractRetryAfterSeconds((string) $e->getMessage(), 20);
+            // Pe tier-ul gratuit (ex. Groq) generarea poate atinge limita de tokeni/minut.
+            // Reîncercăm automat cu backoff în loc să cerem utilizatorului să apese din nou.
+            @set_time_limit(0);
+            $maxRateLimitRetries = max(0, (int) config('ai.guided_rate_limit.retries', 2));
+            $maxBackoffSeconds = max(5, (int) config('ai.guided_rate_limit.max_backoff', 15));
+            $rateLimitAttempt = 0;
 
-                    Log::warning('Guided course creation rate limited', [
+            while (true) {
+                try {
+                    $guidedResult = $this->generateGuidedCourseCreationJson($formattedMessages, $teacherId, $courseId, $mode);
+                    return response()->json($guidedResult);
+                } catch (\Throwable $e) {
+                    if ($this->isRateLimitError(0, (string) $e->getMessage())) {
+                        $retryAfterSeconds = $this->extractRetryAfterSeconds((string) $e->getMessage(), 20);
+
+                        if ($rateLimitAttempt < $maxRateLimitRetries) {
+                            $rateLimitAttempt++;
+                            $waitSeconds = min($maxBackoffSeconds, max(5, $retryAfterSeconds));
+
+                            Log::warning('Guided course creation rate limited; auto-retrying', [
+                                'attempt' => $rateLimitAttempt,
+                                'max_retries' => $maxRateLimitRetries,
+                                'wait_seconds' => $waitSeconds,
+                                'course_id' => $courseId,
+                                'teacher_id' => $teacherId,
+                            ]);
+
+                            sleep($waitSeconds);
+                            continue;
+                        }
+
+                        Log::warning('Guided course creation rate limited; retries exhausted', [
+                            'message' => $e->getMessage(),
+                            'retry_after_seconds' => $retryAfterSeconds,
+                            'course_id' => $courseId,
+                            'teacher_id' => $teacherId,
+                        ]);
+
+                        return response()->json([
+                            'response_type' => 'clarification',
+                            'clarification_question' => "Serviciul AI este ocupat acum (rate limit). Reîncearcă peste {$retryAfterSeconds} secunde.",
+                            'content' => "Serviciul AI este ocupat acum (rate limit). Reîncearcă peste {$retryAfterSeconds} secunde.",
+                            'retry_after_seconds' => $retryAfterSeconds,
+                        ]);
+                    }
+
+                    Log::error('Guided course creation failed', [
                         'message' => $e->getMessage(),
-                        'retry_after_seconds' => $retryAfterSeconds,
+                        'trace' => $e->getTraceAsString(),
                         'course_id' => $courseId,
                         'teacher_id' => $teacherId,
                     ]);
 
                     return response()->json([
-                        'response_type' => 'clarification',
-                        'clarification_question' => "Serviciul AI este ocupat acum (rate limit). Reîncearcă peste {$retryAfterSeconds} secunde.",
-                        'content' => "Serviciul AI este ocupat acum (rate limit). Reîncearcă peste {$retryAfterSeconds} secunde.",
-                        'retry_after_seconds' => $retryAfterSeconds,
-                    ]);
+                        'error' => config('app.debug') ? $e->getMessage() : 'A apărut o eroare. Încearcă din nou.',
+                    ], 500);
                 }
-
-                Log::error('Guided course creation failed', [
-                    'message' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                    'course_id' => $courseId,
-                    'teacher_id' => $teacherId,
-                ]);
-
-                return response()->json([
-                    'error' => $e->getMessage(),
-                ], 500);
             }
         }
 
@@ -2334,7 +2152,7 @@ class AIController extends Controller
             $builderDiffMode = str_contains((string) $mode, 'builder_diff');
             // Reset model index pentru fiecare request nou (doar pentru Groq)
             if ($this->provider === 'groq') {
-                $envModel = env('GROQ_MODEL');
+                $envModel = config('ai.groq.model');
                 if ($envModel) {
                     $this->currentModelIndex = array_search($envModel, $this->groqModelFallbackChain);
                     if ($this->currentModelIndex === false) {
@@ -2364,7 +2182,7 @@ class AIController extends Controller
                         } elseif (empty($builderValidation['valid'])) {
                             echo "data: " . json_encode([
                                 'response_type' => 'clarification',
-                                'clarification_question' => $builderValidation['message'] ?? 'Planul AI este incomplet și necesită clarificări.',
+                                'clarification_question' => $builderValidation['message'] ?? 'Planul Formely AI este incomplet și necesită clarificări.',
                             ]) . "\n\n";
                             @ob_flush();
                             flush();
@@ -2379,9 +2197,10 @@ class AIController extends Controller
                 }
                 
                 // După streaming, verifică dacă trebuie să creezi cursul
-                if ($type === 'course' && $mode !== 'admin_tutor' && !empty($fullResponse)) {
+                // În modul builder_diff NU creăm curs nou: planul de operații e aplicat de frontend.
+                if ($type === 'course' && !$builderDiffMode && $mode !== 'admin_tutor' && !empty($fullResponse)) {
                     // Verifică dacă este răspuns fallback
-                    $isFallback = strpos($fullResponse, 'Curs generat cu AI') !== false ||
+                    $isFallback = strpos($fullResponse, 'Curs generat prin Formely AI') !== false ||
                                  strpos($fullResponse, 'Acesta este un curs generat automat') !== false;
                     
                     if ($isFallback) {
@@ -2402,7 +2221,7 @@ class AIController extends Controller
                     ]);
                     
                     if ($hasValidJson) {
-                        // AI a generat un curs valid - creează-l sau actualizează-l automat
+                        // Volt a generat un curs valid - creează-l sau actualizează-l automat
                         try {
                             $createdCourse = $this->createOrUpdateCourseFromResponse($fullResponse, $teacherId, $courseId);
                             if ($createdCourse) {
@@ -2420,7 +2239,7 @@ class AIController extends Controller
                                 flush();
                             }
                         } catch (\Exception $e) {
-                            Log::error('Error creating/updating course from AI response', [
+                            Log::error('Error creating/updating course from Formely AI response', [
                                 'error' => $e->getMessage(),
                                 'trace' => $e->getTraceAsString(),
                                 'course_id' => $courseId
@@ -2432,7 +2251,7 @@ class AIController extends Controller
                             flush();
                         }
                     }
-                    // Dacă nu are JSON valid, înseamnă că AI a întrebat ceva - nu creăm/modificăm cursul
+                    // Dacă nu are JSON valid, înseamnă că Volt a întrebat ceva - nu creăm/modificăm cursul
                 }
             } elseif ($this->provider === 'huggingface') {
                 $this->streamHuggingFaceResponse($formattedMessages, $type, $teacherId, $courseId, $fullResponse);
@@ -2463,16 +2282,16 @@ class AIController extends Controller
 
     private function buildGuidedCourseCreationPrompt(): string
     {
-        return AiPromptService::buildGuidedCourseCreationPrompt();
+        return VoltPromptService::buildGuidedCourseCreationPrompt();
     }
 
     private function buildBuilderDiffPrompt(): string
     {
-        return AiPromptService::buildBuilderDiffPrompt();
+        return VoltPromptService::buildBuilderDiffPrompt();
     }
 
     /**
-     * Snapshot of the current course builder state for targeted AI diffs.
+     * Snapshot of the current course builder state so Volt can propose targeted diffs.
      */
     private function buildBuilderDiffContext(int $courseId, $selectedModuleId = null, $selectedLessonId = null, $selectedLessonDraft = null): string
     {
@@ -2498,7 +2317,7 @@ class AIController extends Controller
         $payload = [
             'course_id' => (int) $course->id,
             'title' => (string) ($course->title ?? ''),
-            'description' => mb_substr($this->plainTextFromHtml((string) ($course->description ?? '')), 0, 500),
+            'description' => mb_substr($this->studyToolPlainText((string) ($course->description ?? '')), 0, 500),
             'status' => $course->status ?? null,
             'focus' => [
                 'module_id' => $focusModuleId,
@@ -2512,7 +2331,7 @@ class AIController extends Controller
             $moduleEntry = [
                 'id' => (int) $module->id,
                 'title' => (string) ($module->title ?? ''),
-                'description' => mb_substr($this->plainTextFromHtml((string) ($module->description ?? '')), 0, 300),
+                'description' => mb_substr($this->studyToolPlainText((string) ($module->description ?? '')), 0, 300),
                 'order' => $module->order ?? null,
                 'status' => $module->status ?? null,
                 'is_focus' => $focusModuleId !== null && (int) $module->id === $focusModuleId,
@@ -2533,7 +2352,7 @@ class AIController extends Controller
         $draft = is_array($selectedLessonDraft) ? $selectedLessonDraft : null;
         if ($draft && !empty($draft['id']) && is_numeric($draft['id'])) {
             $draftId = (int) $draft['id'];
-            $draftContent = $this->plainTextFromHtml((string) ($draft['content'] ?? ''));
+            $draftContent = $this->studyToolPlainText((string) ($draft['content'] ?? ''));
             if ($draftContent !== '') {
                 $payload['focus_draft'] = [
                     'lesson_id' => $draftId,
@@ -2561,9 +2380,7 @@ class AIController extends Controller
 
     private function formatBuilderLessonSnapshot(Lesson $lesson, ?int $focusLessonId): array
     {
-        $blockText = $this->extractTutorLessonBlockText($lesson->contentBlocks ?? collect());
-        $legacy = $this->plainTextFromHtml((string) ($lesson->content ?? ''));
-        $text = trim($legacy !== '' ? $legacy : $blockText);
+        $text = $this->extractStudyToolLessonText($lesson);
         $isFocus = $focusLessonId !== null && (int) $lesson->id === $focusLessonId;
         $previewLimit = $isFocus ? 1400 : 320;
 
@@ -2580,17 +2397,14 @@ class AIController extends Controller
         ];
     }
 
-    private function plainTextFromHtml(string $value): string
-    {
-        $text = trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8')) ?? '');
-
-        return $text;
-    }
-
     private function getSystemPrompt($type, $courseId = null, $isClarification = false, $mode = '')
     {
+        if ($type === 'tutor' || str_starts_with((string) $mode, 'admin_tutor') || str_starts_with((string) $mode, 'student_tutor')) {
+            return VoltPromptService::buildAdminTutorPrompt((string) $mode);
+        }
+
         if (str_contains((string) $mode, 'builder_diff')) {
-            return AiPromptService::buildBuilderDiffPrompt();
+            return VoltPromptService::buildBuilderDiffPrompt();
         }
 
         if ($type === 'course' && str_contains($mode, 'guided_creation')) {
@@ -2598,22 +2412,18 @@ class AIController extends Controller
             $jsonMode = ($this->provider === 'openai' || $this->provider === 'groq') ? 'Răspunde doar JSON valid când ai toate datele.' : '';
 
             if ($outlineMode) {
-                return AiPromptService::buildCourseOutlinePrompt($jsonMode);
+                return VoltPromptService::buildCourseOutlinePrompt($jsonMode);
             }
 
-            return AiPromptService::buildGuidedCourseCreationPrompt();
-        }
-
-        if ($type === 'tutor' || str_starts_with((string) $mode, 'admin_tutor') || str_starts_with((string) $mode, 'student_tutor')) {
-            return AiPromptService::buildTutorPrompt((string) $mode);
+            return VoltPromptService::buildGuidedCourseCreationPrompt();
         }
 
         if ($type === 'course') {
             $jsonMode = ($this->provider === 'openai' || $this->provider === 'groq') ? 'IMPORTANT: Răspunde întotdeauna în format JSON valid. ' : '';
-            return AiPromptService::buildCourseDesignPrompt($jsonMode);
+            return VoltPromptService::buildCourseDesignPrompt($jsonMode);
         }
 
-        return AiPromptService::buildTestPrompt(($this->provider === 'openai' || $this->provider === 'groq') ? 'IMPORTANT: Răspunde întotdeauna în format JSON valid. ' : '');
+        return VoltPromptService::buildTestPrompt(($this->provider === 'openai' || $this->provider === 'groq') ? 'IMPORTANT: Răspunde întotdeauna în format JSON valid. ' : '');
     }
     public function streamOpenAIResponse($messages, $type, $teacherId = null, $courseId = null, &$fullResponse = null, $mode = '')
     {
@@ -2634,33 +2444,35 @@ class AIController extends Controller
             $isGuidedCreation = str_contains((string) $mode, 'guided_creation');
             $isBuilderDiff = str_contains((string) $mode, 'builder_diff');
             $isTutorMode = str_starts_with((string) $mode, 'admin_tutor') || str_starts_with((string) $mode, 'student_tutor') || $type === 'tutor';
+            $isAdminTutor = str_starts_with((string) $mode, 'admin_tutor');
+            $adminTutorMaxTokens = max(400, (int) config('ai.max_tokens.admin_tutor', 900));
             $useHighQualityCreatorModel = $this->shouldUseHighQualityCreatorModel($messages, (string) $mode);
-            $defaultTimeout = max(30, (int) env('AI_REQUEST_TIMEOUT', 180));
-            $guidedTimeoutRaw = (int) env('AI_GUIDED_CREATION_TIMEOUT', 0);
+            $defaultTimeout = max(30, (int) config('ai.timeouts.request', 180));
+            $guidedTimeoutRaw = (int) config('ai.timeouts.guided_creation', 0);
             // 0 => no timeout for guided course creation (can run longer on local Ollama).
             $guidedTimeout = $guidedTimeoutRaw <= 0 ? 0 : max($defaultTimeout, $guidedTimeoutRaw);
-            $tutorTimeout = max(30, (int) env('AI_TUTOR_TIMEOUT', 120));
-            $connectTimeout = max(5, (int) env('AI_CONNECT_TIMEOUT', 15));
+            $tutorTimeout = max(30, (int) config('ai.timeouts.tutor', 120));
+            $connectTimeout = max(5, (int) config('ai.timeouts.connect', 15));
             $effectiveTimeout = $isGuidedCreation ? $guidedTimeout : ($isTutorMode ? $tutorTimeout : $defaultTimeout);
-            $guidedMaxTokens = max(500, (int) env('AI_GUIDED_MAX_TOKENS', 8192));
+            $guidedMaxTokens = max(500, (int) config('ai.max_tokens.guided', 8192));
             $effectiveModel = $this->model;
             if ($isGuidedCreation || $isBuilderDiff) {
                 if ($this->provider === 'groq') {
-                    $effectiveModel = env('GROQ_CREATOR_MODEL', $effectiveModel);
+                    $effectiveModel = (config('ai.groq.creator_model') ?: $effectiveModel);
                     if ($useHighQualityCreatorModel) {
-                        $effectiveModel = env('GROQ_CREATOR_QUALITY_MODEL', $effectiveModel);
+                        $effectiveModel = (config('ai.groq.creator_quality_model') ?: $effectiveModel);
                     }
                 } elseif ($this->provider === 'openai') {
-                    $effectiveModel = env('OPENAI_CREATOR_MODEL', $effectiveModel);
+                    $effectiveModel = (config('ai.openai.creator_model') ?: $effectiveModel);
                     if ($useHighQualityCreatorModel) {
-                        $effectiveModel = env('OPENAI_CREATOR_QUALITY_MODEL', $effectiveModel);
+                        $effectiveModel = (config('ai.openai.creator_quality_model') ?: $effectiveModel);
                     }
                 }
             } elseif ($isTutorMode) {
                 if ($this->provider === 'groq') {
-                    $effectiveModel = env('GROQ_CREATOR_MODEL', $effectiveModel);
+                    $effectiveModel = (config('ai.groq.creator_model') ?: $effectiveModel);
                 } elseif ($this->provider === 'openai') {
-                    $effectiveModel = env('OPENAI_CREATOR_MODEL', $effectiveModel);
+                    $effectiveModel = (config('ai.openai.creator_model') ?: $effectiveModel);
                 }
             }
 
@@ -2675,11 +2487,17 @@ class AIController extends Controller
                 'max_tokens' => $isGuidedCreation
                     ? $guidedMaxTokens
                     : ($isBuilderDiff
-                        ? min($guidedMaxTokens, 6000)
-                        : ($isTutorMode ? (str_contains((string) $mode, ':ultra_short') ? 120 : 280) : 4000)),
+                        ? max(2000, (int) config('ai.max_tokens.builder_diff', 6000))
+                        : ($isTutorMode
+                            ? (str_contains((string) $mode, ':ultra_short')
+                                ? 180
+                                : ($isAdminTutor ? $adminTutorMaxTokens : 280))
+                            : 4000)),
                 'top_p' => $isTutorMode ? 0.8 : 1,
             ];
             
+            // Only add response_format for structured generation flows (not tutor chat).
+            // Groq supports json_object too — required for builder_diff to return a valid plan.
             if (!$isTutorMode && ($this->provider === 'openai' || ($this->provider === 'groq' && $isBuilderDiff))) {
                 $payload['response_format'] = ['type' => 'json_object'];
             }
@@ -2701,7 +2519,7 @@ class AIController extends Controller
             }
             curl_setopt($ch, CURLOPT_HTTPHEADER, $requestHeaders);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-            $verify = filter_var(env('AI_VERIFY_SSL', true), FILTER_VALIDATE_BOOLEAN);
+            $verify = (bool) config('ai.verify_ssl', true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $verify);
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $connectTimeout);
             curl_setopt($ch, CURLOPT_TIMEOUT, $effectiveTimeout);
@@ -2823,8 +2641,8 @@ class AIController extends Controller
                         // Switch to next model
                         $this->model = $nextModel;
                         
-                        // Retry with new model
-                        return $this->streamOpenAIResponse($messages, $type, $teacherId, $courseId, $fullResponse);
+                        // Retry with new model (preserve $mode so model/JSON settings stay correct)
+                        return $this->streamOpenAIResponse($messages, $type, $teacherId, $courseId, $fullResponse, $mode);
                     }
                     
                     // No more models available or not using Groq - wait and retry
@@ -2843,9 +2661,9 @@ class AIController extends Controller
                     // Wait 60 seconds before retrying
                     sleep(60);
                     
-                    // Retry the request
+                    // Retry the request (preserve $mode so model/JSON settings stay correct)
                     Log::info("Retrying {$providerName} API request after rate limit wait");
-                    return $this->streamOpenAIResponse($messages, $type, $teacherId, $courseId, $fullResponse);
+                    return $this->streamOpenAIResponse($messages, $type, $teacherId, $courseId, $fullResponse, $mode);
                 }
                 
                 Log::error("{$providerName} API Error", [
@@ -2888,7 +2706,8 @@ class AIController extends Controller
                 $url = "{$this->hfApiUrl}/v1/chat/completions";
                 
                 $response = Http::withOptions([
-                    'verify' => env('APP_ENV') === 'production', // Verify SSL only in production
+                    // Verificare SSL ca la celelalte apeluri AI (AI_VERIFY_SSL)
+                    'verify' => (bool) config('ai.verify_ssl', true),
                 ])->withHeaders([
                     'Authorization' => "Bearer {$this->hfApiKey}",
                     'Content-Type' => 'application/json',
@@ -2922,7 +2741,8 @@ class AIController extends Controller
                 ]);
 
                 $response = Http::withOptions([
-                    'verify' => env('APP_ENV') === 'production', // Verify SSL only in production
+                    // Verificare SSL ca la celelalte apeluri AI (AI_VERIFY_SSL)
+                    'verify' => (bool) config('ai.verify_ssl', true),
                 ])->withHeaders([
                     'Authorization' => "Bearer {$this->hfApiKey}",
                     'Content-Type' => 'application/json',
@@ -3034,7 +2854,7 @@ class AIController extends Controller
             // Dacă da, creează sau actualizează cursul automat în background
             if ($type === 'course' && !empty($fullResponse)) {
                 // Verifică dacă este fallback response (nu crea curs dacă este fallback)
-                $isFallback = strpos($fullResponse, 'Curs generat cu AI') !== false && 
+                $isFallback = strpos($fullResponse, 'Curs generat prin Formely AI') !== false && 
                              strpos($fullResponse, 'Acesta este un curs generat automat') !== false;
                 
                 if ($isFallback) {
@@ -3056,7 +2876,7 @@ class AIController extends Controller
                 ]);
                 
                 if ($hasValidJson) {
-                    // AI a generat un curs valid - creează-l sau actualizează-l automat
+                    // Volt a generat un curs valid - creează-l sau actualizează-l automat
                     try {
                         $createdCourse = $this->createOrUpdateCourseFromResponse($fullResponse, $teacherId, $courseId);
                         if ($createdCourse) {
@@ -3074,7 +2894,7 @@ class AIController extends Controller
                             flush();
                         }
                     } catch (\Exception $e) {
-                        Log::error('Error creating/updating course from AI response', [
+                        Log::error('Error creating/updating course from Formely AI response', [
                             'error' => $e->getMessage(),
                             'trace' => $e->getTraceAsString(),
                             'course_id' => $courseId
@@ -3086,7 +2906,7 @@ class AIController extends Controller
                         flush();
                     }
                 }
-                // Dacă nu are JSON valid, înseamnă că AI a întrebat ceva - nu creăm/modificăm cursul
+                // Dacă nu are JSON valid, înseamnă că Volt a întrebat ceva - nu creăm/modificăm cursul
             }
 
             $responseMetadata = $this->extractAIResponseMetadataFromText($fullResponse);
@@ -3204,9 +3024,9 @@ class AIController extends Controller
     {
         if ($type === 'course') {
             return json_encode([
-                'title' => 'Curs generat cu AI',
+                'title' => 'Curs generat prin Formely AI',
                 'description' => 'Acesta este un curs generat automat. Te rugăm să completezi detaliile manual.',
-                'short_description' => 'Curs generat cu AI',
+                'short_description' => 'Curs generat prin Formely AI',
                 'modules' => [
                     [
                         'title' => 'Modulul 1',
@@ -3222,7 +3042,7 @@ class AIController extends Controller
             ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         } else {
             return json_encode([
-                'title' => 'Test generat cu AI',
+                'title' => 'Test generat prin Formely AI',
                 'description' => 'Acesta este un test generat automat. Te rugăm să completezi întrebările manual.',
                 'questions' => [
                     [
@@ -3238,7 +3058,7 @@ class AIController extends Controller
     }
 
     /**
-     * Create or update course, modules and lessons from AI response
+     * Create or update course, modules and lessons from Volt response
      */
     private function createOrUpdateCourseFromResponse($responseText, $teacherId = null, $existingCourseId = null)
     {
@@ -3247,20 +3067,20 @@ class AIController extends Controller
             $courseData = $this->parseCourseData($responseText);
             
             if (!$courseData) {
-                Log::warning('Could not parse course data from AI response');
+                Log::warning('Could not parse course data from Formely AI response');
                 return null;
             }
 
             $responseType = strtolower(trim((string) ($courseData['response_type'] ?? 'course')));
             if ($responseType !== 'course') {
-                Log::warning('AI response type does not allow course creation', [
+                Log::warning('Formely AI response type does not allow course creation', [
                     'response_type' => $responseType,
                     'title' => $courseData['title'] ?? 'N/A',
                 ]);
                 return null;
             }
 
-            Log::info('Creating/updating course from AI response', [
+            Log::info('Creating/updating course from Formely AI response', [
                 'title' => $courseData['title'] ?? 'N/A',
                 'modules_count' => count($courseData['modules'] ?? []),
                 'existing_course_id' => $existingCourseId
@@ -3301,7 +3121,7 @@ class AIController extends Controller
             // Create new course if not updating
             if (!$course) {
                 $course = $this->courseBuilderService->createCourse([
-                    'title' => $courseData['title'] ?? 'Curs generat cu AI',
+                    'title' => $courseData['title'] ?? 'Curs generat prin Formely AI',
                     'description' => $courseData['description'] ?? '',
                     'short_description' => $courseData['short_description'] ?? substr($courseData['description'] ?? '', 0, 150),
                     'status' => 'draft',
@@ -3327,7 +3147,7 @@ class AIController extends Controller
                     'course_data_keys' => array_keys($courseData),
                     'course_data_modules' => $courseData['modules'] ?? 'NOT SET'
                 ]);
-                throw new \Exception('Nu s-au găsit module în răspunsul AI. Te rugăm să reformulezi cererea.');
+                throw new \Exception('Nu s-au găsit module în răspunsul Formely AI. Te rugăm să reformulezi cererea.');
             }
             
             foreach ($modules as $moduleIndex => $moduleData) {
@@ -3446,7 +3266,7 @@ class AIController extends Controller
 
             return $course;
         } catch (\Exception $e) {
-            Log::error('Error creating course from AI response', [
+            Log::error('Error creating course from Formely AI response', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -3455,7 +3275,7 @@ class AIController extends Controller
     }
 
     /**
-     * Parse course data from AI response
+     * Parse course data from Volt response
      */
     private function parseCourseData($responseText)
     {
@@ -3545,7 +3365,7 @@ class AIController extends Controller
     }
 
     /**
-     * Extract lightweight metadata about the AI response for the frontend.
+     * Extract lightweight metadata about the Volt response for the frontend.
      */
     private function extractAIResponseMetadataFromText(string $responseText): array
     {
@@ -3582,7 +3402,7 @@ class AIController extends Controller
         if ($responseType !== '' && !in_array($responseType, ['plan', 'builder_diff', 'clarification'], true)) {
             return [
                 'valid' => false,
-                'message' => 'Planul AI are un tip de răspuns invalid.',
+                'message' => 'Planul Formely AI are un tip de răspuns invalid.',
             ];
         }
 
@@ -3604,7 +3424,7 @@ class AIController extends Controller
         if ($courseUpdates === null && empty($operations)) {
             return [
                 'valid' => false,
-                'message' => 'Planul AI nu conține schimbări aplicabile.',
+                'message' => 'Planul Formely AI nu conține schimbări aplicabile.',
             ];
         }
 
@@ -3614,7 +3434,7 @@ class AIController extends Controller
             if (!is_array($op)) {
                 return [
                     'valid' => false,
-                    'message' => 'Planul AI conține o operație invalidă.',
+                    'message' => 'Planul Formely AI conține o operație invalidă.',
                 ];
             }
 
@@ -3626,13 +3446,13 @@ class AIController extends Controller
                     if ($lessonContent === '' || $this->countLessonContentLines($lessonContent) < 4) {
                         return [
                             'valid' => false,
-                            'message' => 'Planul AI conține o lecție fără conținut suficient.',
+                            'message' => 'Planul Formely AI conține o lecție fără conținut suficient.',
                         ];
                     }
                 } elseif ($lessonContent !== '' && $this->countLessonContentLines($lessonContent) < 4) {
                     return [
                         'valid' => false,
-                        'message' => 'Planul AI conține o lecție actualizată cu conținut prea scurt.',
+                        'message' => 'Planul Formely AI conține o lecție actualizată cu conținut prea scurt.',
                     ];
                 }
             }
@@ -3643,21 +3463,21 @@ class AIController extends Controller
                 if (($opType === 'create_module' || $opType === 'createmodule') && empty($nestedLessons)) {
                     return [
                         'valid' => false,
-                        'message' => 'Planul AI modifică module, dar nu include lecții.',
+                        'message' => 'Planul Formely AI modifică module, dar nu include lecții.',
                     ];
                 }
                 foreach ($nestedLessons as $nestedLesson) {
                     if (!is_array($nestedLesson)) {
                         return [
                             'valid' => false,
-                            'message' => 'Planul AI conține o lecție invalidă în modul.',
+                            'message' => 'Planul Formely AI conține o lecție invalidă în modul.',
                         ];
                     }
                     $nestedContent = trim((string) ($nestedLesson['content'] ?? $nestedLesson['body'] ?? $nestedLesson['html'] ?? ''));
                     if ($nestedContent === '' || $this->countLessonContentLines($nestedContent) < 4) {
                         return [
                             'valid' => false,
-                            'message' => 'Planul AI conține o lecție de modul fără conținut suficient.',
+                            'message' => 'Planul Formely AI conține o lecție de modul fără conținut suficient.',
                         ];
                     }
                 }
@@ -3667,7 +3487,7 @@ class AIController extends Controller
         if (!empty($moduleOperations) && empty($lessonOperations)) {
             return [
                 'valid' => false,
-                'message' => 'Planul AI modifică module, dar nu conține lecții.',
+                'message' => 'Planul Formely AI modifică module, dar nu conține lecții.',
             ];
         }
 
@@ -3837,16 +3657,14 @@ class AIController extends Controller
 
                 $lineCount = $this->countLessonContentLines($lessonContent);
                 if ($lineCount < $this->getMinLessonLines()) {
-                    Log::warning('Invalid lesson content: too few lines', [
+                    // Nu respingem cursul doar pentru că o lecție e mai scurtă.
+                    // Pe Groq free tier regenerările suplimentare epuizează TPM-ul și blochează crearea.
+                    Log::warning('Lesson content is shorter than preferred minimum; accepting anyway', [
                         'module_title' => $moduleTitle,
                         'lesson_title' => $lessonTitle,
                         'required_min_lines' => $this->getMinLessonLines(),
                         'found_lines' => $lineCount,
                     ]);
-
-                    return ['ok' => false, 'reasons' => [
-                        'Lecția "' . $lessonTitle . '" are doar ' . $lineCount . ' rânduri de conținut util; minimul este ' . $this->getMinLessonLines() . '. Folosește mai multe paragrafe <p>, liste <li> sau <br> ca să se numără rânduri separate.',
-                    ]];
                 }
 
                 $normalizedModule['lessons'][] = [

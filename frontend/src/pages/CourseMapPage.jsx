@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
 	DndContext,
@@ -16,32 +16,53 @@ import {
 	rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ArrowLeft, Info, ArrowRight } from '@phosphor-icons/react';
-import { DragGripIcon } from '../components/common/DragGripIcon';
-import { courseMapsService, adminService } from '../services/api';
-import { courseCoverSrc } from '../utils/imageUrl';
-import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../contexts/ToastContext';
-import { CourseShowcaseCard, COURSE_SHOWCASE_FALLBACK_IMAGE } from '../components/ui/course-showcase-card';
-import { hexToHslSpace } from '../lib/hexToHsl';
-import { isStudentVisibleMap } from '../utils/courseMapVisibility';
-import { isStaffAdminRole } from '../constants/staffRoles';
+import { ArrowLeft, Info } from '@phosphor-icons/react';
 import CourseMapHeaderStyleEditor from '../components/admin/course-maps/CourseMapHeaderStyleEditor';
+import { DragHandle } from '../components/common/DragHandle';
 import {
 	CourseShowcaseEditButton,
 	CourseShowcasePublishToggle,
 } from '../components/admin/courses/CourseShowcaseQuickActions';
 import { useCoursePublishFromCard } from '../hooks/useCoursePublishFromCard';
+import { courseMapsService, adminService } from '../services/api';
+import { courseCoverSrc } from '../utils/imageUrl';
+
+import { useAuth } from '../contexts/AuthContextShared.js';
+
+import { useToast } from '../contexts/ToastContextShared.js';
+import { CourseShowcaseCard } from '../components/ui/course-showcase-card';
+import { COURSE_SHOWCASE_FALLBACK_IMAGE } from '../components/ui/course-showcase-cardShared.js';
+import { hexToHslSpace } from '../lib/hexToHsl';
+import { isStudentVisibleMap } from '../utils/courseMapVisibility';
 import './CourseMapPage.css';
+import { courseProgressLabel } from '../utils/courseProgressLabel.js';
 
 /**
  * Pagina unei mape de cursuri (folder).
  */
+function formatDuration(minutes) {
+	if (!minutes || minutes < 1) return '—';
+	if (minutes < 60) return `${minutes} min`;
+	const h = Math.floor(minutes / 60);
+	const m = minutes % 60;
+	return m ? `${h} h ${m} min` : `${h} h`;
+}
+
 function sortableCourseId(courseId) {
 	return `course-map-page-course-${courseId}`;
 }
 
-function CourseMapCourseCard({ course, onNavigateCourse, themeHsl }) {
+function courseMapCourseSubtitle(course, fmtDur) {
+	const dur = fmtDur(course.estimated_duration_minutes);
+	const prog = course.progress_percentage ?? 0;
+	const parts = [];
+	if (dur && dur !== '—') parts.push(dur);
+	if (Number(prog) >= 100) parts.push('Finalizat');
+	else if (Number(prog) > 0) parts.push(`Progres ${courseProgressLabel(prog)}`);
+	return parts.join(' · ') || 'Curs';
+}
+
+function CourseMapCourseCard({ course, fmtDur, onNavigateCourse, themeHsl }) {
 	const coverSrc = courseCoverSrc(course);
 	const imageUrl = coverSrc || COURSE_SHOWCASE_FALLBACK_IMAGE;
 	return (
@@ -49,6 +70,7 @@ function CourseMapCourseCard({ course, onNavigateCourse, themeHsl }) {
 			<CourseShowcaseCard
 				imageUrl={imageUrl}
 				title={course.title}
+				subtitle={courseMapCourseSubtitle(course, fmtDur)}
 				progress={course.progress_percentage ?? 0}
 				themeHsl={themeHsl}
 				showAccentRibbon
@@ -61,6 +83,7 @@ function CourseMapCourseCard({ course, onNavigateCourse, themeHsl }) {
 
 function SortableCourseMapCourseCard({
 	course,
+	fmtDur,
 	onNavigateCourse,
 	themeHsl,
 	canMutate,
@@ -80,20 +103,7 @@ function SortableCourseMapCourseCard({
 	const coverSrc = courseCoverSrc(course);
 	const imageUrl = coverSrc || COURSE_SHOWCASE_FALLBACK_IMAGE;
 	const dragHandle = (
-		<span
-			className="course-showcase-dnd-handle"
-			{...attributes}
-			{...listeners}
-			aria-label="Trage pentru a reordona cursul în mapă"
-			title="Reordonare"
-			onClick={(e) => e.stopPropagation()}
-			onKeyDown={(e) => {
-				e.stopPropagation();
-				if (e.key === 'Enter' || e.key === ' ') e.preventDefault();
-			}}
-		>
-			<DragGripIcon size={14} />
-		</span>
+		<DragHandle attributes={attributes} listeners={listeners} label="Trage pentru a reordona cursul în mapă" />
 	);
 	return (
 		<div
@@ -104,6 +114,8 @@ function SortableCourseMapCourseCard({
 			<CourseShowcaseCard
 				imageUrl={imageUrl}
 				title={course.title}
+				subtitle={courseMapCourseSubtitle(course, fmtDur)}
+				progress={course.progress_percentage ?? 0}
 				themeHsl={themeHsl}
 				showAccentRibbon
 				onOpen={() => onNavigateCourse(course.id)}
@@ -130,25 +142,21 @@ const CourseMapPage = () => {
 	const location = useLocation();
 	const { user, canMutateInAdminArea, canEditCoursesAsStaff } = useAuth();
 	const { showToast } = useToast();
-	const headerRef = useRef(null);
-	const [headerHeight, setHeaderHeight] = useState(90);
 	const isAdminRoute = location.pathname.startsWith('/admin/');
-	/** Pe rute /admin/* folosim context admin (owner, hr, instructor), nu doar role === 'admin'. */
-	const isAdminContext = isAdminRoute && (canEditCoursesAsStaff || canMutateInAdminArea || isStaffAdminRole(user?.actualRole ?? user?.role));
 	const canShowMapHeaderEdit = canEditCoursesAsStaff && isAdminRoute;
-	const actualRole = user?.actualRole ?? user?.role;
-	const mapsListPath = isAdminContext
-		? actualRole === 'instructor'
+	const isAdmin = user?.role === 'admin' || user?.role === 'instructor';
+	const mapsListPath = isAdmin
+		? user?.actualRole === 'instructor'
 			? '/admin/content?tab=courses'
 			: '/admin/content?tab=courses&view=maps'
 		: '/courses';
-	const mapsListShortLabel = isAdminContext
-		? actualRole === 'instructor'
+	const mapsListShortLabel = isAdmin
+		? user?.actualRole === 'instructor'
 			? 'Înapoi la cursuri'
 			: 'Înapoi la mape'
 		: 'Înapoi la Cursuri';
-	const mapsListAriaLabel = isAdminContext
-		? actualRole === 'instructor'
+	const mapsListAriaLabel = isAdmin
+		? user?.actualRole === 'instructor'
 			? 'Înapoi la lista de cursuri din admin'
 			: 'Înapoi la lista de mape de curs'
 		: 'Înapoi la lista de cursuri și mape';
@@ -172,9 +180,9 @@ const CourseMapPage = () => {
 
 	const navigateToCourse = useCallback(
 		(courseId) => {
-			navigate(isAdminContext ? `/admin/courses/${courseId}` : `/courses/${courseId}`);
+			navigate(isAdmin ? `/admin/courses/${courseId}` : `/courses/${courseId}`);
 		},
-		[navigate, isAdminContext]
+		[navigate, isAdmin]
 	);
 
 	const mergeCourseIntoLists = useCallback((courseId, updatedCourse) => {
@@ -192,7 +200,7 @@ const CourseMapPage = () => {
 	});
 
 	const handleCoursesDragEnd = async (event) => {
-		if (!isAdminContext || !map?.id) return;
+		if (!isAdmin || !map?.id) return;
 		const { active, over } = event;
 		if (!over || active.id === over.id) return;
 		const oldIndex = orderedCourses.findIndex((c) => sortableCourseId(c.id) === active.id);
@@ -217,11 +225,11 @@ const CourseMapPage = () => {
 			try {
 				setLoading(true);
 				setError(null);
-				const data = isAdminContext
+				const data = isAdmin
 					? await adminService.getCourseMap(mapId)
 					: await courseMapsService.getMap(mapId);
 				if (!cancelled) {
-					if (data && !isAdminContext && !isStudentVisibleMap(data)) {
+					if (data && !isAdmin && !isStudentVisibleMap(data)) {
 						setMap(null);
 						setError('Mapa nu a fost găsită.');
 					} else {
@@ -236,26 +244,7 @@ const CourseMapPage = () => {
 		};
 		fetchMap();
 		return () => { cancelled = true; };
-	}, [mapId, isAdminContext]);
-
-	useEffect(() => {
-		const el = headerRef.current;
-		if (!el || isAdminContext) return undefined;
-
-		const syncHeight = () => {
-			setHeaderHeight(el.getBoundingClientRect().height);
-		};
-
-		syncHeight();
-		const observer = new ResizeObserver(syncHeight);
-		observer.observe(el);
-		window.addEventListener('resize', syncHeight);
-
-		return () => {
-			observer.disconnect();
-			window.removeEventListener('resize', syncHeight);
-		};
-	}, [isAdminContext, map?.name, map?.description]);
+	}, [mapId, isAdmin]);
 
 	if (loading) {
 		return (
@@ -272,8 +261,8 @@ const CourseMapPage = () => {
 		return (
 			<div className="course-map-page">
 				<div className="course-map-page-error">
-					<p>{error || 'Eroare'}</p>
-					<button type="button" className="course-map-page-btn" onClick={() => navigate(mapsListPath)}>
+					<p>{error || 'Nu s-a putut încărca mapa.'}</p>
+					<button type="button" className="lms-btn-primary course-map-page-btn" onClick={() => navigate(mapsListPath)}>
 						<ArrowLeft size={18} weight="bold" aria-hidden="true" />
 						{mapsListShortLabel}
 					</button>
@@ -283,30 +272,25 @@ const CourseMapPage = () => {
 	}
 
 	const { name, description, courses } = map;
-	const displayCourses = isAdminContext ? orderedCourses : courses;
+	const courseIsFinished = (course) => Boolean(course?.completed_at) || Number(course?.progress_percentage) >= 100;
+	const studentCourses = (courses || []).filter((course) => !courseIsFinished(course));
+	const displayCourses = isAdmin ? orderedCourses : studentCourses;
+	const completedMovedAside = !isAdmin && (courses || []).length > 0 && studentCourses.length === 0;
 	const isVirtualMap = Boolean(map?.is_virtual) || String(map?.id || '') === 'unassigned';
 	const accent = map.accent_color || '#059669';
 	const mapThemeHsl = hexToHslSpace(accent);
-	const headerBgColor = map.header_bg_color?.trim() || '';
 	const headerTextColor = map.header_text_color?.trim() || '';
-	const hasCustomHeaderColors = Boolean(headerBgColor || headerTextColor);
 	const resolvedHeaderText = headerTextColor || '#f8fafc';
 	const headerStyle = {
-		background: headerBgColor
-			? headerBgColor
-			: `linear-gradient(135deg, ${accent}, color-mix(in srgb, ${accent} 65%, var(--formely-bg, #0f172a)))`,
+		background: accent,
 		color: resolvedHeaderText,
 		'--map-header-text': resolvedHeaderText,
 	};
 
 	return (
-		<div
-			className={`course-map-page${!isAdminContext ? ' course-map-page--student' : ''}`}
-			style={!isAdminContext ? { '--course-map-header-height': `${headerHeight}px` } : undefined}
-		>
+		<div className={`course-map-page${!isAdmin ? ' course-map-page--student' : ''}`}>
 			<header
-				ref={headerRef}
-				className={`course-map-page-header course-map-page-header--branded${hasCustomHeaderColors ? ' course-map-page-header--custom-colors' : ''}${canShowMapHeaderEdit ? ' course-map-page-header--has-edit' : ''}`}
+				className={`course-map-page-header course-map-page-header--branded course-map-page-header--custom-colors${canShowMapHeaderEdit ? ' course-map-page-header--has-edit' : ''}`}
 				style={headerStyle}
 			>
 				<div className="course-map-page-header-inner">
@@ -316,7 +300,7 @@ const CourseMapPage = () => {
 					<div className="course-map-page-header-top">
 						<button
 							type="button"
-							className="course-map-page-back"
+							className="va-btn-back course-map-page-back"
 							onClick={() => navigate(mapsListPath)}
 							aria-label={mapsListAriaLabel}
 							title={mapsListShortLabel}
@@ -327,28 +311,28 @@ const CourseMapPage = () => {
 						<div className="course-map-page-title-block">
 							<div className="course-map-page-title-row">
 								<h1 className="course-map-page-title">{name}</h1>
-								{isVirtualMap && isAdminContext ? (
+								{isVirtualMap && isAdmin ? (
 									<span className="course-map-page-virtual-badge">Mapă virtuală</span>
 								) : null}
 							</div>
-							{description ? <p className="course-map-page-description">{description}</p> : null}
+							{description && <p className="course-map-page-description">{description}</p>}
 						</div>
 					</div>
 				</div>
 			</header>
 
 			<div className="course-map-page-content">
-				{isAdminContext && displayCourses && displayCourses.length > 0 && (
+				{isAdmin && displayCourses && displayCourses.length > 0 && (
 					<p className="course-map-page-dnd-hint" role="note">
 						<Info size={18} weight="bold" aria-hidden />
 						<span>
-							Trage cursurile din <strong>banda din stânga</strong> (nu acoperi coperta). Poți{' '}
+							Trage cursurile de <strong>butonul de mutare</strong> din colțul cardului ca să le reordonezi. Poți{' '}
 							<strong>adăuga sau schimba imaginea</strong> din zona copertei pe fiecare card.
 						</span>
 					</p>
 				)}
 				{displayCourses && displayCourses.length > 0 ? (
-					isAdminContext ? (
+					isAdmin ? (
 						<DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCoursesDragEnd}>
 							<SortableContext items={displayCourses.map((c) => sortableCourseId(c.id))} strategy={rectSortingStrategy}>
 								<div className="course-map-page-grid">
@@ -356,6 +340,7 @@ const CourseMapPage = () => {
 										<SortableCourseMapCourseCard
 											key={course.id}
 											course={course}
+											fmtDur={formatDuration}
 											onNavigateCourse={navigateToCourse}
 											themeHsl={mapThemeHsl}
 											canMutate={canMutateInAdminArea}
@@ -374,6 +359,7 @@ const CourseMapPage = () => {
 								<CourseMapCourseCard
 									key={course.id}
 									course={course}
+									fmtDur={formatDuration}
 									onNavigateCourse={navigateToCourse}
 									themeHsl={mapThemeHsl}
 								/>
@@ -382,7 +368,11 @@ const CourseMapPage = () => {
 					)
 				) : (
 					<div className="course-map-page-empty">
-						<p>Nu există cursuri în această mapă.</p>
+						<p>
+							{completedMovedAside
+								? 'Cursurile din această mapă sunt finalizate. Le găsești la Cursuri finalizate.'
+								: 'Nu există cursuri în această mapă.'}
+						</p>
 						<button type="button" className="course-map-page-btn" onClick={() => navigate(mapsListPath)}>
 							<ArrowLeft size={18} weight="bold" aria-hidden="true" />
 							{mapsListShortLabel}

@@ -16,12 +16,15 @@ import {
 	rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { MagnifyingGlass, PencilSimple, Plus, Trash } from '@phosphor-icons/react';
-import { DragGripIcon } from '../../components/common/DragGripIcon';
+import { MagnifyingGlass, PencilSimple, Plus, Trash, X } from '@phosphor-icons/react';
+import { DragHandle } from '../../components/common/DragHandle';
 import { adminService } from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+
+import { useToast } from '../../contexts/ToastContextShared.js';
 import ConfirmModal from '../../components/common/ConfirmModal';
-import { useAuth } from '../../contexts/AuthContext';
+import Modal from '../../components/common/Modal';
+
+import { useAuth } from '../../contexts/AuthContextShared.js';
 import { mapFolderCardImageUrl, toImageUrl } from '../../utils/imageUrl';
 import CourseMapFolderTile from '../../components/ui/CourseMapFolderTile';
 import MapCoverFocusEditor from '../../components/admin/course-maps/MapCoverFocusEditor';
@@ -29,47 +32,40 @@ import { normalizeColorInputToHex } from '../../utils/color';
 import { DEFAULT_COVER_FOCUS, normalizeCoverFocus } from '../../utils/coverFocus';
 
 const COURSE_MAP_ACCENT_COLORS = [
-	'#0891b2', '#22d3ee', '#0e7490', '#155e75', '#38bdf8', '#0284c7', '#67e8f9', '#0f172a', '#64748b',
+	'#6366f1', '#ec4899', '#14b8a6', '#f59e0b', '#8b5cf6', '#06b6d4', '#84cc16', '#f43f5e', '#0ea5e9'
 ];
 
 function sortableMapId(mapId) {
 	return `admin-course-map-${mapId}`;
 }
 
+/** Descrierea de pe card; mapele de sistem (private) sunt marcate, fiind invizibile cursanților. */
+function adminMapSubtitle(map, courseCount) {
+	const text = map.description
+		? (map.description.length > 120 ? `${map.description.slice(0, 120)}…` : map.description)
+		: `${courseCount} cursuri`;
+	return map.visibility === 'private' ? `Mapă de sistem · ${text}` : text;
+}
+
 function isRealMapId(id) {
 	return id !== 'unassigned' && id != null;
 }
 
-function mapCardSubtitle(map) {
-	const description = String(map?.description || '').trim();
-	if (!description) return '';
-	if (description.length > 120) {
-		return `${description.slice(0, 120)}…`;
-	}
-	return description;
-}
-
-function MapColorRow({ label, value, fallback, onChange, onClear, canClear }) {
+function MapColorRow({ id, label, value, fallback, onChange, onClear, canClear }) {
 	const hex = normalizeColorInputToHex(value?.trim() ? value : fallback, fallback);
 	return (
-		<label className="admin-course-map-color-row">
-			<span>{label}</span>
-			<span className="admin-course-map-color-row__controls">
-				<input type="color" value={hex} onChange={(e) => onChange(e.target.value)} aria-label={label} />
-				<input
-					type="text"
-					className="admin-form-input"
-					value={value}
-					onChange={(e) => onChange(e.target.value)}
-					placeholder={fallback}
-				/>
+		<div className="va-field">
+			<label htmlFor={id}>{label}</label>
+			<div className="va-color-input">
+				<input type="color" value={hex} onChange={(e) => onChange(e.target.value)} aria-label={`${label} — alege culoarea`} />
+				<input id={id} type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={fallback} maxLength={7} />
 				{canClear && value?.trim() ? (
-					<button type="button" className="admin-course-map-color-clear" onClick={onClear} aria-label={`Resetează ${label}`}>
-						×
+					<button type="button" className="lms-btn-secondary lms-btn-sm" onClick={onClear} aria-label={`Resetează ${label.toLowerCase()}`}>
+						Resetează
 					</button>
 				) : null}
-			</span>
-		</label>
+			</div>
+		</div>
 	);
 }
 
@@ -94,24 +90,11 @@ function SortableAdminMapShowcase({
 	};
 	const accentColor = map.accent_color || COURSE_MAP_ACCENT_COLORS[index % COURSE_MAP_ACCENT_COLORS.length];
 	const courseCount = map.courses_count ?? map.courses?.length ?? 0;
-	const subtitle = mapCardSubtitle(map);
+	const subtitle = adminMapSubtitle(map, courseCount);
 
 	const dragHandle =
 		canMutate && isRealMapId(map.id) ? (
-			<span
-				className="course-showcase-dnd-handle va-card-icon-btn"
-				{...attributes}
-				{...listeners}
-				aria-label="Trage pentru a reordona mapa"
-				title="Reordonare"
-				onClick={(e) => e.stopPropagation()}
-				onKeyDown={(e) => {
-					e.stopPropagation();
-					if (e.key === 'Enter' || e.key === ' ') e.preventDefault();
-				}}
-			>
-				<DragGripIcon size={14} />
-			</span>
+			<DragHandle attributes={attributes} listeners={listeners} label="Trage pentru a reordona mapa" />
 		) : null;
 
 	return (
@@ -138,24 +121,17 @@ function SortableAdminMapShowcase({
 									<PencilSimple size={16} weight="bold" aria-hidden />
 								</button>
 							</div>
-							<span
-								role="button"
-								tabIndex={0}
+							<button
+								type="button"
 								className="admin-course-map-delete-btn va-card-icon-btn va-card-icon-btn--danger"
 								onClick={(e) => {
 									e.stopPropagation();
 									onDelete(map);
 								}}
-								onKeyDown={(e) => {
-									if (e.key === 'Enter' || e.key === ' ') {
-										e.preventDefault();
-										onDelete(map);
-									}
-								}}
 								aria-label="Șterge mapa"
 							>
-								<Trash size={18} weight="bold" aria-hidden />
-							</span>
+								<Trash size={16} weight="bold" aria-hidden />
+							</button>
 						</>
 					) : null
 				}
@@ -167,7 +143,7 @@ function SortableAdminMapShowcase({
 function StaticAdminMapShowcase({ map, index, canMutate, onOpenMap, onEdit, onDelete }) {
 	const accentColor = map.accent_color || COURSE_MAP_ACCENT_COLORS[index % COURSE_MAP_ACCENT_COLORS.length];
 	const courseCount = map.courses_count ?? map.courses?.length ?? 0;
-	const subtitle = mapCardSubtitle(map);
+	const subtitle = adminMapSubtitle(map, courseCount);
 	return (
 		<div className="admin-course-map-showcase-wrap">
 			<CourseMapFolderTile
@@ -187,24 +163,17 @@ function StaticAdminMapShowcase({ map, index, canMutate, onOpenMap, onEdit, onDe
 									<PencilSimple size={16} weight="bold" aria-hidden />
 								</button>
 							</div>
-							<span
-								role="button"
-								tabIndex={0}
+							<button
+								type="button"
 								className="admin-course-map-delete-btn va-card-icon-btn va-card-icon-btn--danger"
 								onClick={(e) => {
 									e.stopPropagation();
 									onDelete(map);
 								}}
-								onKeyDown={(e) => {
-									if (e.key === 'Enter' || e.key === ' ') {
-										e.preventDefault();
-										onDelete(map);
-									}
-								}}
 								aria-label="Șterge mapa"
 							>
-								<Trash size={18} weight="bold" aria-hidden />
-							</span>
+								<Trash size={16} weight="bold" aria-hidden />
+							</button>
 						</>
 					) : null
 				}
@@ -213,15 +182,17 @@ function StaticAdminMapShowcase({ map, index, canMutate, onOpenMap, onEdit, onDe
 	);
 }
 
-const AdminCourseMapsPage = ({ embedded, onOpenMap, autoOpenCreate = false, headerActions = null }) => {
+const AdminCourseMapsPage = ({  onOpenMap, autoOpenCreate = false, headerActions = null }) => {
 	const navigate = useNavigate();
 	const { showToast } = useToast();
 	const { canMutateInAdminArea, user } = useAuth();
-	const isAdmin = ['admin', 'company_owner'].includes(user?.actualRole ?? user?.role);
+	const isAdmin = (user?.actualRole ?? user?.role) === 'admin';
 	const [maps, setMaps] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [searchQuery, setSearchQuery] = useState('');
 	const [showCreateModal, setShowCreateModal] = useState(false);
+	// fereastra de editare are două file: aspectul mapei și cursurile din ea
+	const [mapDialogTab, setMapDialogTab] = useState('aspect');
 	const [editingMap, setEditingMap] = useState(null);
 	const [managingMap, setManagingMap] = useState(null);
 	const [allCourses, setAllCourses] = useState([]);
@@ -276,7 +247,7 @@ const AdminCourseMapsPage = ({ embedded, onOpenMap, autoOpenCreate = false, head
 		if (autoOpenCreate && canMutateInAdminArea) {
 			openCreate();
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+
 	}, [autoOpenCreate, canMutateInAdminArea]);
 
 	useEffect(() => {
@@ -293,7 +264,7 @@ const AdminCourseMapsPage = ({ embedded, onOpenMap, autoOpenCreate = false, head
 		try {
 			const data = await adminService.getCourses({ per_page: 500 });
 			setAllCourses(Array.isArray(data) ? data : (data?.data ?? []));
-		} catch {
+		} catch  {
 			setAllCourses([]);
 		}
 	}, []);
@@ -317,6 +288,7 @@ const AdminCourseMapsPage = ({ embedded, onOpenMap, autoOpenCreate = false, head
 		setPendingMapCoverPreviewUrl(null);
 		setFormCoverFocus(DEFAULT_COVER_FOCUS);
 		setCoverBusy(false);
+		setMapDialogTab('aspect');
 		setShowCreateModal(true);
 	};
 
@@ -326,6 +298,7 @@ const AdminCourseMapsPage = ({ embedded, onOpenMap, autoOpenCreate = false, head
 			setEditingMap(full);
 			setFormName(full.name || '');
 			setFormDescription(full.description || '');
+			setFormVisibility(full.visibility === 'private' ? 'private' : 'public');
 			setFormAccent(full.accent_color || COURSE_MAP_ACCENT_COLORS[0]);
 			setFormHeaderText(full.header_text_color || '');
 			setPendingMapCoverFile(null);
@@ -334,8 +307,9 @@ const AdminCourseMapsPage = ({ embedded, onOpenMap, autoOpenCreate = false, head
 			setCoverBusy(false);
 			setAddCourseIds([]);
 			fetchCourses();
+			setMapDialogTab('aspect');
 			setShowCreateModal(true);
-		} catch {
+		} catch  {
 			showToast('Nu s-a putut încărca mapa', 'error');
 		}
 	};
@@ -358,7 +332,7 @@ const AdminCourseMapsPage = ({ embedded, onOpenMap, autoOpenCreate = false, head
 			header_text_color: normalizedHeaderText,
 			cover_focus: normalizeCoverFocus(formCoverFocus),
 		};
-		if (!editingMap && isAdmin) {
+		if (isAdmin) {
 			payload.visibility = formVisibility === 'private' ? 'private' : 'public';
 		}
 		try {
@@ -390,20 +364,7 @@ const AdminCourseMapsPage = ({ embedded, onOpenMap, autoOpenCreate = false, head
 		(editingMap ? toImageUrl(editingMap.cover_image_url) || editingMap.cover_image_url : null);
 	const previewAccent = normalizeColorInputToHex(formAccent, COURSE_MAP_ACCENT_COLORS[0]);
 	const previewName = formName.trim() || 'Mapă nouă';
-	const previewCourseCount = editingMap?.courses?.length ?? editingMap?.courses_count ?? 0;
-	const coverPreviewLabel = pendingMapCoverFile
-		? 'Nouă'
-		: editingMap?.cover_image_url
-			? 'Setată'
-			: 'Fără';
-
-	const mergeEditingMap = (updated) => {
-		setEditingMap((prev) => ({
-			...prev,
-			...updated,
-			courses: updated?.courses ?? prev?.courses ?? [],
-		}));
-	};
+	const previewCourseCount = editingMap?.courses?.length ?? 0;
 
 	const handleCoverFileChange = async (event) => {
 		const file = event.target.files?.[0];
@@ -417,7 +378,8 @@ const AdminCourseMapsPage = ({ embedded, onOpenMap, autoOpenCreate = false, head
 		setCoverBusy(true);
 		try {
 			const updated = await adminService.uploadCourseMapCover(editingMap.id, file, DEFAULT_COVER_FOCUS);
-			mergeEditingMap(updated);
+			// răspunsul nu conține lista de cursuri: fără îmbinare, „În mapă” apărea gol
+			setEditingMap((prev) => ({ ...prev, ...updated, courses: updated?.courses ?? prev?.courses }));
 			showToast('Coperta a fost încărcată', 'success');
 			fetchMaps();
 		} catch (err) {
@@ -438,7 +400,7 @@ const AdminCourseMapsPage = ({ embedded, onOpenMap, autoOpenCreate = false, head
 		setCoverBusy(true);
 		try {
 			const updated = await adminService.deleteCourseMapCover(editingMap.id);
-			mergeEditingMap(updated);
+			setEditingMap((prev) => ({ ...prev, ...updated, courses: updated?.courses ?? prev?.courses }));
 			setFormCoverFocus(DEFAULT_COVER_FOCUS);
 			showToast('Coperta a fost eliminată', 'success');
 			fetchMaps();
@@ -469,6 +431,8 @@ const AdminCourseMapsPage = ({ embedded, onOpenMap, autoOpenCreate = false, head
 		if (deleteConfirmMap) deleteMap(deleteConfirmMap);
 	};
 
+
+
 	const addCoursesToMap = async (fromEditModal = false) => {
 		const mapContext = fromEditModal ? editingMap : managingMap;
 		if (!mapContext || addCourseIds.length === 0) return;
@@ -480,7 +444,7 @@ const AdminCourseMapsPage = ({ embedded, onOpenMap, autoOpenCreate = false, head
 			if (fromEditModal) setEditingMap(updated);
 			else setManagingMap(updated);
 			fetchMaps();
-		} catch {
+		} catch  {
 			showToast('Eroare la adăugare cursuri', 'error');
 		}
 	};
@@ -494,7 +458,7 @@ const AdminCourseMapsPage = ({ embedded, onOpenMap, autoOpenCreate = false, head
 			if (fromEditModal) setEditingMap(updated);
 			else setManagingMap(updated);
 			fetchMaps();
-		} catch {
+		} catch  {
 			showToast('Eroare la scoaterea cursului', 'error');
 		}
 	};
@@ -539,15 +503,13 @@ const AdminCourseMapsPage = ({ embedded, onOpenMap, autoOpenCreate = false, head
 			<div className="admin-courses-page-header">
 				<div className="admin-courses-header-content">
 					<div className="admin-courses-header-text">
-						<h1 className="admin-courses-title">Mape curs</h1>
-						<p className="admin-courses-subtitle">
-							Organizează catalogul elevilor în mape vizuale — prima pagină pe care o văd la Cursuri.
-						</p>
+						<h1 className="admin-courses-title">Mape</h1>
+						<p className="admin-courses-subtitle">Grupează cursurile în mape</p>
 					</div>
 					{canMutateInAdminArea && (
 					<div className="admin-courses-header-actions">
 						{headerActions}
-						<button type="button" className="admin-btn-create-course" onClick={openCreate}>
+						<button type="button" className="lms-btn-primary admin-btn-create-course" onClick={openCreate}>
 							<Plus size={18} weight="bold" aria-hidden />
 							Creează mapă
 						</button>
@@ -630,128 +592,103 @@ const AdminCourseMapsPage = ({ embedded, onOpenMap, autoOpenCreate = false, head
 				</div>
 			)}
 
-			{showCreateModal && canMutateInAdminArea && (
-				<div className="admin-modal-overlay" onClick={closeCreateModal}>
-					<div
-						className="admin-modal admin-modal-create admin-course-map-modal admin-modal-lg"
-						onClick={(e) => e.stopPropagation()}
-					>
-						<div className="admin-course-map-modal__head">
-							<h2 className="admin-modal-title">{editingMap ? 'Editează mapa' : 'Mapă nouă'}</h2>
-							<button type="button" className="admin-team-modal-close" onClick={closeCreateModal} aria-label="Închide">×</button>
-						</div>
-						<div className="admin-modal-body">
-							<div className="admin-course-map-modal__identity">
-								<div className="admin-course-map-modal__field">
-									<label className="admin-form-label" htmlFor="course-map-name">Nume</label>
+			<Modal
+				isOpen={showCreateModal && canMutateInAdminArea}
+				onClose={closeCreateModal}
+				closeOnBackdropClick
+				closeOnEscape
+				ariaLabelledby="course-map-dialog-title"
+				className="va-dialog-overlay"
+				unstyledContent
+			>
+				<div className="va-dialog va-dialog--wide admin-course-map-dialog">
+					<header className="va-dialog__header">
+						<h2 id="course-map-dialog-title" className="va-dialog__title">{editingMap ? 'Editează mapa' : 'Mapă nouă'}</h2>
+						{editingMap ? (
+							<div className="va-dialog__tabs" role="tablist" aria-label="Secțiuni mapă">
+								{[
+									['aspect', 'Aspect'],
+									['courses', `Cursuri (${(editingMap.courses || []).length})`],
+								].map(([id, label]) => (
+									<button
+										key={id}
+										type="button"
+										role="tab"
+										id={`course-map-tab-${id}`}
+										aria-controls={`course-map-panel-${id}`}
+										aria-selected={mapDialogTab === id}
+										className={`va-dialog__tab${mapDialogTab === id ? ' is-active' : ''}`}
+										onClick={() => setMapDialogTab(id)}
+									>
+										{label}
+									</button>
+								))}
+							</div>
+						) : null}
+						<button type="button" className="va-close-btn" onClick={closeCreateModal} aria-label="Închide">
+							<X size={18} weight="bold" aria-hidden="true" />
+						</button>
+					</header>
+					<div className="va-dialog__body">
+						<div
+							className="admin-course-map-dialog__grid"
+							id="course-map-panel-aspect"
+							role={editingMap ? 'tabpanel' : undefined}
+							aria-labelledby={editingMap ? 'course-map-tab-aspect' : undefined}
+							hidden={Boolean(editingMap) && mapDialogTab !== 'aspect'}
+						>
+							<div className="va-field-stack">
+								<div className="va-field">
+									<label htmlFor="course-map-name">Nume</label>
 									<input
 										id="course-map-name"
 										type="text"
-										className="admin-form-input"
 										value={formName}
 										onChange={(e) => setFormName(e.target.value)}
 										placeholder="Numele mapei"
 										aria-required="true"
-										autoFocus
+										data-modal-initial-focus
 									/>
 								</div>
-								<div className="admin-course-map-modal__field">
-									<label className="admin-form-label" htmlFor="course-map-desc">Descriere</label>
+								<div className="va-field">
+									<label htmlFor="course-map-desc">
+										Descriere <span className="va-field__optional">(opțională)</span>
+									</label>
 									<textarea
 										id="course-map-desc"
-										className="admin-form-input"
 										value={formDescription}
 										onChange={(e) => setFormDescription(e.target.value)}
-										placeholder="Opțional"
+										placeholder="Despre ce sunt cursurile din mapă"
 										rows={3}
 									/>
 								</div>
-								{!editingMap && isAdmin ? (
-									<fieldset className="admin-course-map-visibility-fieldset">
-										<legend className="admin-form-label">Vizibilitate</legend>
-										<div className="admin-course-map-visibility-options">
-											<label className={`admin-course-map-visibility-option${formVisibility === 'public' ? ' is-selected' : ''}`}>
-												<input
-													type="radio"
-													name="course-map-visibility"
-													value="public"
-													checked={formVisibility === 'public'}
-													onChange={() => setFormVisibility('public')}
-												/>
-												Publică
-											</label>
-											<label className={`admin-course-map-visibility-option${formVisibility === 'private' ? ' is-selected' : ''}`}>
-												<input
-													type="radio"
-													name="course-map-visibility"
-													value="private"
-													checked={formVisibility === 'private'}
-													onChange={() => setFormVisibility('private')}
-												/>
-												Privată
-											</label>
-										</div>
-									</fieldset>
-								) : null}
-							</div>
-
-							<div className="admin-course-map-modal__look">
-								<section className="admin-course-map-modal__cover">
-									<div className="admin-course-map-modal__cover-head">
-										<span className="admin-form-label">Copertă</span>
-										<span className="admin-course-map-cover-chip">{coverPreviewLabel}</span>
+							{isAdmin ? (
+								<div className="va-field va-field--full">
+									<div className="va-checks">
+										<label className="va-check">
+											<input
+												type="checkbox"
+												checked={formVisibility === 'private'}
+												onChange={(e) => setFormVisibility(e.target.checked ? 'private' : 'public')}
+											/>
+											<span>Mapă de sistem (invizibilă pentru cursanți)</span>
+										</label>
 									</div>
-									{coverPreviewSrc ? (
-										<MapCoverFocusEditor
-											compact
-											src={coverPreviewSrc}
-											value={formCoverFocus}
-											onChange={setFormCoverFocus}
-											disabled={coverBusy}
-										/>
-									) : (
-										<button
-											type="button"
-											className="admin-course-map-modal__dropzone"
-											onClick={openMapCoverPicker}
-											disabled={coverBusy}
-										>
-											Adaugă imagine
-										</button>
-									)}
-									<div className="admin-course-map-cover-actions">
-										<button type="button" className="admin-course-map-cover-button" onClick={openMapCoverPicker} disabled={coverBusy}>
-											{coverBusy ? 'Se încarcă...' : 'Alege'}
-										</button>
-										{(pendingMapCoverFile || editingMap?.cover_image_url) ? (
-											<button
-												type="button"
-												className="admin-course-map-cover-button admin-course-map-cover-button--ghost"
-												onClick={handleCoverRemove}
-												disabled={coverBusy}
-											>
-												Șterge
-											</button>
-										) : null}
-									</div>
-									<input
-										ref={mapCoverInputRef}
-										type="file"
-										accept="image/jpeg,image/png,image/gif,image/webp"
-										onChange={handleCoverFileChange}
-										className="admin-course-map-cover-input"
-										hidden
-									/>
-								</section>
-
+									<p className="va-field__hint">
+										Cursanții nu văd mapa; cursurile atribuite din ea le apar direct în pagina Cursuri.
+									</p>
+								</div>
+							) : null}
 								<MapColorRow
-									label="Accent"
+									id="course-map-accent"
+									label="Culoarea mapei"
 									value={formAccent}
 									fallback={COURSE_MAP_ACCENT_COLORS[0]}
 									onChange={setFormAccent}
 								/>
 								<MapColorRow
-									label="Text"
+									id="course-map-text"
+									label="Culoarea textului din antet"
 									value={formHeaderText}
 									fallback="#f8fafc"
 									onChange={setFormHeaderText}
@@ -760,37 +697,77 @@ const AdminCourseMapsPage = ({ embedded, onOpenMap, autoOpenCreate = false, head
 								/>
 							</div>
 
-							<div className="admin-course-map-modal__preview" aria-label="Previzualizare mapă">
-								<p className="admin-form-label">Așa va arăta</p>
-								<div className="admin-course-map-modal__tile-frame">
-									<CourseMapFolderTile
-										className="admin-course-map-modal__tile"
-										title={previewName}
-										subtitle={formDescription.trim()}
-										count={previewCourseCount}
-										color={previewAccent}
-										imageUrl={coverPreviewSrc}
-										coverFocus={formCoverFocus}
-										onOpen={() => {}}
-										ctaLabel="Deschide mapa"
+							<div className="va-field-stack">
+								<div className="va-field" aria-label="Previzualizare mapă">
+									<span className="va-field__label">Așa va arăta</span>
+									<div className="admin-course-map-dialog__preview">
+										<CourseMapFolderTile
+											className="admin-course-map-modal__tile"
+											title={previewName}
+											subtitle={formDescription.trim() || `${previewCourseCount} ${previewCourseCount === 1 ? 'curs' : 'cursuri'}`}
+											count={previewCourseCount}
+											color={previewAccent}
+											imageUrl={coverPreviewSrc}
+											coverFocus={formCoverFocus}
+											onOpen={() => {}}
+											ctaLabel="Deschide mapa"
+										/>
+									</div>
+								</div>
+								<div className="va-field admin-course-map-dialog__cover">
+									<span className="va-field__label">Copertă</span>
+									{coverPreviewSrc ? (
+										<MapCoverFocusEditor
+											src={coverPreviewSrc}
+											value={formCoverFocus}
+											onChange={setFormCoverFocus}
+											disabled={coverBusy}
+										/>
+									) : (
+										<p className="va-field__hint">Fără copertă — mapa folosește doar culoarea.</p>
+									)}
+									<div className="va-media-field__actions">
+										<button type="button" className="lms-btn-secondary lms-btn-sm" onClick={openMapCoverPicker} disabled={coverBusy}>
+											{coverBusy ? 'Se încarcă…' : coverPreviewSrc ? 'Schimbă imaginea' : 'Alege imaginea'}
+										</button>
+										{(pendingMapCoverFile || editingMap?.cover_image_url) ? (
+											<button type="button" className="lms-btn-secondary lms-btn-sm" onClick={handleCoverRemove} disabled={coverBusy}>
+												Șterge coperta
+											</button>
+										) : null}
+									</div>
+									<input
+										ref={mapCoverInputRef}
+										type="file"
+										accept="image/jpeg,image/png,image/gif,image/webp"
+										onChange={handleCoverFileChange}
+										hidden
 									/>
 								</div>
 							</div>
 
-							{editingMap && (
-								<section className="admin-course-map-modal__courses" aria-label="Cursuri în mapă">
-									<div>
-										<h3 className="admin-form-section-title">În mapă</h3>
+						</div>
+						{editingMap ? (
+							<section
+								className="admin-course-map-dialog__courses"
+								id="course-map-panel-courses"
+								role="tabpanel"
+								aria-labelledby="course-map-tab-courses"
+								hidden={mapDialogTab !== 'courses'}
+							>
+								<div className="admin-course-map-dialog__courses-grid">
+									<div className="va-field">
+										<h3 className="va-dialog__section-title">În mapă</h3>
 										{(editingMap.courses || []).length === 0 ? (
-											<p className="admin-text-muted">Niciun curs.</p>
+											<p className="va-list__empty">Niciun curs.</p>
 										) : (
-											<ul className="admin-course-map-current-list">
+											<ul className="va-list va-list--scroll">
 												{(editingMap.courses || []).map((c) => (
-													<li key={c.id} className="admin-course-map-current-item">
+													<li key={c.id}>
 														<span>{c.title}</span>
 														<button
 															type="button"
-															className="admin-course-map-remove-btn"
+															className="lms-btn-secondary lms-btn-sm"
 															onClick={() => removeCourseFromMap(c.id, true)}
 															aria-label={`Scoate ${c.title} din mapă`}
 														>
@@ -801,60 +778,61 @@ const AdminCourseMapsPage = ({ embedded, onOpenMap, autoOpenCreate = false, head
 											</ul>
 										)}
 									</div>
-									<div>
-										<h3 className="admin-form-section-title">Adaugă</h3>
-										<div className="admin-course-map-picker" role="group" aria-label="Selectează cursuri de adăugat">
-											{availableCoursesForEdit.length === 0 ? (
-												<p className="admin-text-muted">Nu mai sunt cursuri disponibile.</p>
-											) : (
-												<ul className="admin-course-map-checkbox-list">
-													{availableCoursesForEdit.map((c) => (
-														<li key={c.id} className="admin-course-map-checkbox-item">
-															<label className="admin-checkbox-label">
-																<input
-																	type="checkbox"
-																	checked={addCourseIds.includes(c.id)}
-																	onChange={(e) => {
-																		if (e.target.checked) {
-																			setAddCourseIds((prev) => [...prev, c.id]);
-																		} else {
-																			setAddCourseIds((prev) => prev.filter((id) => id !== c.id));
-																		}
-																	}}
-																/>
-																<span>{c.title}</span>
-															</label>
-														</li>
-													))}
-												</ul>
-											)}
+									<div className="va-field">
+										<h3 className="va-dialog__section-title">Adaugă cursuri</h3>
+										{availableCoursesForEdit.length === 0 ? (
+											<p className="va-list__empty">Nu mai sunt cursuri disponibile.</p>
+										) : (
+											<ul className="va-list va-list--scroll" role="group" aria-label="Selectează cursuri de adăugat">
+												{availableCoursesForEdit.map((c) => (
+													<li key={c.id}>
+														<label className="va-check">
+															<input
+																type="checkbox"
+																checked={addCourseIds.includes(c.id)}
+																onChange={(e) => {
+																	if (e.target.checked) {
+																		setAddCourseIds((prev) => [...prev, c.id]);
+																	} else {
+																		setAddCourseIds((prev) => prev.filter((id) => id !== c.id));
+																	}
+																}}
+															/>
+															<span>{c.title}</span>
+														</label>
+													</li>
+												))}
+											</ul>
+										)}
+										<div className="va-media-field__actions">
+											<button
+												type="button"
+												className="lms-btn-primary lms-btn-sm"
+												onClick={() => addCoursesToMap(true)}
+												disabled={addCourseIds.length === 0}
+											>
+												Adaugă în mapă{addCourseIds.length > 0 ? ` (${addCourseIds.length})` : ''}
+											</button>
 										</div>
-										<button
-											type="button"
-											className="lms-btn-primary lms-btn-sm"
-											onClick={() => addCoursesToMap(true)}
-											disabled={addCourseIds.length === 0}
-										>
-											Adaugă{addCourseIds.length > 0 ? ` (${addCourseIds.length})` : ''}
-										</button>
 									</div>
-								</section>
-							)}
-						</div>
-						<div className="admin-modal-actions">
-							<button type="button" className="lms-btn-secondary" onClick={closeCreateModal}>
-								Anulare
-							</button>
-							<button type="button" className="lms-btn-primary" onClick={saveMap} disabled={!formName?.trim()}>
-								{editingMap ? 'Salvează' : 'Creează'}
-							</button>
-						</div>
+								</div>
+							</section>
+						) : null}
 					</div>
+					<footer className="va-dialog__footer">
+						<button type="button" className="lms-btn-secondary" onClick={closeCreateModal}>
+							Anulează
+						</button>
+						<button type="button" className="va-btn-save lms-btn-primary" onClick={saveMap} disabled={!formName?.trim()}>
+							{editingMap ? 'Salvează' : 'Creează'}
+						</button>
+					</footer>
 				</div>
-			)}
+			</Modal>
 
+			{/* Manage courses modal */}
 			{managingMap && canMutateInAdminArea && (
-				<div className="admin-modal-overlay" onClick={() => setManagingMap(null)}>
+				<div className="admin-modal-overlay">
 					<div className="admin-modal admin-modal-create admin-modal-lg" onClick={(e) => e.stopPropagation()}>
 						<h2 className="admin-modal-title">Cursuri în „{managingMap.name}”</h2>
 						<div className="admin-modal-body">

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/api';
 import ActivityFeed from '../../components/admin/ActivityFeed';
+import { logger } from '../../utils/logger';
 
 const AdminActivityPage = () => {
 	const navigate = useNavigate();
@@ -15,7 +17,7 @@ const AdminActivityPage = () => {
 				setLoading(true);
 				setError(null);
 				const data = await adminService.getDashboard({ period: 'month' });
-				console.log('Dashboard data:', data);
+				logger.log('Dashboard data:', data);
 				setDashboardData(data);
 			} catch (err) {
 				console.error('Error fetching activity:', err);
@@ -33,13 +35,14 @@ const AdminActivityPage = () => {
 				<div>
 					<button 
 						onClick={() => navigate('/admin')}
-						className="btn btn-ghost"
+						className="va-btn-back admin-back-btn"
 						style={{ marginBottom: '1rem' }}
 					>
-						← Înapoi la Dashboard
+						<ArrowLeft size={18} aria-hidden />
+						Înapoi la Dashboard
 					</button>
 					<h1 className="admin-page-title">Activitate Recentă</h1>
-					<p className="admin-page-subtitle">Ultimele evenimente din Formely — înscrieri, finalizări și autentificări.</p>
+					<p className="admin-page-subtitle">Ultimele evenimente din platformă</p>
 				</div>
 			</div>
 			{error && (

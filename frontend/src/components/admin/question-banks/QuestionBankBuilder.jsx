@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { adminService } from '../../../services/api';
-import { useToast } from '../../../contexts/ToastContext';
+
+import { useToast } from '../../../contexts/ToastContextShared.js';
 import QuestionBankBuilderStep1 from './QuestionBankBuilderSteps/Step1Basics';
 import QuestionBankBuilderStep2 from './QuestionBankBuilderSteps/Step2Questions';
 import QuestionBankBuilderStep3 from './QuestionBankBuilderSteps/Step3Review';
@@ -16,7 +17,7 @@ import './QuestionBankBuilder.css';
  */
 const STEPS = [
 	{ id: 0, label: 'Setup', short: 'Setup' },
-	{ id: 1, label: 'Content', short: 'Conținut' },
+	{ id: 1, label: 'Conținut', short: 'Conținut' },
 	{ id: 2, label: 'Rules', short: 'Reguli' },
 	{ id: 3, label: 'Review & Publish', short: 'Review' },
 ];
@@ -337,6 +338,7 @@ const QuestionBankBuilder = () => {
 		<div className="admin-container admin-course-builder-page admin-question-bank-builder-page">
 			<BuilderWizardShell
 				title={isEditMode ? (bankData.title || 'Editează bancă') : (bankData.title || 'Bancă de întrebări nouă')}
+				subtitle="Setup → Content → Rules → Review & Publish"
 				steps={STEPS}
 				currentStep={currentStep}
 				onStepChange={setCurrentStep}
@@ -346,7 +348,7 @@ const QuestionBankBuilder = () => {
 				<div className="admin-course-builder-header-left">
 					<button
 						type="button"
-						className="admin-course-builder-back"
+						className="admin-course-builder-back va-btn-back admin-back-btn"
 						onClick={() => navigate('/admin/question-banks')}
 						aria-label="Înapoi la băncile de întrebări"
 						title="Înapoi la lista de bănci"
@@ -404,7 +406,7 @@ const QuestionBankBuilder = () => {
 					{currentStep < 3 ? (
 						<button
 							type="button"
-							className="admin-btn admin-btn-primary"
+							className="admin-btn lms-btn-primary"
 							onClick={handleNext}
 							disabled={saving}
 						>
@@ -422,7 +424,7 @@ const QuestionBankBuilder = () => {
 							</button>
 							<button
 								type="button"
-								className="admin-btn admin-btn-primary"
+								className="admin-btn lms-btn-primary"
 								onClick={handlePublish}
 								disabled={saving}
 							>
@@ -574,7 +576,7 @@ const QuestionBankBuilder = () => {
 						<button type="button" className="admin-btn admin-btn-secondary" onClick={handleSave} disabled={saving}>
 							{saving ? 'Se salvează…' : 'Salvează ciornă'}
 						</button>
-						<button type="button" className="admin-btn admin-btn-primary" onClick={handlePublish} disabled={saving}>
+						<button type="button" className="admin-btn lms-btn-primary" onClick={handlePublish} disabled={saving}>
 							{saving ? 'Se publică…' : 'Publică'}
 						</button>
 					</>

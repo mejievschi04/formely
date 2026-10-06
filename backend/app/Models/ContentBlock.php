@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Concerns\InvalidatesTutorKnowledgeCache;
-use App\Jobs\SyncAiKnowledgeJob;
 
 /**
  * ContentBlock Model
@@ -60,7 +59,7 @@ class ContentBlock extends Model
 
             self::clearTutorKnowledgeCache($courseId);
             if ($block->lesson_id) {
-                SyncAiKnowledgeJob::dispatch((int) $block->lesson_id, null, 'sync')->onConnection('background');
+                self::queueKnowledgeSync((int) $block->lesson_id, null, 'sync');
             }
         });
 
@@ -72,7 +71,7 @@ class ContentBlock extends Model
 
             self::clearTutorKnowledgeCache($courseId);
             if ($block->lesson_id) {
-                SyncAiKnowledgeJob::dispatch((int) $block->lesson_id, null, 'sync')->onConnection('background');
+                self::queueKnowledgeSync((int) $block->lesson_id, null, 'sync');
             }
         });
     }

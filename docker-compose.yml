@@ -50,7 +50,9 @@ services:
       DB_USERNAME: ${DB_USERNAME:-formely_user}
       DB_PASSWORD: ${DB_PASSWORD:-formely_password}
       DB_SSLMODE: ${DB_SSLMODE:-prefer}
-      SESSION_DRIVER: file
+      # Sesiunile stau în PostgreSQL. Cu driverul `file`, PHP-FPM rescrie același fișier
+      # în paralel (progres + complete) și tokenul CSRF se pierde → 419.
+      SESSION_DRIVER: database
       CACHE_STORE: file
       SESSION_LIFETIME: ${SESSION_LIFETIME:-120}
       SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-false}
@@ -86,6 +88,7 @@ services:
       LOG_CHANNEL: stack
       LOG_LEVEL: ${LOG_LEVEL:-error}
       QUEUE_CONNECTION: ${QUEUE_CONNECTION:-database}
+      DB_QUEUE_RETRY_AFTER: 240
       MAIL_MAILER: ${MAIL_MAILER:-log}
       MAIL_HOST: ${MAIL_HOST:-}
       MAIL_PORT: ${MAIL_PORT:-587}
@@ -94,11 +97,20 @@ services:
       MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
       MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@localhost}
       MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Formely}
+      # Procese PHP-FPM în paralel (~40–80 MB fiecare). 16 pentru 4 GB RAM; pe 2 GB folosește ~8.
+      # Minim 6 (altfel depășește pm.max_spare_servers=6 din Dockerfile și FPM nu pornește).
+      PHP_FPM_MAX_CHILDREN: ${PHP_FPM_MAX_CHILDREN:-16}
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - formely-network
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 9000) ? 0 : 1);"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
 
   queue:
     build:
@@ -109,7 +121,11 @@ services:
     container_name: formely-queue
     restart: unless-stopped
     working_dir: /var/www/html
-    command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+    # Ca PHP-FPM: fișierele de cache/log create în storage-ul comun rămân scriibile de www-data.
+    user: www-data
+    entrypoint: ["php", "artisan"]
+    command: ["queue:work", "database", "--sleep=2", "--tries=3", "--timeout=60", "--max-time=3600"]
+    stop_grace_period: 200s
     volumes:
       - ./backend:/var/www/html
       - backend_storage:/var/www/html/storage
@@ -120,9 +136,14 @@ services:
       postgres:
         condition: service_healthy
       backend:
-        condition: service_started
+        condition: service_healthy
     networks:
       - formely-network
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   scheduler:
     build:
@@ -133,7 +154,9 @@ services:
     container_name: formely-scheduler
     restart: unless-stopped
     working_dir: /var/www/html
-    command: sh -c "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"
+    user: www-data
+    entrypoint: ["php", "artisan"]
+    command: ["schedule:work"]
     volumes:
       - ./backend:/var/www/html
       - backend_storage:/var/www/html/storage
@@ -144,9 +167,14 @@ services:
       postgres:
         condition: service_healthy
       backend:
-        condition: service_started
+        condition: service_healthy
     networks:
       - formely-network
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   nginx-backend:
     image: nginx:alpine

@@ -5,24 +5,18 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Test;
 use App\Models\Question;
-use App\Models\QuestionBank;
 use App\Models\TestResult;
 use App\Models\ActivityLog;
-use App\Services\PromoteTestToStandaloneExamService;
-use App\Services\TestAnalyticsService;
 use App\Services\TestBuilderService;
 use App\Services\TestQuestionSelectionService;
-use App\Services\AiQuestionGenerationService;
+use App\Services\TestAnalyticsService;
+use App\Services\VoltQuestionGenerationService;
 use App\Services\CourseBuilderService;
-use App\Http\Controllers\Concerns\AssertsPlanEntitlements;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Schema;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * TestAdminController
@@ -32,28 +26,23 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class TestAdminController extends Controller
 {
-    use AssertsPlanEntitlements;
-
     protected TestBuilderService $testBuilderService;
     protected TestQuestionSelectionService $questionSelectionService;
-    protected PromoteTestToStandaloneExamService $promoteTestToExam;
     protected TestAnalyticsService $testAnalyticsService;
-    protected AiQuestionGenerationService $aiQuestionGeneration;
+    protected VoltQuestionGenerationService $voltQuestionGeneration;
     protected CourseBuilderService $courseBuilderService;
 
     public function __construct(
         TestBuilderService $testBuilderService,
         TestQuestionSelectionService $questionSelectionService,
-        PromoteTestToStandaloneExamService $promoteTestToExam,
         TestAnalyticsService $testAnalyticsService,
-        AiQuestionGenerationService $aiQuestionGeneration,
+        VoltQuestionGenerationService $voltQuestionGeneration,
         CourseBuilderService $courseBuilderService
     ) {
         $this->testBuilderService = $testBuilderService;
         $this->questionSelectionService = $questionSelectionService;
-        $this->promoteTestToExam = $promoteTestToExam;
         $this->testAnalyticsService = $testAnalyticsService;
-        $this->aiQuestionGeneration = $aiQuestionGeneration;
+        $this->voltQuestionGeneration = $voltQuestionGeneration;
         $this->courseBuilderService = $courseBuilderService;
     }
 
@@ -62,7 +51,7 @@ class TestAdminController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Test::with(['creator', 'questionBank'])->withCount('questions');
+        $query = Test::with(['creator', 'questionBank'])->withCount(['questions', 'results']);
 
         if (auth()->user()->isInstructor()) {
             $query->where('created_by', auth()->id());
@@ -92,7 +81,8 @@ class TestAdminController extends Controller
             });
         }
 
-        $tests = $query->orderBy('created_at', 'desc')->paginate(20);
+        $perPage = min(500, max(1, (int) $request->input('per_page', 20)));
+        $tests = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
         return response()->json($tests);
     }
@@ -162,7 +152,11 @@ class TestAdminController extends Controller
             $validated['question_set_id'] = null;
         }
 
-        $test = $this->testBuilderService->createTest($validated, $creator);
+        try {
+            $test = $this->testBuilderService->createTest($validated, $creator);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
 
         ActivityLog::create([
             'user_id' => $creator->id,
@@ -296,46 +290,6 @@ class TestAdminController extends Controller
     }
 
     /**
-     * Creează un examen independent din acest test (pentru catalogul Cursuri → Examene).
-     * Testul original rămâne; elevii la examen folosesc noul Exam.
-     */
-    public function promoteToStandaloneExam($id)
-    {
-        $test = Test::with(['questions', 'questionBank'])->findOrFail($id);
-        $user = auth()->user();
-
-        if ($user->isInstructor() && (int) $test->created_by !== (int) $user->id) {
-            abort(403, 'Acces interzis.');
-        }
-
-        try {
-            $exam = $this->promoteTestToExam->promote($test, $user);
-
-            return response()->json([
-                'message' => 'Examen independent creat din test. Elevii îl vor vedea la Cursuri → Examene după publicare.',
-                'exam' => [
-                    'id' => $exam->id,
-                    'title' => $exam->title,
-                    'status' => $exam->status,
-                    'questions_count' => $exam->questions?->count() ?? 0,
-                ],
-                'test_id' => $test->id,
-            ], 201);
-        } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
-        } catch (\Throwable $e) {
-            \Log::error('promoteToStandaloneExam failed', [
-                'test_id' => $test->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'message' => 'Nu am putut crea examenul din test.',
-            ], 500);
-        }
-    }
-
-    /**
      * Link test to course
      */
     public function linkToCourse(Request $request, $id)
@@ -365,39 +319,6 @@ class TestAdminController extends Controller
 
         return response()->json([
             'message' => 'Test linked to course successfully',
-        ]);
-    }
-
-    /**
-     * Unlink test from course
-     */
-    public function unlinkFromCourse(Request $request, $id)
-    {
-        $test = Test::findOrFail($id);
-        if (auth()->user()->isInstructor() && (int) $test->created_by !== (int) auth()->id()) {
-            abort(403, 'Acces interzis.');
-        }
-
-        $validated = $request->validate([
-            'course_id' => 'required|exists:courses,id',
-            'scope' => 'nullable|in:lesson,module,course',
-            'scope_id' => 'nullable|integer',
-        ]);
-
-        $course = \App\Models\Course::findOrFail($validated['course_id']);
-        if (auth()->user()->isInstructor() && ((int) $test->created_by !== (int) auth()->id() || (int) $course->teacher_id !== (int) auth()->id())) {
-            abort(403, 'Acces interzis.');
-        }
-        app(\App\Services\CourseBuilderService::class)
-            ->detachTest(
-                $course,
-                $test,
-                $validated['scope'] ?? null,
-                $validated['scope_id'] ?? null
-            );
-
-        return response()->json([
-            'message' => 'Test unlinked from course successfully',
         ]);
     }
 
@@ -466,48 +387,6 @@ class TestAdminController extends Controller
         ], 201);
     }
 
-    /**
-     * Reorder questions for a test (direct question_source only).
-     */
-    public function reorderQuestions(Request $request, $id)
-    {
-        $test = Test::findOrFail($id);
-        if (auth()->user()->isInstructor() && (int) $test->created_by !== (int) auth()->id()) {
-            abort(403, 'Acces interzis.');
-        }
-
-        if ($test->question_source === 'bank') {
-            return response()->json([
-                'error' => 'Cannot reorder direct questions when question_source is bank. Reorder questions in the selected Question Bank instead.',
-            ], 422);
-        }
-
-        $validated = $request->validate([
-            'question_ids' => 'required|array|min:1',
-            'question_ids.*' => 'integer',
-        ]);
-
-        $ids = array_values(array_unique($validated['question_ids']));
-
-        $count = Question::where('test_id', $test->id)->whereIn('id', $ids)->count();
-        if ($count !== count($ids)) {
-            return response()->json([
-                'error' => 'Invalid question_ids: some questions do not belong to this test.',
-            ], 422);
-        }
-
-        DB::transaction(function () use ($test, $ids) {
-            foreach ($ids as $index => $qid) {
-                Question::where('test_id', $test->id)->where('id', $qid)->update(['order' => $index]);
-            }
-        });
-
-        return response()->json([
-            'message' => 'Questions reordered successfully',
-            'questions' => Question::where('test_id', $test->id)->orderBy('order')->get(),
-        ]);
-    }
-
     private function normalizeAnswersForType(string $questionType, array $answers): array
     {
         $type = strtolower(trim($questionType));
@@ -551,51 +430,22 @@ class TestAdminController extends Controller
             ];
         }
 
+        if (in_array($type, ['single_choice', 'true_false', 'yes_no'], true)) {
+            $correctIndex = null;
+            foreach ($normalized as $idx => $answer) {
+                if (! empty($answer['is_correct'])) {
+                    $correctIndex = $idx;
+                    break;
+                }
+            }
+
+            $correctIndex ??= 0;
+            foreach ($normalized as $idx => $answer) {
+                $normalized[$idx]['is_correct'] = $idx === $correctIndex;
+            }
+        }
+
         return $normalized;
-    }
-
-    /**
-     * Preview question selection for this test (useful for bank rules).
-     */
-    public function selectionPreview(Request $request, $id)
-    {
-        $test = Test::with(['questions', 'questionBank.questions'])->findOrFail($id);
-        if (auth()->user()->isInstructor() && (int) $test->created_by !== (int) auth()->id()) {
-            abort(403, 'Acces interzis.');
-        }
-
-        if ($test->question_source !== 'bank' || (!$test->questionBank && empty($test->question_selection['folder_ids'] ?? []))) {
-            $qs = $test->questions()->orderBy('order')->get();
-            return response()->json([
-                'mode' => 'direct',
-                'bank_total' => 0,
-                'matched_total' => $qs->count(),
-                'selected_total' => $qs->count(),
-                'selected' => $qs,
-                'note' => 'Test uses direct questions (no bank rules).',
-            ]);
-        }
-
-        $selection = is_array($test->question_selection) ? $test->question_selection : [];
-        $mode = (string) ($selection['mode'] ?? 'random');
-        $preview = $this->questionSelectionService->preview($test, $request->input('variant'));
-        $selected = $preview['selected'];
-        $matched = $preview['matched'];
-        $all = $preview['all'];
-
-        return response()->json([
-            'mode' => $mode,
-            'variant' => $preview['variant'],
-            'variant_pool_size' => $preview['variant_pool_size'],
-            'seed' => $preview['seed'],
-            'include_starred' => $preview['include_starred'],
-            'starred_selected' => $selected->filter(fn ($q) => (bool) $q->is_starred)->count(),
-            'bank_total' => $all->count(),
-            'matched_total' => $matched->count(),
-            'selected_total' => $selected->count(),
-            'selected' => $selected,
-            'note' => 'Preview uses a stable seed. Student attempts use a per-user/per-attempt deterministic seed.',
-        ]);
     }
 
     /**
@@ -635,601 +485,52 @@ class TestAdminController extends Controller
     }
 
     /**
-     * Get test results pending manual review.
+     * List all attempts for a test (admin review).
      */
-    public function getPendingReviews(Request $request)
-    {
-        $query = TestResult::with([
-            'test' => fn($q) => $q->with(['questions', 'questionBank.questions', 'courses']),
-            'user:id,name,email',
-        ])
-            ->where(function ($q) {
-                $q->where('status', 'pending_review')
-                  ->orWhere('needs_manual_review', true);
-            })
-            ->whereNull('reviewed_at');
-        if (auth()->user()->isInstructor()) {
-            $query->whereHas('test', fn($q) => $q->where('created_by', auth()->id()));
-        }
-        $results = $query->orderBy('completed_at', 'desc')->get();
-
-        return response()->json($results);
-    }
-
-    /**
-     * Clear stale/invalid pending manual reviews.
-     */
-    public function clearPendingReviews(Request $request)
-    {
-        $validated = $request->validate([
-            'older_than_days' => 'nullable|integer|min:0|max:3650',
-        ]);
-
-        $olderThanDays = (int) ($validated['older_than_days'] ?? 30);
-        $cutoff = now()->subDays($olderThanDays);
-
-        $query = TestResult::with([
-            'test' => fn($q) => $q->with(['questions', 'questionBank.questions']),
-        ])
-            ->where(function ($q) {
-                $q->where('status', 'pending_review')
-                    ->orWhere('needs_manual_review', true);
-            })
-            ->whereNull('reviewed_at');
-
-        if (auth()->user()->isInstructor()) {
-            $query->whereHas('test', fn($q) => $q->where('created_by', auth()->id()));
-        }
-
-        $rows = $query->get();
-        $toClearIds = [];
-
-        foreach ($rows as $row) {
-            $isExpired = $row->completed_at && $row->completed_at->lt($cutoff);
-            $hasInvalidState = ($row->status !== 'pending_review') && (bool) $row->needs_manual_review;
-
-            $questions = collect();
-            if ($row->test) {
-                if ($row->test->question_source === 'bank' && $row->test->questionBank) {
-                    $questions = $row->test->questionBank->questions ?? collect();
-                } else {
-                    $questions = $row->test->questions ?? collect();
-                }
-            }
-
-            $requiresManual = (bool) ($row->test->requires_manual_verification ?? false);
-            $hasManualQuestions = $questions->contains(fn ($q) => $q->requiresManualGrading());
-            $hasErrorLikeState = ! $row->test || (! $requiresManual && ! $hasManualQuestions);
-
-            if ($isExpired || $hasInvalidState || $hasErrorLikeState) {
-                $toClearIds[] = $row->id;
-            }
-        }
-
-        if (empty($toClearIds)) {
-            return response()->json([
-                'message' => 'Nu au fost găsite încercări expirate/eronate pentru golire.',
-                'cleared_count' => 0,
-            ]);
-        }
-
-        $meta = [
-            '_meta' => [
-                'cleanup' => true,
-                'reason' => 'auto_clear_pending_reviews',
-                'cleaned_at' => now()->toIso8601String(),
-                'cleaned_by' => Auth::id(),
-            ],
-        ];
-
-        TestResult::whereIn('id', $toClearIds)->update([
-            'needs_manual_review' => false,
-            'status' => 'completed',
-            'reviewed_at' => now(),
-            'reviewed_by' => Auth::id(),
-            'manual_review_scores' => $meta,
-        ]);
-
-        return response()->json([
-            'message' => 'Coada de verificări a fost curățată.',
-            'cleared_count' => count($toClearIds),
-        ]);
-    }
-
-    /**
-     * Submit manual review for a test result
-     */
-    public function submitManualReview(Request $request, $resultId)
-    {
-        $validated = $request->validate([
-            'manual_review_scores' => 'required|array',
-            'manual_review_scores.*.question_id' => 'required|integer',
-            'manual_review_scores.*.score' => 'required|numeric|min:0',
-            'manual_review_scores.*.feedback' => 'nullable|string|max:2000',
-            'manual_review_scores.*.rubric_criteria' => 'nullable|array',
-            'manual_review_scores.*.rubric_criteria.*' => 'nullable|string|max:255',
-            'overall_feedback' => 'nullable|string|max:4000',
-        ]);
-
-        $result = TestResult::with(['test.questions', 'test.questionBank.questions'])->findOrFail($resultId);
-        if (auth()->user()->isInstructor() && (int) $result->test->created_by !== (int) auth()->id()) {
-            abort(403, 'Acces interzis. Poți verifica doar rezultatele testelor tale.');
-        }
-
-        if ($result->reviewed_at) {
-            return response()->json([
-                'error' => 'Acest rezultat a fost deja verificat.',
-            ], 422);
-        }
-
-        $autoScore = (int) $result->score;
-        $manualScore = 0;
-        $manualScores = [];
-
-        $questions = $result->test->question_source === 'bank' && $result->test->questionBank
-            ? $result->test->questionBank->questions
-            : $result->test->questions;
-        $questionIds = $questions->pluck('id')->toArray();
-
-        foreach ($validated['manual_review_scores'] as $reviewScore) {
-            $qid = (int) $reviewScore['question_id'];
-            if (!in_array($qid, $questionIds, true)) {
-                continue;
-            }
-            $question = $questions->firstWhere('id', $qid);
-            if (!$question) continue;
-
-            if (! $question->requiresManualGrading()) {
-                continue;
-            }
-
-            $maxPoints = (int) ($question->points ?? 1);
-            $givenScore = min((float) $reviewScore['score'], $maxPoints);
-            $manualScore += $givenScore;
-            $manualScores[$qid] = [
-                'score' => $givenScore,
-                'feedback' => $reviewScore['feedback'] ?? null,
-                'rubric_criteria' => array_values(array_filter($reviewScore['rubric_criteria'] ?? [])),
-            ];
-        }
-
-        if (!empty($validated['overall_feedback'])) {
-            $manualScores['_meta'] = [
-                'overall_feedback' => $validated['overall_feedback'],
-            ];
-        }
-
-        $totalPoints = (int) ($result->max_score ?? 0) ?: 1;
-        $newTotalScore = $autoScore + $manualScore;
-        $newPercentage = $totalPoints > 0 ? round(($newTotalScore / $totalPoints) * 100, 2) : 0;
-
-        $courseTest = \App\Models\CourseTest::where('test_id', $result->test_id)->first();
-        $passingScore = $courseTest ? ($courseTest->passing_score ?? 70) : 70;
-        $newPassed = $newPercentage >= $passingScore;
-
-        $result->update([
-            'score' => $newTotalScore,
-            'percentage' => $newPercentage,
-            'passed' => $newPassed,
-            'needs_manual_review' => false,
-            'manual_review_scores' => $manualScores,
-            'reviewed_at' => now(),
-            'reviewed_by' => Auth::id(),
-            'status' => 'completed',
-        ]);
-
-        \Illuminate\Support\Facades\Cache::forget("profile_user_{$result->user_id}");
-        \Illuminate\Support\Facades\Cache::forget("dashboard_user_{$result->user_id}_stats");
-
-        return response()->json([
-            'message' => 'Verificare manuală salvată cu succes',
-            'result' => $result->load(['test', 'user:id,name,email']),
-        ]);
-    }
-
-    /**
-     * List student results for a test (TestResult only — not ExamResult).
-     */
-    public function results(Request $request, $id)
+    public function results($id)
     {
         $test = Test::findOrFail($id);
-        $this->assertTestAccessibleByInstructor($test);
-
-        if (! Schema::hasTable('test_results')) {
-            return response()->json([]);
-        }
-
-        $query = TestResult::with(['user:id,name,email', 'course:id,title'])
-            ->where('test_id', $test->id)
-            ->orderByDesc('completed_at');
-
-        if ($request->filled('course_id')) {
-            $query->where('course_id', (int) $request->course_id);
-        }
-
-        $rows = $query->get()->map(function ($row) {
-            $status = $row->reviewed_at
-                ? 'approved'
-                : ($row->needs_manual_review ? 'pending' : ($row->status ?? 'completed'));
-
-            return [
-                'id' => $row->id,
-                'attempt_number' => $row->attempt_number,
-                'score' => $row->score,
-                'max_score' => $row->max_score,
-                'percentage' => $row->percentage,
-                'passed' => $row->passed,
-                'completed_at' => $row->completed_at,
-                'needs_manual_review' => $row->needs_manual_review,
-                'reviewed_at' => $row->reviewed_at,
-                'status' => $status,
-                'course_id' => $row->course_id,
-                'course' => $row->course ? [
-                    'id' => $row->course->id,
-                    'title' => $row->course->title,
-                ] : null,
-                'user' => [
-                    'id' => $row->user?->id,
-                    'name' => $row->user?->name,
-                    'email' => $row->user?->email,
-                ],
-            ];
-        });
-
-        return response()->json($rows->values());
-    }
-
-    /**
-     * Per-question analytics for a test (TestResult answers).
-     */
-    public function questionAnalytics(Request $request, $id)
-    {
-        $test = Test::with(['questionBank.questions'])->findOrFail($id);
-        $this->assertTestAccessibleByInstructor($test);
-
-        if (! Schema::hasTable('test_results')) {
-            return response()->json([]);
-        }
-
-        $resultsQuery = TestResult::where('test_id', $test->id)->orderByDesc('completed_at');
-        if ($request->filled('course_id')) {
-            $resultsQuery->where('course_id', (int) $request->course_id);
-        }
-
-        $results = $resultsQuery->get(['answers', 'manual_review_scores']);
-        $attemptsCount = $results->count();
-        $questions = $this->resolveQuestionsForTestAnalytics($test, $results);
-
-        $rows = $questions
-            ->sortBy('order')
-            ->values()
-            ->map(function ($question) use ($results, $attemptsCount) {
-                return $this->buildTestQuestionAnalyticsRow($question, $results, $attemptsCount);
-            });
-
-        return response()->json($rows->values());
-    }
-
-    protected function assertTestAccessibleByInstructor(Test $test): void
-    {
         if (auth()->user()->isInstructor() && (int) $test->created_by !== (int) auth()->id()) {
-            abort(403, 'Acces interzis. Poți accesa doar testele tale.');
-        }
-    }
-
-    protected function resolveQuestionsForTestAnalytics(Test $test, Collection $results): Collection
-    {
-        $questionIds = [];
-        foreach ($results as $result) {
-            $stored = is_array($result->answers) ? $result->answers : [];
-            foreach (array_keys($stored) as $key) {
-                if (is_numeric($key)) {
-                    $questionIds[] = (int) $key;
-                }
-            }
+            abort(403, 'Acces interzis. Poți vedea doar rezultatele testelor tale.');
         }
 
-        $questionIds = array_values(array_unique($questionIds));
-        if ($questionIds !== []) {
-            return Question::whereIn('id', $questionIds)->get();
-        }
-
-        if ($test->question_source === 'bank' && $test->questionBank) {
-            return $test->questionBank->questions ?? collect();
-        }
-
-        return $test->questions()->orderBy('order')->get();
-    }
-
-    protected function buildTestQuestionAnalyticsRow(Question $question, Collection $results, int $attemptsCount): array
-    {
-        $questionIdKey = (string) $question->id;
-        $questionType = (string) ($question->type ?? 'multiple_choice');
-        $isChoiceType = in_array($questionType, ['multiple_choice', 'single_choice', 'true_false'], true);
-        $answersJson = is_array($question->answers) ? array_values($question->answers) : [];
-        $correctIndices = $this->correctOriginalIndicesForQuestion($questionType, $answersJson);
-        $correctIndex = $correctIndices[0] ?? null;
-
-        $optionStats = [];
-        foreach ($answersJson as $idx => $answer) {
-            $optionStats[$idx] = [
-                'index' => $idx,
-                'text' => $this->answerOptionText($answer),
-                'count' => 0,
-                'percentage' => 0,
-                'is_correct' => is_array($answer) && ($answer['is_correct'] ?? false),
-            ];
-        }
-
-        $answeredCount = 0;
-        $skippedCount = 0;
-        $correctCount = 0;
-        $manualScores = [];
-
-        foreach ($results as $result) {
-            $resultAnswers = is_array($result->answers) ? $result->answers : [];
-            $rawValue = $resultAnswers[$questionIdKey] ?? $resultAnswers[(int) $question->id] ?? null;
-            $hasAnswer = ! ($rawValue === null || $rawValue === '' || (is_array($rawValue) && $rawValue === []));
-
-            if (! $hasAnswer) {
-                $skippedCount++;
-            } else {
-                $answeredCount++;
-            }
-
-            if ($isChoiceType && $hasAnswer) {
-                $selectedIndices = $this->selectedChoiceIndices($rawValue, $questionType);
-                foreach ($selectedIndices as $selectedIndex) {
-                    if (array_key_exists($selectedIndex, $optionStats)) {
-                        $optionStats[$selectedIndex]['count']++;
-                    }
-                }
-                if ($this->isStoredChoiceCorrect($rawValue, $questionType, $correctIndices)) {
-                    $correctCount++;
-                }
-            }
-
-            if (! $isChoiceType) {
-                $manualMap = is_array($result->manual_review_scores) ? $result->manual_review_scores : [];
-                $manualEntry = $manualMap[$questionIdKey] ?? $manualMap[(int) $question->id] ?? null;
-                if (is_array($manualEntry) && isset($manualEntry['score']) && is_numeric($manualEntry['score'])) {
-                    $manualScores[] = (float) $manualEntry['score'];
-                } elseif ($manualEntry !== null && is_numeric($manualEntry)) {
-                    $manualScores[] = (float) $manualEntry;
-                }
-            }
-        }
-
-        $attemptBase = max(1, $attemptsCount);
-        foreach ($optionStats as &$stat) {
-            $stat['percentage'] = round(($stat['count'] / $attemptBase) * 100, 2);
-        }
-        unset($stat);
-
-        return [
-            'question_id' => $question->id,
-            'question_text' => $question->content,
-            'question_type' => $questionType,
-            'points' => (int) ($question->points ?? 1),
-            'attempts_count' => $attemptsCount,
-            'answered_count' => $answeredCount,
-            'skipped_count' => $skippedCount,
-            'correct_count' => $isChoiceType ? $correctCount : null,
-            'correct_rate' => $isChoiceType
-                ? round(($correctCount / $attemptBase) * 100, 2)
-                : null,
-            'average_score' => count($manualScores) > 0
-                ? round(array_sum($manualScores) / count($manualScores), 2)
-                : null,
-            'correct_option_index' => $correctIndex,
-            'option_stats' => array_values($optionStats),
-            'manual_avg_score' => count($manualScores) > 0 ? round(array_sum($manualScores) / count($manualScores), 2) : null,
-            'manual_reviews_count' => count($manualScores),
-        ];
-    }
-
-    protected function answerOptionText(mixed $answer): string
-    {
-        if (is_array($answer)) {
-            return (string) ($answer['text'] ?? $answer['answer'] ?? '');
-        }
-
-        return (string) $answer;
-    }
-
-    /**
-     * @return int[]
-     */
-    protected function correctOriginalIndicesForQuestion(string $questionType, array $answersJson): array
-    {
-        $indices = [];
-        foreach ($answersJson as $idx => $answer) {
-            if (is_array($answer) && ($answer['is_correct'] ?? false)) {
-                $indices[] = (int) $idx;
-            }
-        }
-
-        if ($questionType === 'single_choice' || $questionType === 'true_false') {
-            return $indices !== [] ? [$indices[0]] : [];
-        }
-
-        return array_values(array_unique($indices));
-    }
-
-    /**
-     * @return int[]
-     */
-    protected function selectedChoiceIndices(mixed $stored, string $questionType): array
-    {
-        if ($questionType === 'multiple_choice') {
-            if (is_array($stored) && array_is_list($stored)) {
-                return array_values(array_filter(array_map(
-                    fn ($item) => is_numeric($item) ? (int) $item : null,
-                    $stored
-                )));
-            }
-
-            return is_numeric($stored) ? [(int) $stored] : [];
-        }
-
-        return is_numeric($stored) ? [(int) $stored] : [];
-    }
-
-    /**
-     * @param  int[]  $correctIndices
-     */
-    protected function isStoredChoiceCorrect(mixed $stored, string $questionType, array $correctIndices): bool
-    {
-        $selected = $this->selectedChoiceIndices($stored, $questionType);
-        if ($selected === [] || $correctIndices === []) {
-            return false;
-        }
-
-        if ($questionType === 'multiple_choice') {
-            sort($selected);
-            $correct = array_map('intval', $correctIndices);
-            sort($correct);
-
-            return $selected === $correct;
-        }
-
-        return in_array($selected[0], $correctIndices, true);
-    }
-
-    /**
-     * Export TestResult rows as CSV (optional filters: test_id, course_id, team_id, date_from, date_to).
-     */
-    public function exportResultsCsv(Request $request): StreamedResponse
-    {
-        if (! Schema::hasTable('test_results')) {
-            abort(404, 'Nu există rezultate de exportat.');
-        }
-
-        $validated = $request->validate([
-            'test_id' => 'nullable|integer|exists:tests,id',
-            'course_id' => 'nullable|integer|exists:courses,id',
-            'team_id' => 'nullable|integer|exists:teams,id',
-            'date_from' => 'nullable|date',
-            'date_to' => 'nullable|date',
-        ]);
-
-        if (! empty($validated['test_id'])) {
-            $this->assertTestAccessibleByInstructor(Test::findOrFail((int) $validated['test_id']));
-        }
-
-        $rows = $this->buildTestResultsExportRows($validated);
-        $filename = 'rezultate-teste_' . now()->format('Y-m-d_His') . '.csv';
-
-        return response()->streamDownload(function () use ($rows) {
-            $handle = fopen('php://output', 'w');
-            fwrite($handle, "\xEF\xBB\xBF");
-            fputcsv($handle, [
-                'Data finalizare',
-                'Elev',
-                'Email',
-                'Curs',
-                'Test',
-                'Incercare',
-                'Scor',
-                'Max scor',
-                'Procent',
-                'Promovat',
-                'Status',
-            ]);
-            foreach ($rows as $row) {
-                fputcsv($handle, [
-                    $row['completed_at'],
-                    $row['user_name'],
-                    $row['user_email'],
-                    $row['course_title'],
-                    $row['test_title'],
-                    $row['attempt_number'],
-                    $row['score'],
-                    $row['max_score'],
-                    $row['percentage'],
-                    $row['passed'],
-                    $row['status'],
-                ]);
-            }
-            fclose($handle);
-        }, $filename, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-        ]);
-    }
-
-    /**
-     * Export CSV for a single test (TestResult only).
-     */
-    public function exportTestResultsCsv(Request $request, $id): StreamedResponse
-    {
-        $request->merge(['test_id' => (int) $id]);
-
-        return $this->exportResultsCsv($request);
-    }
-
-    /**
-     * @param  array<string, mixed>  $filters
-     * @return Collection<int, array<string, mixed>>
-     */
-    protected function buildTestResultsExportRows(array $filters): Collection
-    {
-        $query = TestResult::with(['user:id,name,email', 'test:id,title', 'course:id,title'])
-            ->orderByDesc('completed_at');
-
-        if (auth()->user()->isInstructor()) {
-            $query->whereHas('test', function ($testQuery) {
-                $testQuery->where('created_by', auth()->id());
+        $rows = TestResult::with(['user:id,name,email'])
+            ->where('test_id', $test->id)
+            ->orderByDesc('completed_at')
+            ->orderByDesc('id')
+            ->get()
+            ->map(function ($row) {
+                return [
+                    'id' => $row->id,
+                    'attempt_number' => $row->attempt_number,
+                    'score' => $row->score,
+                    'max_score' => $row->max_score,
+                    'percentage' => $row->percentage,
+                    'passed' => (bool) $row->passed,
+                    'completed_at' => $row->completed_at,
+                    'needs_manual_review' => (bool) ($row->needs_manual_review ?? false),
+                    'reviewed_at' => $row->reviewed_at,
+                    'status' => $row->status,
+                    'user' => [
+                        'id' => $row->user?->id,
+                        'name' => $row->user?->name,
+                        'email' => $row->user?->email,
+                    ],
+                ];
             });
-        }
 
-        if (! empty($filters['test_id'])) {
-            $query->where('test_id', (int) $filters['test_id']);
-        }
-
-        if (! empty($filters['course_id'])) {
-            $query->where('course_id', (int) $filters['course_id']);
-        }
-
-        if (! empty($filters['team_id']) && Schema::hasTable('team_user')) {
-            $teamUserIds = DB::table('team_user')
-                ->where('team_id', (int) $filters['team_id'])
-                ->pluck('user_id');
-            $query->whereIn('user_id', $teamUserIds);
-        }
-
-        if (! empty($filters['date_from'])) {
-            $query->whereDate('completed_at', '>=', $filters['date_from']);
-        }
-
-        if (! empty($filters['date_to'])) {
-            $query->whereDate('completed_at', '<=', $filters['date_to']);
-        }
-
-        return $query->get()->map(function (TestResult $row) {
-            $status = $row->reviewed_at
-                ? 'approved'
-                : ($row->needs_manual_review ? 'pending' : ($row->status ?? 'completed'));
-
-            return [
-                'completed_at' => $row->completed_at?->format('Y-m-d H:i:s') ?? '',
-                'user_name' => $row->user?->name ?? '',
-                'user_email' => $row->user?->email ?? '',
-                'course_title' => $row->course?->title ?? '',
-                'test_title' => $row->test?->title ?? '',
-                'attempt_number' => $row->attempt_number ?? 1,
-                'score' => $row->score,
-                'max_score' => $row->max_score,
-                'percentage' => $row->percentage,
-                'passed' => $row->passed ? 'da' : 'nu',
-                'status' => $status,
-            ];
-        });
+        return response()->json($rows->values());
     }
 
+    /**
+     * Summary statistics for a test (attempts, averages, pass rate).
+     */
     public function statisticsSummary($id)
     {
         $test = Test::findOrFail($id);
-        $this->assertTestAccessibleByInstructor($test);
+        if (auth()->user()->isInstructor() && (int) $test->created_by !== (int) auth()->id()) {
+            abort(403, 'Acces interzis. Poți vedea doar statisticile testelor tale.');
+        }
 
         $results = $this->testAnalyticsService->loadResults($test);
 
@@ -1238,10 +539,30 @@ class TestAdminController extends Controller
         ]);
     }
 
+    /**
+     * Item analysis per question for a test.
+     */
+    public function questionAnalytics($id)
+    {
+        $test = Test::with(['questions', 'questionBank.questions'])->findOrFail($id);
+        if (auth()->user()->isInstructor() && (int) $test->created_by !== (int) auth()->id()) {
+            abort(403, 'Acces interzis. Poți vedea doar statisticile testelor tale.');
+        }
+
+        $results = $this->testAnalyticsService->loadResults($test);
+
+        return response()->json($this->testAnalyticsService->buildQuestionAnalytics($test, $results));
+    }
+
+    /**
+     * Per-question breakdown for a single test attempt (admin drill-down).
+     */
     public function resultBreakdown($resultId)
     {
         $result = TestResult::with(['test', 'user:id,name,email'])->findOrFail($resultId);
-        $this->assertTestAccessibleByInstructor($result->test);
+        if (auth()->user()->isInstructor() && (int) $result->test->created_by !== (int) auth()->id()) {
+            abort(403, 'Acces interzis. Poți vedea doar rezultatele testelor tale.');
+        }
 
         return response()->json([
             'result' => [
@@ -1262,6 +583,9 @@ class TestAdminController extends Controller
         ]);
     }
 
+    /**
+     * Manually adjust the score for a test attempt.
+     */
     public function updateResultScore(Request $request, $resultId)
     {
         $validated = $request->validate([
@@ -1270,7 +594,9 @@ class TestAdminController extends Controller
         ]);
 
         $result = TestResult::with('test')->findOrFail($resultId);
-        $this->assertTestAccessibleByInstructor($result->test);
+        if (auth()->user()->isInstructor() && (int) $result->test->created_by !== (int) auth()->id()) {
+            abort(403, 'Acces interzis. Poți modifica doar rezultatele testelor tale.');
+        }
 
         $maxScore = (int) ($result->max_score ?? 0);
         if ($maxScore <= 0) {
@@ -1280,16 +606,14 @@ class TestAdminController extends Controller
         $newScore = min((float) $validated['score'], (float) $maxScore);
         $newPercentage = round(($newScore / $maxScore) * 100, 2);
 
-        $courseTest = \App\Models\CourseTest::where('test_id', $result->test_id)->first();
-        $passingScore = $courseTest
-            ? (int) ($courseTest->passing_score ?? $result->test->passing_score ?? 70)
-            : (int) ($result->test->passing_score ?? 70);
+        $passingScore = $this->resolveResultPassingScore($result);
         $newPassed = $newPercentage >= $passingScore;
 
         $manualScores = is_array($result->manual_review_scores) ? $result->manual_review_scores : [];
+        $previousScore = $result->score;
         $meta = is_array($manualScores['_meta'] ?? null) ? $manualScores['_meta'] : [];
         $meta['score_adjustment'] = [
-            'previous_score' => $result->score,
+            'previous_score' => $previousScore,
             'adjusted_score' => $newScore,
             'adjusted_at' => now()->toIso8601String(),
             'adjusted_by' => Auth::id(),
@@ -1326,872 +650,128 @@ class TestAdminController extends Controller
     }
 
     /**
-     * Preview AI-generated test questions from course content (no DB write).
+     * Get test results pending manual review.
      */
-    public function suggestBlueprintFromCourse(Request $request)
+    public function getPendingReviews(Request $request)
     {
-        $this->assertCompanyFeature('ai_test_generation');
+        $results = $this->pendingReviewsQuery()
+            ->with([
+                'test' => fn($q) => $q->with(['questions', 'questionBank.questions', 'courses']),
+                'user:id,name,email',
+            ])
+            ->orderBy('completed_at', 'desc')
+            ->get();
 
-        $validated = $request->validate([
-            'source_type' => 'nullable|in:course,document',
-            'course_id' => 'nullable|integer|exists:courses,id|required_if:source_type,course',
-            'document' => 'nullable|array|required_if:source_type,document',
-            'document.file_name' => 'nullable|string|max:255',
-            'document.name' => 'nullable|string|max:255',
-            'document.type' => 'nullable|string|max:50',
-            'document.text' => 'nullable|string',
-            'document.preview' => 'nullable|string',
-            'scope' => 'nullable|in:course,module,lesson',
-            'scope_id' => 'nullable|integer',
-            'type' => 'nullable|in:practice,graded,final',
-        ]);
-
-        try {
-            $source = $this->resolveAiSourceFromRequest($validated);
-        } catch (\InvalidArgumentException $e) {
-            return response()->json(['error' => $e->getMessage()], 422);
-        }
-
-        $blueprint = $this->buildAiBlueprintFromText(
-            $source['content'],
-            $source['source_label'],
-            $validated['type'] ?? 'practice',
-            $source['source_type'] === 'course' ? ($source['course'] ?? null) : null,
-            $source['scope'] ?? 'course',
-            $validated['scope_id'] ?? null,
-            $source['module_id'] ?? null,
-            $source['lesson_id'] ?? null
-        );
-
-        return response()->json([
-            'message' => 'Blueprint suggested successfully',
-            'blueprint' => $blueprint,
-            'source_type' => $source['source_type'],
-        ]);
+        return response()->json($results);
     }
 
     /**
-     * Preview AI-generated test questions from course content (no DB write).
+     * Doar numărul rezultatelor de revizuit (pentru badge), fără a încărca întrebările.
      */
-    public function previewFromCourse(Request $request)
+    public function pendingReviewsCount(Request $request)
     {
-        $this->assertCompanyFeature('ai_test_generation');
-
-        @set_time_limit(0);
-
-        $validated = $request->validate([
-            'source_type' => 'nullable|in:course,document',
-            'course_id' => 'nullable|integer|exists:courses,id|required_if:source_type,course',
-            'document' => 'nullable|array|required_if:source_type,document',
-            'document.file_name' => 'nullable|string|max:255',
-            'document.name' => 'nullable|string|max:255',
-            'document.type' => 'nullable|string|max:50',
-            'document.text' => 'nullable|string',
-            'document.preview' => 'nullable|string',
-            'scope' => 'nullable|in:course,module,lesson',
-            'scope_id' => 'nullable|integer',
-            'numberOfQuestions' => 'nullable|integer|min:1|max:50',
-            'difficulty' => 'nullable|in:easy,medium,hard',
-            'questionTypes' => 'nullable|array',
-            'qualityMode' => 'nullable|in:fast,balanced,high_stakes',
-            'cognitiveLevels' => 'nullable|array',
-            'cognitiveLevels.*' => 'in:recall,understanding,application,analysis',
-            'type' => 'nullable|in:practice,graded,final',
-        ]);
-
-        try {
-            $source = $this->resolveAiSourceFromRequest($validated);
-        } catch (\InvalidArgumentException $e) {
-            return response()->json(['error' => $e->getMessage()], 422);
-        }
-
-        $difficulty = $validated['difficulty'] ?? 'medium';
-        $questionTypes = is_array($validated['questionTypes'] ?? null)
-            ? $validated['questionTypes']
-            : ['multiple_choice'];
-        $count = max(1, (int) ($validated['numberOfQuestions'] ?? 10));
-        $testType = $validated['type'] ?? 'practice';
-        $qualityMode = $validated['qualityMode'] ?? 'balanced';
-        $cognitiveLevels = is_array($validated['cognitiveLevels'] ?? null)
-            ? $validated['cognitiveLevels']
-            : [];
-
-        try {
-            $questions = $this->aiQuestionGeneration->generateQuestionsFromContent(
-                $source['content'],
-                $count,
-                $difficulty,
-                $questionTypes,
-                $qualityMode,
-                $cognitiveLevels
-            );
-        } catch (\Exception $e) {
-            Log::error('Formely AI test preview generation failed', ['error' => $e->getMessage()]);
-            return response()->json([
-                'error' => 'Eroare la generarea testului Formely AI: ' . ($e->getMessage() ?: 'Problema AI'),
-            ], 500);
-        }
-
-        if (empty($questions)) {
-            return response()->json([
-                'error' => 'Nu s-au putut genera întrebări din sursa selectată.',
-            ], 422);
-        }
-
-        if ($source['source_type'] === 'document') {
-            $questions = $this->aiQuestionGeneration->enrichQuestionsWithDocumentMetadata(
-                $questions,
-                $source['document']['file_name'],
-                $difficulty,
-                $source['document']['type'] ?? null,
-                $qualityMode,
-                $cognitiveLevels
-            );
-            $suggested = $this->aiQuestionGeneration->suggestTestMetadataFromDocument(
-                $source['document']['file_name'],
-                $testType
-            );
-            $coverageReport = $this->buildAiCoverageReportFromDocument(
-                $source['document']['file_name'],
-                $source['content'],
-                $questions,
-                $count,
-                $questionTypes,
-                $qualityMode,
-                $cognitiveLevels
-            );
-        } else {
-            $questions = $this->aiQuestionGeneration->enrichQuestionsWithSourceMetadata(
-                $questions,
-                (int) $source['course_id'],
-                $difficulty,
-                $source['module_id'],
-                $source['lesson_id'],
-                $qualityMode,
-                $cognitiveLevels
-            );
-            $suggested = $this->aiQuestionGeneration->suggestTestMetadata($source['course'], $testType);
-            $coverageReport = $this->buildAiCoverageReport(
-                $source['course'],
-                $questions,
-                $count,
-                $questionTypes,
-                $source['scope'],
-                $validated['scope_id'] ?? null,
-                $source['module_id'],
-                $source['lesson_id'],
-                $qualityMode,
-                $cognitiveLevels
-            );
-        }
-
-        return response()->json([
-            'message' => 'Preview generated successfully',
-            'suggested' => $suggested,
-            'questions' => $questions,
-            'questions_generated' => count($questions),
-            'coverage_report' => $coverageReport,
-            'quality_mode' => $qualityMode,
-            'cognitive_levels' => $cognitiveLevels,
-            'source_type' => $source['source_type'],
-            'course_id' => $source['course_id'],
-            'scope' => $source['scope'],
-            'scope_id' => $validated['scope_id'] ?? null,
-            'document' => $source['document'] ?? null,
-        ]);
+        return response()->json(['count' => $this->pendingReviewsQuery()->count()]);
     }
-    /**
-     * Regenerate one Formely AI question from the same course source (no DB write).
-     */
-    public function regenerateQuestionFromCourse(Request $request)
+
+    private function pendingReviewsQuery()
     {
-        $this->assertCompanyFeature('ai_test_generation');
-
-        @set_time_limit(0);
-
-        $validated = $request->validate([
-            'source_type' => 'nullable|in:course,document',
-            'course_id' => 'nullable|integer|exists:courses,id|required_if:source_type,course',
-            'document' => 'nullable|array|required_if:source_type,document',
-            'document.file_name' => 'nullable|string|max:255',
-            'document.name' => 'nullable|string|max:255',
-            'document.type' => 'nullable|string|max:50',
-            'document.text' => 'nullable|string',
-            'document.preview' => 'nullable|string',
-            'scope' => 'nullable|in:course,module,lesson',
-            'scope_id' => 'nullable|integer',
-            'difficulty' => 'nullable|in:easy,medium,hard',
-            'qualityMode' => 'nullable|in:fast,balanced,high_stakes',
-            'cognitiveLevels' => 'nullable|array',
-            'cognitiveLevels.*' => 'in:recall,understanding,application,analysis',
-            'questionType' => 'nullable|in:multiple_choice,single_choice,true_false,matching,ordering',
-            'instructions' => 'nullable|string|max:1200',
-            'blockedQuestions' => 'nullable|array',
-            'blockedQuestions.*' => 'string',
-        ]);
-
-        try {
-            $source = $this->resolveAiSourceFromRequest($validated);
-        } catch (\InvalidArgumentException $e) {
-            return response()->json(['error' => $e->getMessage()], 422);
+        $query = TestResult::query()
+            ->where(function ($q) {
+                $q->where('status', 'pending_review')
+                  ->orWhere('needs_manual_review', true);
+            })
+            ->whereNull('reviewed_at');
+        if (auth()->user()->isInstructor()) {
+            $query->whereHas('test', fn($q) => $q->where('created_by', auth()->id()));
         }
 
-        $difficulty = $validated['difficulty'] ?? 'medium';
-        $qualityMode = $validated['qualityMode'] ?? 'balanced';
-        $cognitiveLevels = is_array($validated['cognitiveLevels'] ?? null)
-            ? $validated['cognitiveLevels']
-            : [];
-        $questionType = $validated['questionType'] ?? 'multiple_choice';
-        $blockedQuestions = array_values(array_filter(array_map('strval', (array) ($validated['blockedQuestions'] ?? []))));
-        $instructions = trim((string) ($validated['instructions'] ?? ''));
-        $instructions = trim($instructions . "\nGenerează o întrebare nouă pentru același test. Nu repeta întrebările existente și păstrează tipul cerut.");
-
-        try {
-            $questions = $this->aiQuestionGeneration->generateReviewDraftQuestion(
-                $source['content'],
-                $difficulty,
-                [$questionType],
-                $instructions,
-                [],
-                $blockedQuestions,
-                $cognitiveLevels
-            );
-        } catch (\Exception $e) {
-            Log::error('Formely AI question regeneration failed', ['error' => $e->getMessage()]);
-            return response()->json([
-                'error' => 'Eroare la regenerarea întrebării AI: ' . ($e->getMessage() ?: 'Problema AI'),
-            ], 500);
-        }
-
-        if (empty($questions)) {
-            return response()->json([
-                'error' => 'Formely AI nu a putut genera o întrebare nouă pentru sursa selectată.',
-            ], 422);
-        }
-
-        if ($source['source_type'] === 'document') {
-            $questions = $this->aiQuestionGeneration->enrichQuestionsWithDocumentMetadata(
-                $questions,
-                $source['document']['file_name'],
-                $difficulty,
-                $source['document']['type'] ?? null,
-                $qualityMode,
-                $cognitiveLevels
-            );
-        } else {
-            $questions = $this->aiQuestionGeneration->enrichQuestionsWithSourceMetadata(
-                $questions,
-                (int) $source['course_id'],
-                $difficulty,
-                $source['module_id'],
-                $source['lesson_id'],
-                $qualityMode,
-                $cognitiveLevels
-            );
-        }
-
-        return response()->json([
-            'message' => 'Question regenerated successfully',
-            'question' => $questions[0],
-            'source_type' => $source['source_type'],
-        ]);
+        return $query;
     }
 
     /**
-     * Create a test from reviewed Formely AI questions and optionally attach to course scope.
+     * Clear stale/invalid pending manual reviews.
      */
-    public function createFromCourse(Request $request)
+    public function clearPendingReviews(Request $request)
     {
-        $this->assertCompanyFeature('ai_test_generation');
-
-        @set_time_limit(0);
-
         $validated = $request->validate([
-            'source_type' => 'nullable|in:course,document',
-            'course_id' => 'nullable|integer|exists:courses,id|required_if:source_type,course',
-            'document' => 'nullable|array|required_if:source_type,document',
-            'document.file_name' => 'nullable|string|max:255',
-            'document.name' => 'nullable|string|max:255',
-            'document.type' => 'nullable|string|max:50',
-            'document.text' => 'nullable|string',
-            'document.preview' => 'nullable|string',
-            'scope' => 'nullable|in:course,module,lesson',
-            'scope_id' => 'nullable|integer',
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'type' => 'nullable|in:practice,graded,final',
-            'difficulty' => 'nullable|in:easy,medium,hard',
-            'qualityMode' => 'nullable|in:fast,balanced,high_stakes',
-            'cognitiveLevels' => 'nullable|array',
-            'cognitiveLevels.*' => 'in:recall,understanding,application,analysis',
-            'status' => 'nullable|in:draft,published',
-            'time_limit_minutes' => 'nullable|integer|min:1',
-            'max_attempts' => 'nullable|integer|min:1',
-            'passing_score' => 'nullable|integer|min:0|max:100',
-            'randomize_questions' => 'nullable|boolean',
-            'randomize_answers' => 'nullable|boolean',
-            'show_results_immediately' => 'nullable|boolean',
-            'show_correct_answers' => 'nullable|boolean',
-            'allow_review' => 'nullable|boolean',
-            'questions' => 'required|array|min:1',
-            'questions.*.type' => 'required|string',
-            'questions.*.content' => 'required|string',
-            'questions.*.answers' => 'required|array',
-            'save_to_question_bank' => 'nullable|boolean',
-            'question_bank_title' => 'nullable|string|max:255',
-            'attach' => 'nullable|boolean',
-            'required' => 'nullable|boolean',
-            'order' => 'nullable|integer|min:0',
-            'unlock_after_previous' => 'nullable|boolean',
-            'unlock_after_test_id' => 'nullable|exists:tests,id',
+            'older_than_days' => 'nullable|integer|min:0|max:3650',
         ]);
 
-        $creator = Auth::user();
-        if (!$creator) {
-            return response()->json(['message' => 'Trebuie să fii autentificat.'], 401);
+        $olderThanDays = (int) ($validated['older_than_days'] ?? 30);
+        $cutoff = now()->subDays($olderThanDays);
+
+        $query = TestResult::with([
+            'test' => fn($q) => $q->with(['questions', 'questionBank.questions']),
+        ])
+            ->where(function ($q) {
+                $q->where('status', 'pending_review')
+                    ->orWhere('needs_manual_review', true);
+            })
+            ->whereNull('reviewed_at');
+
+        if (auth()->user()->isInstructor()) {
+            $query->whereHas('test', fn($q) => $q->where('created_by', auth()->id()));
         }
 
-        $sourceType = $validated['source_type'] ?? 'course';
-        $courseId = isset($validated['course_id']) ? (int) $validated['course_id'] : null;
-        $course = null;
-        if ($courseId) {
-            $course = \App\Models\Course::findOrFail($courseId);
-            if ($creator->isInstructor() && (int) $course->teacher_id !== (int) $creator->id) {
-                abort(403, 'Poți crea teste doar din cursurile tale.');
-            }
-        } elseif ($sourceType === 'course') {
-            return response()->json(['error' => 'Selectează un curs sursă.'], 422);
-        }
+        $rows = $query->get();
+        $manualTypes = ['essay'];
+        $toClearIds = [];
 
-        $scope = $validated['scope'] ?? 'course';
-        [$moduleId, $lessonId] = $this->resolveCourseScopeIds($scope, $validated['scope_id'] ?? null);
+        foreach ($rows as $row) {
+            $isExpired = $row->completed_at && $row->completed_at->lt($cutoff);
+            $hasInvalidState = ($row->status !== 'pending_review') && (bool) $row->needs_manual_review;
 
-        $questions = $validated['questions'];
-        $difficulty = $validated['difficulty'] ?? 'medium';
-        $qualityMode = $validated['qualityMode'] ?? 'balanced';
-        $cognitiveLevels = is_array($validated['cognitiveLevels'] ?? null)
-            ? $validated['cognitiveLevels']
-            : [];
-
-        if ($sourceType === 'document') {
-            $document = is_array($validated['document'] ?? null) ? $validated['document'] : [];
-            $fileName = trim((string) ($document['file_name'] ?? $document['name'] ?? 'Document'));
-            $questions = $this->aiQuestionGeneration->enrichQuestionsWithDocumentMetadata(
-                $questions,
-                $fileName,
-                $difficulty,
-                isset($document['type']) ? (string) $document['type'] : null,
-                $qualityMode,
-                $cognitiveLevels
-            );
-        } else {
-            $questions = $this->aiQuestionGeneration->enrichQuestionsWithSourceMetadata(
-                $questions,
-                (int) $courseId,
-                $difficulty,
-                $moduleId,
-                $lessonId,
-                $qualityMode,
-                $cognitiveLevels
-            );
-        }
-
-        $testData = [
-            'title' => $validated['title'],
-            'description' => $validated['description'] ?? null,
-            'type' => $validated['type'] ?? 'practice',
-            'status' => $validated['status'] ?? 'draft',
-            'time_limit_minutes' => $validated['time_limit_minutes'] ?? null,
-            'max_attempts' => $validated['max_attempts'] ?? 1,
-            'passing_score' => $validated['passing_score'] ?? 70,
-            'randomize_questions' => $validated['randomize_questions'] ?? false,
-            'randomize_answers' => $validated['randomize_answers'] ?? false,
-            'show_results_immediately' => $validated['show_results_immediately'] ?? true,
-            'show_correct_answers' => $validated['show_correct_answers'] ?? false,
-            'allow_review' => $validated['allow_review'] ?? true,
-            'question_source' => 'direct',
-            'questions' => $questions,
-        ];
-
-        try {
-            $test = $this->testBuilderService->createTest($testData, $creator);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Nu s-a putut crea testul: ' . $e->getMessage(),
-            ], 422);
-        }
-
-        $shouldAttach = filter_var($validated['attach'] ?? false, FILTER_VALIDATE_BOOLEAN);
-        if ($shouldAttach && !$course) {
-            return response()->json([
-                'error' => 'Pentru atașare la curs trebuie selectat un curs destinație.',
-            ], 422);
-        }
-        if ($shouldAttach) {
-            $attachPayload = [
-                'scope' => $scope,
-                'scope_id' => $validated['scope_id'] ?? null,
-                'required' => filter_var($validated['required'] ?? false, FILTER_VALIDATE_BOOLEAN),
-                'passing_score' => $validated['passing_score'] ?? 70,
-                'order' => $validated['order'] ?? 0,
-                'unlock_after_previous' => filter_var($validated['unlock_after_previous'] ?? false, FILTER_VALIDATE_BOOLEAN),
-                'unlock_after_test_id' => $validated['unlock_after_test_id'] ?? null,
-            ];
-            $this->courseBuilderService->attachTest($course, $test, $attachPayload);
-        }
-
-        $questionBank = null;
-        $shouldSaveToBank = filter_var($validated['save_to_question_bank'] ?? false, FILTER_VALIDATE_BOOLEAN);
-        if ($shouldSaveToBank) {
-            $bankTitle = trim((string) ($validated['question_bank_title'] ?? ''));
-            if ($bankTitle === '') {
-                $bankTitle = 'Întrebări Formely AI: ' . $validated['title'];
+            $questions = collect();
+            if ($row->test) {
+                if ($row->test->question_source === 'bank' && $row->test->questionBank) {
+                    $questions = $row->test->questionBank->questions ?? collect();
+                } else {
+                    $questions = $row->test->questions ?? collect();
+                }
             }
 
-            $questionBank = $this->testBuilderService->createQuestionBank([
-                'title' => $bankTitle,
-                'description' => 'Bancă generată automat din testul Formely AI „' . $validated['title'] . '”.',
-                'status' => 'draft',
-                'questions' => $questions,
-            ], $creator);
+            $hasManualQuestions = $questions->contains(function ($q) use ($manualTypes) {
+                return in_array((string) ($q->type ?? ''), $manualTypes, true);
+            });
+            $hasErrorLikeState = !$row->test || !$hasManualQuestions;
+
+            if ($isExpired || $hasInvalidState || $hasErrorLikeState) {
+                $toClearIds[] = $row->id;
+            }
         }
 
-        ActivityLog::create([
-            'user_id' => $creator->id,
-            'action' => 'telemetry.admin_test_created_from_course',
-            'model_type' => Test::class,
-            'model_id' => $test->id,
-            'description' => 'Telemetry event: admin_test_created_from_course',
-            'new_values' => [
-                'source_type' => $sourceType,
-                'course_id' => $courseId,
-                'scope' => $scope,
-                'attached' => $shouldAttach,
-                'question_bank_id' => $questionBank?->id,
-                'questions_count' => count($questions),
+        if (empty($toClearIds)) {
+            return response()->json([
+                'message' => 'Nu au fost găsite încercări expirate/eronate pentru golire.',
+                'cleared_count' => 0,
+            ]);
+        }
+
+        $meta = [
+            '_meta' => [
+                'cleanup' => true,
+                'reason' => 'auto_clear_pending_reviews',
+                'cleaned_at' => now()->toIso8601String(),
+                'cleaned_by' => Auth::id(),
             ],
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
+        ];
+
+        TestResult::whereIn('id', $toClearIds)->update([
+            'needs_manual_review' => false,
+            'status' => 'completed',
+            'reviewed_at' => now(),
+            'reviewed_by' => Auth::id(),
+            'manual_review_scores' => $meta,
         ]);
 
         return response()->json([
-            'message' => 'Test created successfully',
-            'test' => $test->load(['questions', 'creator']),
-            'attached' => $shouldAttach,
-            'question_bank' => $questionBank,
-        ], 201);
-    }
-
-    /**
-     * Resolve course or uploaded document content for AI test generation.
-     *
-     * @return array<string, mixed>
-     */
-    private function resolveAiSourceFromRequest(array $validated): array
-    {
-        $sourceType = $validated['source_type'] ?? 'course';
-
-        if ($sourceType === 'document') {
-            $document = is_array($validated['document'] ?? null) ? $validated['document'] : [];
-            $fileName = trim((string) ($document['file_name'] ?? $document['name'] ?? 'Document'));
-            $text = trim((string) ($document['text'] ?? $document['preview'] ?? ''));
-            if (!$this->aiQuestionGeneration->documentHasExtractableContent($text)) {
-                throw new \InvalidArgumentException('Fișierul nu conține suficient text pentru generarea testului (minimum ~80 caractere).');
-            }
-
-            $content = $this->aiQuestionGeneration->formatDocumentContent(
-                $fileName,
-                $text,
-                isset($document['type']) ? (string) $document['type'] : null
-            );
-
-            $course = null;
-            $courseId = isset($validated['course_id']) ? (int) $validated['course_id'] : null;
-            if ($courseId) {
-                $course = \App\Models\Course::findOrFail($courseId);
-                if (auth()->user()->isInstructor() && (int) $course->teacher_id !== (int) auth()->id()) {
-                    abort(403, 'Poți folosi doar cursurile tale ca destinație.');
-                }
-            }
-
-            return [
-                'source_type' => 'document',
-                'content' => $content,
-                'course' => $course,
-                'course_id' => $courseId,
-                'module_id' => null,
-                'lesson_id' => null,
-                'scope' => $validated['scope'] ?? 'course',
-                'scope_id' => $validated['scope_id'] ?? null,
-                'document' => [
-                    'file_name' => $fileName,
-                    'type' => $document['type'] ?? null,
-                ],
-                'source_label' => 'Fișier: ' . $fileName,
-            ];
-        }
-
-        $courseId = (int) ($validated['course_id'] ?? 0);
-        if ($courseId <= 0) {
-            throw new \InvalidArgumentException('Selectează un curs sursă.');
-        }
-
-        $course = \App\Models\Course::findOrFail($courseId);
-        if (auth()->user()->isInstructor() && (int) $course->teacher_id !== (int) auth()->id()) {
-            abort(403, 'Poți genera teste doar din cursurile tale.');
-        }
-
-        $scope = $validated['scope'] ?? 'course';
-        [$moduleId, $lessonId] = $this->resolveCourseScopeIds($scope, $validated['scope_id'] ?? null);
-        $loadedCourse = $this->aiQuestionGeneration->loadCourseWithContentForAi($courseId);
-        if (!$this->aiQuestionGeneration->courseHasExtractableContent($loadedCourse)) {
-            throw new \InvalidArgumentException('Cursul selectat nu are conținut textual suficient pentru generarea testului.');
-        }
-
-        $content = $this->aiQuestionGeneration->extractCourseContent($loadedCourse, $moduleId, $lessonId);
-        if (trim($content) === '') {
-            throw new \InvalidArgumentException('Nu s-a putut extrage conținut pentru domeniul selectat.');
-        }
-
-        $modules = $loadedCourse->relationLoaded('modules') ? ($loadedCourse->modules ?? collect()) : collect();
-        $rootLessons = $loadedCourse->relationLoaded('lessons') ? ($loadedCourse->lessons ?? collect()) : collect();
-        $sourceLabel = 'Curs complet';
-        if ($moduleId !== null) {
-            $module = $modules->first(fn ($item) => (int) $item->id === $moduleId);
-            $sourceLabel = $module ? 'Modul: ' . (string) $module->title : 'Modul #' . $moduleId;
-        }
-        if ($lessonId !== null) {
-            $lesson = null;
-            foreach ($modules as $module) {
-                $lesson = ($module->lessons ?? collect())->first(fn ($item) => (int) $item->id === $lessonId);
-                if ($lesson) {
-                    break;
-                }
-            }
-            $lesson ??= $rootLessons->first(fn ($item) => (int) $item->id === $lessonId);
-            $sourceLabel = $lesson ? 'Lecție: ' . (string) $lesson->title : 'Lecție #' . $lessonId;
-        }
-
-        return [
-            'source_type' => 'course',
-            'content' => $content,
-            'course' => $loadedCourse,
-            'course_id' => $courseId,
-            'module_id' => $moduleId,
-            'lesson_id' => $lessonId,
-            'scope' => $scope,
-            'scope_id' => $validated['scope_id'] ?? null,
-            'document' => null,
-            'source_label' => $sourceLabel,
-        ];
-    }
-
-    private function buildAiBlueprintFromText(
-        string $content,
-        string $sourceLabel,
-        string $testType,
-        ?\App\Models\Course $course = null,
-        string $scope = 'course',
-        $scopeId = null,
-        ?int $moduleId = null,
-        ?int $lessonId = null
-    ): array {
-        $plainText = trim(preg_replace('/\s+/u', ' ', strip_tags($content)) ?? '');
-        $wordCount = $plainText !== '' ? count(preg_split('/\s+/u', $plainText) ?: []) : 0;
-        $moduleCount = 0;
-        $lessonCount = 0;
-
-        if ($course) {
-            $modules = $course->relationLoaded('modules') ? ($course->modules ?? collect()) : collect();
-            $rootLessons = $course->relationLoaded('lessons') ? ($course->lessons ?? collect()) : collect();
-            $moduleCount = $modules->count();
-            $lessonCount = $modules->sum(fn ($module) => ($module->lessons ?? collect())->count()) + $rootLessons->count();
-
-            if ($moduleId !== null) {
-                $module = $modules->first(fn ($item) => (int) $item->id === $moduleId);
-                $moduleCount = $module ? 1 : 0;
-                $lessonCount = $module ? ($module->lessons ?? collect())->count() : 0;
-            }
-            if ($lessonId !== null) {
-                $moduleCount = 0;
-                $lessonCount = 1;
-            }
-        }
-
-        if ($wordCount < 700) {
-            $blueprint = [
-                'numberOfQuestions' => 6,
-                'difficulty' => 'easy',
-                'qualityMode' => 'balanced',
-                'questionTypes' => ['single_choice', 'true_false'],
-                'cognitiveLevels' => ['recall', 'understanding'],
-                'rationale' => 'Sursa este scurtă, deci Formely AI recomandă un test compact axat pe verificare directă și înțelegere.',
-            ];
-        } elseif ($wordCount < 2200) {
-            $blueprint = [
-                'numberOfQuestions' => 10,
-                'difficulty' => 'medium',
-                'qualityMode' => 'balanced',
-                'questionTypes' => ['multiple_choice', 'single_choice', 'true_false', 'matching'],
-                'cognitiveLevels' => ['understanding', 'application'],
-                'rationale' => 'Sursa are suficient conținut pentru un mix echilibrat de înțelegere și aplicare.',
-            ];
-        } else {
-            $blueprint = [
-                'numberOfQuestions' => 15,
-                'difficulty' => 'medium',
-                'qualityMode' => 'high_stakes',
-                'questionTypes' => ['multiple_choice', 'single_choice', 'true_false', 'matching', 'ordering'],
-                'cognitiveLevels' => ['understanding', 'application', 'analysis'],
-                'rationale' => 'Sursa este amplă, deci Formely AI recomandă varietate de tipuri și mai multe întrebări aplicative/analitice.',
-            ];
-        }
-
-        if ($testType === 'final') {
-            $blueprint['numberOfQuestions'] = max(12, (int) $blueprint['numberOfQuestions']);
-            $blueprint['difficulty'] = $wordCount >= 1200 ? 'hard' : 'medium';
-            $blueprint['qualityMode'] = 'high_stakes';
-            $blueprint['cognitiveLevels'] = array_values(array_unique(array_merge($blueprint['cognitiveLevels'], ['analysis'])));
-            $blueprint['rationale'] .= ' Pentru test final, recomandarea crește rigoarea și include analiză.';
-        } elseif ($testType === 'graded') {
-            $blueprint['numberOfQuestions'] = max(8, (int) $blueprint['numberOfQuestions']);
-            $blueprint['qualityMode'] = $blueprint['qualityMode'] === 'fast' ? 'balanced' : $blueprint['qualityMode'];
-            $blueprint['rationale'] .= ' Pentru test evaluativ, recomandarea evită modul rapid.';
-        }
-
-        return [
-            ...$blueprint,
-            'testType' => $testType,
-            'scope' => $scope,
-            'scope_id' => $scopeId,
-            'source_label' => $sourceLabel,
-            'source_word_count' => $wordCount,
-            'source_modules_count' => $moduleCount,
-            'source_lessons_count' => $lessonCount,
-        ];
-    }
-
-    private function buildAiCoverageReportFromDocument(
-        string $fileName,
-        string $content,
-        array $questions,
-        int $requestedCount,
-        array $requestedTypes,
-        string $qualityMode,
-        array $cognitiveLevels = []
-    ): array {
-        $plainText = trim(preg_replace('/\s+/u', ' ', strip_tags($content)) ?? '');
-        $wordCount = $plainText !== '' ? count(preg_split('/\s+/u', $plainText) ?: []) : 0;
-        $typeDistribution = [];
-        foreach ($questions as $question) {
-            $type = (string) ($question['type'] ?? 'multiple_choice');
-            $typeDistribution[$type] = ($typeDistribution[$type] ?? 0) + 1;
-        }
-        $generatedCount = count($questions);
-
-        return [
-            'requested_count' => $requestedCount,
-            'generated_count' => $generatedCount,
-            'missing_count' => max(0, $requestedCount - $generatedCount),
-            'target_met' => $generatedCount >= $requestedCount,
-            'quality_mode' => $qualityMode,
-            'cognitive_levels' => array_values($cognitiveLevels),
-            'scope' => 'document',
-            'scope_id' => null,
-            'source_label' => 'Fișier: ' . $fileName,
-            'source_modules_count' => 0,
-            'source_lessons_count' => 0,
-            'source_word_count' => $wordCount,
-            'requested_types' => array_values($requestedTypes),
-            'type_distribution' => $typeDistribution,
-            'notes' => $generatedCount < $requestedCount
-                ? 'Formely AI a returnat mai puține întrebări pentru a evita umplutura slabă.'
-                : 'Ținta de întrebări a fost atinsă.',
-        ];
-    }
-
-    /**
-     * Resolve module/lesson IDs from attach scope.
-     *
-     * @return array{0: ?int, 1: ?int}
-     */
-    private function buildAiBlueprintSuggestion(
-        \App\Models\Course $course,
-        string $courseContent,
-        string $scope,
-        $scopeId,
-        ?int $moduleId,
-        ?int $lessonId,
-        string $testType
-    ): array {
-        $plainText = trim(preg_replace('/\s+/u', ' ', strip_tags($courseContent)) ?? '');
-        $wordCount = $plainText !== '' ? count(preg_split('/\s+/u', $plainText) ?: []) : 0;
-        $modules = $course->relationLoaded('modules') ? ($course->modules ?? collect()) : collect();
-        $rootLessons = $course->relationLoaded('lessons') ? ($course->lessons ?? collect()) : collect();
-        $lessonCount = $modules->sum(fn ($module) => ($module->lessons ?? collect())->count()) + $rootLessons->count();
-        $moduleCount = $modules->count();
-        $sourceLabel = 'Curs complet';
-
-        if ($moduleId !== null) {
-            $module = $modules->first(fn ($item) => (int) $item->id === $moduleId);
-            $sourceLabel = $module ? 'Modul: ' . (string) $module->title : 'Modul #' . $moduleId;
-            $moduleCount = $module ? 1 : 0;
-            $lessonCount = $module ? ($module->lessons ?? collect())->count() : 0;
-        }
-
-        if ($lessonId !== null) {
-            $lesson = null;
-            foreach ($modules as $module) {
-                $lesson = ($module->lessons ?? collect())->first(fn ($item) => (int) $item->id === $lessonId);
-                if ($lesson) {
-                    break;
-                }
-            }
-            $lesson ??= $rootLessons->first(fn ($item) => (int) $item->id === $lessonId);
-            $sourceLabel = $lesson ? 'Lecție: ' . (string) $lesson->title : 'Lecție #' . $lessonId;
-            $moduleCount = 0;
-            $lessonCount = $lesson ? 1 : 0;
-        }
-
-        if ($wordCount < 700) {
-            $blueprint = [
-                'numberOfQuestions' => 6,
-                'difficulty' => 'easy',
-                'qualityMode' => 'balanced',
-                'questionTypes' => ['single_choice', 'true_false'],
-                'cognitiveLevels' => ['recall', 'understanding'],
-                'rationale' => 'Sursa este scurtă, deci Formely AI recomandă un test compact axat pe verificare directă și înțelegere.',
-            ];
-        } elseif ($wordCount < 2200) {
-            $blueprint = [
-                'numberOfQuestions' => 10,
-                'difficulty' => 'medium',
-                'qualityMode' => 'balanced',
-                'questionTypes' => ['multiple_choice', 'single_choice', 'true_false', 'matching'],
-                'cognitiveLevels' => ['understanding', 'application'],
-                'rationale' => 'Sursa are suficient conținut pentru un mix echilibrat de înțelegere și aplicare.',
-            ];
-        } else {
-            $blueprint = [
-                'numberOfQuestions' => 15,
-                'difficulty' => 'medium',
-                'qualityMode' => 'high_stakes',
-                'questionTypes' => ['multiple_choice', 'single_choice', 'true_false', 'matching', 'ordering'],
-                'cognitiveLevels' => ['understanding', 'application', 'analysis'],
-                'rationale' => 'Sursa este amplă, deci Formely AI recomandă varietate de tipuri și mai multe întrebări aplicative/analitice.',
-            ];
-        }
-
-        if ($testType === 'final') {
-            $blueprint['numberOfQuestions'] = max(12, (int) $blueprint['numberOfQuestions']);
-            $blueprint['difficulty'] = $wordCount >= 1200 ? 'hard' : 'medium';
-            $blueprint['qualityMode'] = 'high_stakes';
-            $blueprint['cognitiveLevels'] = array_values(array_unique(array_merge($blueprint['cognitiveLevels'], ['analysis'])));
-            $blueprint['rationale'] .= ' Pentru test final, recomandarea crește rigoarea și include analiză.';
-        } elseif ($testType === 'graded') {
-            $blueprint['numberOfQuestions'] = max(8, (int) $blueprint['numberOfQuestions']);
-            $blueprint['qualityMode'] = $blueprint['qualityMode'] === 'fast' ? 'balanced' : $blueprint['qualityMode'];
-            $blueprint['rationale'] .= ' Pentru test evaluativ, recomandarea evită modul rapid.';
-        }
-
-        return [
-            ...$blueprint,
-            'testType' => $testType,
-            'scope' => $scope,
-            'scope_id' => $scopeId,
-            'source_label' => $sourceLabel,
-            'source_word_count' => $wordCount,
-            'source_modules_count' => $moduleCount,
-            'source_lessons_count' => $lessonCount,
-        ];
-    }
-
-    private function buildAiCoverageReport(
-        \App\Models\Course $course,
-        array $questions,
-        int $requestedCount,
-        array $requestedTypes,
-        string $scope,
-        $scopeId,
-        ?int $moduleId,
-        ?int $lessonId,
-        string $qualityMode,
-        array $cognitiveLevels = []
-    ): array {
-        $modules = $course->relationLoaded('modules') ? ($course->modules ?? collect()) : collect();
-        $rootLessons = $course->relationLoaded('lessons') ? ($course->lessons ?? collect()) : collect();
-
-        $sourceLabel = 'Curs complet';
-        $moduleCount = $modules->count();
-        $lessonCount = $modules->sum(fn ($module) => ($module->lessons ?? collect())->count())
-            + $rootLessons->count();
-
-        if ($moduleId !== null) {
-            $module = $modules->first(fn ($item) => (int) $item->id === $moduleId);
-            $sourceLabel = $module ? 'Modul: ' . (string) $module->title : 'Modul #' . $moduleId;
-            $moduleCount = $module ? 1 : 0;
-            $lessonCount = $module ? ($module->lessons ?? collect())->count() : 0;
-        }
-
-        if ($lessonId !== null) {
-            $lesson = null;
-            foreach ($modules as $module) {
-                $lesson = ($module->lessons ?? collect())->first(fn ($item) => (int) $item->id === $lessonId);
-                if ($lesson) {
-                    break;
-                }
-            }
-            $lesson ??= $rootLessons->first(fn ($item) => (int) $item->id === $lessonId);
-            $sourceLabel = $lesson ? 'Lecție: ' . (string) $lesson->title : 'Lecție #' . $lessonId;
-            $moduleCount = 0;
-            $lessonCount = $lesson ? 1 : 0;
-        }
-
-        $typeDistribution = [];
-        foreach ($questions as $question) {
-            $type = (string) ($question['type'] ?? 'multiple_choice');
-            $typeDistribution[$type] = ($typeDistribution[$type] ?? 0) + 1;
-        }
-
-        $generatedCount = count($questions);
-
-        return [
-            'requested_count' => $requestedCount,
-            'generated_count' => $generatedCount,
-            'missing_count' => max(0, $requestedCount - $generatedCount),
-            'target_met' => $generatedCount >= $requestedCount,
-            'quality_mode' => $qualityMode,
-            'cognitive_levels' => array_values($cognitiveLevels),
-            'scope' => $scope,
-            'scope_id' => $scopeId,
-            'source_label' => $sourceLabel,
-            'source_modules_count' => $moduleCount,
-            'source_lessons_count' => $lessonCount,
-            'requested_types' => array_values($requestedTypes),
-            'type_distribution' => $typeDistribution,
-            'notes' => $generatedCount < $requestedCount
-                ? 'Formely AI a returnat mai puține întrebări pentru a evita umplutura slabă.'
-                : 'Ținta de întrebări a fost atinsă.',
-        ];
-    }
-
-    private function resolveCourseScopeIds(string $scope, $scopeId): array
-    {
-        $scopeId = $scopeId !== null && $scopeId !== '' ? (int) $scopeId : null;
-        if ($scope === 'module') {
-            return [$scopeId, null];
-        }
-        if ($scope === 'lesson') {
-            return [null, $scopeId];
-        }
-
-        return [null, null];
+            'message' => 'Coada de verificări a fost curățată.',
+            'cleared_count' => count($toClearIds),
+        ]);
     }
 
     public function suggestManualReviewFeedback(Request $request, $resultId)
     {
-        $this->assertCompanyFeature('ai_test_generation');
-
         $result = TestResult::with(['test.questions', 'test.questionBank.questions', 'user:id,name,email'])->findOrFail($resultId);
         if (auth()->user()->isInstructor() && (int) $result->test->created_by !== (int) auth()->id()) {
             abort(403, 'Acces interzis. Poți verifica doar rezultatele testelor tale.');
@@ -2365,4 +945,122 @@ class TestAdminController extends Controller
         ];
     }
 
+    /**
+     * Submit manual review for a test result
+     */
+    public function submitManualReview(Request $request, $resultId)
+    {
+        $validated = $request->validate([
+            'manual_review_scores' => 'required|array',
+            'manual_review_scores.*.question_id' => 'required|integer',
+            'manual_review_scores.*.score' => 'required|numeric|min:0',
+            'manual_review_scores.*.feedback' => 'nullable|string|max:2000',
+            'manual_review_scores.*.rubric_criteria' => 'nullable|array',
+            'manual_review_scores.*.rubric_criteria.*' => 'nullable|string|max:255',
+            'overall_feedback' => 'nullable|string|max:4000',
+        ]);
+
+        $result = TestResult::with(['test.questions', 'test.questionBank.questions'])->findOrFail($resultId);
+        if (auth()->user()->isInstructor() && (int) $result->test->created_by !== (int) auth()->id()) {
+            abort(403, 'Acces interzis. Poți verifica doar rezultatele testelor tale.');
+        }
+
+        if ($result->reviewed_at) {
+            return response()->json([
+                'error' => 'Acest rezultat a fost deja verificat.',
+            ], 422);
+        }
+
+        $autoScore = (int) $result->score;
+        $manualScore = 0;
+        $manualScores = [];
+
+        $questions = collect();
+        $hydrated = app(\App\Services\TestAttemptService::class)->hydrateQuestions($result->question_snapshot);
+        if ($hydrated->isNotEmpty()) {
+            $questions = $hydrated;
+        } elseif ($result->test) {
+            $questions = $result->test->question_source === 'bank' && $result->test->questionBank
+                ? $result->test->questionBank->questions
+                : $result->test->questions;
+        }
+        $questionIds = $questions->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        foreach ($validated['manual_review_scores'] as $reviewScore) {
+            $qid = (int) $reviewScore['question_id'];
+            if (!in_array($qid, $questionIds, true)) {
+                continue;
+            }
+            $question = $questions->firstWhere('id', $qid);
+            if (!$question) continue;
+
+            $manualTypes = ['essay'];
+            if (!in_array($question->type ?? '', $manualTypes, true)) {
+                continue;
+            }
+
+            $maxPoints = (int) ($question->points ?? 1);
+            $givenScore = min((float) $reviewScore['score'], $maxPoints);
+            if (isset($manualScores[$qid])) {
+                continue;
+            }
+            $manualScore += $givenScore;
+            $manualScores[$qid] = [
+                'score' => $givenScore,
+                'feedback' => $reviewScore['feedback'] ?? null,
+                'rubric_criteria' => array_values(array_filter($reviewScore['rubric_criteria'] ?? [])),
+            ];
+        }
+
+        if (!empty($validated['overall_feedback'])) {
+            $manualScores['_meta'] = [
+                'overall_feedback' => $validated['overall_feedback'],
+            ];
+        }
+
+        $totalPoints = (int) ($result->max_score ?? 0) ?: 1;
+        $newTotalScore = min($autoScore + $manualScore, $totalPoints);
+        $newPercentage = $totalPoints > 0 ? round(($newTotalScore / $totalPoints) * 100, 2) : 0;
+        $newPercentage = min(100, max(0, $newPercentage));
+
+        $passingScore = $this->resolveResultPassingScore($result);
+        $newPassed = $newPercentage >= $passingScore;
+
+        $result->update([
+            'score' => $newTotalScore,
+            'percentage' => $newPercentage,
+            'passed' => $newPassed,
+            'needs_manual_review' => false,
+            'manual_review_scores' => $manualScores,
+            'reviewed_at' => now(),
+            'reviewed_by' => Auth::id(),
+            'status' => 'completed',
+        ]);
+
+        \Illuminate\Support\Facades\Cache::forget("profile_user_{$result->user_id}");
+        \Illuminate\Support\Facades\Cache::forget("dashboard_user_{$result->user_id}_stats");
+
+        return response()->json([
+            'message' => 'Verificare manuală salvată cu succes',
+            'result' => $result->load(['test', 'user:id,name,email']),
+        ]);
+    }
+
+    private function resolveResultPassingScore(TestResult $result): int
+    {
+        if ($result->passing_score_applied !== null && $result->passing_score_applied !== '') {
+            return (int) $result->passing_score_applied;
+        }
+        $base = (int) ($result->test->passing_score ?? 70);
+        $query = \App\Models\CourseTest::where('test_id', $result->test_id);
+        if ($result->course_id) {
+            $query->where('course_id', $result->course_id);
+        }
+        $courseTest = $query->first();
+        if ($courseTest && $courseTest->passing_score !== null) {
+            return (int) $courseTest->passing_score;
+        }
+
+        return $base;
+    }
 }

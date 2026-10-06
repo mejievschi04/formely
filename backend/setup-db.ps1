@@ -12,7 +12,7 @@ if (-not (Test-Path .env)) {
     } else {
         Write-Host "Creating basic .env file..." -ForegroundColor Yellow
         @"
-APP_NAME=Formely
+APP_NAME=VoltaAcademy
 APP_ENV=local
 APP_KEY=
 APP_DEBUG=true

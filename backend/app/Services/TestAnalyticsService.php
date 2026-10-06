@@ -54,7 +54,7 @@ class TestAnalyticsService
 
         return $questionMap->sortBy('order')->values()->map(function (Question $question) use ($test, $results, $discriminationGroups) {
             $type = (string) ($question->type ?? 'multiple_choice');
-            $isChoice = in_array($type, ['multiple_choice', 'single_choice', 'true_false'], true);
+            $isChoice = in_array($type, ['multiple_choice', 'single_choice', 'true_false', 'yes_no'], true);
             $presentedCount = 0;
             $answeredCount = 0;
             $skippedCount = 0;
@@ -298,7 +298,7 @@ class TestAnalyticsService
         $userAnswerSummary = null;
         $selectedDisplayIndices = [];
 
-        if (in_array($type, ['multiple_choice', 'single_choice', 'true_false'], true)) {
+        if (in_array($type, ['multiple_choice', 'single_choice', 'true_false', 'yes_no'], true)) {
             $order = $this->answerOrder->resolveChoiceOrderForAttempt($test, $question, (int) $result->user_id, $attemptNumber);
             $originalSelected = $this->answerOrder->selectedOriginalIndicesFromStored($userAnswer, $type, $order);
             $selectedDisplayIndices = $this->answerOrder->originalIndicesToDisplay($originalSelected, $order['original_to_display']);

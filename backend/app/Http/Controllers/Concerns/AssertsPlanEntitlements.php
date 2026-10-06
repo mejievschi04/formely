@@ -58,7 +58,7 @@ trait AssertsPlanEntitlements
 
     protected function assertSeatForRoleChange(User $target, string $newRole): void
     {
-        if (UserRoles::normalize($target->role) === UserRoles::normalize($newRole)) {
+        if ($target->role === $newRole) {
             return;
         }
 
@@ -85,7 +85,7 @@ trait AssertsPlanEntitlements
             return;
         }
 
-        if ($newStaff && $oldStaff && UserRoles::normalize($newRole) === UserRoles::ANALYST) {
+        if ($newStaff && $oldStaff && $newRole === UserRoles::ANALYST) {
             $service->assertSeatAvailable($company, $newRole, 0);
         }
     }

@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { adminService } from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
-import { useAuth } from '../../contexts/AuthContext';
+
+import { useToast } from '../../contexts/ToastContextShared.js';
+
+import { useAuth } from '../../contexts/AuthContextShared.js';
 
 const ModuleCreatorPage = () => {
 	const { id } = useParams(); // module ID if editing
@@ -136,11 +139,11 @@ const ModuleCreatorPage = () => {
 							{id && id !== 'new' ? 'Editează Modul' : 'Creează Modul Nou'}
 						</h1>
 						<p className="admin-page-subtitle">
-							Modul în cursul Formely — {id && id !== 'new' ? 'actualizează' : 'completează'} structura și titlul.
+							Completează informațiile pentru {id && id !== 'new' ? 'actualizarea' : 'crearea'} modulului
 						</p>
 					</div>
 					<button 
-						className="admin-btn admin-btn-secondary" 
+						className="va-btn-back admin-back-btn" 
 						onClick={() => {
 							if (formData.course_id) {
 								navigate(`/admin/courses/${formData.course_id}`);
@@ -149,7 +152,8 @@ const ModuleCreatorPage = () => {
 							}
 						}}
 					>
-						← Înapoi
+						<ArrowLeft size={18} aria-hidden />
+						Înapoi
 					</button>
 				</div>
 
@@ -202,7 +206,7 @@ const ModuleCreatorPage = () => {
 								</button>
 								<button
 									type="submit"
-									className="admin-btn admin-btn-primary"
+									className="admin-btn lms-btn-primary"
 									disabled={loading}
 								>
 									{loading ? 'Se salvează...' : (id && id !== 'new' ? 'Actualizează Modul' : 'Creează Modul')}

@@ -3,14 +3,14 @@
  * Păstrată în sync cu fallback-urile din admin (carduri, modale).
  */
 export const TEAM_ACCENT_COLORS = [
-	'#0891b2',
-	'#22d3ee',
-	'#0e7490',
-	'#155e75',
-	'#38bdf8',
-	'#0284c7',
-	'#67e8f9',
-	'#0f172a',
+	'#6366f1',
+	'#ec4899',
+	'#14b8a6',
+	'#f59e0b',
+	'#8b5cf6',
+	'#06b6d4',
+	'#84cc16',
+	'#f43f5e',
 ];
 
 export const TEAM_ACCENT_NEUTRAL = '#94a3b8';
@@ -18,13 +18,6 @@ export const TEAM_ACCENT_NEUTRAL = '#94a3b8';
 function readTeamAccentColor(team) {
 	if (!team) return null;
 	return team.accent_color || team.accentColor || null;
-}
-
-/**
- * Culoare afișată în liste/chip-uri: doar API sau gri neutru.
- */
-export function teamAccentNeutral(team) {
-	return readTeamAccentColor(team) || TEAM_ACCENT_NEUTRAL;
 }
 
 /**
@@ -40,4 +33,9 @@ export function teamAccentByTeamId(team) {
  */
 export function teamAccentByListIndex(team, index) {
 	return readTeamAccentColor(team) || TEAM_ACCENT_COLORS[(Number(index) || 0) % TEAM_ACCENT_COLORS.length];
+}
+
+/** Culoare chip/swatch în tabele utilizatori și liste similare. */
+export function teamAccent(team) {
+	return teamAccentByTeamId(team);
 }

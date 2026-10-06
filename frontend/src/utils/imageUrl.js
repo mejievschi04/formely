@@ -1,23 +1,15 @@
 /**
  * Returnează origin-ul unde se servesc fișierele storage (backend).
- * Ordine: VITE_STORAGE_URL > VITE_API_URL (absolut) > fallback localhost:8000 > window.origin
+ * Ordine: VITE_STORAGE_URL > VITE_API_URL (absolut) > același host ca pagina în dev (proxy Vite) > window.origin
  */
 function getStorageOrigin() {
-	if (typeof window !== 'undefined') {
-		try {
-			const pageHost = new URL(window.location.origin).hostname;
-			if (pageHost !== 'localhost' && pageHost !== '127.0.0.1' && pageHost !== '::1') {
-				return window.location.origin;
-			}
-		} catch {}
-	}
 	// 1. Explicit – cel mai sigur
 	const storageUrl = import.meta.env.VITE_STORAGE_URL;
 	if (storageUrl && (storageUrl.startsWith('http://') || storageUrl.startsWith('https://'))) {
 		try {
 			const u = new URL(storageUrl);
 			return `${u.protocol}//${u.host}`;
-		} catch {}
+		} catch { /* Invalid URL: try the next supported form. */ }
 	}
 	// 2. Din API URL
 	const apiUrl = import.meta.env.VITE_API_URL;
@@ -25,24 +17,14 @@ function getStorageOrigin() {
 		try {
 			const u = new URL(apiUrl);
 			return `${u.protocol}//${u.host}`;
-		} catch {}
+		} catch { /* Invalid URL: try the next supported form. */ }
 	}
 	// 3. SSR / build time
 	if (typeof window === 'undefined') {
 		return 'http://localhost:8000';
 	}
-	// 4. Local dev fallback: dacă frontend rulează pe localhost (ex: 5173), storage-ul e pe backend:8000
-	const origin = window.location.origin;
-	try {
-		const u = new URL(origin);
-		if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') {
-			const port = u.port || (u.protocol === 'https:' ? '443' : '80');
-			if (port !== '8000') {
-				return `${u.protocol}//${u.hostname}:8000`;
-			}
-		}
-	} catch {}
-	return origin;
+	// 4. Dev: Vite proxy-ează /storage către backend. Nu forța portul 8000.
+	return window.location.origin;
 }
 
 /**
@@ -75,10 +57,12 @@ export function toImageUrl(url) {
 		try {
 			const u = new URL(trimmed);
 			if (!u.pathname.startsWith('/storage/')) return trimmed;
-			// Dacă backend-ul e pe alt host (ex. producție), păstrăm URL-ul – fișierul e acolo
-			if (u.host !== new URL(origin).host) return trimmed;
-			// Același host – folosim origin-ul nostru (proxy / acces direct)
-			return `${origin}${u.pathname}`;
+			const storageHost = new URL(origin);
+			const sameHost = u.host === storageHost.host;
+			const localDevStorage = import.meta.env.DEV
+				&& (u.hostname === 'localhost' || u.hostname === '127.0.0.1');
+			if (!sameHost && !localDevStorage) return trimmed;
+			return `${origin}${u.pathname}${u.search}`;
 		} catch {
 			return trimmed;
 		}

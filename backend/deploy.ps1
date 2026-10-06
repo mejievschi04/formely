@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 Write-Host "🚀 Starting backend deployment..." -ForegroundColor Cyan
 
 # Navighează la directorul backend
-Set-Location "$PSScriptRoot\backend"
+Set-Location "$PSScriptRoot\volta-backend"
 
 # Pull latest changes (dacă folosești git)
 if (Test-Path ".git") {

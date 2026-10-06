@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-const useUnsavedChangesPrompt = (enabled, message = 'Ai modificari nesalvate. Esti sigur ca vrei sa iesi?') => {
+const useUnsavedChangesPrompt = (enabled, message = 'Ai modificări nesalvate. Ești sigur că vrei să ieși?') => {
 	useEffect(() => {
 		if (!enabled) return undefined;
 		const handleBeforeUnload = (event) => {

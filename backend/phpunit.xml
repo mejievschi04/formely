@@ -22,5 +22,13 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
+        <!-- Testele Volta acoperă register public; în Formely e oprit implicit (sales-led). -->
+        <env name="FORMELY_PUBLIC_REGISTER_ENABLED" value="true"/>
+        <!-- Testele nu folosesc cheile AI reale din .env (fără apeluri externe, fără joburi Volt în fundal) -->
+        <env name="GROQ_API_KEY" value="" force="true"/>
+        <env name="OPENAI_API_KEY" value="" force="true"/>
+        <env name="HUGGINGFACE_API_KEY" value="" force="true"/>
+        <!-- Logurile din teste nu ajung în storage/logs/laravel.log al aplicației -->
+        <env name="LOG_CHANNEL" value="null" force="true"/>
     </php>
 </phpunit>

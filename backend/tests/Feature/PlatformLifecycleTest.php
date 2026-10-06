@@ -73,19 +73,18 @@ class PlatformLifecycleTest extends TestCase
             180
         );
 
-        parse_str((string) parse_url($inviteUrl, PHP_URL_QUERY), $query);
-        $token = $query['token'] ?? '';
+        $token = basename((string) parse_url($inviteUrl, PHP_URL_PATH));
         $this->assertNotEmpty($token);
 
         $this->app['auth']->forgetGuards();
+        $this->app['auth']->shouldUse('web');
         TenantContext::clear();
 
-        $this->getJson('/api/auth/invitations/validate?token=' . urlencode($token))
+        $this->getJson('/api/auth/invitations/' . $token)
             ->assertOk()
             ->assertJsonPath('email', 'owner@client.example');
 
-        $this->postJson('/api/auth/invitations/accept', [
-            'token' => $token,
+        $this->postJson('/api/auth/invitations/' . $token . '/accept', [
             'name' => 'Owner Demo',
             'password' => 'Password1',
             'password_confirmation' => 'Password1',
@@ -96,7 +95,7 @@ class PlatformLifecycleTest extends TestCase
             'password' => 'Password1',
         ])->assertOk()
             ->assertJsonPath('user.is_platform_admin', false)
-            ->assertJsonPath('user.role', UserRoles::COMPANY_OWNER);
+            ->assertJsonPath('user.role', UserRoles::ADMIN);
 
         $owner = User::withoutGlobalScopes()->where('email', 'owner@client.example')->firstOrFail();
         $this->flushSession();

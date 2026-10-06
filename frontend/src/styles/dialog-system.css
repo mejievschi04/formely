@@ -1,0 +1,538 @@
+/*
+ * Ferestrele de editare (mapă, utilizator, curs): aceeași structură și aceleași câmpuri.
+ *   .va-dialog            panoul
+ *   .va-dialog__header    titlu + X (.va-close-btn)
+ *   .va-dialog__body      conținutul, derulabil
+ *   .va-dialog__footer    Anulează / Salvează, în afara zonei derulabile (mereu vizibile)
+ *   .va-form-grid         două coloane pe desktop, una pe telefon; .va-field--full ocupă tot rândul
+ * Specificitate mărită (html body …): straturile globale de formulare și butoane nu le schimbă.
+ */
+
+html body .va-dialog-overlay {
+	backdrop-filter: blur(3px);
+	-webkit-backdrop-filter: blur(3px);
+}
+
+html body .va-dialog {
+	display: flex;
+	flex-direction: column;
+	box-sizing: border-box;
+	width: min(640px, calc(100vw - 32px));
+	max-height: min(88vh, 860px);
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+	border: 1px solid var(--border-primary);
+	border-radius: 16px;
+	background: var(--bg-elevated);
+	color: var(--text-primary);
+	box-shadow: 0 24px 48px rgba(15, 23, 42, 0.24), 0 4px 12px rgba(15, 23, 42, 0.12);
+	text-align: left;
+}
+
+html body .va-dialog.va-dialog--wide {
+	width: min(880px, calc(100vw - 32px));
+}
+
+html body .va-dialog__header {
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 18px 24px;
+	border-bottom: 1px solid var(--border-primary);
+}
+
+html body .va-dialog__title {
+	margin: 0;
+	font-size: 1.125rem;
+	font-weight: 700;
+	line-height: 1.3;
+	color: var(--text-primary);
+}
+
+html body .va-dialog__body {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	padding: 20px 24px 24px;
+}
+
+html body .va-dialog__footer {
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 12px;
+	padding: 14px 24px;
+	border-top: 1px solid var(--border-primary);
+	background: var(--bg-elevated);
+}
+
+html body .va-dialog__section-title {
+	margin: 0 0 8px;
+	font-size: 0.9375rem;
+	font-weight: 700;
+	color: var(--text-primary);
+}
+
+/* File în fereastră (ex. mapa: Aspect / Cursuri) */
+html body .va-dialog__tabs {
+	display: flex;
+	flex: 0 0 auto;
+	gap: 8px;
+	margin-left: auto;
+}
+
+html body .va-dialog__tab.va-dialog__tab {
+	display: inline-flex;
+	align-items: center;
+	min-height: 36px;
+	padding: 0 16px;
+	border: 1px solid var(--btn-outline-border);
+	border-radius: 999px;
+	background: var(--bg-elevated);
+	color: var(--text-primary);
+	font-size: 0.875rem;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+html body .va-dialog__tab.va-dialog__tab:hover {
+	border-color: var(--btn-outline-border-hover);
+}
+
+html body .va-dialog__tab.va-dialog__tab.is-active {
+	border-color: var(--btn-primary-border);
+	background: var(--btn-primary-bg);
+	color: var(--btn-primary-text);
+}
+
+html body .va-dialog__tab.va-dialog__tab:focus-visible {
+	outline: 2px solid var(--border-focus);
+	outline-offset: 2px;
+}
+
+/* ---------- Grila de câmpuri ---------- */
+
+html body .va-form-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	align-items: start;
+	gap: 16px;
+	margin: 0;
+	padding: 0;
+}
+
+html body .va-form-grid > .va-field--full {
+	grid-column: 1 / -1;
+}
+
+html body .va-field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+html body .va-field > label,
+html body .va-field > .va-field__label,
+html body .va-field > legend {
+	margin: 0;
+	padding: 0;
+	font-size: 0.875rem;
+	font-weight: 600;
+	line-height: 1.3;
+	color: var(--text-primary);
+}
+
+html body .va-field__optional {
+	font-weight: 400;
+	color: var(--text-secondary);
+}
+
+html body .va-field__hint {
+	margin: 0;
+	font-size: 0.8125rem;
+	line-height: 1.45;
+	color: var(--text-secondary);
+}
+
+/* Câmpurile: aceeași înălțime, margine vizibilă (≥ 3:1) și contur clar la focus */
+html body .va-dialog input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]),
+html body .va-dialog select,
+html body .va-dialog textarea {
+	box-sizing: border-box !important;
+	width: 100% !important;
+	min-height: 44px !important;
+	height: 44px !important;
+	margin: 0 !important;
+	padding: 0 12px !important;
+	border: 1px solid var(--btn-outline-border) !important;
+	border-radius: 10px !important;
+	background: var(--bg-elevated) !important;
+	color: var(--text-primary) !important;
+	box-shadow: none !important;
+	font: inherit !important;
+	font-size: 0.9375rem !important;
+	line-height: 1.4 !important;
+	outline: none !important;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* aceeași specificitate ca „html body .va-dialog textarea” de mai sus; fiind după ea, câștigă */
+html body .va-dialog textarea {
+	height: auto !important;
+	min-height: 88px !important;
+	padding: 10px 12px !important;
+	resize: vertical;
+}
+
+html body .va-dialog :is(input, select, textarea)::placeholder {
+	color: var(--text-tertiary);
+	opacity: 1;
+}
+
+html body .va-dialog :is(input:not([type="checkbox"]):not([type="radio"]):not([type="color"]), select, textarea):hover:not(:disabled) {
+	border-color: var(--btn-outline-border-hover) !important;
+}
+
+html body .va-dialog :is(input:not([type="checkbox"]):not([type="radio"]):not([type="color"]), select, textarea):focus {
+	border-color: var(--text-primary) !important;
+	box-shadow: 0 0 0 3px var(--color-primary-alpha-30) !important;
+}
+
+html body .va-dialog :is(input, select, textarea):disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+/* Culoare: pătrat de culoare + cod hex */
+html body .va-color-input {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+html body .va-color-input input[type="color"] {
+	flex: 0 0 44px;
+	width: 44px !important;
+	height: 44px !important;
+	padding: 4px !important;
+	border: 1px solid var(--btn-outline-border) !important;
+	border-radius: 10px !important;
+	background: var(--bg-elevated) !important;
+	cursor: pointer;
+}
+
+html body .va-color-input input[type="color"]::-webkit-color-swatch-wrapper {
+	padding: 0;
+}
+
+html body .va-color-input input[type="color"]::-webkit-color-swatch {
+	border: 0;
+	border-radius: 6px;
+}
+
+/* Bife */
+html body .va-checks {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px 24px;
+}
+
+html body .va-check {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	min-height: 32px;
+	font-size: 0.9375rem;
+	font-weight: 500;
+	color: var(--text-primary);
+	cursor: pointer;
+}
+
+html body .va-check input {
+	width: 18px;
+	height: 18px;
+	margin: 0;
+	accent-color: var(--text-primary);
+	cursor: pointer;
+}
+
+/* Imagine (copertă): previzualizare + acțiuni */
+html body .va-media-field {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 12px;
+	border: 1px solid var(--border-primary);
+	border-radius: 12px;
+	background: var(--bg-secondary);
+}
+
+html body .va-media-field__preview {
+	display: flex;
+	flex: 0 0 160px;
+	align-items: center;
+	justify-content: center;
+	width: 160px;
+	aspect-ratio: 16 / 9;
+	overflow: hidden;
+	border: 1px solid var(--border-primary);
+	border-radius: 8px;
+	background: var(--bg-elevated);
+	color: var(--text-secondary);
+	font-size: 0.8125rem;
+}
+
+html body .va-media-field__preview img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+html body .va-media-field__copy {
+	display: flex;
+	flex: 1 1 auto;
+	flex-direction: column;
+	gap: 8px;
+	min-width: 0;
+}
+
+html body .va-media-field__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+/* Liste de cursuri în fereastra mapei */
+html body .va-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	border: 1px solid var(--border-primary);
+	border-radius: 12px;
+	overflow: hidden;
+}
+
+html body .va-list > li {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	min-height: 52px;
+	padding: 8px 12px;
+	border-bottom: 1px solid var(--border-primary);
+	font-size: 0.9375rem;
+	color: var(--text-primary);
+}
+
+html body .va-list > li:last-child {
+	border-bottom: 0;
+}
+
+html body .va-list--scroll {
+	max-height: 232px;
+	overflow-y: auto;
+}
+
+html body .va-list__empty {
+	margin: 0;
+	padding: 14px 12px;
+	border: 1px dashed var(--border-secondary);
+	border-radius: 12px;
+	font-size: 0.875rem;
+	color: var(--text-secondary);
+}
+
+@media (max-width: 640px) {
+	html body .va-dialog,
+	html body .va-dialog.va-dialog--wide {
+		width: calc(100vw - 24px);
+		max-height: 92vh;
+	}
+
+	html body .va-dialog.admin-course-map-dialog {
+		width: calc(100vw - 24px);
+		height: calc(100dvh - 48px);
+	}
+
+	html body .va-dialog__header {
+		padding: 14px 16px;
+	}
+
+	html body .va-dialog__body {
+		padding: 16px 16px 20px;
+	}
+
+	html body .va-dialog__footer {
+		padding: 12px 16px;
+	}
+
+	/* pe telefon filele trec sub titlu, pe toată lățimea */
+	html body .va-dialog__header:has(.va-dialog__tabs) {
+		flex-wrap: wrap;
+	}
+
+	html body .va-dialog__tabs {
+		order: 3;
+		width: 100%;
+		margin-left: 0;
+	}
+
+	html body .va-dialog__tab.va-dialog__tab {
+		flex: 1 1 0;
+		justify-content: center;
+	}
+
+	html body .va-dialog__footer > * {
+		flex: 1 1 0;
+	}
+
+	html body .va-form-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	html body .va-media-field {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	html body .va-media-field__preview {
+		width: 100%;
+		flex-basis: auto;
+	}
+}
+
+/* Coloană de câmpuri în grilă (ex. fereastra mapei: stânga date, dreapta previzualizare) */
+html body .va-field-stack {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	min-width: 0;
+}
+
+/* Fereastra mapei: fila Aspect (date | previzualizare + copertă) și fila Cursuri */
+/* Mărime fixă: nu se schimbă între file sau după cât conținut are fila (care se derulează în interior) */
+html body .va-dialog.admin-course-map-dialog {
+	width: min(1040px, calc(100vw - 32px));
+	height: min(760px, calc(100vh - 48px));
+	max-height: none;
+}
+
+html body .admin-course-map-dialog__grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	align-items: start;
+	gap: 24px;
+}
+
+html body .admin-course-map-dialog__courses-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	align-items: start;
+	gap: 24px;
+}
+
+/* <section> primește spațiere din regulile globale de pe telefon */
+html body .va-dialog .admin-course-map-dialog__courses {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	box-shadow: none;
+}
+
+html body .admin-course-map-dialog__courses .va-list--scroll {
+	max-height: 440px;
+}
+
+/* panoul filei neselectate (display: grid de mai sus ar anula atributul hidden) */
+html body .admin-course-map-dialog [hidden] {
+	display: none !important;
+}
+
+html body .admin-course-map-dialog__preview {
+	display: flex;
+	justify-content: center;
+	padding: 8px;
+	border: 1px solid var(--border-primary);
+	border-radius: 12px;
+	background: var(--bg-secondary);
+}
+
+/* previzualizarea la scară redusă (zoom micșorează și spațiul ocupat, nu doar desenul) */
+html body .admin-course-map-dialog__preview .course-map-folder-tile {
+	zoom: 0.74;
+	pointer-events: none;
+}
+
+/* Coperta: miniatură pe care tragi pentru zona vizibilă, mărimea alături, butoanele dedesubt */
+html body .admin-course-map-dialog__cover .map-cover-focus-editor {
+	display: grid;
+	grid-template-columns: 112px minmax(0, 1fr);
+	align-items: center;
+	gap: 12px;
+}
+
+html body .admin-course-map-dialog__cover .map-cover-focus-editor__stage {
+	width: 112px;
+}
+
+html body .admin-course-map-dialog__cover .map-cover-focus-editor__hint {
+	display: none;
+}
+
+html body .admin-course-map-dialog__cover .map-cover-focus-editor__zoom::before {
+	content: "Trage pe imagine ca să alegi zona vizibilă.";
+	margin-bottom: 4px;
+	font-size: 0.8125rem;
+	font-weight: 400;
+	line-height: 1.4;
+	color: var(--text-secondary);
+}
+
+
+@media (max-width: 640px) {
+	html body .admin-course-map-dialog__grid,
+	html body .admin-course-map-dialog__courses-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+html body .admin-course-map-dialog .va-list .va-check {
+	width: 100%;
+}
+
+html body .admin-course-map-dialog__preview .course-map-folder-tile {
+	--course-map-tile-hit-height: 300px;
+}
+
+/* Liste de selecție: aceeași săgeată pe desktop și pe telefon (pe telefon cea nativă era ascunsă) */
+html body .va-dialog select {
+	appearance: none !important;
+	-webkit-appearance: none !important;
+	padding-right: 40px !important;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 256 256'%3E%3Cpath fill='none' stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='24' d='m208 96-80 80-80-80'/%3E%3C/svg%3E") !important;
+	background-repeat: no-repeat !important;
+	background-position: right 14px center !important;
+	background-size: 16px 16px !important;
+	cursor: pointer;
+}
+
+html body .admin-course-map-dialog__cover .map-cover-focus-editor__zoom-ends {
+	display: none;
+}
+
+@media (max-width: 640px) {
+	/* pe telefon cardul se întinde pe toată lățimea: îl limităm ca previzualizarea să nu umple ecranul */
+	html body .admin-course-map-dialog__preview .course-map-folder-tile {
+		zoom: 0.55;
+		max-width: 360px;
+	}
+}

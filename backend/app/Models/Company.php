@@ -34,6 +34,7 @@ class Company extends Model
         'max_active_learners',
         'max_staff',
         'features',
+        'email_notifications',
         'trial_ends_at',
         'contract_ends_at',
         'notes',
@@ -41,6 +42,7 @@ class Company extends Model
 
     protected $casts = [
         'features' => 'array',
+        'email_notifications' => 'boolean',
         'trial_ends_at' => 'datetime',
         'contract_ends_at' => 'datetime',
         'max_active_learners' => 'integer',

@@ -1,11 +1,15 @@
+import '../styles/achievements-modern.css';
 import React, { useState, useEffect } from 'react';
 import { achievementsService } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../contexts/ToastContext';
+
+
+
+import { useToast } from '../contexts/ToastContextShared.js';
 import { logger } from '../utils/logger';
+import { BookOpenText, GraduationCap, Timer } from '@phosphor-icons/react';
 
 const AchievementsPage = () => {
-	const { user } = useAuth();
+
 	const { error: showError } = useToast();
 	const [achievements, setAchievements] = useState(null);
 	const [loading, setLoading] = useState(true);
@@ -53,31 +57,28 @@ const AchievementsPage = () => {
 	return (
 		<div className="student-achievements-page">
 			<div className="student-achievements-header">
-				<h1 className="student-achievements-title">Realizări</h1>
-				<p className="student-achievements-subtitle">
-					Progresul tău în Formely — cursuri finalizate, lecții parcurse și ore de învățare.
-				</p>
+				<h1 className="student-achievements-title">Istoric Realizări</h1>
 			</div>
 
 			{/* Statistics */}
 			{achievements && (
 				<div className="student-achievements-stats">
 					<div className="student-achievements-stat-card">
-						<div className="student-achievements-stat-icon">🎓</div>
+						<div className="student-achievements-stat-icon"><GraduationCap size={26} weight="bold" aria-hidden /></div>
 						<div className="student-achievements-stat-content">
 							<div className="student-achievements-stat-value">{achievements.completed_courses || 0}</div>
 							<div className="student-achievements-stat-label">Cursuri finalizate</div>
 						</div>
 					</div>
 					<div className="student-achievements-stat-card">
-						<div className="student-achievements-stat-icon">📚</div>
+						<div className="student-achievements-stat-icon"><BookOpenText size={26} weight="bold" aria-hidden /></div>
 						<div className="student-achievements-stat-content">
 							<div className="student-achievements-stat-value">{achievements.completed_lessons || 0}</div>
 							<div className="student-achievements-stat-label">Lecții finalizate</div>
 						</div>
 					</div>
 					<div className="student-achievements-stat-card">
-						<div className="student-achievements-stat-icon">⏱️</div>
+						<div className="student-achievements-stat-icon"><Timer size={26} weight="bold" aria-hidden /></div>
 						<div className="student-achievements-stat-content">
 							<div className="student-achievements-stat-value">{achievements.learning_hours || 0}h</div>
 							<div className="student-achievements-stat-label">Ore de învățare</div>

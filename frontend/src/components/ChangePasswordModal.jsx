@@ -1,13 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState } from 'react';
+
+import { useAuth } from '../contexts/AuthContextShared.js';
 
 const ChangePasswordModal = () => {
-	useEffect(() => {
-		console.log('ChangePasswordModal mounted');
-		return () => {
-			console.log('ChangePasswordModal unmounted');
-		};
-	}, []);
 	const { changePassword } = useAuth();
 	const [formData, setFormData] = useState({
 		currentPassword: '',
@@ -88,15 +83,7 @@ const ChangePasswordModal = () => {
 					</p>
 
 					{error && (
-						<div style={{ 
-							padding: 'var(--space-3)', 
-							background: 'rgba(239, 68, 68, 0.2)', 
-							color: 'var(--color-error)', 
-							borderRadius: 'var(--radius-lg)', 
-							marginBottom: 'var(--space-4)',
-							border: '1px solid rgba(239, 68, 68, 0.3)',
-							fontSize: 'var(--font-size-sm)',
-						}}>
+						<div className="lms-error-message" role="alert">
 							{error}
 						</div>
 					)}
@@ -111,11 +98,11 @@ const ChangePasswordModal = () => {
 								value={formData.currentPassword}
 								onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
 								required
-								placeholder="formely2025"
+								placeholder="volta2026"
 								autoFocus
 							/>
 							<p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', marginTop: 'var(--space-1)' }}>
-								Parola implicită este: <strong>formely2025</strong>
+								Parola implicită este: <strong>volta2026</strong>
 							</p>
 						</div>
 
@@ -150,7 +137,7 @@ const ChangePasswordModal = () => {
 						<div className="modal-footer">
 							<button 
 								type="submit" 
-								className="btn btn-primary"
+								className="btn lms-btn-primary"
 								disabled={loading}
 							>
 								{loading ? 'Se salvează...' : 'Schimbă parola'}

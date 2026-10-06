@@ -10,6 +10,7 @@ const APP_SCROLL_ROOT_SELECTORS = [
 	'.courses-page-modern',
 	'.events-page',
 	'.library-page',
+	'.guides-page',
 	'.unified-course-page',
 	'.lessons-page-main-content',
 	'.lessons-page-player-layout',

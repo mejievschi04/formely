@@ -1,10 +1,11 @@
 import React, { useEffect, useRef } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+
+import { useAuth } from '../contexts/AuthContextShared.js';
 import { isStaffAdminRole } from '../constants/staffRoles';
 import { useLocation } from 'react-router-dom';
 
 /** Loads admin CSS only when user is admin - reduces initial load for students.
- *  When loadOnAdminPagesOnly=true, loads on /admin/* and /library
+ *  When loadOnAdminPagesOnly=true, loads on /admin/*, /library and /guides
  *  pages that use the admin/staff shell.
  *  If waitForStylesBeforePaint=true, call onArmHold then onReady after the bundle loads.
  *  (Layout must not set "not ready" in an effect that runs after onReady — race → spinner infinit.) */
@@ -29,8 +30,11 @@ export default function AdminStylesLoader({
 
 		const isStaffAdminUser = isStaffAdminRole(user?.actualRole);
 		const isAdminPage = location.pathname.startsWith('/admin');
+		// Biblioteca și Ghidurile folosesc cadrul de admin pentru staff (fără stiluri, meniul apărea ca listă simplă)
 		const isLibraryPage =
-			location.pathname === '/library' || location.pathname.startsWith('/library/items/');
+			location.pathname === '/library'
+			|| location.pathname.startsWith('/library/items/')
+			|| location.pathname === '/guides';
 		const isLibraryAdminShellPage = isLibraryPage && user?.role !== 'student';
 		const needBundle =
 			isStaffAdminUser && (!loadOnAdminPagesOnly || isAdminPage || isLibraryAdminShellPage);

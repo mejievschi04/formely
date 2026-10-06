@@ -1,5 +1,6 @@
 import React from 'react';
-import { useTheme } from '../contexts/ThemeContext';
+
+import { useTheme } from '../contexts/ThemeContextShared.js';
 import './ThemePreferenceControl.css';
 
 export default function ThemePreferenceControl({ className = '' }) {
