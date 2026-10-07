@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '../../i18n/I18nContext';
 import { appUrl } from '../../data/site';
-import LangSelect from './LangSelect';
 
 const LINKS = [
   { href: '/#produs', key: 'nav.product' },
@@ -39,7 +38,6 @@ export default function Navbar() {
         </nav>
 
         <div className="nav-actions">
-          <LangSelect />
           <a className="nav-login" href={appUrl}>
             {t('nav.login')}
           </a>
@@ -80,9 +78,6 @@ export default function Navbar() {
           <a className="btn btn-primary" href="/#contact" onClick={() => setOpen(false)}>
             {t('nav.cta')}
           </a>
-          <div style={{ marginTop: '1rem' }}>
-            <LangSelect />
-          </div>
         </div>
       ) : null}
     </>

@@ -15,6 +15,7 @@ function resolvePath(obj, path) {
   return path.split('.').reduce((acc, key) => (acc && acc[key] != null ? acc[key] : undefined), obj);
 }
 
+/** Limba aleasă manual (din footer) are prioritate; altfel limba sistemului: ro/ru/it, restul în engleză. */
 function detectInitialLang() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -22,7 +23,17 @@ function detectInitialLang() {
   } catch {
     /* ignore */
   }
-  return 'ro';
+  if (typeof window === 'undefined') return 'ro';
+  // Roboții de căutare (setați pe engleză) trebuie să indexeze versiunea principală, în română.
+  if (/bot|crawl|spider|slurp|lighthouse/i.test(navigator.userAgent || '')) return 'ro';
+
+  const preferred = navigator.languages?.length ? navigator.languages : [navigator.language];
+  for (const tag of preferred) {
+    const code = String(tag || '').toLowerCase().split('-')[0];
+    if (code === 'mo') return 'ro';
+    if (['ro', 'ru', 'it'].includes(code)) return code;
+  }
+  return 'en';
 }
 
 export function I18nProvider({ children }) {
