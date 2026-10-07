@@ -10,7 +10,7 @@ import {
   planSeatLabel,
   slugify,
 } from '../lib';
-import { Overlay, Pagination, SeatMeter, copyText } from '../ui';
+import { Overlay, Pagination, SeatMeter, copyText, ClientTabs } from '../ui';
 import { useToast } from '../toast';
 import { usePoll } from '../usePoll';
 
@@ -227,6 +227,8 @@ export default function ClientsPage() {
           Client nou
         </button>
       </header>
+
+      <ClientTabs />
 
       {newLeads.length > 0 && (
         <section className="bo-leads-strip">

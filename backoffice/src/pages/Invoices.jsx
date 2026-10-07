@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { platform } from '../api';
 import { PLAN_LABELS, STATUS_LABELS, errMessage, formatDate } from '../lib';
-import { Pagination, SeatMeter } from '../ui';
+import { Pagination, SeatMeter, ClientTabs } from '../ui';
 import { useToast } from '../toast';
 
 /** Pipeline comercial — nu există încă modul de facturi PDF. */
@@ -35,17 +35,16 @@ export default function InvoicesPage() {
     <>
       <header className="bo-page-head">
         <div>
-          <h1>De facturat</h1>
-          <p>
-            Listă operațională pe academii active / trial — baza pentru oferte.
-            Documentele PDF de factură urmează într-un modul separat.
-          </p>
+          <h1>Clienți</h1>
+          <p>Academiile active și în trial, cu datele de contract pentru facturare.</p>
         </div>
       </header>
 
+      <ClientTabs />
+
       <section className="bo-card">
         <div className="bo-card__head">
-          <h2>Pipeline</h2>
+          <h2>De facturat</h2>
           <span className="bo-muted">{meta.total} academii</span>
           <Pagination page={meta.current_page} lastPage={meta.last_page} onPage={load} />
         </div>

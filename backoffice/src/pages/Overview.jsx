@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { platform } from '../api';
 import { LEAD_STATUS, PLAN_LABELS, REASON_LABELS, STATUS_LABELS, errMessage, seats } from '../lib';
-import { SeatMeter } from '../ui';
 import { useToast } from '../toast';
 import { usePoll } from '../usePoll';
 
@@ -12,7 +11,10 @@ export default function OverviewPage() {
   const { push } = useToast();
   const [data, setData] = useState(null);
 
+  const [site, setSite] = useState(null);
+
   const load = useCallback(async (showError = false) => {
+    platform.siteStats(7).then(setSite).catch(() => {});
     try {
       setData(await platform.overview());
     } catch (err) {
@@ -190,48 +192,34 @@ export default function OverviewPage() {
 
       <section className="bo-card">
         <div className="bo-card__head">
-          <h2>Clienți</h2>
-          <Link to="/clients">Toți</Link>
+          <h2>Site · ultimele 7 zile</h2>
+          <Link to="/stats">Statistici complete</Link>
         </div>
-        {companies.length === 0 ? (
-          <div className="bo-empty-cta">
-            <p>Niciun client. Creezi primul după o cerere de acces sau un contract.</p>
-            <Link to="/clients?new=1" className="bo-btn bo-btn--primary">Client nou</Link>
+        {site ? (
+          <div className="bo-mini-stats">
+            <div>
+              <strong>{site.totals.visitors}</strong>
+              <span>vizitatori</span>
+            </div>
+            <div>
+              <strong>{site.totals.cta_clicks}</strong>
+              <span>click pe demo</span>
+            </div>
+            <div>
+              <strong>{site.totals.leads}</strong>
+              <span>cereri trimise</span>
+            </div>
+            <div>
+              <strong>{site.totals.conversion}%</strong>
+              <span>conversie</span>
+            </div>
+            <div>
+              <strong>{site.sources?.[0]?.label || '—'}</strong>
+              <span>sursa principală</span>
+            </div>
           </div>
         ) : (
-          <table className="bo-table">
-            <thead>
-              <tr>
-                <th>Nume</th>
-                <th>Plan</th>
-                <th>Status</th>
-                <th>Cursanți</th>
-                <th>Staff</th>
-              </tr>
-            </thead>
-            <tbody>
-              {companies.map((c) => (
-                <tr key={c.id} data-severity={c.health?.severity || 'ok'}>
-                  <td>
-                    <Link to={`/clients/${c.id}`}>
-                      <strong>{c.name}</strong>
-                    </Link>
-                    <div className="bo-muted">{c.slug}</div>
-                  </td>
-                  <td>{c.plan_label || PLAN_LABELS[c.plan] || c.plan}</td>
-                  <td>
-                    <span className={`bo-pill is-${c.status}`}>{STATUS_LABELS[c.status] || c.status}</span>
-                  </td>
-                  <td>
-                    <SeatMeter used={c.entitlements?.seats?.learners?.used} max={c.entitlements?.seats?.learners?.max} />
-                  </td>
-                  <td>
-                    <SeatMeter used={c.entitlements?.seats?.staff?.used} max={c.entitlements?.seats?.staff?.max} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <p className="bo-muted">Se încarcă…</p>
         )}
       </section>
     </>

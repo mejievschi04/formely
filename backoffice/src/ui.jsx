@@ -1,4 +1,5 @@
 import React, { useEffect, useId, useRef } from 'react';
+import { NavLink } from 'react-router-dom';
 import { seatPercent, seats } from './lib';
 
 export function SeatMeter({ used, max, pending }) {
@@ -116,5 +117,15 @@ export function Pagination({ page, lastPage, total, onPage }) {
         Înainte
       </button>
     </div>
+  );
+}
+
+/** Tab-urile secțiunii Clienți: lista completă și vederea de facturare. */
+export function ClientTabs() {
+  return (
+    <nav className="bo-tabs" aria-label="Vederi clienți">
+      <NavLink to="/clients" end>Toți clienții</NavLink>
+      <NavLink to="/pipeline">Facturare</NavLink>
+    </nav>
   );
 }

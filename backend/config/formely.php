@@ -21,7 +21,7 @@ return [
      */
     'public_register_enabled' => filter_var(env('FORMELY_PUBLIC_REGISTER_ENABLED', false), FILTER_VALIDATE_BOOL),
 
-    'leads_notify_email' => env('FORMELY_LEADS_NOTIFY_EMAIL', env('MAIL_FROM_ADDRESS', 'contact@formely.com')),
+    'leads_notify_email' => env('FORMELY_LEADS_NOTIFY_EMAIL', env('MAIL_FROM_ADDRESS', 'contact@formely.org')),
 
     /** URL backoffice operatori Formely. */
     'backoffice_url' => rtrim((string) env('FORMELY_BACKOFFICE_URL', 'http://localhost:5180'), '/'),

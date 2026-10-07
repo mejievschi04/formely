@@ -27,6 +27,7 @@ export default function Footer() {
             <a href="/#faq">{t('footer.faq')}</a>
             <a href="/#contact">{t('footer.contact')}</a>
             <a className="footer-phone" href={`tel:${site.phone}`}>{site.phoneDisplay}</a>
+            <a className="footer-phone" href={`mailto:${site.email}`}>{site.email}</a>
           </div>
           <div className="footer-col">
             <h4>{t('footer.legal')}</h4>
