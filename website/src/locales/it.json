@@ -1,7 +1,7 @@
 {
   "seo": {
-    "title": "Formely — Crea corsi. Sviluppa il tuo team. Monitora i progressi.",
-    "description": "Formely riunisce il tutto dalla creazione dei corsi, gestione degli utenti ed il monitoraggio dei progressi in un'unica piattaforma — senza processi complicati o strumenti sparsi."
+    "title": "Formely: LMS per la formazione e l'onboarding dei dipendenti",
+    "description": "Crea onboarding, formazione interna e test del team su un'unica piattaforma. Vedi i progressi di ogni dipendente. 14 giorni gratis, senza carta."
   },
   "nav": {
     "product": "Prodotto",
@@ -10,49 +10,71 @@
     "pricing": "Prezzi",
     "faq": "Domande",
     "login": "Accedi",
-    "cta": "Inizia",
+    "cta": "Prova gratis",
     "menu": "Menu",
     "close": "Chiudi",
     "skip": "Vai al contenuto",
     "lang": "Lingua"
   },
   "hero": {
-    "eyebrow": "La formazione del team, in un unico posto",
+    "eyebrow": "La piattaforma di formazione per i team",
     "lines": [
-      "Crea corsi.",
-      "Sviluppa il tuo team.",
-      "Monitora i progressi."
+      "Ogni nuovo assunto,",
+      "formato come il migliore",
+      "del team."
     ],
-    "sub": "Formely riunisce il tutto dalla creazione dei corsi, gestione degli utenti ed il monitoraggio dei progressi in un'unica piattaforma — senza processi complicati o strumenti sparsi.",
-    "ctaPrimary": "Inizia con Formely",
-    "ctaSecondary": "Scopri la piattaforma",
+    "sub": "Crei onboarding, formazione interna e test in un unico posto e vedi i progressi di ogni persona. Semplice da avviare, facile da usare dal telefono.",
+    "ctaPrimary": "Prova gratis per 14 giorni",
+    "ctaSecondary": "Scopri come funziona",
     "orbit": [
-      { "emoji": "📚", "label": "Crea corsi" },
-      { "emoji": "👥", "label": "Gestisci il team" },
-      { "emoji": "📈", "label": "Monitora i progressi" },
-      { "emoji": "✅", "label": "Valuta le conoscenze" },
-      { "emoji": "📝", "label": "Organizza i contenuti" },
-      { "emoji": "🎓", "label": "Misura i risultati" }
-    ]
+      {
+        "emoji": "📚",
+        "label": "Crea corsi"
+      },
+      {
+        "emoji": "👥",
+        "label": "Gestisci il team"
+      },
+      {
+        "emoji": "📈",
+        "label": "Monitora i progressi"
+      },
+      {
+        "emoji": "✅",
+        "label": "Valuta le conoscenze"
+      },
+      {
+        "emoji": "📝",
+        "label": "Organizza i contenuti"
+      },
+      {
+        "emoji": "🎓",
+        "label": "Misura i risultati"
+      }
+    ],
+    "note": "Senza carta. Ti aiutiamo con la configurazione."
   },
   "proof": {
-    "eyebrow": "Perché Formely",
-    "lines": ["Chiaro per gli admin.", "Semplice per i corsisti."],
+    "eyebrow": "Formely in breve",
+    "lines": [
+      "Pronto all'uso",
+      "dal primo giorno."
+    ],
     "items": [
       {
-        "value": "01",
-        "label": "Un solo posto",
-        "text": "Corsi, corsisti e progressi — senza file e fogli sparsi."
+        "value": "1 giorno",
+        "label": "per il primo corso online",
+        "text": "Carichi i materiali che hai già e inviti il team."
       },
       {
-        "value": "02",
-        "label": "Progressi visibili",
-        "text": "Vedi chi avanza e dove serve attenzione, direttamente nella piattaforma."
+        "value": "14 giorni",
+        "label": "gratis, senza carta",
+        "text": "Provi la piattaforma con le tue persone prima di pagare."
       },
       {
-        "value": "03",
-        "label": "Attivazione semplice",
-        "text": "Parti dal piano giusto e cresci quando il team ne ha bisogno."
+        "value": "<1 €",
+        "label": "per dipendente al mese",
+        "text": "Il piano Instructor costa 34 € al mese per un massimo di 50 dipendenti."
       }
     ]
   },
@@ -74,82 +96,95 @@
     ]
   },
   "problem": {
-    "title": "La formazione non dovrebbe significare file, fogli di calcolo e caos.",
+    "title": "La formazione che vive nella testa di una sola persona ti costa a ogni assunzione.",
     "items": [
       {
-        "title": "Contenuti sparsi",
-        "text": "Materiali e corsi finiscono in troppi posti e l'organizzazione diventa sempre più difficile."
+        "title": "La stessa spiegazione, per la decima volta",
+        "text": "La persona migliore del team perde giornate intere a mostrare a ogni nuovo arrivato le stesse cose. E ogni volta le spiega in modo un po' diverso."
       },
       {
-        "title": "Progressi difficili da seguire",
-        "text": "Senza una visione centralizzata, è difficile capire chi avanza e chi rimane indietro dal tuo team."
+        "title": "Procedure che nessuno legge",
+        "text": "Le mandi su WhatsApp o via email e speri. Non hai modo di sapere chi le ha aperte e chi le ha capite."
       },
       {
-        "title": "Amministrazione inutile",
-        "text": "I compiti ripetitivi consumano il tempo che potrebbe essere dedicato alla formazione."
+        "title": "Se ne va la persona, se ne va il know-how",
+        "text": "Quando se ne va chi sapeva come si fa, il nuovo assunto riparte da zero e tornano gli errori di sempre."
       }
     ],
-    "solution": "Formely riunisce corsi, partecipanti e progressi in un unico sistema."
+    "solution": "Con Formely ogni dipendente impara dagli stessi materiali, nello stesso ordine, e tu vedi chi ha finito."
   },
   "how": {
     "eyebrow": "Come funziona",
-    "lines": ["Dal primo corso", "ai progressi, in un", "unico flusso."],
+    "lines": [
+      "Semplice da avviare.",
+      "Facile da seguire."
+    ],
     "steps": [
       {
         "num": "01",
-        "title": "Crea",
-        "text": "Struttura i corsi e organizza i contenuti formativi."
+        "title": "Crei il corso",
+        "text": "Carichi video, PDF o testo e li organizzi in moduli e lezioni."
       },
       {
         "num": "02",
-        "title": "Assegna",
-        "text": "Aggiungi i partecipanti e assegna la formazione giusta."
+        "title": "Inviti il team",
+        "text": "Ogni dipendente riceve l'accesso via email e impara da telefono o laptop."
       },
       {
         "num": "03",
-        "title": "Monitora",
-        "text": "Visualizza i progressi ed i risultati direttamente dalla piattaforma."
+        "title": "Segui i risultati",
+        "text": "Vedi progressi, voti dei test e certificati di ogni persona."
       }
     ],
-    "subtitle": "Tre passi. Un flusso. Niente strumenti sparsi.",
+    "subtitle": "Tre passi dai tuoi materiali a un team formato.",
     "scheme": {
       "course": "Corso",
       "module": "Modulo",
       "lesson": "Lezione",
       "learners": "Partecipanti",
-      "people": ["Giulia", "Marco", "Sofia"],
+      "people": [
+        "Giulia",
+        "Marco",
+        "Sofia"
+      ],
       "access": "Accesso",
       "progress": "Progressi"
     }
   },
   "showcase": {
-    "eyebrow": "Prodotto",
-    "lines": ["Tutto ciò che serve per", "rendere la formazione", "un processo chiaro."],
+    "eyebrow": "Perché Formely",
+    "lines": [
+      "La formazione del team,",
+      "sotto controllo."
+    ],
     "items": [
       {
         "id": "courses",
-        "title": "Corsi organizzati come vuoi tu",
-        "text": "Crea corsi strutturati e mantieni i contenuti formativi organizzati in un unico posto."
+        "title": "Onboarding più rapido",
+        "text": "I nuovi assunti seguono da soli i corsi di base, nell'ordine che hai stabilito. Intervieni solo dove serve."
       },
       {
         "id": "tests",
-        "title": "Valutazioni che mostrano i risultati",
-        "text": "Integra test e valutazioni nella formazione e controlla i risultati dei partecipanti."
+        "title": "La stessa qualità per tutti",
+        "text": "Ognuno impara dagli stessi materiali e fa lo stesso test, chiunque l'abbia assunto."
       },
       {
         "id": "progress",
-        "title": "Progressi chiari per ogni partecipante",
-        "text": "Controlla i corsi completati, le lezioni in corso, il progresso di ogni persona senza creare report manualmente."
+        "title": "Controllo chiaro sulla formazione",
+        "text": "Vedi chi ha finito, chi è rimasto indietro e chi ha ricevuto il certificato."
       },
       {
         "id": "library",
-        "title": "Materiali formativi sempre a portata di mano",
-        "text": "Nei piani Academie e Business: mantieni le risorse organizzate in una libreria facile da consultare."
+        "title": "Le conoscenze restano in azienda",
+        "text": "Le procedure e l'esperienza delle persone chiave stanno in una biblioteca interna, anche dopo che se ne vanno. Con i piani Academy e Business."
       }
     ]
   },
   "useCases": {
-    "lines": ["Più modi di organizzare", "la formazione."],
+    "lines": [
+      "Più modi di organizzare",
+      "la formazione."
+    ],
     "subtitle": "Gli stessi tre piani. Ecco a chi è destinato ciascuno.",
     "plans": {
       "instructor": {
@@ -186,8 +221,11 @@
   },
   "pricing": {
     "eyebrow": "Prezzi",
-    "lines": ["Inizia in modo semplice.", "Cresci quando ne hai bisogno."],
-    "subtitle": "Instructor e Academy in base al numero di utenti. Business per le organizzazioni.",
+    "lines": [
+      "Prezzi chiari,",
+      "senza sorprese."
+    ],
+    "subtitle": "Paghi in base al numero di dipendenti. Tutti i piani includono 14 giorni gratis.",
     "recommended": "Consigliato",
     "perMonth": "/ mese",
     "perYear": "/ anno",
@@ -197,16 +235,16 @@
     "yearAtMonthly": "Un anno al prezzo mensile",
     "save": "Risparmi €{n} all'anno",
     "from": "Da",
-    "launch": "−30% per i primi 50 clienti.",
-    "demo": "14 giorni di demo gratuita",
+    "launch": "Offerta di lancio: −30% per i primi 50 clienti.",
+    "demo": "14 giorni gratis",
     "listPrice": "Prezzo di listino",
     "learners": "Fino a {n} utenti",
     "learnersUnlimited": "Team e organizzazioni",
     "staff": "{n} posti staff",
-    "cta": "Inizia",
+    "cta": "Prova gratis",
     "included": "Incluso",
     "excluded": "Non incluso",
-    "note": "L'attivazione avviene dopo conferma — senza checkout pubblico.",
+    "note": "Ti contattiamo per l'attivazione. Non serve la carta.",
     "features": {
       "courses": "Corsi, moduli e lezioni",
       "tests": "Test e progressi",
@@ -228,24 +266,27 @@
     }
   },
   "why": {
-    "lines": ["Formazione senza", "complessità inutile."],
-    "subtitle": "Gli strumenti necessari per organizzare l'apprendimento del team — in un'unica piattaforma chiara e facile da utilizzare e amministrare.",
+    "lines": [
+      "Un unico posto per",
+      "tutta la formazione interna."
+    ],
+    "subtitle": "Le aziende usano Formely per onboarding, procedure, formazione obbligatoria e vendite.",
     "items": [
       {
-        "title": "Più chiaro per gli amministratori",
-        "text": "Formely riduce la complessità intorno alla formazione, così il team può concentrarsi sull'apprendimento."
+        "title": "Onboarding",
+        "text": "Il primo corso per ogni nuovo assunto, pronto prima del suo primo giorno di lavoro."
       },
       {
-        "title": "Più semplice per chi impara",
-        "text": "Accesso chiaro a corsi e progressi, senza strumenti sparsi."
+        "title": "Procedure interne",
+        "text": "Regole e passaggi di lavoro, spiegati allo stesso modo per tutti."
       },
       {
-        "title": "Un solo sistema",
-        "text": "Corsi, partecipanti e progressi — in un unico posto."
+        "title": "Formazione obbligatoria",
+        "text": "Test con voto minimo e certificati per ogni persona formata."
       },
       {
-        "title": "Cresci quando serve",
-        "text": "Inizi in modo semplice e passi a un piano superiore man mano che il team cresce."
+        "title": "Vendite e prodotto",
+        "text": "Il team impara i nuovi prodotti dal telefono, tra un incontro e l'altro con i clienti."
       }
     ]
   },
@@ -253,43 +294,43 @@
     "title": "Domande frequenti",
     "items": [
       {
-        "q": "Cos'è Formely?",
-        "a": "Formely è una piattaforma per creare e gestire corsi, organizzare i partecipanti e monitorare i progressi."
+        "q": "Quanto costa Formely?",
+        "a": "Il piano Instructor costa 34 € al mese per un massimo di 50 dipendenti, con lo sconto di lancio. Academy copre fino a 250 dipendenti e per team più grandi prepariamo un'offerta Business."
       },
       {
-        "q": "Per chi è Formely?",
-        "a": "Formely è pensato per aziende, accademie e formatori che vogliono organizzare la formazione in un unico sistema."
+        "q": "Quanto dura l'implementazione?",
+        "a": "Un giorno. Ti chiamiamo, attiviamo l'account e ti aiutiamo a pubblicare il primo corso."
       },
       {
-        "q": "Posso monitorare i progressi dei partecipanti?",
-        "a": "Sì. Formely ti permette di vedere i progressi dei partecipanti direttamente dalla piattaforma."
+        "q": "Che tipi di formazione posso creare?",
+        "a": "Onboarding, procedure interne, formazione obbligatoria, prodotti e vendite. I corsi possono contenere video, documenti, testo e test."
       },
       {
-        "q": "Posso creare test e valutazioni?",
-        "a": "Sì. Le valutazioni possono essere integrate nel processo formativo per seguire i risultati dei partecipanti."
+        "q": "I dipendenti devono installare un'app?",
+        "a": "No. Entrano dal browser, da telefono o computer, con l'invito ricevuto via email."
       },
       {
-        "q": "Come scelgo il piano giusto?",
-        "a": "Instructor e Academy si differenziano per il numero di utenti attivi e per le funzioni: biblioteca, eventi e ruolo analista sono su Academy. Business è per team e organizzazioni, e il prezzo dipende dal numero di utenti."
+        "q": "Come vedo i progressi del team?",
+        "a": "Dal pannello di amministrazione vedi i progressi di ogni dipendente, i voti dei test e i certificati emessi."
       },
       {
-        "q": "Come inizio?",
-        "a": "Ci scrivi chi sei e quale piano ti interessa. L'attivazione avviene dopo la conferma, senza checkout pubblico."
+        "q": "Cosa succede dopo il periodo gratuito?",
+        "a": "Scegli il piano giusto e tieni tutto quello che hai creato. Se non continui, non paghi nulla."
       }
     ]
   },
   "contact": {
-    "title": "Inizia con Formely",
-    "subtitle": "Dicci chi sei e quale piano ti interessa. Torneremo con i passi di attivazione.",
+    "title": "Prova Formely gratis per 14 giorni",
+    "subtitle": "Compila il modulo e ti contattiamo per l'attivazione. Ti aiutiamo a configurare il primo corso.",
     "name": "Nome",
     "email": "Email",
-    "org": "Organizzazione",
+    "org": "Azienda (facoltativo)",
     "plan": "Piano di interesse",
     "phone": "Telefono",
     "countryCode": "Prefisso",
-    "submit": "Invia richiesta",
+    "submit": "Inizia il periodo gratuito",
     "sending": "Invio…",
-    "success": "Richiesta inviata. Ti contatteremo presto.",
+    "success": "Grazie! Ti contattiamo a breve per l'attivazione.",
     "error": "Impossibile inviare la richiesta. Riprova.",
     "consentBefore": "Accetto che Formely tratti i dati di questo modulo per contattarmi sull'attivazione, come descritto nella",
     "consentLink": "informativa sulla privacy",
@@ -297,12 +338,12 @@
     "consentRequired": "Seleziona il consenso al trattamento dei dati."
   },
   "finalCta": {
-    "title": "La formazione del tuo team,\npiù semplice e organizzata",
-    "description": "Crea, organizza e monitora la formazione da un unico posto.",
-    "cta": "Inizia con Formely"
+    "title": "Avvia la formazione del team\ngià questa settimana.",
+    "description": "14 giorni gratis, senza carta. Ti aiutiamo di persona a configurare il primo corso.",
+    "cta": "Prova gratis per 14 giorni"
   },
   "footer": {
-    "tagline": "La formazione del team, in un unico posto.",
+    "tagline": "La formazione dei dipendenti, in un unico posto.",
     "product": "Prodotto",
     "features": "Funzioni",
     "pricing": "Prezzi",
@@ -420,7 +461,7 @@
         "id": "cookies",
         "title": "Cookie e archiviazione locale",
         "paragraphs": [
-          "Non impostiamo cookie di tracciamento. Salviamo in locale la lingua scelta per non chiederla a ogni visita. Puoi cancellare la preferenza dalle impostazioni del browser."
+          "Non impostiamo cookie di tracciamento. Salviamo in locale la lingua scelta per non chiederla a ogni visita. Se arrivi da un annuncio, conserviamo i parametri del link (ad esempio il nome della campagna) fino alla chiusura della scheda, per sapere da dove arriva la richiesta se invii il modulo. Puoi cancellare questi dati dalle impostazioni del browser. Contiamo le visite in forma anonima, sul nostro server: la pagina aperta, da dove arrivi e il tipo di dispositivo. Non salviamo l'indirizzo IP e non possiamo riconoscerti da un giorno all'altro."
         ]
       },
       {

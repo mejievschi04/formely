@@ -63,6 +63,7 @@ export const platform = {
   ).data,
   inviteOwner: async (id, payload) => (await api.post(`/platform/companies/${id}/invite-owner`, payload)).data,
   leads: async (params) => (await api.get('/platform/leads', { params })).data,
+  siteStats: async (days) => (await api.get('/platform/site-stats', { params: { days } })).data,
   updateLead: async (id, payload) => (await api.put(`/platform/leads/${id}`, payload)).data,
   convertLead: async (id, payload = {}) => (
     await api.post(`/platform/leads/${id}/convert`, payload)

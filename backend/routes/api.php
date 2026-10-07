@@ -25,8 +25,10 @@ use App\Http\Controllers\Api\Admin\StatisticsAdminController;
 use App\Http\Controllers\Api\LibraryController;
 use App\Http\Controllers\Api\Admin\CompanyAdminController;
 use App\Http\Controllers\Api\Admin\LeadAdminController;
+use App\Http\Controllers\Api\Admin\SiteStatsController;
 use App\Http\Controllers\Api\CompanyBrandingController;
 use App\Http\Controllers\Api\LeadController;
+use App\Http\Controllers\Api\SiteEventController;
 
 /*
 | Fără StartSession / Sanctum stateful — util pe VPS dacă sesiunile DB lipsesc și tot API-ul dă 500.
@@ -102,6 +104,7 @@ Route::post('/auth/login', [\App\Http\Controllers\Api\AuthController::class, 'lo
 // Formely SaaS — publice (site de marketing, branding la login)
 Route::get('/branding/{slug}', [CompanyBrandingController::class, 'showBySlug'])->middleware('throttle:60,1');
 Route::post('/leads', [LeadController::class, 'store'])->middleware('throttle:10,1');
+Route::post('/track', [SiteEventController::class, 'store'])->middleware('throttle:60,1');
 Route::get('/plans', function () {
     return response()->json([
         'public_register_enabled' => (bool) config('formely.public_register_enabled', false),
@@ -216,6 +219,7 @@ Route::middleware([
     Route::get('/leads', [LeadAdminController::class, 'index']);
     Route::put('/leads/{id}', [LeadAdminController::class, 'update']);
     Route::post('/leads/{id}/convert', [LeadAdminController::class, 'convert']);
+    Route::get('/site-stats', [SiteStatsController::class, 'index']);
 });
 
 // Admin routes (require admin role) with rate limiting

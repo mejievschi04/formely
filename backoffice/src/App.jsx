@@ -7,6 +7,7 @@ import OverviewPage from './pages/Overview';
 import ClientsPage from './pages/Clients';
 import ClientDetailPage from './pages/ClientDetail';
 import LeadsPage from './pages/Leads';
+import StatsPage from './pages/Stats';
 import PlansPage from './pages/Plans';
 import InvoicesPage from './pages/Invoices';
 import AuditPage from './pages/Audit';
@@ -39,6 +40,7 @@ export default function App() {
                 <Route path="clients" element={<ClientsPage />} />
                 <Route path="clients/:id" element={<ClientDetailPage />} />
                 <Route path="leads" element={<LeadsPage />} />
+                <Route path="stats" element={<StatsPage />} />
                 <Route path="plans" element={<PlansPage />} />
                 <Route path="pipeline" element={<InvoicesPage />} />
                 <Route path="invoices" element={<Navigate to="/pipeline" replace />} />

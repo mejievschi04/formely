@@ -5,7 +5,7 @@ export default function SectionTitle({ id, lines }) {
     <h2 id={id} className="section-title section-title-lines reveal">
       {content.map((line) => (
         <span key={line} className="section-title-line">
-          {line}
+          {line}{' '}
         </span>
       ))}
     </h2>

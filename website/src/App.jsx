@@ -5,6 +5,8 @@ import HomePage from './pages/HomePage';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
 import NotFoundPage from './pages/NotFoundPage';
+import { useI18n } from './i18n/I18nContext';
+import { track } from './lib/track';
 
 function ContactToHome() {
   const [params] = useSearchParams();
@@ -27,10 +29,31 @@ function ScrollToTop() {
   return null;
 }
 
+function Tracker() {
+  const { pathname } = useLocation();
+  const { lang } = useI18n();
+
+  useEffect(() => {
+    track('pageview', lang);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  useEffect(() => {
+    const onClick = (event) => {
+      if (event.target.closest?.('a[href*="#contact"]')) track('cta_click', lang);
+    };
+    document.addEventListener('click', onClick);
+    return () => document.removeEventListener('click', onClick);
+  }, [lang]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <>
       <ScrollToTop />
+      <Tracker />
       <Routes>
         <Route element={<SiteLayout />}>
           <Route index element={<HomePage />} />

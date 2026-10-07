@@ -23,6 +23,8 @@ class LeadController extends Controller
             'message' => 'nullable|string|max:5000',
             'source' => 'nullable|string|max:64',
             'privacy_accepted' => 'accepted',
+            'attribution' => 'nullable|array',
+            'attribution.*' => 'nullable|string|max:2000',
         ], [
             'privacy_accepted.accepted' => 'Trebuie să accepți prelucrarea datelor pentru a trimite cererea.',
         ]);
@@ -37,6 +39,7 @@ class LeadController extends Controller
             'message' => $validated['message'] ?? null,
             'status' => 'new',
             'source' => $validated['source'] ?? 'website',
+            'attribution' => $this->attribution($validated['attribution'] ?? []),
             'ip' => $request->ip(),
             'privacy_accepted_at' => now(),
         ]);
@@ -51,6 +54,7 @@ class LeadController extends Controller
                     . "Companie: ".($lead->company_name ?: '—')."\n"
                     . "Motiv: ".($lead->reason ?: '—')."\n"
                     . "Plan: ".($lead->plan_interest ?: '—')."\n"
+                    . ($lead->attribution ? 'Sursă: '.collect($lead->attribution)->map(fn ($v, $k) => "{$k}={$v}")->implode(', ')."\n" : '')
                     . ($lead->message ? "Mesaj:\n{$lead->message}\n" : '');
 
                 Mail::to($notify)->queue(new VoltaUserNotificationMail(
@@ -66,5 +70,25 @@ class LeadController extends Controller
             'message' => 'Mulțumim! Te contactăm în curând.',
             'id' => $lead->id,
         ], 201);
+    }
+
+    /**
+     * Păstrează doar parametrii de campanie cunoscuți (UTM, fbclid, pagina de intrare).
+     *
+     * @param  array<string, mixed>  $input
+     * @return array<string, string>|null
+     */
+    private function attribution(array $input): ?array
+    {
+        $keys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'landing'];
+        $clean = [];
+        foreach ($keys as $key) {
+            $value = isset($input[$key]) ? trim(strip_tags((string) $input[$key])) : '';
+            if ($value !== '') {
+                $clean[$key] = mb_substr($value, 0, 255);
+            }
+        }
+
+        return $clean ?: null;
     }
 }

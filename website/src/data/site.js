@@ -1,6 +1,8 @@
 export const site = {
   name: 'Formely',
   email: 'contact@formely.com',
+  phone: '+37376907298',
+  phoneDisplay: '+373 769 07 298',
   /** Denumire juridică + sediu — completează înainte de launch (ex. din env la build). */
   legalName: import.meta.env.VITE_LEGAL_NAME || '',
   address: import.meta.env.VITE_LEGAL_ADDRESS || '',

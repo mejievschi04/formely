@@ -1,6 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import { useI18n } from '../i18n/I18nContext';
 import { site, siteUrl } from '../data/site';
+import { launchPrice, planOrder, saasPlanCatalog } from '../data/plans';
 
 export function OrganizationJsonLd() {
   const { t } = useI18n();
@@ -11,6 +12,7 @@ export function OrganizationJsonLd() {
     url: siteUrl,
     description: t('seo.description'),
     email: site.email,
+    telephone: site.phone,
   };
   return (
     <Helmet>
@@ -26,9 +28,18 @@ export function SoftwareJsonLd() {
     '@type': 'SoftwareApplication',
     name: site.name,
     applicationCategory: 'EducationalApplication',
+    applicationSubCategory: 'Learning Management System',
     operatingSystem: 'Web',
     description: t('seo.description'),
     url: siteUrl,
+    image: `${siteUrl.replace(/\/$/, '')}/og-image.png`,
+    offers: planOrder.map((id) => ({
+      '@type': 'Offer',
+      name: t(`pricing.plans.${id}.name`),
+      price: launchPrice(saasPlanCatalog[id].price),
+      priceCurrency: 'EUR',
+      url: `${siteUrl.replace(/\/$/, '')}/#preturi`,
+    })),
   };
   return (
     <Helmet>

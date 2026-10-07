@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useI18n } from '../../i18n/I18nContext';
 import { submitLead } from '../../lib/leads';
+import { track } from '../../lib/track';
 import { planOrder } from '../../data/plans';
 
 const COUNTRY_CODES = [
+  { iso: 'MD', dial: '+373', flag: '🇲🇩' },
   { iso: 'RO', dial: '+40', flag: '🇷🇴' },
   { iso: 'IT', dial: '+39', flag: '🇮🇹' },
   { iso: 'RU', dial: '+7', flag: '🇷🇺' },
-  { iso: 'MD', dial: '+373', flag: '🇲🇩' },
   { iso: 'UA', dial: '+380', flag: '🇺🇦' },
   { iso: 'DE', dial: '+49', flag: '🇩🇪' },
   { iso: 'FR', dial: '+33', flag: '🇫🇷' },
@@ -22,14 +23,13 @@ const COUNTRY_CODES = [
   { iso: 'PL', dial: '+48', flag: '🇵🇱' },
 ];
 
-const DIAL_BY_LANG = { ro: 'RO', it: 'IT', ru: 'RU', en: 'RO' };
+const DEFAULT_DIAL = 'MD';
 
 export default function Contact() {
   const { t, lang } = useI18n();
   const [searchParams] = useSearchParams();
   const planFromUrl = searchParams.get('plan') || '';
-  const [dialIso, setDialIso] = useState(DIAL_BY_LANG[lang] || 'RO');
-  const [dialTouched, setDialTouched] = useState(false);
+  const [dialIso, setDialIso] = useState(DEFAULT_DIAL);
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -41,16 +41,13 @@ export default function Contact() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
+  const [started, setStarted] = useState(false);
 
   useEffect(() => {
     if (planOrder.includes(planFromUrl)) {
       setForm((prev) => ({ ...prev, plan_interest: planFromUrl }));
     }
   }, [planFromUrl]);
-
-  useEffect(() => {
-    if (!dialTouched) setDialIso(DIAL_BY_LANG[lang] || 'RO');
-  }, [lang, dialTouched]);
 
   const dial = COUNTRY_CODES.find((item) => item.iso === dialIso) || COUNTRY_CODES[0];
 
@@ -76,6 +73,7 @@ export default function Contact() {
         privacy_accepted: true,
       });
       setDone(true);
+      track('lead', lang);
     } catch (err) {
       setError(err.message || t('contact.error'));
     } finally {
@@ -96,7 +94,15 @@ export default function Contact() {
         {done ? (
           <p className="form-msg is-ok reveal">{t('contact.success')}</p>
         ) : (
-          <form className="contact-form reveal" onSubmit={handleSubmit}>
+          <form
+            className="contact-form reveal"
+            onSubmit={handleSubmit}
+            onFocus={() => {
+              if (started) return;
+              setStarted(true);
+              track('form_start', lang);
+            }}
+          >
             <div className="contact-form-row">
               <div className="field">
                 <label htmlFor="lead-name">{t('contact.name')}</label>
@@ -129,10 +135,7 @@ export default function Contact() {
                     <select
                       aria-label={t('contact.countryCode')}
                       value={dial.iso}
-                      onChange={(e) => {
-                        setDialTouched(true);
-                        setDialIso(e.target.value);
-                      }}
+                      onChange={(e) => setDialIso(e.target.value)}
                     >
                       {COUNTRY_CODES.map((item) => (
                         <option key={item.iso} value={item.iso}>
@@ -166,7 +169,7 @@ export default function Contact() {
             </div>
             <div className="field">
               <label htmlFor="lead-org">{t('contact.org')}</label>
-              <input id="lead-org" required value={form.org} onChange={update('org')} />
+              <input id="lead-org" autoComplete="organization" value={form.org} onChange={update('org')} />
             </div>
             <div className="field field-consent">
               <label htmlFor="lead-consent" className="consent-label">

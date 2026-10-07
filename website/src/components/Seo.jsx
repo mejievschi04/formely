@@ -7,7 +7,7 @@ export default function Seo({ title, description, path = '/', noindex = false, t
   const fullTitle = title.includes('Formely') ? title : `${title} | Formely`;
   const base = siteUrl.replace(/\/$/, '');
   const canonical = `${base}${path.startsWith('/') ? path : `/${path}`}`;
-  const image = `${base}/logo.png`;
+  const image = `${base}/og-image.png`;
 
   return (
     <Helmet>
@@ -15,10 +15,6 @@ export default function Seo({ title, description, path = '/', noindex = false, t
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
       <link rel="canonical" href={canonical} />
-      {Object.keys(LOCALE_META).map((code) => (
-        <link key={code} rel="alternate" hrefLang={code} href={canonical} />
-      ))}
-      <link rel="alternate" hrefLang="x-default" href={canonical} />
       {noindex && <meta name="robots" content="noindex, nofollow" />}
 
       <meta property="og:type" content={type} />
@@ -33,6 +29,9 @@ export default function Seo({ title, description, path = '/', noindex = false, t
       <meta property="og:description" content={description} />
       <meta property="og:url" content={canonical} />
       <meta property="og:image" content={image} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:image:alt" content={fullTitle} />
 
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />

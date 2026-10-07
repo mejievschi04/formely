@@ -64,7 +64,7 @@ export default function Hero() {
             {Array.isArray(lines)
               ? lines.map((line) => (
                   <span key={line} className="hero-title-line">
-                    {line}
+                    {line}{' '}
                   </span>
                 ))
               : lines}
@@ -78,6 +78,7 @@ export default function Hero() {
               {t('hero.ctaSecondary')}
             </a>
           </div>
+          <p className="hero-micro">{t('hero.note')}</p>
         </div>
 
         <div className="hero-visual-wrap reveal">

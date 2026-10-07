@@ -6,6 +6,7 @@ const links = [
   { to: '/', label: 'Panou', end: true },
   { to: '/clients', label: 'Clienți' },
   { to: '/leads', label: 'Cereri' },
+  { to: '/stats', label: 'Statistici' },
   { to: '/plans', label: 'Planuri' },
   { to: '/pipeline', label: 'De facturat' },
   { to: '/audit', label: 'Jurnal' },

@@ -14,7 +14,7 @@ export default function ProofStrip() {
             {Array.isArray(lines)
               ? lines.map((line) => (
                   <span key={line} className="proof-title-line">
-                    {line}
+                    {line}{' '}
                   </span>
                 ))
               : lines}

@@ -46,8 +46,8 @@ export default function HomePage() {
       <ProofStrip />
       <HowItWorks />
       <ProductShowcase />
-      <Pricing />
       <WhyFormely />
+      <Pricing />
       <Faq />
       <Contact />
       <FinalCta />

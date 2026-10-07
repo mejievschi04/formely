@@ -81,6 +81,18 @@ function LeadDrawer({ lead, open, onClose, onConvert, onStatus }) {
             <dt>Sursă</dt>
             <dd>{leadSource(lead)}</dd>
           </div>
+          {lead.attribution ? (
+            <div>
+              <dt>Campanie</dt>
+              <dd style={{ wordBreak: 'break-all' }}>
+                {Object.entries(lead.attribution).map(([key, value]) => (
+                  <div key={key}>
+                    <span className="bo-muted">{key}:</span> {value}
+                  </div>
+                ))}
+              </dd>
+            </div>
+          ) : null}
           <div>
             <dt>Creată</dt>
             <dd>{formatDate(lead.created_at)}</dd>

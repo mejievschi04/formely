@@ -1,7 +1,7 @@
 {
   "seo": {
-    "title": "Formely — Create courses. Develop teams. Track progress.",
-    "description": "Formely gives you one place to create courses, organize learners and track their progress — without complicated processes or scattered tools."
+    "title": "Formely: LMS for employee training and onboarding",
+    "description": "Create onboarding, internal training and tests for your team on one platform. See every employee's progress. 14 days free, no card."
   },
   "nav": {
     "product": "Product",
@@ -10,49 +10,71 @@
     "pricing": "Pricing",
     "faq": "FAQ",
     "login": "Sign in",
-    "cta": "Get started",
+    "cta": "Try it free",
     "menu": "Menu",
     "close": "Close",
     "skip": "Skip to content",
     "lang": "Language"
   },
   "hero": {
-    "eyebrow": "Team training, all in one place",
+    "eyebrow": "The training platform for teams",
     "lines": [
-      "Create courses.",
-      "Develop teams.",
-      "Track progress."
+      "Every new hire,",
+      "trained like the best",
+      "on your team."
     ],
-    "sub": "Formely gives you one place to create courses, organize learners and track their progress — without complicated processes or scattered tools.",
-    "ctaPrimary": "Get started with Formely",
-    "ctaSecondary": "Explore the platform",
+    "sub": "Create onboarding, internal training and tests in one place and see every person's progress. Simple to start, easy to use on a phone.",
+    "ctaPrimary": "Try it free for 14 days",
+    "ctaSecondary": "See how it works",
     "orbit": [
-      { "emoji": "📚", "label": "Create courses" },
-      { "emoji": "👥", "label": "Manage the team" },
-      { "emoji": "📈", "label": "Track progress" },
-      { "emoji": "✅", "label": "Assess knowledge" },
-      { "emoji": "📝", "label": "Organize content" },
-      { "emoji": "🎓", "label": "Measure results" }
-    ]
+      {
+        "emoji": "📚",
+        "label": "Create courses"
+      },
+      {
+        "emoji": "👥",
+        "label": "Manage the team"
+      },
+      {
+        "emoji": "📈",
+        "label": "Track progress"
+      },
+      {
+        "emoji": "✅",
+        "label": "Assess knowledge"
+      },
+      {
+        "emoji": "📝",
+        "label": "Organize content"
+      },
+      {
+        "emoji": "🎓",
+        "label": "Measure results"
+      }
+    ],
+    "note": "No card. We help you set it up."
   },
   "proof": {
-    "eyebrow": "Why Formely",
-    "lines": ["Clear for admins.", "Simple for learners."],
+    "eyebrow": "Formely at a glance",
+    "lines": [
+      "Ready to use",
+      "from day one."
+    ],
     "items": [
       {
-        "value": "01",
-        "label": "One place",
-        "text": "Courses, learners, and progress — without scattered files and spreadsheets."
+        "value": "1 day",
+        "label": "to your first course online",
+        "text": "Upload the materials you already have and invite your team."
       },
       {
-        "value": "02",
-        "label": "Visible progress",
-        "text": "See who is advancing and where attention is needed, right in the platform."
+        "value": "14 days",
+        "label": "free, no card",
+        "text": "Try the platform with your people before you pay."
       },
       {
-        "value": "03",
-        "label": "Simple start",
-        "text": "Start on the right plan and grow when your team needs it."
+        "value": "<€1",
+        "label": "per employee per month",
+        "text": "The Instructor plan costs €34 a month for up to 50 employees."
       }
     ]
   },
@@ -74,82 +96,95 @@
     ]
   },
   "problem": {
-    "title": "Training shouldn't mean files, spreadsheets and chaos.",
+    "title": "Training that lives in one person's head costs you every time you hire.",
     "items": [
       {
-        "title": "Scattered content",
-        "text": "Materials and courses end up in too many places, and organization gets harder over time."
+        "title": "The same explanation, for the tenth time",
+        "text": "Your best person loses whole days showing every newcomer the same things. And each time they explain it a little differently."
       },
       {
-        "title": "Progress hard to track",
-        "text": "Without a centralized view, it is difficult to see who is advancing and where attention is needed."
+        "title": "Procedures nobody reads",
+        "text": "You send them on WhatsApp or by email and hope. You have no way of knowing who opened them and who understood them."
       },
       {
-        "title": "Unnecessary admin work",
-        "text": "Repetitive tasks consume time that could be spent on training."
+        "title": "When people leave, the know-how leaves too",
+        "text": "When the person who knew how it's done leaves, the next hire starts from zero and the old mistakes come back."
       }
     ],
-    "solution": "Formely brings your courses, learners and progress together in one system."
+    "solution": "With Formely, every employee learns from the same materials in the same order, and you see who finished."
   },
   "how": {
     "eyebrow": "How it works",
-    "lines": ["From the first course", "to measurable progress,", "in one simple flow."],
+    "lines": [
+      "Simple to start.",
+      "Easy to track."
+    ],
     "steps": [
       {
         "num": "01",
-        "title": "Create",
-        "text": "Structure courses and organize your training content."
+        "title": "Create the course",
+        "text": "Upload video, PDFs or text and organise them into modules and lessons."
       },
       {
         "num": "02",
-        "title": "Assign",
-        "text": "Add learners and give them access to the right training."
+        "title": "Invite your team",
+        "text": "Each employee gets access by email and learns on phone or laptop."
       },
       {
         "num": "03",
-        "title": "Track",
-        "text": "See progress and results directly from the platform."
+        "title": "Track results",
+        "text": "See progress, test scores and certificates for every person."
       }
     ],
-    "subtitle": "Three steps. One flow. No scattered tools.",
+    "subtitle": "Three steps from your materials to a trained team.",
     "scheme": {
       "course": "Course",
       "module": "Module",
       "lesson": "Lesson",
       "learners": "Learners",
-      "people": ["Emma", "James", "Sofia"],
+      "people": [
+        "Emma",
+        "James",
+        "Sofia"
+      ],
       "access": "Access",
       "progress": "Progress"
     }
   },
   "showcase": {
-    "eyebrow": "Product",
-    "lines": ["Everything you need", "to make training", "a clear process."],
+    "eyebrow": "Why Formely",
+    "lines": [
+      "Your team's training,",
+      "under control."
+    ],
     "items": [
       {
         "id": "courses",
-        "title": "Courses built around the way you teach",
-        "text": "Create structured courses and keep your training content organized in one place."
+        "title": "Faster onboarding",
+        "text": "New hires go through the core courses on their own, in the order you set. You step in only where needed."
       },
       {
         "id": "tests",
-        "title": "Assessments that show what was learned",
-        "text": "Add assessments to your training and review learner results."
+        "title": "The same quality for everyone",
+        "text": "Everyone learns from the same materials and takes the same test, no matter who hired them."
       },
       {
         "id": "progress",
-        "title": "Clear progress for every learner",
-        "text": "See how far each learner has progressed without building reports manually."
+        "title": "Clear control over training",
+        "text": "See who finished, who fell behind and who received a certificate."
       },
       {
         "id": "library",
-        "title": "Training resources, always within reach",
-        "text": "On Academie and Business plans: keep learning materials in an organized library that is easy to access."
+        "title": "Knowledge stays in the company",
+        "text": "Procedures and the experience of key people live in an internal library, even after they leave. On the Academy and Business plans."
       }
     ]
   },
   "useCases": {
-    "lines": ["Multiple ways to", "organize training."],
+    "lines": [
+      "Multiple ways to",
+      "organize training."
+    ],
     "subtitle": "The same three plans. Here is who each one is for.",
     "plans": {
       "instructor": {
@@ -186,8 +221,11 @@
   },
   "pricing": {
     "eyebrow": "Pricing",
-    "lines": ["Start simple.", "Grow when you need to."],
-    "subtitle": "Instructor and Academy follow learner count. Business is for organizations.",
+    "lines": [
+      "Clear pricing,",
+      "no surprises."
+    ],
+    "subtitle": "You pay by number of employees. Every plan includes 14 free days.",
     "recommended": "Recommended",
     "perMonth": "/ month",
     "perYear": "/ year",
@@ -197,16 +235,16 @@
     "yearAtMonthly": "A year at the monthly price",
     "save": "You save €{n} a year",
     "from": "From",
-    "launch": "−30% for the first 50 customers.",
-    "demo": "14-day free demo",
+    "launch": "Launch offer: −30% for the first 50 customers.",
+    "demo": "14 days free",
     "listPrice": "List price",
     "learners": "Up to {n} learners",
     "learnersUnlimited": "Teams and organizations",
     "staff": "{n} staff seats",
-    "cta": "Get started",
+    "cta": "Try it free",
     "included": "Included",
     "excluded": "Not included",
-    "note": "Activation happens after confirmation — no public checkout.",
+    "note": "We contact you to activate it. No card needed.",
     "features": {
       "courses": "Courses, modules and lessons",
       "tests": "Tests and progress",
@@ -228,24 +266,27 @@
     }
   },
   "why": {
-    "lines": ["Training without", "unnecessary complexity."],
-    "subtitle": "The tools you need to organize team learning — in a clear platform that is easy to administer.",
+    "lines": [
+      "One place for",
+      "all internal training."
+    ],
+    "subtitle": "Companies use Formely for onboarding, procedures, mandatory training and sales.",
     "items": [
       {
-        "title": "Clearer for administrators",
-        "text": "Formely reduces complexity around training so your team can focus on learning."
+        "title": "Onboarding",
+        "text": "The first course for every new hire, ready before their first day at work."
       },
       {
-        "title": "Simpler for learners",
-        "text": "Clear access to courses and progress, without scattered tools."
+        "title": "Internal procedures",
+        "text": "Rules and work steps, explained the same way for everyone."
       },
       {
-        "title": "One system",
-        "text": "Courses, learners and progress — in one place."
+        "title": "Mandatory training",
+        "text": "Tests with a pass mark and certificates for every trained person."
       },
       {
-        "title": "Grow when you need to",
-        "text": "Start simple and move to a higher plan as your team grows."
+        "title": "Sales and product",
+        "text": "The team learns new products on their phone, between client meetings."
       }
     ]
   },
@@ -253,43 +294,43 @@
     "title": "Frequently asked questions",
     "items": [
       {
-        "q": "What is Formely?",
-        "a": "Formely is a platform for creating and managing courses, organizing learners and tracking progress."
+        "q": "How much does Formely cost?",
+        "a": "The Instructor plan costs €34 a month for up to 50 employees, with the launch discount. Academy covers up to 250 employees, and for larger teams we prepare a Business offer."
       },
       {
-        "q": "Who is Formely for?",
-        "a": "Formely is built for companies, academies and trainers who want to organize training in one system."
+        "q": "How long does implementation take?",
+        "a": "One day. We call you, activate your account and help you publish your first course."
       },
       {
-        "q": "Can I track learner progress?",
-        "a": "Yes. Formely lets you see learner progress directly from the platform."
+        "q": "What kinds of training can I create?",
+        "a": "Onboarding, internal procedures, mandatory training, products and sales. Courses can include video, documents, text and tests."
       },
       {
-        "q": "Can I create tests and assessments?",
-        "a": "Yes. Assessments can be integrated into the training process to track learner results."
+        "q": "Do employees need to install an app?",
+        "a": "No. They log in from the browser, on phone or computer, using the invitation they receive by email."
       },
       {
-        "q": "How do I choose the right plan?",
-        "a": "Instructor and Academy differ by active learner count and by features: the library, events and analyst role are on Academy. Business is for teams and organizations, and the price depends on the number of users."
+        "q": "How do I see my team's progress?",
+        "a": "From the admin panel you see each employee's progress, test scores and the certificates issued."
       },
       {
-        "q": "How do I get started?",
-        "a": "Tell us who you are and which plan you need. Activation happens after confirmation, with no public checkout."
+        "q": "What happens after the free period?",
+        "a": "Pick the right plan and keep everything you created. If you don't continue, you pay nothing."
       }
     ]
   },
   "contact": {
-    "title": "Get started with Formely",
-    "subtitle": "Tell us who you are and which plan you need. We will follow up with activation steps.",
+    "title": "Try Formely free for 14 days",
+    "subtitle": "Fill in the form and we'll contact you to activate it. We help you set up your first course.",
     "name": "Name",
     "email": "Email",
-    "org": "Organization",
+    "org": "Company (optional)",
     "plan": "Plan of interest",
     "phone": "Phone",
     "countryCode": "Country code",
-    "submit": "Submit request",
+    "submit": "Start the free trial",
     "sending": "Sending…",
-    "success": "Request sent. We will contact you soon.",
+    "success": "Thank you! We'll contact you soon to activate it.",
     "error": "Could not send the request. Please try again.",
     "consentBefore": "I agree that Formely may process the data in this form to contact me about activation, as described in the",
     "consentLink": "privacy policy",
@@ -297,12 +338,12 @@
     "consentRequired": "Please accept data processing to submit."
   },
   "finalCta": {
-    "title": "Team training,\nsimpler and organized",
-    "description": "Create, organize and track training from one place.",
-    "cta": "Get started with Formely"
+    "title": "Start your team's training\nthis very week.",
+    "description": "14 days free, no card. We personally help you set up your first course.",
+    "cta": "Try it free for 14 days"
   },
   "footer": {
-    "tagline": "Team training, all in one place.",
+    "tagline": "Employee training, in one place.",
     "product": "Product",
     "features": "Features",
     "pricing": "Pricing",
@@ -420,7 +461,7 @@
         "id": "cookies",
         "title": "Cookies and local storage",
         "paragraphs": [
-          "We do not set tracking cookies. We store the chosen language locally so we do not ask on every visit. You can clear that preference in your browser settings."
+          "We do not set tracking cookies. We store the chosen language locally so we do not ask on every visit. If you arrived from an ad, we keep the link parameters (such as the campaign name) until you close the tab, so we know where your request came from if you send the form. You can clear this data in your browser settings. We count visits anonymously on our own server: the page you opened, where you came from and your device type. We do not store your IP address and cannot recognise you from one day to the next."
         ]
       },
       {

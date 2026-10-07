@@ -1,8 +1,10 @@
+import { readAttribution } from './attribution';
+
 /**
  * Trimite o cerere de acces către API-ul Formely (apoi apare în backoffice).
  * VITE_API_URL: gol (dev, proxy Vite) sau origin fără /api (ex. http://localhost:8000).
  */
-function apiOrigin() {
+export function apiOrigin() {
   const raw = String(import.meta.env.VITE_API_URL || '').trim().replace(/\/$/, '');
   if (!raw) return '';
   return raw.replace(/\/api$/i, '');
@@ -24,6 +26,7 @@ export async function submitLead(payload) {
       reason: payload.reason || 'oferta',
       plan_interest: payload.plan_interest || null,
       source: payload.source || 'website',
+      attribution: readAttribution(),
       privacy_accepted: payload.privacy_accepted === true || payload.privacy_accepted === 1 || payload.privacy_accepted === '1' || payload.privacy_accepted === 'true' || payload.privacy_accepted === 'on',
     }),
   });

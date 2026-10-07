@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useI18n } from '../../i18n/I18nContext';
 import LangSelect from './LangSelect';
+import { site } from '../../data/site';
 
 export default function Footer() {
   const { t } = useI18n();
@@ -25,6 +26,7 @@ export default function Footer() {
             <h4>{t('footer.resources')}</h4>
             <a href="/#faq">{t('footer.faq')}</a>
             <a href="/#contact">{t('footer.contact')}</a>
+            <a className="footer-phone" href={`tel:${site.phone}`}>{site.phoneDisplay}</a>
           </div>
           <div className="footer-col">
             <h4>{t('footer.legal')}</h4>

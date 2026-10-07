@@ -17,6 +17,10 @@ export default defineConfig({
       },
     },
   },
+  ssr: {
+    // CommonJS; trebuie inclus în bundle-ul folosit de scripts/prerender.mjs.
+    noExternal: ['react-helmet-async'],
+  },
   build: {
     outDir: 'dist',
     sourcemap: false,
