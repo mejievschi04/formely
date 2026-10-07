@@ -1,7 +1,7 @@
 {
   "seo": {
     "title": "Formely: LMS for employee training and onboarding",
-    "description": "Create onboarding, internal training and tests for your team on one platform. See every employee's progress. 14 days free, no card."
+    "description": "Create onboarding, internal training and tests for your team on one platform. See every employee's progress. 14 days free."
   },
   "nav": {
     "product": "Product",
@@ -52,7 +52,7 @@
         "label": "Measure results"
       }
     ],
-    "note": "No card. We help you set it up."
+    "note": "We help you set it up."
   },
   "proof": {
     "eyebrow": "Formely at a glance",
@@ -68,7 +68,7 @@
       },
       {
         "value": "14 days",
-        "label": "free, no card",
+        "label": "free",
         "text": "Try the platform with your people before you pay."
       },
       {
@@ -244,7 +244,7 @@
     "cta": "Try it free",
     "included": "Included",
     "excluded": "Not included",
-    "note": "We contact you to activate it. No card needed.",
+    "note": "We contact you to activate it.",
     "features": {
       "courses": "Courses, modules and lessons",
       "tests": "Tests and progress",
@@ -339,7 +339,7 @@
   },
   "finalCta": {
     "title": "Start your team's training\nthis very week.",
-    "description": "14 days free, no card. We personally help you set up your first course.",
+    "description": "14 days free. We personally help you set up your first course.",
     "cta": "Try it free for 14 days"
   },
   "footer": {

@@ -1,7 +1,7 @@
 {
   "seo": {
     "title": "Formely: platformă LMS pentru training și onboarding angajați",
-    "description": "Creează onboarding-ul, instruirile interne și testele echipei într-o singură platformă. Vezi progresul fiecărui angajat. 14 zile gratuit, fără card."
+    "description": "Creează onboarding-ul, instruirile interne și testele echipei într-o singură platformă. Vezi progresul fiecărui angajat. 14 zile gratuit."
   },
   "nav": {
     "product": "Produs",
@@ -52,7 +52,7 @@
         "label": "Măsoară rezultatele"
       }
     ],
-    "note": "Fără card. Te ajutăm la configurare."
+    "note": "Te ajutăm la configurare."
   },
   "proof": {
     "eyebrow": "Formely pe scurt",
@@ -68,7 +68,7 @@
       },
       {
         "value": "14 zile",
-        "label": "gratuit, fără card",
+        "label": "gratuit",
         "text": "Testezi platforma cu oamenii tăi înainte să plătești."
       },
       {
@@ -244,7 +244,7 @@
     "cta": "Încearcă gratuit",
     "included": "Inclus",
     "excluded": "Nu este inclus",
-    "note": "Te contactăm pentru activare. Nu ai nevoie de card.",
+    "note": "Te contactăm pentru activare.",
     "features": {
       "courses": "Cursuri, module și lecții",
       "tests": "Teste și progres",
@@ -339,7 +339,7 @@
   },
   "finalCta": {
     "title": "Pornește trainingul echipei\nchiar de săptămâna asta.",
-    "description": "14 zile gratuit, fără card. Te ajutăm personal să configurezi primul curs.",
+    "description": "14 zile gratuit. Te ajutăm personal să configurezi primul curs.",
     "cta": "Încearcă gratuit 14 zile"
   },
   "footer": {
