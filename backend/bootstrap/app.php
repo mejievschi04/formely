@@ -31,9 +31,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'company_feature' => \App\Http\Middleware\EnsureCompanyFeature::class,
             'platform.only' => \App\Http\Middleware\BlockTenantPlatformActions::class,
         ]);
-        // Formularul de lead de pe site-ul de marketing (alt domeniu, fără sesiune).
+        // Formularul de lead și statisticile de pe site-ul de marketing (alt domeniu, fără sesiune).
         $middleware->validateCsrfTokens(except: [
             'api/leads',
+            'api/track',
         ]);
 
         // În spatele Nginx / Docker, X-Forwarded-Proto și IP corect pentru HTTPS, rate limit, sesiuni.
