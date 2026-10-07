@@ -6,6 +6,10 @@
  * (direct env() outside config files returns null).
  */
 return [
+    // Comutatorul general pentru Volt (AI). Oprit implicit: fără AI_ENABLED=true nu pornește nicio
+    // funcție AI, chiar dacă există chei de API — rutele AI răspund 404, iar interfața le ascunde.
+    'enabled' => filter_var(env('AI_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+
     'provider' => env('AI_PROVIDER', 'groq'),
 
     'verify_ssl' => filter_var(env('AI_VERIFY_SSL', true), FILTER_VALIDATE_BOOLEAN),

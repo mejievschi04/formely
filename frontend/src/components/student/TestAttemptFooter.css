@@ -91,8 +91,6 @@
 }
 .test-attempt-footer button,
 .test-attempt-footer a { min-height: 44px; }
-.test-attempt-footer .test-attempt-back-btn,
-.test-attempt-footer a.test-attempt-back-btn,
 .test-attempt-footer a.lms-btn-primary {
     display: inline-flex;
     align-items: center;
@@ -128,7 +126,6 @@
     background: var(--bg-secondary);
     color: var(--text-primary);
 }
-.test-attempt-footer .test-attempt-back-btn:hover,
 .test-attempt-footer a.lms-btn-primary:hover {
     background: var(--btn-primary-hover);
     color: var(--btn-primary-text);

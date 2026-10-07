@@ -27,7 +27,6 @@ function hydrateDraftFromCourse(course) {
 		visibility: currentVisibility,
 		estimated_duration_hours: currentDuration,
 		sequential_unlock: course?.sequential_unlock !== false,
-		min_test_score: course?.min_test_score ?? certificateSettings?.min_score ?? 70,
 		has_certificate: course?.has_certificate === true || certificateSettings?.enabled === true,
 		access_type: accessSettings?.type || course?.access_type || 'free',
 		enrollment_type: accessSettings?.enrollment_type || course?.enrollment_type || 'open',
@@ -88,7 +87,6 @@ const CourseSettingsEditModal = ({ open, onClose, course, onSaved }) => {
 			payload.append('status', courseEditDraft.status || 'draft');
 			payload.append('visibility', courseEditDraft.visibility || 'public');
 			payload.append('sequential_unlock', courseEditDraft.sequential_unlock !== false ? '1' : '0');
-			payload.append('min_test_score', String(courseEditDraft.min_test_score ?? 70));
 			payload.append('has_certificate', courseEditDraft.has_certificate ? '1' : '0');
 			if (courseEditDraft.estimated_duration_hours !== '' && courseEditDraft.estimated_duration_hours != null) {
 				payload.append('estimated_duration_hours', String(courseEditDraft.estimated_duration_hours));
@@ -233,23 +231,6 @@ const CourseSettingsEditModal = ({ open, onClose, course, onSaved }) => {
 							/>
 						</div>
 
-						<div className="va-field">
-							<label htmlFor="course-settings-edit-min-score">
-								Scor minim la teste <span className="va-field__optional">(%)</span>
-							</label>
-							<input
-								id="course-settings-edit-min-score"
-								type="number"
-								min={0}
-								max={100}
-								value={courseEditDraft.min_test_score ?? 70}
-								onChange={(e) => setCourseEditDraft((prev) => ({
-									...prev,
-									min_test_score: e.target.value ? parseInt(e.target.value, 10) : 70,
-								}))}
-								disabled={courseEditSaving}
-							/>
-						</div>
 						<div className="va-field">
 							<label htmlFor="course-settings-edit-card-color">Culoarea cardului</label>
 							<div className="va-color-input">

@@ -27,6 +27,8 @@ import LessonReadTrackers from '../components/student/LessonReadTrackers';
 import LessonPullRefresh from '../components/student/LessonPullRefresh';
 import './LessonPage.css';
 import '../components/admin/lessons/callout/LessonCallout.css';
+import '../components/admin/lessons/video/LessonVideo.css';
+import '../components/admin/lessons/image/LessonImageContent.css';
 import { logger } from '../utils/logger';
 import { isVoltEnabled } from '../utils/voltAvailability';
 

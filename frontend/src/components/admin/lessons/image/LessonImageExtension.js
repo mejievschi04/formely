@@ -38,7 +38,7 @@ export const LessonImage = Image.extend({
 		return ReactNodeViewRenderer(LessonImageNodeView, {
 			stopEvent: ({ event }) => {
 				const target = event.target;
-				if (target instanceof Element && target.closest('.lesson-image-handle')) {
+				if (target instanceof Element && target.closest('.lesson-image-handle, .lesson-image-toolbar')) {
 					return true;
 				}
 				return false;

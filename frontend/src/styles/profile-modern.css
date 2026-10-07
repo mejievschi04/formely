@@ -1179,3 +1179,519 @@ html body .va-profile-section-admin-courses .va-course-card-actions > a + button
 	font-size: 0.875rem;
 	color: var(--text-secondary);
 }
+
+/* ============================================================
+   Pagina utilizatorului (profil propriu și utilizator deschis din admin):
+   antet compact, filtre cu număr, căutare și carduri mici într-o grilă.
+   ============================================================ */
+.va-up-page {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding-bottom: 32px;
+}
+
+.va-up-hero {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 16px 20px;
+	padding: 20px 24px;
+	border: 1px solid var(--border-primary);
+	border-radius: 18px;
+	background:
+		linear-gradient(90deg, color-mix(in srgb, var(--color-brand-primary) 16%, transparent) 0, transparent 220px),
+		var(--bg-elevated);
+	box-shadow: var(--shadow-sm);
+}
+
+.va-up-avatar {
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	width: 72px;
+	height: 72px;
+	border-radius: 999px;
+	background: var(--color-brand-primary);
+	color: var(--btn-primary-text);
+	font-size: 1.6rem;
+	font-weight: 800;
+	overflow: hidden;
+	box-shadow: 0 0 0 4px var(--bg-elevated), 0 6px 16px -8px rgba(15, 23, 42, 0.5);
+}
+
+.va-up-avatar img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.va-up-identity {
+	flex: 1 1 220px;
+	min-width: 0;
+}
+
+.va-up-name {
+	margin: 0 0 6px;
+	color: var(--text-primary);
+	font-size: 1.5rem;
+	font-weight: 800;
+	line-height: 1.2;
+	overflow-wrap: anywhere;
+}
+
+.va-up-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.va-up-role,
+.va-up-email {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	min-height: 28px;
+	padding: 0 10px;
+	border-radius: 999px;
+	background: var(--bg-secondary);
+	color: var(--text-secondary);
+	font-size: 0.85rem;
+	font-weight: 600;
+	overflow-wrap: anywhere;
+}
+
+.va-up-role {
+	background: color-mix(in srgb, var(--color-brand-primary) 35%, var(--bg-elevated));
+	color: var(--text-primary);
+	font-weight: 700;
+}
+
+.va-up-progress-summary {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	color: var(--text-secondary);
+	font-size: 0.8rem;
+	font-weight: 600;
+}
+
+.va-up-progress-summary strong {
+	color: var(--text-primary);
+	font-size: 1.6rem;
+	font-weight: 800;
+	line-height: 1.1;
+}
+
+.va-up-progress-summary strong span {
+	color: var(--text-tertiary);
+	font-size: 1rem;
+}
+
+.va-up-hero-actions {
+	display: flex;
+	flex-basis: 100%;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.va-up-courses {
+	padding: 20px 24px 24px;
+	border: 1px solid var(--border-primary);
+	border-radius: 18px;
+	background: var(--bg-elevated);
+	box-shadow: var(--shadow-sm);
+}
+
+.va-up-courses-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 14px;
+}
+
+.va-up-courses-title {
+	margin: 0;
+	color: var(--text-primary);
+	font-size: 1.15rem;
+	font-weight: 800;
+}
+
+.va-up-search {
+	display: flex;
+	flex: 0 1 320px;
+	align-items: center;
+	gap: 8px;
+	min-height: 42px;
+	padding: 0 12px;
+	border: 1px solid var(--border-secondary);
+	border-radius: 12px;
+	background: var(--bg-primary);
+	color: var(--text-tertiary);
+}
+
+.va-up-search:focus-within {
+	border-color: var(--text-primary);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-primary) 45%, transparent);
+}
+
+.va-up-search input {
+	flex: 1;
+	min-width: 0;
+	border: 0;
+	outline: none;
+	background: transparent;
+	color: var(--text-primary);
+	font: inherit;
+	font-size: 0.95rem;
+}
+
+.va-up-search input:focus {
+	box-shadow: none;
+}
+
+/* Filtrele: butoane clare, cu numărul de cursuri; cel ales e plin, în culoarea brandului. */
+.va-up-tabs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 18px;
+}
+
+.va-up-tab {
+	all: unset;
+	box-sizing: border-box;
+	display: inline-flex !important;
+	align-items: center;
+	gap: 10px;
+	min-height: 44px;
+	padding: 0 8px 0 16px !important;
+	border: 1.5px solid var(--border-secondary) !important;
+	border-radius: 999px !important;
+	background: var(--bg-elevated) !important;
+	color: var(--text-primary) !important;
+	font-size: 0.92rem;
+	font-weight: 700;
+	cursor: pointer;
+	transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.va-up-tab:hover {
+	border-color: var(--text-primary) !important;
+	background: var(--bg-secondary) !important;
+}
+
+.va-up-tab.is-active {
+	border-color: var(--color-brand-primary) !important;
+	background: var(--color-brand-primary) !important;
+	color: var(--btn-primary-text) !important;
+	box-shadow: 0 6px 16px -10px color-mix(in srgb, var(--color-brand-primary) 90%, #000);
+}
+
+.va-up-tab:focus-visible {
+	outline: 2px solid var(--text-primary) !important;
+	outline-offset: 2px;
+}
+
+.va-up-tab-count {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 28px;
+	height: 28px;
+	padding: 0 8px;
+	border-radius: 999px;
+	background: var(--bg-secondary);
+	color: var(--text-primary);
+	font-size: 0.85rem;
+	font-weight: 800;
+}
+
+.va-up-tab.is-active .va-up-tab-count {
+	background: color-mix(in srgb, var(--btn-primary-text) 16%, transparent);
+	color: var(--btn-primary-text);
+}
+
+.va-up-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+	gap: 12px;
+}
+
+.va-up-card {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	min-width: 0;
+	padding: 14px;
+	border: 1px solid var(--border-primary);
+	border-radius: 14px;
+	background: var(--bg-elevated);
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.va-up-card:hover {
+	border-color: var(--border-secondary);
+	box-shadow: 0 8px 20px -16px rgba(15, 23, 42, 0.45);
+}
+
+.va-up-card-head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.va-up-card-title {
+	display: -webkit-box;
+	margin: 0;
+	color: var(--text-primary);
+	font-size: 0.98rem;
+	font-weight: 800;
+	line-height: 1.3;
+	overflow: hidden;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+}
+
+.va-up-status {
+	flex-shrink: 0;
+	padding: 3px 8px;
+	border-radius: 999px;
+	font-size: 0.7rem;
+	font-weight: 800;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+}
+
+.va-up-status.is-completed { background: color-mix(in srgb, var(--color-success) 16%, transparent); color: color-mix(in srgb, var(--color-success) 80%, var(--text-primary)); }
+.va-up-status.is-in_progress { background: color-mix(in srgb, var(--color-warning) 18%, transparent); color: color-mix(in srgb, var(--color-warning) 70%, var(--text-primary)); }
+.va-up-status.is-not_accessed { background: var(--bg-secondary); color: var(--text-secondary); }
+
+.va-up-card-desc {
+	display: -webkit-box;
+	margin: 0;
+	color: var(--text-secondary);
+	font-size: 0.85rem;
+	line-height: 1.45;
+	overflow: hidden;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+}
+
+.va-up-card-note {
+	margin: 0;
+	color: var(--text-tertiary);
+	font-size: 0.82rem;
+}
+
+.va-up-progress {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.va-up-progress-track {
+	height: 6px;
+	border-radius: 999px;
+	background: var(--bg-secondary);
+	overflow: hidden;
+}
+
+.va-up-progress-fill {
+	height: 100%;
+	border-radius: inherit;
+	background: var(--color-brand-primary);
+}
+
+.va-up-progress-label {
+	color: var(--text-secondary);
+	font-size: 0.8rem;
+	font-weight: 600;
+}
+
+.va-up-tests {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.va-up-test {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px 8px;
+	padding: 6px 8px;
+	border-radius: 8px;
+	background: var(--bg-secondary);
+	font-size: 0.8rem;
+}
+
+.va-up-test-title {
+	flex: 1 1 100px;
+	min-width: 0;
+	color: var(--text-primary);
+	font-weight: 700;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.va-up-test-result {
+	color: var(--text-secondary);
+	font-weight: 600;
+}
+
+.va-up-test-result.is-passed { color: color-mix(in srgb, var(--color-success) 80%, var(--text-primary)); }
+.va-up-test-result.is-failed { color: color-mix(in srgb, var(--color-error) 80%, var(--text-primary)); }
+
+.va-up-test-grant {
+	all: unset;
+	box-sizing: border-box;
+	padding: 2px 8px !important;
+	border-radius: 999px !important;
+	background: var(--bg-elevated) !important;
+	color: var(--text-primary) !important;
+	font-size: 0.75rem;
+	font-weight: 700;
+	cursor: pointer;
+	box-shadow: inset 0 0 0 1px var(--border-secondary);
+}
+
+.va-up-test-grant:disabled {
+	cursor: default;
+	opacity: 0.6;
+}
+
+.va-up-card-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-top: auto;
+	padding-top: 4px;
+}
+
+.va-up-card-actions > * {
+	flex: 1 1 auto;
+	justify-content: center;
+	text-align: center;
+}
+
+.va-up-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+	padding: 32px 16px;
+	border: 1px dashed var(--border-secondary);
+	border-radius: 14px;
+	color: var(--text-secondary);
+	text-align: center;
+}
+
+.va-up-empty p {
+	margin: 0;
+}
+
+@media (max-width: 640px) {
+	.va-up-hero,
+	.va-up-courses {
+		padding: 16px;
+		border-radius: 16px;
+	}
+
+	.va-up-avatar {
+		width: 56px;
+		height: 56px;
+		font-size: 1.25rem;
+	}
+
+	.va-up-name {
+		font-size: 1.25rem;
+	}
+
+	.va-up-progress-summary {
+		flex-basis: 100%;
+		flex-direction: row;
+		align-items: baseline;
+		gap: 6px;
+	}
+
+	.va-up-progress-summary strong {
+		font-size: 1.2rem;
+	}
+
+	.va-up-search {
+		flex-basis: 100%;
+	}
+
+	/* pe telefon filtrele stau pe un rând și se derulează lateral */
+	.va-up-tabs {
+		flex-wrap: nowrap;
+		margin-right: -16px;
+		padding-right: 16px;
+		overflow-x: auto;
+		scrollbar-width: none;
+	}
+
+	.va-up-tabs::-webkit-scrollbar {
+		display: none;
+	}
+
+	.va-up-tab {
+		flex-shrink: 0;
+	}
+
+	.va-up-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* Ajustări: butoanele globale (lms-btn-*) și câmpurile de text au stiluri mari / fundal propriu. */
+.va-up-page,
+.va-up-page .va-up-card,
+.va-up-page .va-up-identity {
+	text-align: left;
+}
+
+.va-up-search input,
+.va-up-search input:focus {
+	height: 40px;
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+}
+
+.va-up-card-actions .lms-btn-primary,
+.va-up-card-actions .lms-btn-secondary,
+.va-up-hero-actions .lms-btn-primary,
+.va-up-hero-actions .lms-btn-secondary {
+	display: inline-flex !important;
+	align-items: center;
+	justify-content: center;
+	min-height: 36px !important;
+	height: auto !important;
+	padding: 0 14px !important;
+	font-size: 0.85rem !important;
+	line-height: 1.2 !important;
+	white-space: nowrap;
+}
+
+.va-up-card-actions > * {
+	flex: 1 1 0;
+	min-width: max-content;
+}
+
+/* câmpul de căutare are același fundal ca textul scris (stilul global al input-urilor e alb) */
+.va-up-search {
+	background: var(--bg-elevated);
+}

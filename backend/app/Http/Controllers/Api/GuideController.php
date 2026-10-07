@@ -7,6 +7,7 @@ use App\Models\GuideItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Support\ImageOptimizer;
 
 class GuideController extends Controller
 {
@@ -173,7 +174,7 @@ class GuideController extends Controller
         $coversDir = 'guides/covers';
         Storage::disk($disk)->makeDirectory($coversDir);
 
-        $coverFile = $request->file('cover');
+        $coverFile = ImageOptimizer::optimize($request->file('cover'), ImageOptimizer::COVER_MAX);
         $coverExt = strtolower($coverFile->getClientOriginalExtension() ?: 'jpg');
         if (! in_array($coverExt, ['jpg', 'jpeg', 'png', 'webp'], true)) {
             $coverExt = 'jpg';

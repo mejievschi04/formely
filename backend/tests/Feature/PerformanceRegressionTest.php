@@ -73,10 +73,14 @@ class PerformanceRegressionTest extends TestCase
     public function test_auth_reports_volt_configuration_without_exposing_keys(): void
     {
         $student = User::factory()->create(['role' => 'student']);
-        config(['ai.provider' => 'groq', 'ai.groq.api_key' => '']);
+        config(['ai.enabled' => true, 'ai.provider' => 'groq', 'ai.groq.api_key' => '']);
         $this->actingAs($student, 'sanctum')->getJson('/api/auth/me')
             ->assertOk()->assertJsonPath('user.capabilities.volt', false);
-        config(['ai.groq.api_key' => 'test-only-secret']);
+        // AI oprit (AI_ENABLED): nici cu cheie de API Volt nu pornește
+        config(['ai.enabled' => false, 'ai.groq.api_key' => 'test-only-secret']);
+        $this->getJson('/api/auth/me')
+            ->assertOk()->assertJsonPath('user.capabilities.volt', false);
+        config(['ai.enabled' => true]);
         $response = $this->getJson('/api/auth/me')
             ->assertOk()->assertJsonPath('user.capabilities.volt', true);
         $this->assertStringNotContainsString('test-only-secret', $response->getContent());

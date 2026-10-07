@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Support\SchemaCache;
 use Illuminate\Support\Facades\Storage;
+use App\Support\ImageOptimizer;
 
 class CourseMapAdminController extends Controller
 {
@@ -352,7 +353,7 @@ class CourseMapAdminController extends Controller
             abort(403, 'Acces interzis.');
         }
 
-        $file = $request->file('cover');
+        $file = ImageOptimizer::optimize($request->file('cover'), ImageOptimizer::COVER_MAX);
         $ext = $file->getClientOriginalExtension() ?: 'jpg';
         $path = $file->storeAs('course-map-covers', $map->id . '_' . time() . '.' . $ext, 'public');
 

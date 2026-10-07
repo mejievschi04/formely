@@ -4,6 +4,7 @@ import { adminService } from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContextShared.js';
 
 import { useAuth } from '../../../contexts/AuthContextShared.js';
+import { isVoltEnabled } from '../../../utils/voltAvailability';
 import '../../../pages/admin/AdminTestsPendingReviewsPage.css';
 
 const MANUAL_QUESTION_TYPES = ['essay'];
@@ -270,12 +271,14 @@ export default function TestManualReviewPanel({ embedded = false }) {
 						<p className="admin-tests-review-sub">
 							{reviewTarget.user?.name || reviewTarget.user?.email || 'Utilizator'} · {reviewTarget.test?.title || 'Test'}
 						</p>
-						<div className="admin-tests-review-ai-actions">
-							<button type="button" className="admin-tests-review-ai-btn" onClick={handleSuggestWithVolt} disabled={voltFeedbackLoading || reviewSubmitting}>
-								{voltFeedbackLoading ? 'Formely AI analizează…' : 'Generează feedback cu Formely AI'}
-							</button>
-							<span>Completează scoruri, rubrici și feedback. Verifică înainte de salvare.</span>
-						</div>
+						{isVoltEnabled('ai_test_generation') ? (
+							<div className="admin-tests-review-ai-actions">
+								<button type="button" className="admin-tests-review-ai-btn" onClick={handleSuggestWithVolt} disabled={voltFeedbackLoading || reviewSubmitting}>
+									{voltFeedbackLoading ? 'Formely AI analizează…' : 'Generează feedback cu Formely AI'}
+								</button>
+								<span>Completează scoruri, rubrici și feedback. Verifică înainte de salvare.</span>
+							</div>
+						) : null}
 						<div className="admin-tests-review-questions">
 							{reviewModalQuestions.map((q) => {
 								const maxPts = Math.max(1, Number(q.points ?? 1));

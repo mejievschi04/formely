@@ -1,7 +1,15 @@
 import React, { useRef, useState } from 'react';
 import { NodeViewWrapper } from '@tiptap/react';
 import LessonImageResizeHandles from './LessonImageResizeHandles.jsx';
-import { LESSON_IMAGE_MIN_WIDTH, nextLessonImageWidth, normalizeLessonImageAlignment } from './lessonImageAttrs.js';
+import LessonImageLayoutToolbar from './LessonImageLayoutToolbar.jsx';
+import {
+	LESSON_IMAGE_MIN_WIDTH,
+	LESSON_IMAGE_WRAP_MAX_RATIO,
+	isWrappedLessonImage,
+	lessonImageWidthForLayout,
+	nextLessonImageWidth,
+	normalizeLessonImageAlignment,
+} from './lessonImageAttrs.js';
 import './LessonImage.css';
 
 export default function LessonImageNodeView({ node, updateAttributes, selected, editor, getPos }) {
@@ -25,7 +33,11 @@ export default function LessonImageNodeView({ node, updateAttributes, selected, 
 			? image.naturalHeight / image.naturalWidth
 			: (Number(node.attrs.height) > 0 && startWidth > 0 ? Number(node.attrs.height) / startWidth : 0.75);
 		const editorWidth = editor?.view?.dom?.clientWidth || startWidth;
-		const max = Math.max(LESSON_IMAGE_MIN_WIDTH, editorWidth - 8);
+		// cu text pe lângă, imaginea lasă loc textului (aceeași limită ca la cursant)
+		const max = Math.max(
+			LESSON_IMAGE_MIN_WIDTH,
+			isWrappedLessonImage(alignment) ? Math.floor(editorWidth * LESSON_IMAGE_WRAP_MAX_RATIO) : editorWidth - 8,
+		);
 		const startX = event.clientX;
 		const startY = event.clientY;
 		const handle = event.currentTarget;
@@ -74,7 +86,7 @@ export default function LessonImageNodeView({ node, updateAttributes, selected, 
 
 	return (
 		<NodeViewWrapper
-			className={`lesson-image is-${alignment}${selected ? ' is-selected' : ''}${liveWidth ? ' is-resizing' : ''}`}
+			className={`lesson-image is-${alignment}${displayWidth ? '' : ' is-unsized'}${selected ? ' is-selected' : ''}${liveWidth ? ' is-resizing' : ''}`}
 			data-drag-handle=""
 		>
 			<div
@@ -93,8 +105,39 @@ export default function LessonImageNodeView({ node, updateAttributes, selected, 
 						const pos = getPos?.();
 						if (typeof pos === 'number') editor.commands.setNodeSelection(pos);
 					}}
+					// Click-ul mută cursorul browserului la începutul editorului (imaginea nu se selectează ca text),
+					// iar ProseMirror îl preia după click: imaginea pierdea selecția, deci mânerele și bara de așezare.
+					// O selectăm din nou după ce browserul termină; apăsarea rămâne nativă ca imaginea să se poată trage.
+					onClick={() => {
+						window.setTimeout(() => {
+							const pos = getPos?.();
+							if (typeof pos === 'number' && !editor.isDestroyed) {
+								editor.chain().focus(null, { scrollIntoView: false }).setNodeSelection(pos).run();
+							}
+						}, 0);
+					}}
 				/>
 				{selected ? <LessonImageResizeHandles onResizeStart={startResize} /> : null}
+				{selected ? (
+					<LessonImageLayoutToolbar
+						alignment={alignment}
+						onChange={(next) => {
+							// Schimbarea așezării nu schimbă mărimea: păstrăm lățimea afișată acum.
+							const image = imageRef.current;
+							const width = lessonImageWidthForLayout({
+								alignment,
+								savedWidth,
+								displayedWidth: frameRef.current?.getBoundingClientRect().width,
+							});
+							const ratio = image?.naturalWidth > 0 ? image.naturalHeight / image.naturalWidth : null;
+							updateAttributes({
+								alignment: next,
+								width,
+								height: width && ratio ? Math.max(1, Math.round(width * ratio)) : node.attrs.height,
+							});
+						}}
+					/>
+				) : null}
 			</div>
 		</NodeViewWrapper>
 	);

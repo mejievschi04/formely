@@ -271,6 +271,7 @@ const LibraryComposePage = () => {
 					<span className="library-compose-label">Conținut</span>
 					<div className="library-compose-editor">
 						<LessonTipTapEditor
+							allowVideo={false}
 							value={body}
 							onChange={setBody}
 							uploadImage={libraryService.uploadImage}

@@ -18,22 +18,29 @@ export const LESSON_CALLOUT_TYPES = [
 
 const CALLOUT_TYPE_IDS = new Set(LESSON_CALLOUT_TYPES.map((type) => type.id));
 
-/** Stiluri prestabilite (iconiță + culoare din LessonCallout.css); `fill` alege monocolor sau gradient. */
+/**
+ * Culorile chenarului (fără iconiță și fără margine, vezi LessonCallout.css). Id-urile rămân cele vechi,
+ * ca lecțiile deja salvate să-și păstreze culoarea.
+ */
 export const LESSON_CALLOUT_VARIANTS = [
-	{ id: 'info', label: 'Informație', color: '#2563eb' },
-	{ id: 'tip', label: 'Sfat', color: '#16a34a' },
-	{ id: 'warning', label: 'Atenție', color: '#ea580c' },
-	{ id: 'danger', label: 'Important', color: '#dc2626' },
-	{ id: 'success', label: 'Reține', color: '#0d9488' },
-	{ id: 'note', label: 'Notă', color: '#7c3aed' },
-	{ id: 'example', label: 'Exemplu', color: '#0891b2' },
-	{ id: 'quote', label: 'Citat', color: '#475569' },
+	{ id: 'info', label: 'Albastru', color: '#2563eb' },
+	{ id: 'tip', label: 'Verde', color: '#16a34a' },
+	{ id: 'warning', label: 'Portocaliu', color: '#ea580c' },
+	{ id: 'danger', label: 'Roșu', color: '#dc2626' },
+	{ id: 'success', label: 'Turcoaz', color: '#0d9488' },
+	{ id: 'note', label: 'Violet', color: '#7c3aed' },
+	{ id: 'example', label: 'Cyan', color: '#0891b2' },
+	{ id: 'quote', label: 'Gri', color: '#475569' },
 ];
 
+/** Stilul chenarului. Chenarele vechi „mono” se afișează cu umbră. */
 export const LESSON_CALLOUT_FILLS = [
-	{ id: 'mono', label: 'Monocolor' },
+	{ id: 'shadow', label: 'Umbră' },
+	{ id: 'glass', label: 'Sticlă' },
 	{ id: 'gradient', label: 'Gradient' },
 ];
+
+const CALLOUT_FILL_IDS = new Set(LESSON_CALLOUT_FILLS.map((fill) => fill.id));
 
 const CALLOUT_VARIANT_IDS = new Set(LESSON_CALLOUT_VARIANTS.map((variant) => variant.id));
 
@@ -42,7 +49,7 @@ export function cleanLessonCalloutVariant(value) {
 }
 
 export function cleanLessonCalloutFill(value) {
-	return value === 'gradient' ? 'gradient' : 'mono';
+	return CALLOUT_FILL_IDS.has(value) ? value : 'shadow';
 }
 
 export function cleanLessonCalloutAccent(value) {
@@ -77,7 +84,7 @@ export const LessonCallout = Node.create({
 				renderHTML: (attributes) => (attributes.variant ? { 'data-callout-variant': attributes.variant } : {}),
 			},
 			fill: {
-				default: 'mono',
+				default: 'shadow',
 				parseHTML: (element) => cleanLessonCalloutFill(element.getAttribute('data-callout-fill')),
 				renderHTML: (attributes) => (attributes.variant ? { 'data-callout-fill': cleanLessonCalloutFill(attributes.fill) } : {}),
 			},
@@ -118,6 +125,21 @@ export const LessonCallout = Node.create({
 
 	addCommands() {
 		return {
+			// Scoate chenarul din jurul cursorului; conținutul rămâne în lecție, pe același loc.
+			unsetLessonCallout: () => ({ state, tr, dispatch }) => {
+				const { $from } = state.selection;
+				const depth = calloutDepth($from);
+				if (!depth) return false;
+				if (dispatch) {
+					const pos = $from.before(depth);
+					const callout = $from.node(depth);
+					const offset = $from.pos - pos - 1;
+					tr.replaceWith(pos, pos + callout.nodeSize, callout.content);
+					tr.setSelection(TextSelection.near(tr.doc.resolve(Math.min(pos + Math.max(offset, 0), tr.doc.content.size))));
+					dispatch(tr.scrollIntoView());
+				}
+				return true;
+			},
 			setLessonCallout: (attributes) => ({ editor, state, tr, dispatch }) => {
 				const next = {
 					type: cleanLessonCalloutType(attributes?.type),

@@ -132,6 +132,11 @@ class CourseBuilderValidator
             $duration = (int) ($lesson->duration_minutes ?? 0);
             $path = 'lessons.' . $lesson->id;
 
+            // Lecția doar cu video (link extern redat în lecție) nu e goală și nu are de ce să fie „prea scurtă”.
+            if ($textLength === 0 && $this->htmlHasEmbeddedVideo((string) ($lesson->content ?? ''))) {
+                continue;
+            }
+
             if ($textLength === 0) {
                 $emptyLessons++;
                 $addIssue('warning', 'lesson_content', 'Lecție fără text', "Lecția „{$lesson->title}” nu are text. Poate rămâne așa.", $path);
@@ -233,6 +238,9 @@ class CourseBuilderValidator
         if (trim((string) ($lesson->video_url ?? '')) !== '') {
             return true;
         }
+        if ($this->htmlHasEmbeddedVideo((string) ($lesson->content ?? ''))) {
+            return true;
+        }
 
         foreach ($lesson->contentBlocks ?? collect() as $block) {
             if (isset($block->visible) && $block->visible === false) {
@@ -259,6 +267,12 @@ class CourseBuilderValidator
         }
 
         return false;
+    }
+
+    /** Video adăugat din editorul de lecții (figure data-lesson-video cu linkul original). */
+    protected function htmlHasEmbeddedVideo(string $html): bool
+    {
+        return (bool) preg_match('/<figure\b[^>]*\bdata-lesson-video=["\']true["\'][^>]*\bdata-src=["\'][^"\']+["\']|<figure\b[^>]*\bdata-src=["\'][^"\']+["\'][^>]*\bdata-lesson-video=["\']true["\']/i', $html);
     }
 
     protected function htmlHasText(string $html): bool

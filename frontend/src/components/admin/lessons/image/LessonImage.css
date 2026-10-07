@@ -78,3 +78,97 @@
 .lesson-image-handle.is-ne { top: -5px; right: -5px; cursor: nesw-resize; }
 .lesson-image-handle.is-se { right: -5px; bottom: -5px; cursor: nwse-resize; }
 .lesson-image-handle.is-sw { bottom: -5px; left: -5px; cursor: nesw-resize; }
+
+/* Imagine cu text pe lângă (ca în Word): plutește, iar paragrafele următoare o înconjoară. */
+.lesson-image.is-wrap-left,
+.lesson-image.is-wrap-right {
+	display: block;
+	width: auto;
+	max-width: 60%;
+}
+
+.lesson-image.is-wrap-left {
+	float: left;
+	margin: 0.25em 1.25em 0.75em 0;
+}
+
+.lesson-image.is-wrap-right {
+	float: right;
+	margin: 0.25em 0 0.75em 1.25em;
+}
+
+/* fără lățime salvată, imaginea cu text pe lângă ocupă 40% din text (ca la cursant) */
+.lesson-image.is-wrap-left.is-unsized,
+.lesson-image.is-wrap-right.is-unsized {
+	width: 40%;
+}
+
+.lesson-image.is-wrap-left.is-unsized .lesson-image-frame,
+.lesson-image.is-wrap-right.is-unsized .lesson-image-frame {
+	width: 100%;
+}
+
+.lesson-image.is-wrap-left.is-unsized .lesson-image-frame img,
+.lesson-image.is-wrap-right.is-unsized .lesson-image-frame img {
+	width: 100%;
+}
+
+/* conținutul de după ultima imagine plutitoare nu iese din editor */
+.lesson-tiptap-surface::after {
+	content: '';
+	display: table;
+	clear: both;
+}
+
+.lesson-image-toolbar {
+	position: absolute;
+	top: 8px;
+	left: 8px;
+	z-index: 3;
+	display: flex;
+	gap: 2px;
+	padding: 3px;
+	border-radius: 10px;
+	background: rgba(15, 23, 42, 0.86);
+	box-shadow: 0 6px 18px -8px rgba(15, 23, 42, 0.6);
+	line-height: 0;
+}
+
+.lesson-image-toolbar-btn {
+	all: unset;
+	box-sizing: border-box;
+	display: inline-flex !important;
+	align-items: center;
+	justify-content: center;
+	width: 32px !important;
+	min-width: 32px !important;
+	height: 32px !important;
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 8px !important;
+	background: transparent !important;
+	color: #e2e8f0 !important;
+	cursor: pointer;
+}
+
+.lesson-image-toolbar-btn svg {
+	display: block;
+	flex-shrink: 0;
+	width: 20px !important;
+	height: 20px !important;
+	fill: currentColor !important;
+}
+
+.lesson-image-toolbar-btn:hover {
+	background: rgba(255, 255, 255, 0.14) !important;
+}
+
+.lesson-image-toolbar-btn.is-active {
+	background: var(--color-brand-primary, #ffee00) !important;
+	color: var(--btn-primary-text, #0f172a) !important;
+}
+
+.lesson-image-toolbar-btn:focus-visible {
+	outline: 2px solid #ffffff;
+	outline-offset: 1px;
+}

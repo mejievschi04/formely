@@ -2,8 +2,10 @@ import '../styles/exam-results-modern.css';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+	CaretDown,
 	CheckCircle,
 	Eye,
+	Folder,
 	MagnifyingGlass,
 	WarningCircle,
 	XCircle,
@@ -38,6 +40,21 @@ function getResultTitle(result) {
 
 function getCourseTitle(result) {
 	return result?.exam?.course?.title || result?.test?.course?.title || 'Fără curs';
+}
+
+function getCourseKey(result) {
+	const course = result?.exam?.course || result?.test?.course;
+	return course?.id != null ? `course:${course.id}` : `title:${getCourseTitle(result)}`;
+}
+
+function groupByCourse(list) {
+	const groups = new Map();
+	list.forEach((result) => {
+		const key = getCourseKey(result);
+		if (!groups.has(key)) groups.set(key, { key, title: getCourseTitle(result), results: [] });
+		groups.get(key).results.push(result);
+	});
+	return [...groups.values()];
 }
 
 function isPendingReview(result) {
@@ -239,6 +256,14 @@ const ExamResultsPage = () => {
 	const [query, setQuery] = useState('');
 	const [filterStatus, setFilterStatus] = useState('all');
 	const [sortBy, setSortBy] = useState('recent');
+	const [openCourses, setOpenCourses] = useState(() => new Set());
+
+	const toggleCourse = (key) => setOpenCourses((prev) => {
+		const next = new Set(prev);
+		if (next.has(key)) next.delete(key);
+		else next.add(key);
+		return next;
+	});
 
 	const loadResults = async () => {
 		try {
@@ -287,6 +312,9 @@ const ExamResultsPage = () => {
 				return sortBy === 'oldest' ? dateA - dateB : dateB - dateA;
 			});
 	}, [results, query, filterStatus, sortBy]);
+
+	const courseGroups = useMemo(() => groupByCourse(filteredResults), [filteredResults]);
+	const searching = query.trim() !== '';
 
 	if (loading) {
 		return (
@@ -353,45 +381,73 @@ const ExamResultsPage = () => {
 
 			{filteredResults.length > 0 ? (
 				<div className="exam-results-stack">
-					{filteredResults.map((result) => {
-						const state = getResultState(result);
-						const percent = Math.round(toNumber(result.percentage));
-						const questions = asArray(result?.exam?.questions);
-						const submittedOnly = Boolean(result?.show_only_submitted_answers);
+					{courseGroups.map((group) => {
+						// La căutare mapele se deschid singure, ca rezultatele găsite să fie vizibile.
+						const isOpen = searching || openCourses.has(group.key);
+						const passedCount = group.results.filter((result) => getResultState(result).key === 'passed').length;
+						const panelId = `exam-results-course-${group.key.replace(/[^a-z0-9-]/gi, '-')}`;
 						return (
-							<article key={`${result.type || 'exam'}:${result.id}`} className="student-exam-results exam-results-test-card">
-								<h2 className="exam-results-test-title">{getResultTitle(result)}</h2>
-								<p className="exam-results-test-course">{getCourseTitle(result)}</p>
-								<div className={`student-exam-result-header ${state.key}`}>
-									<div className="student-exam-result-icon">{state.key === 'passed' ? '✓' : state.key === 'pending' ? '⏳' : '✗'}</div>
-									<div className="student-exam-result-title">
-										{state.key === 'pending' ? state.label : `${percent}% ${state.label}`}
+							<section key={group.key} className={`exam-results-course${isOpen ? ' is-open' : ''}`}>
+								<button
+									type="button"
+									className="exam-results-course-toggle"
+									aria-expanded={isOpen}
+									aria-controls={panelId}
+									onClick={() => toggleCourse(group.key)}
+									disabled={searching}
+								>
+									<Folder size={22} weight="duotone" aria-hidden className="exam-results-course-icon" />
+									<span className="exam-results-course-name">{group.title}</span>
+									<span className="exam-results-course-count">
+										{group.results.length === 1 ? '1 test' : `${group.results.length} teste`} · {passedCount} promovate
+									</span>
+									<CaretDown size={18} weight="bold" aria-hidden className="exam-results-course-caret" />
+								</button>
+								{isOpen && (
+									<div id={panelId} className="exam-results-course-body">
+										{group.results.map((result) => {
+											const state = getResultState(result);
+											const percent = Math.round(toNumber(result.percentage));
+											const questions = asArray(result?.exam?.questions);
+											const submittedOnly = Boolean(result?.show_only_submitted_answers);
+											return (
+												<article key={`${result.type || 'exam'}:${result.id}`} className="student-exam-results exam-results-test-card">
+													<h2 className="exam-results-test-title">{getResultTitle(result)}</h2>
+													<div className={`student-exam-result-header ${state.key}`}>
+														<div className="student-exam-result-icon">{state.key === 'passed' ? '✓' : state.key === 'pending' ? '⏳' : '✗'}</div>
+														<div className="student-exam-result-title">
+															{state.key === 'pending' ? state.label : `${percent}% ${state.label}`}
+														</div>
+													</div>
+													<div className="student-exam-result-stats">
+														<div className="student-exam-result-stat">
+															<div className="student-exam-result-stat-label">Scor</div>
+															<div className="student-exam-result-stat-value">
+																{toNumber(result.score)} / {toNumber(result.total_points ?? result.max_score)}
+															</div>
+														</div>
+													</div>
+													{questions.length > 0 ? (
+														<div className="student-exam-final-feedback">
+															{questions.map((question, index) => (
+																<QuestionReview
+																	key={question.id ?? index}
+																	question={question}
+																	index={index}
+																	result={result}
+																	submittedOnly={submittedOnly}
+																/>
+															))}
+														</div>
+													) : (
+														<p className="exam-results-test-missing">Detaliile întrebărilor nu sunt disponibile.</p>
+													)}
+												</article>
+											);
+										})}
 									</div>
-								</div>
-								<div className="student-exam-result-stats">
-									<div className="student-exam-result-stat">
-										<div className="student-exam-result-stat-label">Scor</div>
-										<div className="student-exam-result-stat-value">
-											{toNumber(result.score)} / {toNumber(result.total_points ?? result.max_score)}
-										</div>
-									</div>
-								</div>
-								{questions.length > 0 ? (
-									<div className="student-exam-final-feedback">
-										{questions.map((question, index) => (
-											<QuestionReview
-												key={question.id ?? index}
-												question={question}
-												index={index}
-												result={result}
-												submittedOnly={submittedOnly}
-											/>
-										))}
-									</div>
-								) : (
-									<p className="exam-results-test-missing">Detaliile întrebărilor nu sunt disponibile.</p>
 								)}
-							</article>
+							</section>
 						);
 					})}
 				</div>

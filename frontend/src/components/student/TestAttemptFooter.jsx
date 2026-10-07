@@ -13,8 +13,6 @@ export default function TestAttemptFooter({
     canGoBack = true,
     canGoNext = true,
     submitted = false,
-    backTo,
-    backLabel = 'Înapoi la curs',
     children,
 }) {
     const footerRef = useRef(null);
@@ -36,7 +34,6 @@ export default function TestAttemptFooter({
     }, []);
 
     const showSubmit = !submitted && total > 0 && currentIndex === total - 1;
-    const showLeaveAfterSubmit = Boolean(submitted && backTo);
     const nextBlocked = !submitted && !submitting && total > 0 && currentIndex < total - 1 && !canGoNext;
 
     return (
@@ -61,9 +58,6 @@ export default function TestAttemptFooter({
                     {submitting ? 'Se trimite…' : 'Trimite testul'}
                 </button>}
                 {children}
-                {showLeaveAfterSubmit && (
-                    <Link to={backTo} className="lms-btn-primary va-btn-back test-attempt-back-btn">{backLabel}</Link>
-                )}
                 {submitted && (
                     <Link to="/courses" className="test-attempt-home-btn">Pagina principală</Link>
                 )}

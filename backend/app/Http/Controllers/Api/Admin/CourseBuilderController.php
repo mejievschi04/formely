@@ -15,6 +15,7 @@ use App\Services\CourseBuilderValidator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use App\Support\ImageOptimizer;
 
 class CourseBuilderController extends Controller
 {
@@ -92,6 +93,11 @@ class CourseBuilderController extends Controller
             else if (str_starts_with($mime, 'audio/')) $type = 'audio';
             else if ($mime === 'application/pdf' || str_contains($mime, 'document') || str_contains($mime, 'msword') || str_contains($mime, 'officedocument')) $type = 'document';
             else $type = 'other';
+        }
+
+        if ($type === 'image') {
+            // imaginile din lecții: micșorate și WebP, ca lecția să se încarce repede
+            $file = ImageOptimizer::optimize($file);
         }
 
         $path = $file->store("content-blocks/{$type}", 'public');

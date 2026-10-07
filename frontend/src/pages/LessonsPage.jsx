@@ -30,6 +30,8 @@ import { scrollAppToTop } from '../utils/scrollToTop';
 import { normalizeLessonFromApi, lessonLegacyHtml } from '../utils/lessonContent';
 import './LessonsPage.css';
 import '../components/admin/lessons/callout/LessonCallout.css';
+import '../components/admin/lessons/video/LessonVideo.css';
+import '../components/admin/lessons/image/LessonImageContent.css';
 import { logger } from '../utils/logger';
 import { courseProgressLabel } from '../utils/courseProgressLabel.js';
 

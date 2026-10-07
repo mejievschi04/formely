@@ -353,6 +353,8 @@ class SaasPlanEntitlementsTest extends TestCase
 
     public function test_instructor_plan_forbids_ai_question_generation_endpoint(): void
     {
+        // AI pornit global: testul verifică doar blocarea de către plan (cu AI oprit ruta răspunde 404)
+        config(['ai.enabled' => true, 'ai.provider' => 'groq', 'ai.groq.api_key' => 'test-only-secret']);
         $defaults = app(PlanEntitlementService::class)->defaultsForPlan('instructor');
         $company = Company::create([
             'name' => 'No AI',
@@ -427,6 +429,8 @@ class SaasPlanEntitlementsTest extends TestCase
 
     public function test_instructor_cannot_stream_ai_course_generation(): void
     {
+        // AI pornit global: testul verifică doar blocarea de către plan (cu AI oprit ruta răspunde 404)
+        config(['ai.enabled' => true, 'ai.provider' => 'groq', 'ai.groq.api_key' => 'test-only-secret']);
         $defaults = app(PlanEntitlementService::class)->defaultsForPlan('instructor');
         $company = Company::create([
             'name' => 'No Creator',

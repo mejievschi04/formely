@@ -1,28 +1,7 @@
 import React, { useEffect } from 'react';
-import {
-	CheckCircle,
-	Flask,
-	Info,
-	Lightbulb,
-	NotePencil,
-	Quotes,
-	Warning,
-	WarningOctagon,
-	X,
-} from '@phosphor-icons/react';
+import { Trash, X } from '@phosphor-icons/react';
 import { createPortal } from 'react-dom';
 import { LESSON_CALLOUT_FILLS, LESSON_CALLOUT_VARIANTS } from './lessonCallout.js';
-
-const VARIANT_ICONS = {
-	info: Info,
-	tip: Lightbulb,
-	warning: Warning,
-	danger: WarningOctagon,
-	success: CheckCircle,
-	note: NotePencil,
-	example: Flask,
-	quote: Quotes,
-};
 
 export default function LessonCalloutPanel({
 	variant,
@@ -32,6 +11,7 @@ export default function LessonCalloutPanel({
 	placeBelow,
 	onVariant,
 	onFill,
+	onRemove,
 	onClose,
 }) {
 	useEffect(() => {
@@ -56,25 +36,21 @@ export default function LessonCalloutPanel({
 					<X size={18} weight="bold" aria-hidden="true" />
 				</button>
 			</div>
-			<div className="lesson-callout-variants" role="group" aria-label="Stil">
-				{LESSON_CALLOUT_VARIANTS.map((item) => {
-					const Icon = VARIANT_ICONS[item.id];
-					return (
-						<button
-							key={item.id}
-							type="button"
-							className={`lesson-callout-variant${variant === item.id ? ' is-selected' : ''}`}
-							style={{ '--cv': item.color }}
-							aria-pressed={variant === item.id}
-							onClick={() => onVariant(item.id)}
-						>
-							<Icon size={18} weight="bold" aria-hidden />
-							<span>{item.label}</span>
-						</button>
-					);
-				})}
+			<div className="lesson-callout-variants" role="group" aria-label="Culoare">
+				{LESSON_CALLOUT_VARIANTS.map((item) => (
+					<button
+						key={item.id}
+						type="button"
+						className={`lesson-callout-variant${variant === item.id ? ' is-selected' : ''}`}
+						style={{ '--cv': item.color }}
+						aria-pressed={variant === item.id}
+						aria-label={item.label}
+						title={item.label}
+						onClick={() => onVariant(item.id)}
+					/>
+				))}
 			</div>
-			<div className="lesson-callout-fills" role="group" aria-label="Umplere">
+			<div className="lesson-callout-fills" role="group" aria-label="Stil">
 				{LESSON_CALLOUT_FILLS.map((item) => (
 					<button
 						key={item.id}
@@ -87,6 +63,12 @@ export default function LessonCalloutPanel({
 					</button>
 				))}
 			</div>
+			{variant && onRemove ? (
+				<button type="button" className="lesson-callout-remove" onClick={onRemove}>
+					<Trash size={16} weight="bold" aria-hidden="true" />
+					Elimină chenarul
+				</button>
+			) : null}
 		</div>,
 		document.body,
 	);

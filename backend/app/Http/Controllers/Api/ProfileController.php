@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use App\Support\ImageOptimizer;
 
 class ProfileController extends Controller
 {
@@ -164,7 +165,7 @@ class ProfileController extends Controller
             return response()->json(['error' => 'Neautentificat'], 401);
         }
 
-        $file = $request->file('avatar');
+        $file = ImageOptimizer::optimize($request->file('avatar'), ImageOptimizer::AVATAR_MAX);
         $ext = $file->getClientOriginalExtension() ?: 'jpg';
         $path = $file->storeAs('avatars', $user->id . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext, 'public');
         $oldAvatar = $user->avatar;

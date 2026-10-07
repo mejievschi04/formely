@@ -4,6 +4,7 @@ import { NodeSelection } from '@tiptap/pm/state';
 import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
 import LessonImage from './image/LessonImageExtension.js';
+import { lessonImageWidthForLayout } from './image/lessonImageAttrs.js';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
@@ -24,6 +25,7 @@ import {
 	TextStrikethrough,
 	TextUnderline,
 	ChatCircleText,
+	FilmSlate,
 } from '@phosphor-icons/react';
 import { adminService } from '../../../services/api';
 import { toImageUrl } from '../../../utils/imageUrl';
@@ -31,8 +33,12 @@ import { normalizePastedHtmlForRichText } from '../../../utils/pasteRichTextColo
 import { useToast } from '../../../contexts/ToastContextShared.js';
 import LessonCallout from './callout/lessonCallout.js';
 import LessonCalloutPanel from './callout/LessonCalloutPanel.jsx';
+import LessonTextColorButton from './LessonTextColorButton.jsx';
+import LessonVideo from './video/lessonVideo.js';
+import { resolveLessonVideo } from './video/lessonVideoSource.js';
 import './LessonTipTapEditor.css';
 import './callout/LessonCallout.css';
+import './video/LessonVideo.css';
 
 const CALLOUT_PANEL_HEIGHT = 260;
 
@@ -45,11 +51,16 @@ function calloutAnchor(editor) {
 	// Panoul are ~260px; deasupra selecției trebuie să încapă sub bara fixă a aplicației.
 	const headerHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--app-header-height')) || 64;
 	const placeBelow = top < headerHeight + CALLOUT_PANEL_HEIGHT + 16;
-	return {
-		x: left,
-		y: placeBelow ? Math.max(start.bottom, end.bottom) : top,
-		placeBelow,
-	};
+	const y = placeBelow ? Math.max(start.bottom, end.bottom) : top;
+	// Chenarul poate fi în afara ecranului (ex. ai urcat la bara de unelte peste un video mare):
+	// panoul rămâne în ecran, altfel nu se mai poate folosi.
+	if (placeBelow && y > window.innerHeight - CALLOUT_PANEL_HEIGHT - 16) {
+		return { x: left, y: Math.max(headerHeight + CALLOUT_PANEL_HEIGHT + 16, window.innerHeight - 16), placeBelow: false };
+	}
+	if (!placeBelow && y > window.innerHeight - 16) {
+		return { x: left, y: window.innerHeight - 16, placeBelow: false };
+	}
+	return { x: left, y, placeBelow };
 }
 
 function ToolbarButton({ active, disabled, label, onClick, children }) {
@@ -80,6 +91,8 @@ const LessonTipTapEditor = ({
 	uploadImage = null,
 	toolbarEnd = null,
 	header = null,
+	/** false ascunde butonul Video (biblioteca curăță iframe-urile la salvare) */
+	allowVideo = true,
 }) => {
 	const { warning: showWarning } = useToast();
 	const fileRef = useRef(null);
@@ -110,6 +123,7 @@ const LessonTipTapEditor = ({
 			TextAlign.configure({ types: ['heading', 'paragraph'] }),
 			LessonImage.configure({ inline: false, allowBase64: true }),
 			LessonCallout,
+			LessonVideo,
 			Placeholder.configure({ placeholder }),
 		],
 		content: value || '',
@@ -152,9 +166,20 @@ const LessonTipTapEditor = ({
 	const alignBlock = (alignment) => {
 		if (!editor) return;
 		if (editor.isActive('image')) {
+			// alinierea nu schimbă mărimea imaginii: păstrăm lățimea afișată acum
+			const current = editor.getAttributes('image');
+			const frame = editor.view.nodeDOM(editor.state.selection.from)?.querySelector?.('.lesson-image-frame');
+			const width = lessonImageWidthForLayout({
+				alignment: current.alignment,
+				savedWidth: current.width,
+				displayedWidth: frame?.getBoundingClientRect().width,
+			});
+			const img = frame?.querySelector('img');
+			const ratio = img?.naturalWidth > 0 ? img.naturalHeight / img.naturalWidth : null;
 			editor.chain().focus().updateAttributes('image', {
 				alignment,
-				...(alignment === 'full' ? { width: null } : {}),
+				width,
+				height: width && ratio ? Math.max(1, Math.round(width * ratio)) : current.height,
 			}).run();
 			return;
 		}
@@ -165,6 +190,17 @@ const LessonTipTapEditor = ({
 		if (!editor) return false;
 		if (editor.isActive('image')) return (editor.getAttributes('image').alignment || 'center') === alignment;
 		return editor.isActive({ textAlign: alignment });
+	};
+
+	const insertVideo = () => {
+		if (!editor) return;
+		const next = window.prompt('Linkul video-ului (YouTube, Vimeo, Loom, Google Drive sau fișier .mp4)');
+		if (next === null || next.trim() === '') return;
+		if (!resolveLessonVideo(next)) {
+			showWarning('Linkul nu poate fi redat în lecție. Folosește un link YouTube, Vimeo, Loom, Google Drive sau un fișier .mp4 / .webm.');
+			return;
+		}
+		editor.chain().focus().setLessonVideo(next.trim()).run();
 	};
 
 	const setLink = () => {
@@ -186,7 +222,7 @@ const LessonTipTapEditor = ({
 			type: current.type || 'soft',
 			accent: current.accent || '#1970f0',
 			variant: patch.variant || current.variant || 'info',
-			fill: patch.fill || current.fill || 'mono',
+			fill: patch.fill || current.fill || 'shadow',
 		}).run();
 		setCalloutPanel({ pinned: true, ...calloutAnchor(editor) });
 	};
@@ -254,6 +290,7 @@ const LessonTipTapEditor = ({
 					<ToolbarButton label="Tăiat" active={editor?.isActive('strike')} disabled={!editor} onClick={() => editor.chain().focus().toggleStrike().run()}>
 						<TextStrikethrough size={18} weight="bold" color="currentColor" aria-hidden />
 					</ToolbarButton>
+					<LessonTextColorButton editor={editor} onOpen={() => setCalloutPanel(null)} />
 					<span className="lesson-tiptap-sep" aria-hidden />
 					<ToolbarButton label="Listă" active={editor?.isActive('bulletList')} disabled={!editor} onClick={() => editor.chain().focus().toggleBulletList().run()}>
 						<ListBullets size={18} weight="bold" color="currentColor" aria-hidden />
@@ -278,6 +315,11 @@ const LessonTipTapEditor = ({
 					<ToolbarButton label="Imagine" disabled={!editor} onClick={() => fileRef.current?.click()}>
 						<ImageIcon size={18} weight="bold" color="currentColor" aria-hidden />
 					</ToolbarButton>
+					{allowVideo ? (
+						<ToolbarButton label="Video" disabled={!editor} onClick={insertVideo}>
+							<FilmSlate size={18} weight="bold" color="currentColor" aria-hidden />
+						</ToolbarButton>
+					) : null}
 					<ToolbarButton label="Chenar" active={editor?.isActive('lessonCallout')} disabled={!editor} onClick={openCalloutPanel}>
 						<ChatCircleText size={18} weight="bold" color="currentColor" aria-hidden />
 					</ToolbarButton>
@@ -309,12 +351,16 @@ const LessonTipTapEditor = ({
 			{calloutPanel && editor ? (
 				<LessonCalloutPanel
 					variant={editor.getAttributes('lessonCallout').variant || null}
-					fill={editor.getAttributes('lessonCallout').fill || 'mono'}
+					fill={editor.getAttributes('lessonCallout').fill || 'shadow'}
 					x={calloutPanel.x}
 					y={calloutPanel.y}
 					placeBelow={calloutPanel.placeBelow}
 					onVariant={(variant) => applyCallout({ variant })}
 					onFill={(fill) => applyCallout({ fill })}
+					onRemove={editor.isActive('lessonCallout') ? () => {
+						editor.chain().focus().unsetLessonCallout().run();
+						setCalloutPanel(null);
+					} : null}
 					onClose={() => setCalloutPanel(null)}
 				/>
 			) : null}

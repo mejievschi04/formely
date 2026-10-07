@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Support\ImageOptimizer;
 
 class LibraryController extends Controller
 {
@@ -209,7 +210,7 @@ class LibraryController extends Controller
             'file' => 'required|file|mimes:jpeg,jpg,png,webp,gif|max:10240',
         ]);
 
-        $path = $validated['file']->store('library/images', 'public');
+        $path = ImageOptimizer::optimize($validated['file'])->store('library/images', 'public');
 
         return response()->json([
             'url' => '/storage/' . ltrim($path, '/'),
@@ -333,7 +334,7 @@ class LibraryController extends Controller
         $coversDir = 'library/covers';
         Storage::disk($disk)->makeDirectory($coversDir);
 
-        $coverFile = $request->file('cover');
+        $coverFile = ImageOptimizer::optimize($request->file('cover'), ImageOptimizer::COVER_MAX);
         $coverExt = strtolower($coverFile->getClientOriginalExtension() ?: 'jpg');
         if (! in_array($coverExt, ['jpg', 'jpeg', 'png', 'webp'], true)) {
             $coverExt = 'jpg';

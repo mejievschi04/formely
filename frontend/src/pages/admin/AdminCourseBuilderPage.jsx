@@ -25,7 +25,8 @@ import { VOLT_BUILDER_REFRESH_EVENT } from '../../utils/voltCoursePlan';
 
 const LESSON_DRAG_MIME = 'application/x-volta-course-lesson';
 const TEST_DRAG_MIME = 'application/x-volta-course-test';
-const LESSON_CONTENT_AUTOSAVE_MS = 10000;
+// Salvare aproape instantă: o pauză scurtă la scris trimite conținutul (nu câte o cerere la fiecare tastă).
+const LESSON_CONTENT_AUTOSAVE_MS = 500;
 
 function getDropTargetLessons(modulesList, rootLessonsList, toModuleId) {
 	if (toModuleId == null) {
@@ -176,6 +177,8 @@ const AdminCourseBuilderPage = () => {
 	const lastPersistedLessonContentRef = useRef('');
 	const lastPersistedLessonUpdatedAtRef = useRef(null);
 	const lessonContentSaveChainRef = useRef(Promise.resolve());
+	const inFlightContentSaveRef = useRef(null);
+	const inFlightTitleSaveRef = useRef(null);
 	const pendingContentRef = useRef(null);
 	const flushAllInlineQuestionSavesRef = useRef(() => Promise.resolve());
 	const handleManualLessonSaveRef = useRef(() => Promise.resolve());
@@ -317,22 +320,36 @@ const AdminCourseBuilderPage = () => {
 		const pending = pendingContentRef.current;
 		if (!pending?.lessonId) return true;
 		const { lessonId, content } = pending;
-		try {
-			await persistLessonContent(lessonId, content);
-			if (
-				pendingContentRef.current?.lessonId === lessonId &&
-				pendingContentRef.current?.content === content
-			) {
-				pendingContentRef.current = null;
-			}
-			setLessonSaveStatus('saved');
-			return true;
-		} catch (e) {
-			console.error('Lesson content save failed:', e?.response?.data?.message || e?.message || e);
-			setLessonSaveStatus('error');
-			showToast(e?.response?.data?.message || 'Eroare la salvarea conținutului lecției.', 'error');
-			return false;
+		// Ieșirea din editor (blur) și butonul „Salvează” cer aceeași salvare aproape simultan:
+		// a doua așteaptă cererea deja pornită în loc să mai trimită o dată tot conținutul.
+		const inFlight = inFlightContentSaveRef.current;
+		if (inFlight && inFlight.lessonId === lessonId && inFlight.content === content) {
+			return inFlight.promise;
 		}
+		const promise = (async () => {
+			try {
+				await persistLessonContent(lessonId, content);
+				if (
+					pendingContentRef.current?.lessonId === lessonId &&
+					pendingContentRef.current?.content === content
+				) {
+					pendingContentRef.current = null;
+				}
+				setLessonSaveStatus('saved');
+				return true;
+			} catch (e) {
+				console.error('Lesson content save failed:', e?.response?.data?.message || e?.message || e);
+				setLessonSaveStatus('error');
+				showToast(e?.response?.data?.message || 'Eroare la salvarea conținutului lecției.', 'error');
+				return false;
+			} finally {
+				if (inFlightContentSaveRef.current?.promise === promise) {
+					inFlightContentSaveRef.current = null;
+				}
+			}
+		})();
+		inFlightContentSaveRef.current = { lessonId, content, promise };
+		return promise;
 	}, [persistLessonContent, showToast]);
 	const flushPendingLessonContentSaveRef = useRef(flushPendingLessonContentSave);
 	flushPendingLessonContentSaveRef.current = flushPendingLessonContentSave;
@@ -946,19 +963,51 @@ const AdminCourseBuilderPage = () => {
 		lessonTitleRef.current.textContent = selectedLesson.title || 'Titlu lecție';
 	}, [selectedLesson?.id, selectedLesson?.title]);
 
-	const handleUpdateLessonTitle = async (lessonId, newTitle) => {
-		if (!newTitle?.trim()) return;
-		try {
-			const response = await adminService.builderUpdateLesson(courseId, lessonId, { title: newTitle.trim() });
-			if (response?.lesson?.updated_at) {
-				lastPersistedLessonUpdatedAtRef.current = response.lesson.updated_at;
-			}
-			showToast('Titlul lecției salvat', 'success');
-			await fetchStructure(true);
-		} catch (e) {
-			console.error('Update lesson title failed:', e);
-			showToast('Eroare la salvarea titlului', 'error');
+	const handleUpdateLessonTitle = (lessonId, newTitle) => {
+		if (!newTitle?.trim()) return Promise.resolve();
+		// Blur-ul titlului și butonul „Salvează” pornesc aceeași salvare: o trimitem o singură dată.
+		const inFlight = inFlightTitleSaveRef.current;
+		if (inFlight && inFlight.lessonId === lessonId && inFlight.title === newTitle.trim()) {
+			return inFlight.promise;
 		}
+		const promise = (async () => {
+			try {
+				const response = await adminService.builderUpdateLesson(courseId, lessonId, { title: newTitle.trim() });
+				if (response?.lesson?.updated_at) {
+					lastPersistedLessonUpdatedAtRef.current = response.lesson.updated_at;
+				}
+				// Doar titlul s-a schimbat: îl actualizăm local. Reîncărcarea structurii aduce conținutul
+				// tuturor lecțiilor și făcea butonul „Salvează” să aștepte secunde pe cursurile mari.
+				const savedTitle = response?.lesson?.title || newTitle.trim();
+				const renameIn = (list) => (Array.isArray(list)
+					? list.map((lessonItem) => (lessonItem?.id === lessonId ? { ...lessonItem, title: savedTitle } : lessonItem))
+					: list);
+				const renameInModules = (list) => (Array.isArray(list)
+					? list.map((moduleItem) => (Array.isArray(moduleItem?.lessons) ? { ...moduleItem, lessons: renameIn(moduleItem.lessons) } : moduleItem))
+					: list);
+				setStructure((prev) => (prev ? {
+					...prev,
+					modules: renameInModules(prev.modules),
+					root_lessons: renameIn(prev.root_lessons),
+					lessons: renameIn(prev.lessons),
+					course: prev.course ? {
+						...prev.course,
+						modules: renameInModules(prev.course.modules),
+						lessons: renameIn(prev.course.lessons),
+					} : prev.course,
+				} : prev));
+				showToast('Titlul lecției salvat', 'success');
+			} catch (e) {
+				console.error('Update lesson title failed:', e);
+				showToast('Eroare la salvarea titlului', 'error');
+			} finally {
+				if (inFlightTitleSaveRef.current?.promise === promise) {
+					inFlightTitleSaveRef.current = null;
+				}
+			}
+		})();
+		inFlightTitleSaveRef.current = { lessonId, title: newTitle.trim(), promise };
+		return promise;
 	};
 
 	const handleLessonContentChange = (nextContent) => {
@@ -983,7 +1032,12 @@ const AdminCourseBuilderPage = () => {
 			await handleUpdateLessonTitle(selectedLesson.id, nextTitle);
 		}
 		const ok = await flushPendingLessonContentSave();
-		if (ok) showToast('Lecție salvată.', 'success');
+		// Fără nimic de trimis (autosave-ul sau ieșirea din editor au salvat deja), flush-ul nu schimbă
+		// starea: butonul rămânea blocat pe „Se salvează...”.
+		if (ok) {
+			setLessonSaveStatus('saved');
+			showToast('Lecție salvată.', 'success');
+		}
 	};
 	handleManualLessonSaveRef.current = handleManualLessonSave;
 
@@ -1423,7 +1477,7 @@ const AdminCourseBuilderPage = () => {
 			setQualityAuditLoading(true);
 			const report = await adminService.builderQualityAuditCourse(courseId);
 			setQualityAuditReport(report);
-			showToast('Auditul QA Formely AI este gata.', 'success');
+			showToast('Verificarea calității este gata.', 'success');
 		} catch (e) {
 			console.error('Course quality audit failed:', e);
 			showToast(e?.response?.data?.message || 'Nu am putut rula auditul QA.', 'error');
@@ -2074,7 +2128,7 @@ const AdminCourseBuilderPage = () => {
 							<section className="admin-course-builder-qa-panel">
 								<div className="admin-course-builder-qa-head">
 									<div>
-										<span className="admin-course-builder-qa-eyebrow">Formely AI Course QA</span>
+										<span className="admin-course-builder-qa-eyebrow">Verificare calitate</span>
 										<h2>Scor pregătire: {qualityAuditReport.readiness_score}/100</h2>
 										<p>
 											{qualityAuditReport.status === 'ready'
@@ -2120,7 +2174,7 @@ const AdminCourseBuilderPage = () => {
 								) : null}
 								{qualityAuditReport.recommendations?.length ? (
 									<div className="admin-course-builder-qa-recommendations">
-										<strong>Recomandări Formely AI</strong>
+										<strong>Recomandări</strong>
 										<ul>
 											{qualityAuditReport.recommendations.map((item) => (
 												<li key={item}>{item}</li>

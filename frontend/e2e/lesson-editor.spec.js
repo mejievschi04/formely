@@ -77,14 +77,44 @@ test('editorul de lecții formatează, inserează și salvează conținutul', as
 	await closeCalloutPanel();
 	await toolbar.getByRole('button', { name: 'Chenar' }).click();
 	const panel = page.getByRole('dialog', { name: 'Chenar' });
-	await panel.getByRole('button', { name: 'Atenție' }).click();
+	// chenarul are doar culoare (fără iconiță) și unul din stilurile Umbră / Sticlă / Gradient
+	await panel.getByRole('button', { name: 'Portocaliu' }).click();
+	await expect(surface.locator('blockquote[data-callout-variant="warning"][data-callout-fill="shadow"]')).toHaveText('Atenție');
+	await panel.getByRole('button', { name: 'Sticlă' }).click();
+	await expect(surface.locator('blockquote[data-callout-variant="warning"][data-callout-fill="glass"]')).toHaveText('Atenție');
 	await panel.getByRole('button', { name: 'Gradient' }).click();
 	await expect(surface.locator('blockquote[data-callout-variant="warning"][data-callout-fill="gradient"]')).toHaveText('Atenție');
 	await panel.getByRole('button', { name: 'Închide' }).click();
 
+	// culoare pe textul selectat, din paleta butonului „Culoare text”
+	await select('Text inițial.', { collapseToEnd: true });
+	await page.keyboard.press('Enter');
+	await page.keyboard.type('Colorat');
+	await select('Colorat');
+	await closeCalloutPanel();
+	await toolbar.getByRole('button', { name: 'Culoare text' }).click();
+	await page.getByRole('dialog', { name: 'Culoare text' }).getByRole('button', { name: 'Roșu' }).click();
+	await expect(surface.locator('span[style*="color"]', { hasText: 'Colorat' })).toHaveCSS('color', 'rgb(220, 38, 38)');
+	// cursorul după cuvânt: imaginea de mai jos s-ar insera peste textul încă selectat
+	await select('Colorat', { collapseToEnd: true });
+	await closeCalloutPanel();
+
+	// video găzduit extern: se adaugă prin link și se redă în lecție (player YouTube)
+	page.once('dialog', (dialog) => dialog.accept('https://youtu.be/dQw4w9WgXcQ'));
+	await toolbar.getByRole('button', { name: 'Video' }).click();
+	const videoFrame = surface.locator('figure[data-lesson-video="true"] iframe');
+	await expect(videoFrame).toHaveAttribute('src', 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0');
+
 	// imagine încărcată pe server
 	await page.locator('.lesson-tiptap input[type="file"]').setInputFiles(imagePath);
 	await expect(surface.locator('img')).toHaveCount(1);
+
+	// imaginea selectată are o bară din care textul se poate așeza pe lângă ea (ca în Word);
+	// după încărcare e deja selectată, altfel un click pe ea o selectează
+	const imageLayout = page.getByRole('toolbar', { name: 'Așezare imagine' });
+	if (!(await imageLayout.isVisible())) await surface.locator('img').click();
+	await imageLayout.getByRole('button', { name: 'Imagine în stânga, text în dreapta' }).click();
+	await expect(surface.locator('.lesson-image.is-wrap-left')).toHaveCount(1);
 
 	await toolbar.getByRole('button', { name: 'Salvează' }).click();
 	await expect(toolbar.getByRole('button', { name: 'Salvează' })).toBeEnabled();
@@ -96,6 +126,25 @@ test('editorul de lecții formatează, inserează și salvează conținutul', as
 	await expect(surface.locator('a[href="https://example.com/doc"]')).toHaveText('Documentație');
 	await expect(surface.locator('blockquote[data-callout-variant="warning"][data-callout-fill="gradient"]')).toHaveText('Atenție');
 	await expect(surface.locator('img')).toHaveCount(1);
+	await expect(surface.locator('.lesson-image.is-wrap-left')).toHaveCount(1);
+	await expect(surface.locator('span[style*="color"]', { hasText: 'Colorat' })).toHaveCSS('color', 'rgb(220, 38, 38)');
+	await expect(surface.locator('figure[data-lesson-video="true"]')).toHaveAttribute('data-src', 'https://youtu.be/dQw4w9WgXcQ');
+	await expect(videoFrame).toHaveAttribute('src', 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0');
+
+	// „Salvează” fără nimic nou de trimis nu rămâne blocat pe „Se salvează...”
+	await toolbar.getByRole('button', { name: 'Salvează', exact: true }).click();
+	await expect(page.getByText('Lecție salvată.').first()).toBeVisible();
+	await expect(toolbar.getByRole('button', { name: 'Salvează', exact: true })).toBeEnabled();
+
+	// chenarul se poate elimina din panou; textul din el rămâne în lecție
+	await surface.locator('blockquote p').click();
+	const removeButton = page.getByRole('dialog', { name: 'Chenar' }).getByRole('button', { name: 'Elimină chenarul' });
+	if (!(await removeButton.isVisible())) {
+		await toolbar.getByRole('button', { name: 'Chenar' }).click();
+	}
+	await removeButton.click();
+	await expect(surface.locator('blockquote')).toHaveCount(0);
+	await expect(surface.getByText('Atenție', { exact: true })).toBeVisible();
 
 	// TipTap anunță în consolă extensiile duplicate sau opțiunile greșite
 	expect(consoleProblems.filter((text) => /tiptap|extension/i.test(text))).toEqual([]);

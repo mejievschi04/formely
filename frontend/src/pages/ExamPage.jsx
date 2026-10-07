@@ -762,17 +762,6 @@ const ExamPage = () => {
 						</div>
 					</div>
 				) : null}
-
-				{exam.current_attempt > 0 && (
-					<div className="student-exam-attempt-info">
-						<span>Încercare {exam.current_attempt}</span>
-						{exam.remaining_attempts !== null && (
-							<span className="student-exam-attempt-remaining">
-								({exam.remaining_attempts} {exam.remaining_attempts === 1 ? 'încercare' : 'încercări'} rămase)
-							</span>
-						)}
-					</div>
-				)}
 			</div>
 			)}
 
@@ -934,8 +923,7 @@ const ExamPage = () => {
 
             <TestAttemptFooter currentIndex={currentQuestionIndex} total={exam.questions.length}
                 onNavigate={scrollToQuestion} onSubmit={handleSubmit} submitting={submitting}
-                submitted={submitted} backTo={back.to}
-                backLabel={back.label}
+                submitted={submitted}
                 canSubmit={timeRemaining === 0 || exam.questions.some((q) => isChoiceAnswered(q, answers[q.id]))}
                 canGoBack={canGoBack}
                 canGoNext={canGoNext}>

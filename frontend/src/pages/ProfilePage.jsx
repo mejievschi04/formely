@@ -1,5 +1,5 @@
 import '../styles/profile-modern.css';
-import { X } from '@phosphor-icons/react';
+import { EnvelopeSimple, MagnifyingGlass, X } from '@phosphor-icons/react';
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -29,6 +29,13 @@ const COURSE_FILTER_TITLES = {
 	in_progress: 'Cursuri nefinalizate',
 	not_accessed: 'Cursuri neaccesate',
 };
+
+/** Căutare fără diacritice și fără majuscule („Romana” găsește „Română”). */
+const normalizeSearch = (value) => String(value || '')
+	.normalize('NFD')
+	.replace(/[\u0300-\u036f]/g, '')
+	.toLowerCase()
+	.trim();
 
 const buildProfileFromCourseData = (user, data) => ({
 	user,
@@ -77,6 +84,7 @@ const ProfilePage = () => {
 	const [showRemoveAvatarConfirm, setShowRemoveAvatarConfirm] = useState(false);
 	const [avatarEditorState, setAvatarEditorState] = useState(null);
 	const [courseFilter, setCourseFilter] = useState('all');
+	const [courseQuery, setCourseQuery] = useState('');
 	const [completingCourseId, setCompletingCourseId] = useState(null);
 	const [grantingAttemptKey, setGrantingAttemptKey] = useState(null);
 	const viewerRole = currentUser?.actualRole ?? currentUser?.role;
@@ -139,6 +147,7 @@ const ProfilePage = () => {
 
 	useEffect(() => {
 		setCourseFilter('all');
+		setCourseQuery('');
 	}, [userId]);
 
 	const handleAvatarChange = (e) => {
@@ -221,96 +230,97 @@ const ProfilePage = () => {
 		return coursesAssigned;
 	})();
 
+	const roleLabel = isViewingOtherUser
+		? ({ admin: 'Administrator', instructor: 'Instructor', analyst: 'Analist' }[profileData.user.role] || 'Utilizator')
+		: 'Utilizator';
+	const needle = normalizeSearch(courseQuery);
+	const visibleCourses = needle
+		? filteredCourses.filter((course) => normalizeSearch([
+			course.title,
+			course.description,
+			...(Array.isArray(course.tests) ? course.tests.map((test) => test.title) : []),
+		].filter(Boolean).join(' ')).includes(needle))
+		: filteredCourses;
+
+	const renderTestResult = (test) => {
+		if (test.status === 'passed') return { label: `${test.percentage ?? 0}% · Promovat`, tone: 'passed' };
+		if (test.status === 'pending') return { label: 'În corectare', tone: 'pending' };
+		if (test.attempts_used > 0) return { label: `${test.percentage ?? 0}% · Nepromovat`, tone: 'failed' };
+		return { label: 'Neînceput', tone: 'idle' };
+	};
+
 	const renderCourseCard = (course) => {
 		const status = course.status || 'not_accessed';
 		const courseLink = isViewingOtherUser ? `/admin/courses/${course.id}` : `/courses/${course.id}`;
 		const actionLabel = isViewingOtherUser
-			? 'Deschide cursul'
+			? 'Deschide'
 			: status === 'not_accessed'
 				? 'Începe cursul'
-				: status === 'completed'
+				: status === 'completed' || (course.progress || 0) >= 100
 					? 'Vezi cursul'
-					: (course.progress || 0) >= 100
-						? 'Vezi cursul'
-						: 'Continuă cursul';
-		const buttonClass = isViewingOtherUser ? 'lms-btn-secondary lms-btn-sm' : 'lms-btn-primary lms-btn-sm';
+					: 'Continuă';
+		const progress = Math.max(0, Math.min(100, Number(course.progress) || 0));
 
 		return (
-			<div className="va-course-card va-course-card-admin" key={course.id}>
-				<div className="va-course-card-header">
-					<h3 className="va-course-card-title">{course.title}</h3>
-					<span className={`va-course-status-badge is-${status}`}>
+			<article className={`va-up-card is-${status}`} key={course.id}>
+				<div className="va-up-card-head">
+					<h3 className="va-up-card-title" title={course.title}>{course.title}</h3>
+					<span className={`va-up-status is-${status}`}>
 						{status === 'completed' ? 'Finalizat' : status === 'in_progress' ? 'Nefinalizat' : 'Neaccesat'}
 					</span>
 				</div>
-				{course.description ? (
-					<p className="va-course-card-description">{course.description}</p>
-				) : null}
+				{course.description ? <p className="va-up-card-desc">{course.description}</p> : null}
+
 				{status === 'in_progress' ? (
-					<>
-						<div className="va-course-card-progress-bar">
-							<div
-								className="va-course-card-progress-fill"
-								style={{ width: `${course.progress || 0}%` }}
-							/>
+					<div className="va-up-progress">
+						<div className="va-up-progress-track" aria-hidden>
+							<div className="va-up-progress-fill" style={{ width: `${progress}%` }} />
 						</div>
-						<div className="va-course-card-meta">
-							<span>{Number(course.progress) >= 100 ? 'Finalizat' : `Progres: ${courseProgressLabel(course.progress)}`}</span>
-							{course.totalModules ? (
-								<span>{course.completedModules ?? 0} / {course.totalModules} module</span>
-							) : null}
-						</div>
-					</>
-				) : null}
-				{status === 'completed' ? (
-					<div className="va-course-card-meta">
-						<span>Test: {course.quizPassed ? 'Promovat ✓' : 'Nepromovat'}</span>
-					</div>
-				) : null}
-				{isViewingOtherUser && Array.isArray(course.tests) && course.tests.length > 0 ? (
-					<div className="va-course-card-tests">
-						{course.tests.map((test) => {
-							const grantKey = `${course.id}-${test.id}`;
-							const failed = test.status === 'failed' || (!test.passed && test.attempts_used > 0 && test.status !== 'pending');
-							const resultLabel = test.status === 'passed'
-								? `${test.percentage ?? 0}% Promovat`
-								: test.status === 'pending'
-									? 'În corectare'
-									: test.attempts_used > 0
-										? `${test.percentage ?? 0}% Nepromovat`
-										: 'Neînceput';
-							return (
-								<div className="va-course-card-test-row" key={test.id}>
-									<div className="va-course-card-test-copy">
-										<strong>{test.title}</strong>
-										<span>{resultLabel}</span>
-									</div>
-									{failed && test.max_attempts != null && (viewerRole !== 'instructor' || Number(test.created_by) === Number(currentUser?.id)) ? (
-										<button
-											type="button"
-											className="lms-btn-secondary lms-btn-sm"
-											disabled={grantingAttemptKey === grantKey}
-											onClick={() => handleGrantExtraAttempt(course.id, test.id)}
-										>
-											{grantingAttemptKey === grantKey ? 'Se adaugă…' : 'Adaugă 1 încercare'}
-										</button>
-									) : null}
-								</div>
-							);
-						})}
-					</div>
-				) : null}
-				{status === 'not_accessed' ? (
-					<div className="va-course-card-meta">
-						<span>
-							{isViewingOtherUser
-								? 'Utilizatorul nu a deschis încă acest curs.'
-								: 'Nu ai deschis încă acest curs.'}
+						<span className="va-up-progress-label">
+							{progress >= 100 ? 'Finalizat' : courseProgressLabel(course.progress)}
+							{course.totalModules ? ` · ${course.completedModules ?? 0}/${course.totalModules} module` : ''}
 						</span>
 					</div>
 				) : null}
-				<div className="va-course-card-actions">
-					<Link to={courseLink} className={buttonClass}>
+				{status === 'completed' ? (
+					<p className="va-up-card-note">Test: {course.quizPassed ? 'promovat ✓' : 'nepromovat'}</p>
+				) : null}
+				{status === 'not_accessed' ? (
+					<p className="va-up-card-note">
+						{isViewingOtherUser ? 'Nu a deschis încă acest curs.' : 'Nu ai deschis încă acest curs.'}
+					</p>
+				) : null}
+
+				{isViewingOtherUser && Array.isArray(course.tests) && course.tests.length > 0 ? (
+					<ul className="va-up-tests">
+						{course.tests.map((test) => {
+							const grantKey = `${course.id}-${test.id}`;
+							const failed = test.status === 'failed' || (!test.passed && test.attempts_used > 0 && test.status !== 'pending');
+							const result = renderTestResult(test);
+							const canGrant = failed && test.max_attempts != null
+								&& (viewerRole !== 'instructor' || Number(test.created_by) === Number(currentUser?.id));
+							return (
+								<li className="va-up-test" key={test.id}>
+									<span className="va-up-test-title" title={test.title}>{test.title}</span>
+									<span className={`va-up-test-result is-${result.tone}`}>{result.label}</span>
+									{canGrant ? (
+										<button
+											type="button"
+											className="va-up-test-grant"
+											disabled={grantingAttemptKey === grantKey}
+											onClick={() => handleGrantExtraAttempt(course.id, test.id)}
+										>
+											{grantingAttemptKey === grantKey ? 'Se adaugă…' : '+1 încercare'}
+										</button>
+									) : null}
+								</li>
+							);
+						})}
+					</ul>
+				) : null}
+
+				<div className="va-up-card-actions">
+					<Link to={courseLink} className={isViewingOtherUser ? 'lms-btn-secondary lms-btn-sm' : 'lms-btn-primary lms-btn-sm'}>
 						{actionLabel}
 					</Link>
 					{isViewingOtherUser && status !== 'completed' ? (
@@ -324,13 +334,12 @@ const ProfilePage = () => {
 						</button>
 					) : null}
 				</div>
-			</div>
+			</article>
 		);
 	};
 
 	return (
-		<div className="va-profile-container">
-			{/* Back Button for Admin */}
+		<div className="va-profile-container va-up-page">
 			{isViewingOtherUser && (
 				<div className="va-profile-back-button">
 					<button
@@ -343,134 +352,105 @@ const ProfilePage = () => {
 					</button>
 				</div>
 			)}
-			{/* Profile Header */}
-			<div className="va-profile-header">
-				<div className="va-profile-cover"></div>
-				<div className="va-profile-info">
-					<div className="va-profile-avatar-wrap">
-						<div className="va-profile-avatar">
-							{profileData.user.avatar ? (
-								<img
-									src={toImageUrl(profileData.user.avatar) || profileData.user.avatar}
-									alt={profileData.user.name}
-									className="va-profile-avatar-img"
-								/>
-							) : (
-								<div className="va-profile-avatar-inner">
-									{nameInitials(profileData.user.name || profileData.user.email)}
-								</div>
-							)}
-						</div>
-						{!isViewingOtherUser && (
-							<div className="va-profile-avatar-actions">
-								<input
-									ref={fileInputRef}
-									type="file"
-									accept="image/jpeg,image/png,image/gif,image/webp"
-									className="va-profile-avatar-input"
-									onChange={handleAvatarChange}
-									disabled={uploadingAvatar}
-								/>
-								<button
-									type="button"
-									className="va-profile-avatar-btn"
-									onClick={() => fileInputRef.current?.click()}
-									disabled={uploadingAvatar}
-								>
-									{uploadingAvatar ? 'Se încarcă...' : 'Schimbă poza'}
-								</button>
-								{profileData.user.avatar && (
-									<button
-										type="button"
-										className="va-profile-avatar-btn va-profile-avatar-btn-remove"
-										onClick={handleRemoveAvatarClick}
-										disabled={uploadingAvatar}
-									>
-										Șterge poza
-									</button>
-								)}
-							</div>
-						)}
-					</div>
-					<div className="va-profile-details">
-						<h1 className="va-profile-name">{profileData.user.name}</h1>
-						<p className="va-profile-role">
-							{isViewingOtherUser
-								? (profileData.user.role === 'admin'
-									? 'Administrator'
-									: profileData.user.role === 'instructor'
-										? 'Instructor'
-										: profileData.user.role === 'analyst'
-											? 'Analist'
-											: 'Utilizator')
-								: 'Utilizator'}
-						</p>
-						{!isViewingOtherUser && (
-							<Link to="/settings" className="va-profile-settings-link">Setări</Link>
-						)}
-						{isViewingOtherUser && (
-							<div className="va-profile-badges">
-								<span className="va-profile-badge va-profile-badge-email">
-									👤 {profileData.user.email}
-								</span>
-							</div>
-						)}
-					</div>
-				</div>
-			</div>
 
-			{!isViewingOtherUser && (currentUser?.role === 'admin' || currentUser?.actualRole === 'admin') && (
-				<div className="va-profile-activity-cta">
-					<Link to="/profile/activity" className="lms-btn-secondary">
-						Vezi activitatea
-					</Link>
-				</div>
-			)}
-
-			{/* KPI + cursuri filtrate */}
-			<div className="va-profile-stats va-profile-stats-kpi">
-				{COURSE_FILTERS.map(({ id, label, statKey }) => (
-					<button
-						key={id}
-						type="button"
-						className={`va-stat-card va-stat-card-kpi${courseFilter === id ? ' is-active' : ''}`}
-						onClick={() => setCourseFilter(id)}
-						aria-pressed={courseFilter === id}
-					>
-						<div className="va-stat-content">
-							<div className="va-stat-value">{courseStats[statKey] ?? 0}</div>
-							<div className="va-stat-label">{label}</div>
-						</div>
-					</button>
-				))}
-			</div>
-
-			<div className="va-profile-section va-profile-section-admin-courses">
-				<div className="va-section-header">
-					<h2 className="va-section-title">{COURSE_FILTER_TITLES[courseFilter] || 'Cursuri'}</h2>
-					<span className="va-section-count">{filteredCourses.length}</span>
-				</div>
-				<div className="va-courses-list">
-					{filteredCourses.length > 0 ? (
-						filteredCourses.map(renderCourseCard)
+			<header className="va-up-hero">
+				<div className="va-up-avatar">
+					{profileData.user.avatar ? (
+						<img src={toImageUrl(profileData.user.avatar) || profileData.user.avatar} alt={profileData.user.name} />
 					) : (
-						<div className="lms-empty-state">
-							<p className="lms-empty-description">
-								{courseFilter === 'all'
-									? (isViewingOtherUser
-										? 'Niciun curs atribuit acestui elev.'
-										: 'Nu ai cursuri atribuite momentan.')
-									: 'Niciun curs în această categorie.'}
-							</p>
-							{!isViewingOtherUser && courseFilter === 'all' ? (
-								<Link to="/courses" className="lms-btn-secondary">
-									Explorează cursuri
-								</Link>
-							) : null}
-						</div>
+						<span>{nameInitials(profileData.user.name || profileData.user.email)}</span>
 					)}
 				</div>
-			</div>
+				<div className="va-up-identity">
+					<h1 className="va-up-name">{profileData.user.name}</h1>
+					<div className="va-up-meta">
+						<span className="va-up-role">{roleLabel}</span>
+						{isViewingOtherUser && profileData.user.email ? (
+							<span className="va-up-email">
+								<EnvelopeSimple size={15} aria-hidden />
+								{profileData.user.email}
+							</span>
+						) : null}
+					</div>
+				</div>
+				<div className="va-up-progress-summary" aria-label="Progres general">
+					<strong>{courseStats.completed ?? 0}<span>/{courseStats.total_assigned ?? 0}</span></strong>
+					<span>cursuri finalizate</span>
+				</div>
+				{!isViewingOtherUser ? (
+					<div className="va-up-hero-actions">
+						<input
+							ref={fileInputRef}
+							type="file"
+							accept="image/jpeg,image/png,image/gif,image/webp"
+							className="va-profile-avatar-input"
+							onChange={handleAvatarChange}
+							disabled={uploadingAvatar}
+						/>
+						<button type="button" className="lms-btn-secondary lms-btn-sm" onClick={() => fileInputRef.current?.click()} disabled={uploadingAvatar}>
+							{uploadingAvatar ? 'Se încarcă...' : 'Schimbă poza'}
+						</button>
+						{profileData.user.avatar ? (
+							<button type="button" className="lms-btn-secondary lms-btn-sm va-btn-delete" onClick={handleRemoveAvatarClick} disabled={uploadingAvatar}>
+								Șterge poza
+							</button>
+						) : null}
+						<Link to="/settings" className="lms-btn-secondary lms-btn-sm">Setări</Link>
+						{currentUser?.role === 'admin' || currentUser?.actualRole === 'admin' ? (
+							<Link to="/profile/activity" className="lms-btn-secondary lms-btn-sm">Vezi activitatea</Link>
+						) : null}
+					</div>
+				) : null}
+			</header>
+
+			<section className="va-up-courses" aria-labelledby="va-up-courses-title">
+				<div className="va-up-courses-head">
+					<h2 id="va-up-courses-title" className="va-up-courses-title">Cursuri</h2>
+					<label className="va-up-search">
+						<MagnifyingGlass size={17} aria-hidden />
+						<input
+							type="search"
+							value={courseQuery}
+							onChange={(event) => setCourseQuery(event.target.value)}
+							placeholder="Caută curs sau test"
+							aria-label="Caută curs sau test"
+						/>
+					</label>
+				</div>
+				<div className="va-up-tabs" role="group" aria-label="Filtru cursuri">
+					{COURSE_FILTERS.map(({ id, label, statKey }) => (
+						<button
+							key={id}
+							type="button"
+							className={`va-up-tab${courseFilter === id ? ' is-active' : ''}`}
+							onClick={() => setCourseFilter(id)}
+							aria-pressed={courseFilter === id}
+						>
+							<span>{label}</span>
+							<span className="va-up-tab-count">{courseStats[statKey] ?? 0}</span>
+						</button>
+					))}
+				</div>
+
+				{visibleCourses.length > 0 ? (
+					<div className="va-up-grid">
+						{visibleCourses.map(renderCourseCard)}
+					</div>
+				) : (
+					<div className="va-up-empty">
+						<p>
+							{needle
+								? `Niciun curs pentru „${courseQuery.trim()}”.`
+								: courseFilter === 'all'
+									? (isViewingOtherUser ? 'Niciun curs atribuit acestui utilizator.' : 'Nu ai cursuri atribuite momentan.')
+									: 'Niciun curs în această categorie.'}
+						</p>
+						{!isViewingOtherUser && courseFilter === 'all' && !needle ? (
+							<Link to="/courses" className="lms-btn-secondary lms-btn-sm">Explorează cursuri</Link>
+						) : null}
+					</div>
+				)}
+			</section>
 
 			<ConfirmModal
 				open={showRemoveAvatarConfirm}

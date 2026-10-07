@@ -461,16 +461,6 @@
 	color: var(--color-warning);
 }
 
-.student-exam-attempt-info {
-	font-size: var(--font-size-sm);
-	color: var(--text-tertiary);
-	margin-bottom: var(--space-4);
-}
-
-.student-exam-attempt-remaining {
-	opacity: 0.9;
-}
-
 /* Questions list */
 .student-exam-questions {
 	display: flex;
@@ -695,10 +685,6 @@
 	flex-shrink: 0;
 	margin-bottom: 0;
 	white-space: nowrap;
-}
-
-.student-exam-header-compact .student-exam-attempt-info {
-	margin-bottom: 0;
 }
 
 /* Instant feedback */
@@ -939,11 +925,6 @@
 
 	.student-exam-page--desktop .student-exam-timer.student-exam-timer-warning {
 		background: color-mix(in srgb, var(--color-warning) 14%, var(--bg-secondary));
-	}
-
-	.student-exam-page--desktop .student-exam-attempt-info {
-		font-size: var(--font-size-sm);
-		color: var(--text-tertiary);
 	}
 
 	.student-exam-page--desktop .student-exam-layout {

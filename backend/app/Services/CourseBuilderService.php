@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\DB;
 use App\Support\SchemaCache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Support\ImageOptimizer;
 
 /**
  * CourseBuilderService
@@ -630,7 +631,7 @@ class CourseBuilderService
         // Handle image upload
         if (isset($data['image'])) {
             if ($data['image'] instanceof UploadedFile) {
-                $course->image = $data['image']->store('courses', 'public');
+                $course->image = ImageOptimizer::optimize($data['image'], ImageOptimizer::COVER_MAX)->store('courses', 'public');
                 $course->save();
             } elseif (is_string($data['image'])) {
                 // Already stored path
@@ -748,7 +749,7 @@ class CourseBuilderService
                 if ($course->image) {
                     Storage::disk('public')->delete($course->image);
                 }
-                $updateData['image'] = $data['image']->store('courses', 'public');
+                $updateData['image'] = ImageOptimizer::optimize($data['image'], ImageOptimizer::COVER_MAX)->store('courses', 'public');
             } elseif (is_string($data['image'])) {
                 // Already stored path
                 $updateData['image'] = $data['image'];

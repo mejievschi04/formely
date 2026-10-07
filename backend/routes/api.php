@@ -150,7 +150,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'tenant', 'throttle:api-app
     Route::post('/courses/{courseId}/finish', [\App\Http\Controllers\Api\CourseProgressController::class, 'finishCourse']);
     Route::post('/lessons/{lessonId}/complete', [\App\Http\Controllers\Api\CourseProgressController::class, 'completeLesson']);
     Route::put('/lessons/{lessonId}/progress', [\App\Http\Controllers\Api\CourseProgressController::class, 'updateLessonProgress']);
-    Route::post('/lessons/{lessonId}/study-tools', [\App\Http\Controllers\AIController::class, 'generateLessonStudyTool'])->middleware('company_feature:ai_tutor');
+    Route::post('/lessons/{lessonId}/study-tools', [\App\Http\Controllers\AIController::class, 'generateLessonStudyTool'])->middleware(['volt', 'company_feature:ai_tutor']);
 
     // Course maps (student: list and show map with published courses)
     Route::get('/course-maps', [\App\Http\Controllers\Api\CourseMapController::class, 'index']);
@@ -196,7 +196,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'tenant', 'throttle:api-app
     });
 
     // Admin AI Assistant
-    Route::post('/ai/extract-document', [\App\Http\Controllers\AIController::class, 'extractDocumentContext'])->middleware('company_feature:ai_creator');
+    Route::post('/ai/extract-document', [\App\Http\Controllers\AIController::class, 'extractDocumentContext'])->middleware(['volt', 'company_feature:ai_creator']);
 });
 
 // Backoffice Formely — operatori platformă (clienți, lead-uri)
@@ -356,7 +356,7 @@ Route::middleware([
     Route::put('/question-banks/{id}/questions/{questionId}', [\App\Http\Controllers\Api\Admin\QuestionBankAdminController::class, 'updateQuestion']);
     Route::delete('/question-banks/{id}/questions/{questionId}', [\App\Http\Controllers\Api\Admin\QuestionBankAdminController::class, 'removeQuestion']);
     Route::post('/question-banks/{id}/questions/reorder', [\App\Http\Controllers\Api\Admin\QuestionBankAdminController::class, 'reorderQuestions']);
-    Route::middleware('company_feature:ai_test_generation')->post('/question-banks/{id}/ai/preview', [\App\Http\Controllers\Api\Admin\QuestionBankAdminController::class, 'previewAiQuestions']);
+    Route::middleware(['volt', 'company_feature:ai_test_generation'])->post('/question-banks/{id}/ai/preview', [\App\Http\Controllers\Api\Admin\QuestionBankAdminController::class, 'previewAiQuestions']);
     
     // Events Management
     Route::middleware('company_feature:events')->group(function () {
@@ -406,7 +406,7 @@ Route::middleware([
     
     // Statistici (doar admin)
     Route::get('/statistics/course-test-detail', [StatisticsAdminController::class, 'courseTestDetail']);
-    Route::post('/statistics/ai-export', [\App\Http\Controllers\Api\Admin\AIExportAdminController::class, 'generate'])->middleware('company_feature:ai_stats');
+    Route::post('/statistics/ai-export', [\App\Http\Controllers\Api\Admin\AIExportAdminController::class, 'generate'])->middleware(['volt', 'company_feature:ai_stats']);
 
     // Activity Logs
     Route::get('/activity-logs', [ActivityLogAdminController::class, 'index']);
@@ -416,7 +416,7 @@ Route::middleware([
     Route::patch('/exam-results/{id}/score', [ExamAdminController::class, 'updateResultScore']);
 
     // Test Manual Review (Test model - standalone tests)
-    Route::post('/test-results/{id}/feedback-with-volt', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'suggestManualReviewFeedback'])->middleware('company_feature:ai_test_generation');
+    Route::post('/test-results/{id}/feedback-with-volt', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'suggestManualReviewFeedback'])->middleware(['volt', 'company_feature:ai_test_generation']);
     Route::post('/test-results/{id}/manual-review', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'submitManualReview']);
     Route::patch('/test-results/{id}/score', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'updateResultScore']);
     Route::get('/test-results/{id}/breakdown', [\App\Http\Controllers\Api\Admin\TestAdminController::class, 'resultBreakdown']);
@@ -448,7 +448,7 @@ Route::middleware([
     });
     
     // AI Generation routes (Hugging Face)
-    Route::post('/ai/generate-course', [\App\Http\Controllers\AIController::class, 'generateCourse']);
-    Route::post('/ai/generate-test', [\App\Http\Controllers\AIController::class, 'generateTest'])->middleware('company_feature:ai_test_generation');
+    Route::post('/ai/generate-course', [\App\Http\Controllers\AIController::class, 'generateCourse'])->middleware('volt');
+    Route::post('/ai/generate-test', [\App\Http\Controllers\AIController::class, 'generateTest'])->middleware(['volt', 'company_feature:ai_test_generation']);
 });
 

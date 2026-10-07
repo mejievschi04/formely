@@ -55,6 +55,10 @@ test('cursantul susține testul final și vede rezultatul', async ({ page }) => 
 test('rezultatul apare în istoricul testelor', async ({ page }) => {
 	await page.goto('/exam-results');
 	await expect(page.getByRole('heading', { name: 'Rezultate teste' })).toBeVisible();
+	// Rezultatele stau în mape pe curs, închise implicit: testul apare după ce deschizi mapa cursului.
+	const courseFolder = page.getByRole('button', { name: /Curs E2E/ });
+	await expect(courseFolder).toHaveAttribute('aria-expanded', 'false');
+	await courseFolder.click();
 	await expect(page.getByText('Test final E2E').first()).toBeVisible();
 });
 

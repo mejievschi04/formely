@@ -36,7 +36,7 @@ test('adminul scrie un material cu editorul de lecții și îl publică în bibl
 	await page.keyboard.press('Escape');
 	await toolbar.getByRole('button', { name: 'Chenar' }).click();
 	const panel = page.getByRole('dialog', { name: 'Chenar' });
-	await panel.getByRole('button', { name: 'Sfat' }).click();
+	await panel.getByRole('button', { name: 'Verde' }).click();
 	await expect(surface.locator('blockquote[data-callout-variant="tip"]')).toHaveText('Reține asta');
 	await panel.getByRole('button', { name: 'Închide' }).click();
 

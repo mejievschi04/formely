@@ -1,0 +1,26 @@
+/*
+ * Imaginile cu text pe lângă (data-alignment wrap-left / wrap-right) în lecția afișată
+ * (cursant, bibliotecă). Float-ul și lățimea vin din stilul salvat pe imagine.
+ */
+img[data-alignment='wrap-left'],
+img[data-alignment='wrap-right'] {
+	display: block;
+	height: auto;
+}
+
+/* conținutul de după o imagine plutitoare nu iese din cadrul lecției */
+.lesson-page-content-text::after,
+.lessons-page-lesson-content-text::after,
+.library-reader-article-body::after {
+	content: '';
+	display: table;
+	clear: both;
+}
+
+/* pe telefon textul de lângă imagine ar rămâne prea îngust: imaginea ocupă cel mult 45% */
+@media (max-width: 600px) {
+	img[data-alignment='wrap-left'],
+	img[data-alignment='wrap-right'] {
+		max-width: 45% !important;
+	}
+}

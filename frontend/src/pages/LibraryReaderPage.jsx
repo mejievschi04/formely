@@ -10,6 +10,8 @@ import { toImageUrl } from '../utils/imageUrl';
 import RichTextHtml from '../components/RichTextHtml';
 import '../styles/library-reader-page.css';
 import '../components/admin/lessons/callout/LessonCallout.css';
+import '../components/admin/lessons/video/LessonVideo.css';
+import '../components/admin/lessons/image/LessonImageContent.css';
 
 function isPdfItem(item) {
 	const mimeType = String(item?.mime_type || '').toLowerCase();

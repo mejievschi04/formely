@@ -30,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'platform_admin' => \App\Http\Middleware\EnsureSuperAdmin::class,
             'company_feature' => \App\Http\Middleware\EnsureCompanyFeature::class,
             'platform.only' => \App\Http\Middleware\BlockTenantPlatformActions::class,
+            'volt' => \App\Http\Middleware\EnsureVoltEnabled::class,
         ]);
         // Formularul de lead și statisticile de pe site-ul de marketing (alt domeniu, fără sesiune).
         $middleware->validateCsrfTokens(except: [
