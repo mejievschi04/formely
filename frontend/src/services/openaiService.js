@@ -5,6 +5,7 @@ import {
 	assertVoltEnabled,
 } from '../utils/voltAvailability.js';
 import { logger } from '../utils/logger';
+import { aiResponseErrorMessage, parseAiStreamEvent } from '../utils/aiResponseErrors.js';
 
 async function fetchWithCsrfRetry(url, options) {
 	const send = () => {
@@ -37,9 +38,9 @@ async function throwIfNotOk(response) {
 	try {
 		data = errorText ? JSON.parse(errorText) : null;
 	} catch {
-		data = { error: errorText };
+		data = null;
 	}
-	const message = data?.error || data?.message || `Cererea AI a eșuat (HTTP ${response.status}). Încearcă din nou sau contactează administratorul.`;
+	const message = aiResponseErrorMessage(data, response.status);
 	throw new AiApiError(message, response.status, data);
 }
 
@@ -89,11 +90,7 @@ async function readSseStream(response, onChunk, onData) {
 						if (!line.startsWith('data: ')) continue;
 						const data = line.slice(6).trim();
 						if (!data || data === '[DONE]') continue;
-						try {
-							handleParsedEvent(JSON.parse(data), onChunk, onData, accumulate);
-						} catch (e) {
-							if (e instanceof Error && !e.message.includes('JSON')) throw e;
-						}
+						handleParsedEvent(parseAiStreamEvent(data), onChunk, onData, accumulate);
 					}
 				}
 				break;
@@ -107,13 +104,7 @@ async function readSseStream(response, onChunk, onData) {
 				if (!line.startsWith('data: ')) continue;
 				const data = line.slice(6).trim();
 				if (data === '[DONE]' || !data) continue;
-				try {
-					handleParsedEvent(JSON.parse(data), onChunk, onData, accumulate);
-				} catch (e) {
-					if (e instanceof Error && e.message && !e.message.includes('Unexpected')) {
-						throw e;
-					}
-				}
+				handleParsedEvent(parseAiStreamEvent(data), onChunk, onData, accumulate);
 			}
 		}
 	} finally {
