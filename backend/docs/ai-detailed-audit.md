@@ -36,6 +36,10 @@ Acest audit combină citirea codului, teste automate și verificări locale în 
 
 ### P1 — editarea testului poate pierde întrebările existente
 
+Actualizare implementată după audit: formularul cere explicit append/replace; serverul transmite modelului întrebările existente și instrucțiunea pentru operație; append păstrează ID-urile existente și adaugă la final fără redenumire implicită. Salvarea testului este acum tranzacțională și blochează rândul testului. Două teste de regresie verifică păstrarea celor două întrebări la adăugarea a trei noi și rollbackul la înlocuire eșuată. Clientul verifică numărul cerut, patru răspunsuri și o singură variantă corectă înainte de propunere. Nu există încă editare AI punctuală per ID sau idempotency la repetarea cererii; acestea rămân de făcut. Descrierea de mai jos documentează defectul inițial.
+
+Verificare după implementare: 37 teste backend/115 aserțiuni, 36 teste frontend și build trecute. Playwright a verificat componenta reală de formular izolată pe desktop (1280 px) și mobil (390 px): operația este obligatorie, append/replace ajung corect în payload. Capturi: `/tmp/formely-ai-edit-1280.png`, `/tmp/formely-ai-edit-390.png`. Nu s-a executat în această rundă un flux complet de generare OpenAI urmat de Aplică în browser; persistența este acoperită de testele backend.
+
 În `AICourseChat`, ramura edit_test trimite ID-ul testului și cererea, dar nu încarcă întrebările actuale în prompt. `TestBuilderService::updateTest` șterge întrebările directe existente și adaugă lista nouă. „Adaugă trei întrebări” nu are deci un contract de adăugare. Confirmarea nu remediază faptul că propunerea a fost făcută fără conținutul curent. Protecția testului publicat și legat limitează unele cazuri, nu toate ciornele.
 
 Remediere: context server cu întrebările existente, operații distincte append/update/replace, păstrarea ID-urilor și salvare într-o tranzacție; test de regresie cu două întrebări existente plus trei noi, apoi reload.

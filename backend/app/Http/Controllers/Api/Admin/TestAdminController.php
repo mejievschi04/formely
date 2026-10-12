@@ -190,6 +190,7 @@ class TestAdminController extends Controller
         }
 
         $validated = $request->validate([
+            'questions_mode' => 'sometimes|in:append,replace',
             'title' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
             'type' => 'nullable|in:practice,graded,final',

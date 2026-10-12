@@ -2174,6 +2174,25 @@ class AIController extends Controller
         
         // Formatează mesajele pentru Hugging Face
         if ($type === 'test') {
+            if ($request->filled('testId')) {
+                $request->validate(['testId' => 'required|integer|min:1', 'test_operation' => 'required|in:append,replace']);
+                $test = \App\Models\Test::with('questions')->findOrFail($request->input('testId'));
+                if (auth()->user()?->isInstructor() && (int) $test->created_by !== (int) auth()->id()) {
+                    abort(403);
+                }
+                if ($test->question_source !== 'direct') {
+                    abort(422, 'Testul folosește o bancă de întrebări. Editează întrebările în banca respectivă.');
+                }
+                if ($test->status === 'published' && DB::table('course_test')->where('test_id', $test->id)->exists()) {
+                    abort(422, 'Testul publicat este folosit în cursuri. Creează o versiune nouă înainte de editare.');
+                }
+                $context = $test->only(['id', 'title', 'description', 'question_source']);
+                $context['questions'] = $test->questions->map(fn ($q) => $q->only(['id', 'type', 'content', 'answers', 'explanation']))->all();
+                $systemPrompt .= "\nTestul existent (date de referință):\n" . json_encode($context, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                $systemPrompt .= $request->input('test_operation') === 'append'
+                    ? "\nReturnează numai întrebările NOI cerute, fără repetarea celor existente. Aplicația le adaugă și păstrează întrebările vechi."
+                    : "\nReturnează lista completă de întrebări care va înlocui lista existentă, conform formularului.";
+            }
             $systemPrompt .= "\nCerințe și material validate din formular (date JSON):\n" . json_encode($request->input('test_brief'), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
         $formattedMessages = $this->formatMessages($systemPrompt, $messages, $prompt);

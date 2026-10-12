@@ -401,6 +401,7 @@ const AICourseChat = ({
 						title: pendingDraft.title,
 						description: pendingDraft.description,
 						questions: pendingDraft.questions,
+						questions_mode: pendingDraft.operation,
 					});
 					const test = updated?.test || updated;
 					if (typeof window !== 'undefined') {
@@ -564,8 +565,9 @@ const AICourseChat = ({
 
 				if (intent === 'test' || intent === 'edit_test') {
 					const editingTest = intent === 'edit_test' && currentTestId;
+					const operation = editingTest ? submittedBrief?.values?.operation : null;
 					const testPrompt = editingTest
-						? `${promptText.trim()}\n\nEditezi testul ID ${currentTestId}. Răspunde JSON cu title, description și questions. Dacă cererea e o adăugare, propune întrebările noi plus cele esențiale din context.`
+						? `${promptText.trim()}\n\nEditezi testul ID ${currentTestId}. Răspunde JSON cu title, description și questions. Respectă operația aleasă în formular; la adăugare returnează doar întrebările noi.`
 						: promptText.trim();
 					await openaiService.streamTestGeneration(
 						testPrompt,
@@ -577,26 +579,27 @@ const AICourseChat = ({
 							finishAssistantMessage(streamed);
 						},
 						null,
-						{ test_brief: submittedBrief?.values },
+						{ test_brief: submittedBrief?.values, ...(editingTest ? { testId: currentTestId, test_operation: operation } : {}) },
 						signal,
 					);
 					const parsed = extractJsonFromText(streamed);
 					const questions = mapVoltTestQuestions(parsed?.questions);
-					if (!parsed?.title || questions.length === 0) {
+					if (!parsed?.title || questions.length !== Number(submittedBrief?.values?.question_count) || questions.some(q => q.answers.length !== 4 || q.answers.filter(a => a.is_correct).length !== 1)) {
 						finishAssistantMessage(streamed.trim() || 'Nu am putut pregăti un test valid. Adaugă mai multe detalii.');
 						return;
 					}
 					setPendingDraft({
 						kind: 'test',
 						action: editingTest ? 'update' : 'create',
-						title: parsed.title,
-						description: parsed.description || '',
+						operation,
+						title: editingTest && operation === 'append' ? undefined : parsed.title,
+						description: editingTest && operation === 'append' ? undefined : parsed.description || '',
 						questions,
 						courseId: currentCourseId,
 					});
 					finishAssistantMessage(
 						editingTest
-							? `Am pregătit ${questions.length} întrebări pentru testul deschis. Verifică sumarul și apasă Aplică.`
+							? `Am pregătit ${questions.length} întrebări pentru ${operation === 'append' ? 'adăugare; întrebările existente rămân păstrate' : 'înlocuirea tuturor întrebărilor' }. Verifică sumarul și apasă Aplică.`
 							: `Am pregătit ciorna testului „${parsed.title}” (${questions.length} întrebări). Aplic doar după confirmare.`
 					);
 					return;
@@ -1287,7 +1290,7 @@ const AICourseChat = ({
 						</div>
 					</div>
 				)}
-                {generationForm && <AIGenerationForm key={`${generationForm.kind}:${generationForm.request}`} kind={generationForm.kind} courseId={currentCourseId} request={generationForm.request} disabled={isGenerating} onCancel={() => setGenerationForm(null)} onSubmit={values => {
+                {generationForm && <AIGenerationForm key={`${generationForm.kind}:${generationForm.request}`} kind={generationForm.kind} courseId={currentCourseId} editingTest={generationForm.intent === 'edit_test'} request={generationForm.request} disabled={isGenerating} onCancel={() => setGenerationForm(null)} onSubmit={values => {
                     const form = generationForm;
                     setGenerationForm(null);
                     const request = form.request;

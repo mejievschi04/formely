@@ -71,6 +71,14 @@ class TestBuilderService
      */
     public function updateTest(Test $test, array $data): Test
     {
+        return DB::transaction(function () use ($test, $data) {
+            $locked = Test::query()->lockForUpdate()->findOrFail($test->id);
+            return $this->updateLockedTest($locked, $data);
+        });
+    }
+
+    private function updateLockedTest(Test $test, array $data): Test
+    {
         // Prevent updating published tests that are in use
         if ($test->status === 'published') {
             $usageCount = DB::table('course_test')
@@ -84,7 +92,18 @@ class TestBuilderService
 
         // Extract questions from data if present
         $questions = $data['questions'] ?? null;
-        unset($data['questions']);
+        $questionsMode = $data['questions_mode'] ?? 'replace';
+        unset($data['questions'], $data['questions_mode']);
+        if ($questionsMode === 'append' && $questions !== null) {
+            if ($test->question_source !== 'direct') {
+                throw new \RuntimeException('Adăugarea AI este disponibilă doar pentru testele cu întrebări directe.');
+            }
+            $nextOrder = (int) ($test->questions()->max('order') ?? -1) + 1;
+            foreach ($questions as $index => &$question) {
+                $question['order'] = $nextOrder + $index;
+            }
+            unset($question);
+        }
 
         // Filtrează doar coloanele care există în tabel (evită "Undefined column")
         $table = $test->getTable();
@@ -113,7 +132,9 @@ class TestBuilderService
         // Handle questions update if provided and test uses direct questions
         if ($questions !== null && $test->question_source === 'direct') {
             // Delete existing questions
-            $test->questions()->delete();
+            if ($questionsMode !== 'append') {
+                $test->questions()->delete();
+            }
             
             // Add new questions
             if (!empty($questions)) {
