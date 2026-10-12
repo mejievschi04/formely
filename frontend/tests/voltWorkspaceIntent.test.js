@@ -54,3 +54,17 @@ test('Volt workspace intent: open test and map pages edit the current item', () 
 		'edit_map'
 	);
 });
+
+test('course creation takes precedence over a final test and the open map', () => {
+    const prompt = 'Creează un curs mic JavaScript pentru începători cu 2 lecții și un test final cu 10 întrebări';
+    assert.equal(detectVoltWorkspaceIntent(prompt), 'create_course');
+    assert.equal(detectVoltWorkspaceIntent(prompt, { page: 'map', mapId: 4 }), 'create_course');
+    assert.equal(detectVoltWorkspaceIntent(prompt, { page: 'course_builder', courseId: 12 }), 'create_course');
+});
+
+test('natural course requests start creation while map requests still create maps', () => {
+    assert.equal(detectVoltWorkspaceIntent('Vreau un curs JavaScript pentru începători'), 'create_course');
+    assert.equal(detectVoltWorkspaceIntent('vreau un curs javascript incepatori 2 lectii si test final 10 intrebari'), 'create_course');
+    assert.equal(detectVoltWorkspaceIntent('Fă-mi un curs JavaScript'), 'create_course');
+    assert.equal(detectVoltWorkspaceIntent('Creează o mapă cu cursuri JavaScript'), 'map');
+});
