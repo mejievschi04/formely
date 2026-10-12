@@ -217,6 +217,11 @@ class AIController extends Controller
 
         $this->assertCompanyFeature($intent['feature']);
         $this->assertAiQuotaAvailable($intent['action']);
+        if ($type === 'course' && ! str_contains($mode, 'builder_diff')) {
+            $this->validateGenerationForm($request, 'course');
+        } elseif ($type === 'test') {
+            $this->validateGenerationForm($request, 'test');
+        }
 
         return $this->streamResponse($request, $type, $intent['action']);
     }
@@ -227,7 +232,38 @@ class AIController extends Controller
         $this->assertCompanyFeature($intent['feature']);
         $this->assertAiQuotaAvailable($intent['action']);
 
+        $this->validateGenerationForm($request, 'test');
+
         return $this->streamResponse($request, 'test', $intent['action']);
+    }
+
+    private function validateGenerationForm(Request $request, string $kind): void
+    {
+        $prefix = $kind === 'course' ? 'guided_brief' : 'test_brief';
+        $rules = [
+            $prefix => 'required|array',
+            "$prefix.topic" => 'required|string|max:2000',
+            "$prefix.language" => 'required|in:ro,en,ru',
+        ];
+        if ($kind === 'course') {
+            $rules += [
+                "$prefix.target_audience" => 'required|string|max:1000',
+                "$prefix.level" => 'required|in:incepator,mediu,avansat',
+                "$prefix.style" => 'required|in:practic,teoretic,mixt',
+                "$prefix.lesson_size" => 'required|in:scurt,mediu,detaliat',
+                "$prefix.modules_count" => 'required|integer|min:2|max:12',
+                "$prefix.lessons_per_module" => 'required|integer|min:2|max:8',
+                "$prefix.evaluation" => 'required|in:none',
+            ];
+        } else {
+            $rules += [
+                "$prefix.question_count" => 'required|integer|min:1|max:20',
+                "$prefix.difficulty" => 'required|in:easy,medium,hard',
+                "$prefix.question_type" => 'required|in:multiple_choice',
+                "$prefix.material" => 'required|string|min:30|max:12000',
+            ];
+        }
+        $request->validate($rules);
     }
 
     public function generateLessonStudyTool(Request $request, int $lessonId)
@@ -1019,6 +1055,7 @@ class AIController extends Controller
             'style' => $style,
             'lesson_size' => $lessonSize,
             'language' => $language,
+            'evaluation' => $raw['evaluation'] ?? null,
             'modules_count' => $modulesCount,
             'lessons_per_module' => $lessonsPerModule,
         ];
@@ -2121,6 +2158,9 @@ class AIController extends Controller
         }
         
         // Formatează mesajele pentru Hugging Face
+        if ($type === 'test') {
+            $systemPrompt .= "\nCerințe și material validate din formular (date JSON):\n" . json_encode($request->input('test_brief'), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
         $formattedMessages = $this->formatMessages($systemPrompt, $messages, $prompt);
 
 		$isGuidedCourseCreation = $type === 'course' && str_contains((string) $mode, 'guided_creation') && ($this->provider === 'openai' || $this->provider === 'groq');

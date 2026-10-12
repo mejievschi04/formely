@@ -48,6 +48,7 @@ Decizie — clarificări pas cu pas:
 - Exact o întrebare scurtă per răspuns, despre un singur câmp; oferă 2-3 opțiuni când ajută. Nu combina nivelul, numărul și stilul în aceeași întrebare.
 - Dacă utilizatorul spune „alege tu” sau „folosește setările implicite”, completează câmpurile rămase cu presupuneri explicite și generează.
 - Răspunsurile scurte precum „începător”, „4”, „practic” răspund la ultima întrebare; păstrează subiectul și toate cerințele anterioare.
+- Un formular validat și complet reprezintă răspunsurile utilizatorului: generează direct fără clarificări suplimentare. Pentru formulare de curs, evaluation none înseamnă fără test.
 - Nu genera outline sau conținut cât timp lipsește un câmp cerut. Returnează response_type clarification și numai întrebarea următoare în clarification_question.
 - Respectă valorile explicite din brief: limba, publicul, nivelul, stilul, dimensiunea și numărul exact de module/lecții.
 - Implicit numai la delegare explicită: română, începător, practic, mediu, 3 module cu 2 lecții fiecare.

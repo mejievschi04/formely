@@ -25,6 +25,7 @@ import {
 	VOLT_COMING_SOON_MESSAGE,
 } from '../../../utils/voltAvailability';
 import './AIChat.css';
+import AIGenerationForm from './AIGenerationForm';
 import { logger } from '../../../utils/logger';
 
 function summarizeCoursePlan(plan) {
@@ -96,6 +97,7 @@ const AICourseChat = ({
 	const [pendingDraft, setPendingDraft] = useState(null);
 	const [generatedPlan, setGeneratedPlan] = useState(null);
 	const [isApplying, setIsApplying] = useState(false);
+	const [generationForm, setGenerationForm] = useState(null);
 	const [pendingCourseIntent, setPendingCourseIntent] = useState(null);
 	const [guidedBrief, setGuidedBrief] = useState({
 		topic: initialTitle || '',
@@ -464,14 +466,14 @@ const AICourseChat = ({
 		}
 	};
 
-	const submitPrompt = async (promptText) => {
+	const submitPrompt = async (promptText, submittedBrief = null) => {
 		if (isGenerating) return;
 		if (!isVoltEnabled()) {
 			notifyVoltComingSoon(showToast);
 			return;
 		}
 
-		const intent = mode === 'workspace'
+		const intent = submittedBrief?.intent || (mode === 'workspace'
 			? detectVoltWorkspaceIntent(promptText, {
 				pendingIntent: pendingCourseIntent,
 				...pageContext,
@@ -479,10 +481,18 @@ const AICourseChat = ({
 				testId: currentTestId || pageContext.testId,
 				mapId: currentMapId || pageContext.mapId,
 			})
-			: null;
+			: null);
 		const runMode = intent === 'edit_course'
 			? 'assist'
 			: (intent === 'create_course' ? 'create' : mode);
+
+        const formKind = ['test', 'edit_test'].includes(intent) ? 'test' : runMode === 'create' ? 'course' : null;
+        if (formKind && !submittedBrief) {
+            setMessages(prev => [...prev, { role: 'user', content: promptText.trim() }, { role: 'assistant', content: `Completează formularul pentru ${formKind === 'course' ? 'curs' : 'test'}, apoi apasă Generează.` }]);
+            setInput('');
+            setGenerationForm({ kind: formKind, request: promptText.trim(), intent });
+            return;
+        }
 
 		if (mode === 'workspace' && intent === 'answer') {
 			if (!isVoltEnabled('ai_qa')) {
@@ -557,7 +567,7 @@ const AICourseChat = ({
 							finishAssistantMessage(streamed);
 						},
 						null,
-						{},
+						{ test_brief: submittedBrief?.values },
 						signal,
 					);
 					const parsed = extractJsonFromText(streamed);
@@ -625,7 +635,7 @@ const AICourseChat = ({
 			return;
 		}
 
-		const briefPayload = mode === 'workspace' ? null : getGuidedBriefPayload();
+		const briefPayload = submittedBrief?.kind === 'course' ? submittedBrief.values : (mode === 'workspace' ? null : getGuidedBriefPayload());
 		const basePrompt = buildCourseCreationPromptFromBrief(briefPayload, promptText);
 		if (!basePrompt?.trim()) return;
 
@@ -1266,6 +1276,12 @@ const AICourseChat = ({
 						</div>
 					</div>
 				)}
+                {generationForm && <AIGenerationForm key={`${generationForm.kind}:${generationForm.request}`} kind={generationForm.kind} request={generationForm.request} disabled={isGenerating} onCancel={() => setGenerationForm(null)} onSubmit={values => {
+                    const form = generationForm;
+                    setGenerationForm(null);
+                    const request = form.request;
+                    submitPrompt(request, { kind: form.kind, intent: form.intent, values });
+                }} />}
 				<div ref={messagesEndRef} />
 			</div>
 

@@ -1,0 +1,16 @@
+import React, { useState } from 'react';
+
+export default function AIGenerationForm({ kind, request, disabled, onSubmit, onCancel }) {
+ const course = kind === 'course';
+ const [values, setValues] = useState({ topic: request, target_audience: '', level: '', style: '', lesson_size: '', language: '', modules_count: '', lessons_per_module: '', question_count: '', difficulty: '', material: '' });
+ const field = (name, label, options = null, min = null, max = null) => <label style={{ display: 'grid', gap: 5 }} key={name}>{label}{options ? <select required value={values[name]} onChange={e => setValues(v => ({ ...v, [name]: e.target.value }))}><option value="">Alege…</option>{options.map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select> : <input required type={min ? 'number' : 'text'} min={min} max={max} value={values[name]} onChange={e => setValues(v => ({ ...v, [name]: e.target.value }))} />}</label>;
+ const required = course ? ['topic', 'target_audience', 'level', 'style', 'lesson_size', 'language', 'modules_count', 'lessons_per_module'] : ['topic', 'language', 'question_count', 'difficulty', 'material'];
+ const complete = required.every(key => String(values[key]).trim());
+ return <form onSubmit={e => { e.preventDefault(); if (complete) onSubmit({ ...values, course_title: '', description: '', evaluation: 'none', ...(course ? { modules_count: Number(values.modules_count), lessons_per_module: Number(values.lessons_per_module) } : { question_count: Number(values.question_count), question_type: 'multiple_choice' }) }); }} style={{ margin: '16px 0', padding: 20, background: 'var(--bg-secondary, #f5f7fb)', borderRadius: 12, display: 'grid', gap: 14 }}>
+ <strong>{course ? 'Configurează cursul' : 'Configurează testul'}</strong><p style={{ margin: 0 }}>Completează toate câmpurile. Generarea începe doar când trimiți formularul.</p>
+ {field('topic', course ? 'Subiectul cursului' : 'Titlul și subiectul testului')}
+ {field('language', 'Limba', [['ro', 'Română'], ['en', 'Engleză'], ['ru', 'Rusă']])}
+ {course ? <>{field('target_audience', 'Publicul țintă')}{field('level', 'Nivel', [['incepator', 'Începător'], ['mediu', 'Mediu'], ['avansat', 'Avansat']])}{field('style', 'Tipul lecțiilor', [['practic', 'Practic'], ['teoretic', 'Teoretic'], ['mixt', 'Mixt']])}{field('lesson_size', 'Dimensiunea lecțiilor', [['scurt', 'Scurt'], ['mediu', 'Mediu'], ['detaliat', 'Detaliat']])}{field('modules_count', 'Număr de module (2–12)', null, 2, 12)}{field('lessons_per_module', 'Lecții per modul (2–8)', null, 2, 8)}<p style={{ margin: 0 }}>Testele se configurează dintr-o cerere separată în chat.</p></> : <>{field('question_count', 'Număr de întrebări (1–20)', null, 1, 20)}{field('difficulty', 'Dificultate', [['easy', 'Ușor'], ['medium', 'Mediu'], ['hard', 'Dificil']])}<p style={{ margin: 0 }}>Tip: alegere unică, 4 variante.</p><label>Materialul de studiu<textarea required minLength={30} maxLength={12000} rows={6} value={values.material} onChange={e => setValues(v => ({ ...v, material: e.target.value }))} /></label></>}
+ <div><button type="submit" disabled={!complete || disabled}>Generează {course ? 'cursul' : 'testul'}</button><button type="button" disabled={disabled} onClick={onCancel}>Anulează</button></div>
+ </form>;
+}
