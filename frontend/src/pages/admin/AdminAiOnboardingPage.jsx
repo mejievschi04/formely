@@ -211,6 +211,8 @@ export default function AdminAiOnboardingPage() {
 				lesson_size: 'mediu',
 				modules_count: 2,
 				lessons_per_module: 2,
+				language: 'ro',
+				evaluation: 'none',
 			};
 			const prompt = buildCourseCreationPromptFromBrief(
 				brief,
@@ -289,13 +291,15 @@ export default function AdminAiOnboardingPage() {
 		try {
 			let streamed = '';
 			await openaiService.streamTestGeneration(
-				`Creează un test scurt (5–8 întrebări) pentru cursul „${courseTitle || topic}” (ID ${courseId}). Răspunde JSON cu title, description și questions.`,
+				`Creează un test cu 8 întrebări pentru cursul „${courseTitle || topic}” (ID ${courseId}). Răspunde JSON cu title, description și questions.`,
 				[],
 				courseId,
 				(chunk) => {
 					if (!chunk) return;
 					streamed += chunk;
 				},
+				null,
+				{ test_brief: { topic: courseTitle || topic || 'Test final', language: 'ro', question_count: 8, difficulty: 'easy', question_type: 'multiple_choice', source: 'course' } },
 			);
 
 			const parsed = extractJsonFromText(streamed);

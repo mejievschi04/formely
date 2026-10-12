@@ -18,6 +18,23 @@ Reguli comune pentru surse și instrucțiuni:
 PROMPT;
     }
 
+    private static function buildLessonWritingRules(): string
+    {
+        return <<<PROMPT
+Reguli de redactare pentru lecții:
+- Structură obligatorie în fiecare lecție: obiectiv concret, explicație, exemplu rezolvat, greșeală frecventă și corectare, exercițiu cu rezultat de verificat, încheiere. Folosește subtitluri h3 pentru exemplu și exercițiu. Nu înlocui exercițiul cu promisiunea unei lecții viitoare.
+- Respectă intervalul de cuvinte cerut pentru fiecare lecție, numărând textul explicativ fără taguri și fără cod. Dezvoltă explicația și rezolvarea, fără repetiții pentru umplere.
+- Predă ideea, apoi demonstreaz-o. Folosește subtitluri descriptive și paragrafe cu o singură idee, fără formulări publicitare precum „posibilitățile sunt nelimitate”.
+- Exemplul trebuie să fie complet și reproductibil. La programare precizează unde se execută codul, arată toate elementele HTML/variabilele necesare și rezultatul exact. Nu folosi getElementById fără elementul cu acel ID în exemplu.
+- Pune codul în <pre><code>, cu newline-uri reale și markup HTML escape-at (&lt;, &gt;, &amp;); termenii scurți de cod folosesc <code>. Fără cod executabil în script-uri HTML.
+- Pentru începători explică fiecare instrucțiune nouă și o greșeală frecventă cu soluția ei. Preferă const/let și exemple moderne.
+- Exercițiul indică ce să facă elevul și cum să verifice rezultatul; recapitularea explică ce poate face acum, nu doar numește subiectele.
+- Folosește liste numai pentru pași, criterii sau comparații utile. Nu termina lecția cu trei puncte generice care repetă titlul sau paragrafele. Nu impune liste doar pentru a umple conținutul.
+- Nu fabrica o secțiune de „recapitulare” din cuvinte-cheie. O încheiere de 2-3 propoziții concrete este suficientă.
+
+PROMPT;
+    }
+
     private static function buildStudyMaterialPrompt(string $content): string
     {
         $data = json_encode(['study_material' => $content], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
@@ -38,7 +55,7 @@ PROMPT;
 
     public static function buildGuidedCourseCreationPrompt(): string
     {
-        return self::buildSourceRulesPrompt() . <<<PROMPT
+        return self::buildSourceRulesPrompt() . self::buildLessonWritingRules() . <<<PROMPT
 
 Ești Formely AI, designer pedagogic în Formely. Livrezi un curs complet, utilizabil direct.
 
@@ -76,7 +93,7 @@ PROMPT;
 
     public static function buildBuilderDiffPrompt(): string
     {
-        return self::buildSourceRulesPrompt() . <<<PROMPT
+        return self::buildSourceRulesPrompt() . self::buildLessonWritingRules() . <<<PROMPT
 Ești Formely AI, designer pedagogic care editează cursul deschis în builder.
 
 Decizie și scop:
@@ -89,7 +106,7 @@ Decizie și scop:
 
 Conținut obligatoriu:
 - Fiecare lecție nouă are 250-350 de cuvinte educaționale reale, adaptate nivelului, cu obiectiv, explicație, exemplu rezolvat, aplicație și recapitulare.
-- `content` este HTML complet: un h2, minimum 5 paragrafe p și o listă ul/ol cu minimum 3 li. Validatorul numără blocurile HTML; un singur paragraf lung nu este suficient.
+- `content` este HTML complet. Urmează această ordine: h2 titlu; p obiectiv; h3 Explicație și două p; h3 Exemplu rezolvat și două p plus pre/code când este relevant; h3 Greșeală frecventă și p corectare; h3 Exercițiu și două p cu cerința și rezultatul exact de verificat; p încheiere. Dezvoltă cele minimum nouă paragrafe la 250-350 cuvinte explicative, fără a număra codul. Lista ul/ol este opțională.
 - Pentru JavaScript include cod concret în pre/code și explică rezultatul; escapează caracterele HTML în cod.
 - Fără placeholder-e, „...”, lecții constând doar din titlu sau un rezumat. Fără script, iframe, evenimente HTML ori stiluri inline.
 

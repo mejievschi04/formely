@@ -39,12 +39,13 @@ async function throwIfNotOk(response) {
 	} catch {
 		data = { error: errorText };
 	}
-	const message = data?.error || `HTTP error! status: ${response.status}, body: ${errorText}`;
+	const message = data?.error || data?.message || `Cererea AI a eșuat (HTTP ${response.status}). Încearcă din nou sau contactează administratorul.`;
 	throw new AiApiError(message, response.status, data);
 }
 
 function handleParsedEvent(parsed, onChunk, onData, accumulate) {
 	if (!parsed || typeof parsed !== 'object') return;
+	if (parsed.error) throw new Error(parsed.error);
 	if (parsed.ai_usage) {
 		applyAiUsageFromResponse(parsed);
 	}
@@ -182,7 +183,7 @@ export const openaiService = {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'Accept': 'text/event-stream',
+					'Accept': 'text/event-stream, application/json',
 					...(token ? { 'Authorization': `Bearer ${token}` } : {}),
 				},
 				credentials: 'include',
@@ -279,7 +280,7 @@ export const openaiService = {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'Accept': 'text/event-stream',
+					'Accept': 'text/event-stream, application/json',
 					...(token ? { 'Authorization': `Bearer ${token}` } : {}),
 				},
 				credentials: 'include',

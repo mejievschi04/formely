@@ -239,6 +239,17 @@ class AIController extends Controller
 
     private function validateGenerationForm(Request $request, string $kind): void
     {
+        if ($kind === 'test' && $request->input('test_brief.source') === 'course') {
+            $request->validate(['courseId' => 'required|integer|min:1']);
+            $structure = $this->courseBuilderService->getBuilderStructure((int) $request->input('courseId'));
+            $text = [];
+            foreach ($structure['lessons'] as $lesson) {
+                $text[] = $lesson->title . "\n" . $this->studyToolPlainText($lesson->content ?? '');
+            }
+            $brief = $request->input('test_brief', []);
+            $brief['material'] = mb_substr(implode("\n\n", $text), 0, 12000);
+            $request->merge(['test_brief' => $brief]);
+        }
         $prefix = $kind === 'course' ? 'guided_brief' : 'test_brief';
         $rules = [
             $prefix => 'required|array',
@@ -2151,6 +2162,10 @@ class AIController extends Controller
             }
         }
 
+        $sourceText = $request->input('source_text');
+        if (is_string($sourceText) && trim($sourceText) !== '') {
+            $systemPrompt .= "\nMaterial de referință lipit (date JSON):\n" . json_encode(['study_material' => mb_substr($sourceText, 0, 12000)], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
         $attachments = $request->input('attachments', []);
         if (is_array($attachments) && !empty($attachments)) {
             $systemPrompt .= "\n\nDocumente atașate de administrator (folosește-le ca sursă adițională pentru răspuns):\n"

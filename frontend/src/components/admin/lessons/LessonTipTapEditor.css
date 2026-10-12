@@ -318,3 +318,27 @@
 	outline: 2px solid #0f172a !important;
 	outline-offset: 2px;
 }
+
+.lesson-tiptap .tiptap pre {
+ margin: 18px 0;
+ padding: 18px 20px;
+ border: 1px solid var(--border-primary, #dce4f1);
+ border-radius: 12px;
+ background: var(--bg-secondary, #f2f5fa);
+ overflow-x: auto;
+ white-space: pre;
+ line-height: 1.65;
+}
+.lesson-tiptap .tiptap pre code {
+ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+ font-size: .88em;
+ color: inherit;
+ background: none;
+ padding: 0;
+}
+.lesson-tiptap .tiptap :not(pre) > code {
+ padding: 2px 5px;
+ border-radius: 5px;
+ background: var(--bg-secondary, #edf2f8);
+ font-size: .9em;
+}

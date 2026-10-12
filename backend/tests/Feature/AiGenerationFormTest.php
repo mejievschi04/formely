@@ -52,4 +52,23 @@ class AiGenerationFormTest extends TestCase
         }
         Http::assertNothingSent();
     }
+
+    public function test_course_source_is_loaded_on_server_and_replaces_client_material(): void
+    {
+        Http::fake();
+        $builder = $this->createMock(\App\Services\CourseBuilderService::class);
+        $builder->expects($this->once())->method('getBuilderStructure')->with(12)->willReturn([
+            'lessons' => collect([(object) ['title' => 'Variabile', 'content' => '<p>Const declară o variabilă care nu poate fi reasignată după inițializare.</p>']]),
+        ]);
+        $this->app->instance(\App\Services\CourseBuilderService::class, $builder);
+        $request = Request::create('/api/admin/ai/generate-test', 'POST', ['courseId' => 12, 'test_brief' => [
+            'topic' => 'Test final', 'language' => 'ro', 'question_count' => 3, 'difficulty' => 'easy', 'question_type' => 'multiple_choice', 'source' => 'course', 'material' => 'Text fals trimis de client',
+        ]]);
+        $method = (new ReflectionClass(AIController::class))->getMethod('validateGenerationForm');
+        $method->invoke(app(AIController::class), $request, 'test');
+        $this->assertStringContainsString('Const declară', $request->input('test_brief.material'));
+        $this->assertStringNotContainsString('Text fals', $request->input('test_brief.material'));
+        Http::assertNothingSent();
+    }
+
 }

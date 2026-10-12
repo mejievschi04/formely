@@ -419,6 +419,16 @@ const AICourseChat = ({
 					questions: pendingDraft.questions,
 				});
 				const test = created?.test || created;
+				if (pendingDraft.courseId && test?.id) {
+					try {
+						await adminService.linkTestToCourse(test.id, pendingDraft.courseId);
+					} catch {
+						setPendingDraft(null);
+						showToast('Testul a fost salvat, dar legarea la curs a eșuat. Atașează testul din editorul cursului.', 'warning');
+						onTestGenerated?.(test);
+						return;
+					}
+				}
 				showToast('Test creat cu Formely AI.', 'success');
 				setPendingDraft(null);
 				onTestGenerated?.(test);
@@ -582,6 +592,7 @@ const AICourseChat = ({
 						title: parsed.title,
 						description: parsed.description || '',
 						questions,
+						courseId: currentCourseId,
 					});
 					finishAssistantMessage(
 						editingTest
@@ -619,7 +630,7 @@ const AICourseChat = ({
 					action: editingMap ? 'update' : 'create',
 					name: mapName,
 					description: parsed.description || null,
-					course_ids: Array.isArray(parsed.course_ids) ? parsed.course_ids : [],
+					course_ids: Array.isArray(parsed.course_ids) ? [...new Set(parsed.course_ids.filter(id => Number.isInteger(id) && id > 0))] : [],
 				});
 				finishAssistantMessage(
 					editingMap
@@ -768,13 +779,13 @@ const AICourseChat = ({
 			const streamResult = await openaiService.streamCourseGeneration(
 					userMessage.content,
 					streamMessages,
-					currentCourseId,
+					(runMode === 'create' ? null : currentCourseId),
 					streamHandler,
 					dataHandler,
 					{
 						mode: runMode === 'assist' ? 'builder_diff' : 'guided_creation:full',
-						courseId: currentCourseId,
-						initialCourseId: currentCourseId,
+						courseId: (runMode === 'create' ? null : currentCourseId),
+						initialCourseId: (runMode === 'create' ? null : currentCourseId),
 						selectedModuleId: selectedModuleId ?? null,
 						selectedLessonId: selectedLessonId ?? null,
 						selectedLessonDraft: selectedLessonDraft ?? null,
@@ -877,7 +888,7 @@ const AICourseChat = ({
 			).trim();
 
 			if (courseId) {
-				const wasExisting = Boolean(currentCourseId);
+				const wasExisting = runMode !== 'create' && Boolean(currentCourseId);
 				setCurrentCourseId(courseId);
 				setPendingCreatedCourse({ id: courseId, created: !wasExisting, plan: parsedCourse });
 				const modulePreview = summarizeCoursePlan(parsedCourse);
@@ -1276,7 +1287,7 @@ const AICourseChat = ({
 						</div>
 					</div>
 				)}
-                {generationForm && <AIGenerationForm key={`${generationForm.kind}:${generationForm.request}`} kind={generationForm.kind} request={generationForm.request} disabled={isGenerating} onCancel={() => setGenerationForm(null)} onSubmit={values => {
+                {generationForm && <AIGenerationForm key={`${generationForm.kind}:${generationForm.request}`} kind={generationForm.kind} courseId={currentCourseId} request={generationForm.request} disabled={isGenerating} onCancel={() => setGenerationForm(null)} onSubmit={values => {
                     const form = generationForm;
                     setGenerationForm(null);
                     const request = form.request;
