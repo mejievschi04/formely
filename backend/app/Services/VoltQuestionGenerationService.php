@@ -1120,7 +1120,7 @@ private function callAI(string $prompt, int $maxTokens = 1200, float $temperatur
 {
     $temperature = max(0.0, min(1.2, $temperature));
     // Use HTTP client to call AI API
-    $provider = (string) config('ai.provider', 'groq');
+    $provider = (string) config('ai.provider', 'openai');
     if ($provider === 'groq') {
         $apiKey = (string) config('ai.groq.api_key', '');
         $apiUrl = (string) config('ai.groq.api_url', 'https://api.groq.com/openai/v1');

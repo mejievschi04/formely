@@ -39,6 +39,8 @@ class SaasPlanEntitlementsTest extends TestCase
         $service = app(PlanEntitlementService::class);
         $this->assertFalse($service->companyCan($company, 'ai_stats'));
         $this->assertFalse($service->companyCan($company, 'library'));
+        $this->assertTrue($service->companyCan($company, 'ai_creator'));
+        $this->assertTrue($service->companyCan($company, 'ai_test_generation'));
         $this->assertTrue($service->learnerSeatAvailable($company, 1));
     }
 
@@ -74,9 +76,31 @@ class SaasPlanEntitlementsTest extends TestCase
 
         $service = app(PlanEntitlementService::class);
         $this->assertTrue($service->companyCan($company, 'ai_creator'));
-        $this->assertTrue($service->companyCan($company, 'ai_tutor'));
+        $this->assertFalse($service->companyCan($company, 'ai_tutor'));
+        $this->assertTrue($service->companyCan($company, 'ai_qa'));
         $this->assertTrue($service->companyCan($company, 'library'));
         $this->assertNull($service->maxActiveLearners($company));
+    }
+
+    public function test_academie_plan_allows_admin_qa_not_learner_tutor(): void
+    {
+        $defaults = app(PlanEntitlementService::class)->defaultsForPlan('academie');
+        $company = Company::create([
+            'name' => 'Academie QA',
+            'slug' => 'academie-qa',
+            'status' => 'active',
+            'plan' => 'academie',
+            'max_active_learners' => $defaults['max_active_learners'],
+            'max_staff' => $defaults['max_staff'],
+            'features' => $defaults['features'],
+        ]);
+
+        $service = app(PlanEntitlementService::class);
+        $this->assertTrue($service->companyCan($company, 'ai_creator'));
+        $this->assertTrue($service->companyCan($company, 'ai_builder'));
+        $this->assertTrue($service->companyCan($company, 'ai_qa'));
+        $this->assertTrue($service->companyCan($company, 'ai_test_generation'));
+        $this->assertFalse($service->companyCan($company, 'ai_tutor'));
     }
 
     public function test_stored_features_cannot_exceed_plan_catalog(): void
@@ -96,7 +120,9 @@ class SaasPlanEntitlementsTest extends TestCase
 
         $service = app(PlanEntitlementService::class);
         $this->assertFalse($service->companyCan($company, 'library'));
-        $this->assertFalse($service->companyCan($company, 'ai_creator'));
+        // Instructor include Formely AI creator — catalogul câștigă față de features stocate greșit doar la upgrade (library)
+        $this->assertTrue($service->companyCan($company, 'ai_creator'));
+        $this->assertTrue($service->companyCan($company, 'ai_test_generation'));
         $this->assertSame(50, $service->maxActiveLearners($company));
         $this->assertSame(2, $service->maxStaff($company));
     }
@@ -351,14 +377,14 @@ class SaasPlanEntitlementsTest extends TestCase
         $response->assertStatus(422);
     }
 
-    public function test_instructor_plan_forbids_ai_question_generation_endpoint(): void
+    public function test_instructor_plan_allows_ai_question_generation_gate(): void
     {
-        // AI pornit global: testul verifică doar blocarea de către plan (cu AI oprit ruta răspunde 404)
+        // Instructor include ai_test_generation: cererea trece de gate-ul de plan (fără provider real poate eșua mai jos).
         config(['ai.enabled' => true, 'ai.provider' => 'groq', 'ai.groq.api_key' => 'test-only-secret']);
         $defaults = app(PlanEntitlementService::class)->defaultsForPlan('instructor');
         $company = Company::create([
-            'name' => 'No AI',
-            'slug' => 'no-ai',
+            'name' => 'Instructor AI',
+            'slug' => 'instructor-ai',
             'status' => 'active',
             'plan' => 'instructor',
             'max_active_learners' => $defaults['max_active_learners'],
@@ -378,12 +404,12 @@ class SaasPlanEntitlementsTest extends TestCase
             'status' => 'draft',
         ]);
 
-        $this->actingAs($owner, 'sanctum')
+        $response = $this->actingAs($owner, 'sanctum')
             ->postJson("/api/admin/question-banks/{$bank->id}/ai/preview", [
                 'content' => str_repeat('Material pentru evaluare. ', 10),
                 'numberOfQuestions' => 1,
-            ])
-            ->assertForbidden();
+            ]);
+        $this->assertNotSame(403, $response->status());
     }
 
     public function test_academie_plan_allows_ai_generation_request_to_validate(): void
@@ -427,14 +453,109 @@ class SaasPlanEntitlementsTest extends TestCase
         );
     }
 
-    public function test_instructor_cannot_stream_ai_course_generation(): void
+    public function test_instructor_can_request_ai_course_generation_gate(): void
     {
-        // AI pornit global: testul verifică doar blocarea de către plan (cu AI oprit ruta răspunde 404)
+        // Instructor include ai_creator: nu mai e 403 pe feature.
         config(['ai.enabled' => true, 'ai.provider' => 'groq', 'ai.groq.api_key' => 'test-only-secret']);
         $defaults = app(PlanEntitlementService::class)->defaultsForPlan('instructor');
         $company = Company::create([
-            'name' => 'No Creator',
-            'slug' => 'no-creator',
+            'name' => 'Creator OK',
+            'slug' => 'creator-ok',
+            'status' => 'active',
+            'plan' => 'instructor',
+            'max_active_learners' => $defaults['max_active_learners'],
+            'max_staff' => $defaults['max_staff'],
+            'features' => $defaults['features'],
+        ]);
+        $owner = User::factory()->create([
+            'role' => UserRoles::ADMIN,
+            'company_id' => $company->id,
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($owner, 'sanctum')
+            ->postJson('/api/admin/ai/generate-course', [
+                'prompt' => 'Curs scurt de onboarding',
+                'mode' => 'guided_creation',
+            ]);
+        $this->assertNotSame(403, $response->status());
+    }
+
+    public function test_instructor_ai_quota_blocks_after_limit(): void
+    {
+        config(['ai.enabled' => true, 'ai.provider' => 'groq', 'ai.groq.api_key' => 'test-only-secret']);
+        $defaults = app(PlanEntitlementService::class)->defaultsForPlan('instructor');
+        $company = Company::create([
+            'name' => 'Quota Cap',
+            'slug' => 'quota-cap',
+            'status' => 'active',
+            'plan' => 'instructor',
+            'max_active_learners' => $defaults['max_active_learners'],
+            'max_staff' => $defaults['max_staff'],
+            'features' => $defaults['features'],
+        ]);
+        $owner = User::factory()->create([
+            'role' => UserRoles::ADMIN,
+            'company_id' => $company->id,
+            'status' => 'active',
+        ]);
+        TenantContext::setFromUser($owner);
+
+        $quota = app(\App\Services\AiQuotaService::class);
+        $limit = $quota->creditLimitFor($company);
+        $this->assertSame(100, $limit);
+
+        \App\Models\CompanyAiUsage::create([
+            'company_id' => $company->id,
+            'period' => $quota->currentPeriod(),
+            'action' => \App\Services\AiQuotaService::ACTION_CREDITS,
+            'used' => $limit,
+        ]);
+
+        $bank = \App\Models\QuestionBank::create([
+            'title' => 'Bank Quota',
+            'created_by' => $owner->id,
+            'company_id' => $company->id,
+            'status' => 'draft',
+        ]);
+
+        $this->actingAs($owner, 'sanctum')
+            ->postJson("/api/admin/question-banks/{$bank->id}/ai/preview", [
+                'content' => str_repeat('Material pentru evaluare. ', 10),
+                'numberOfQuestions' => 1,
+            ])
+            ->assertStatus(429)
+            ->assertJsonPath('code', 'ai_quota_exceeded');
+    }
+
+    public function test_instructor_still_blocks_ai_stats_and_tutor(): void
+    {
+        $defaults = app(PlanEntitlementService::class)->defaultsForPlan('instructor');
+        $company = Company::create([
+            'name' => 'No Tutor',
+            'slug' => 'no-tutor',
+            'status' => 'active',
+            'plan' => 'instructor',
+            'max_active_learners' => $defaults['max_active_learners'],
+            'max_staff' => $defaults['max_staff'],
+            'features' => $defaults['features'],
+        ]);
+
+        $service = app(PlanEntitlementService::class);
+        $this->assertTrue($service->companyCan($company, 'ai_creator'));
+        $this->assertFalse($service->companyCan($company, 'ai_tutor'));
+        $this->assertFalse($service->companyCan($company, 'ai_qa'));
+        $this->assertFalse($service->companyCan($company, 'ai_stats'));
+        $this->assertFalse($service->companyCan($company, 'ai_builder'));
+    }
+
+    public function test_instructor_admin_tutor_request_is_forbidden_by_ai_qa(): void
+    {
+        config(['ai.enabled' => true, 'ai.provider' => 'groq', 'ai.groq.api_key' => 'test-only-secret']);
+        $defaults = app(PlanEntitlementService::class)->defaultsForPlan('instructor');
+        $company = Company::create([
+            'name' => 'No QA',
+            'slug' => 'no-qa',
             'status' => 'active',
             'plan' => 'instructor',
             'max_active_learners' => $defaults['max_active_learners'],
@@ -449,9 +570,64 @@ class SaasPlanEntitlementsTest extends TestCase
 
         $this->actingAs($owner, 'sanctum')
             ->postJson('/api/admin/ai/generate-course', [
-                'prompt' => 'Curs scurt de onboarding',
-                'mode' => 'guided_creation',
+                'prompt' => 'Ce cursuri am?',
+                'type' => 'tutor',
+                'mode' => 'admin_tutor',
             ])
-            ->assertForbidden();
+            ->assertStatus(403);
+    }
+
+    public function test_instructor_builder_diff_is_forbidden(): void
+    {
+        config(['ai.enabled' => true, 'ai.provider' => 'groq', 'ai.groq.api_key' => 'test-only-secret']);
+        $defaults = app(PlanEntitlementService::class)->defaultsForPlan('instructor');
+        $company = Company::create([
+            'name' => 'No Builder',
+            'slug' => 'no-builder',
+            'status' => 'active',
+            'plan' => 'instructor',
+            'max_active_learners' => $defaults['max_active_learners'],
+            'max_staff' => $defaults['max_staff'],
+            'features' => $defaults['features'],
+        ]);
+        $owner = User::factory()->create([
+            'role' => UserRoles::ADMIN,
+            'company_id' => $company->id,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($owner, 'sanctum')
+            ->postJson('/api/admin/ai/generate-course', [
+                'prompt' => 'Adaugă o lecție',
+                'type' => 'course',
+                'mode' => 'builder_diff',
+                'courseId' => 1,
+            ])
+            ->assertStatus(403);
+    }
+
+    public function test_entitlements_payload_includes_ai_usage(): void
+    {
+        $defaults = app(PlanEntitlementService::class)->defaultsForPlan('instructor');
+        $company = Company::create([
+            'name' => 'Usage Payload',
+            'slug' => 'usage-payload',
+            'status' => 'active',
+            'plan' => 'instructor',
+            'max_active_learners' => $defaults['max_active_learners'],
+            'max_staff' => $defaults['max_staff'],
+            'features' => $defaults['features'],
+        ]);
+
+        $payload = app(PlanEntitlementService::class)->entitlementsPayload($company);
+        $this->assertArrayHasKey('ai_usage', $payload);
+        $this->assertSame(100, $payload['ai_usage']['credits']['limit']);
+        $this->assertSame(15, $payload['ai_usage']['costs']['course_generation']);
+        $this->assertSame(3, $payload['ai_usage']['costs']['test_generation']);
+        $this->assertSame(1, $payload['ai_usage']['costs']['tutor']);
+        // View pe acțiune: floor(100/cost)
+        $this->assertSame(6, $payload['ai_usage']['actions']['course_generation']['limit']);
+        $this->assertSame(33, $payload['ai_usage']['actions']['test_generation']['limit']);
+        $this->assertSame(100, $payload['ai_usage']['actions']['tutor']['limit']);
     }
 }

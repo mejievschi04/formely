@@ -14,7 +14,16 @@ import {
 	downloadStructuredExcel,
 	statisticsExcelFilename,
 } from '../../../utils/statisticsExcelExport';
-import { isVoltEnabled, notifyVoltComingSoon, VOLT_COMING_SOON_MESSAGE } from '../../../utils/voltAvailability';
+import {
+	AI_QUOTA_EXCEEDED_MESSAGE,
+	hasAiQuota,
+	isAiQuotaError,
+	isVoltEnabled,
+	notifyAiQuotaExceeded,
+	notifyVoltComingSoon,
+	quotaErrorMessage,
+	VOLT_COMING_SOON_MESSAGE,
+} from '../../../utils/voltAvailability';
 import './AIChat.css';
 import { logger } from '../../../utils/logger';
 
@@ -101,6 +110,15 @@ const AICourseChat = ({
 	const messagesEndRef = useRef(null);
 	const chatContainerRef = useRef(null);
 	const attachmentInputRef = useRef(null);
+	const streamAbortRef = useRef(null);
+
+	const beginStreamAbort = () => {
+		if (streamAbortRef.current) {
+			streamAbortRef.current.abort();
+		}
+		streamAbortRef.current = new AbortController();
+		return streamAbortRef.current.signal;
+	};
 
 	useEffect(() => {
 		scrollToBottom();
@@ -111,6 +129,10 @@ const AICourseChat = ({
 		setCurrentTestId(initialTestId ?? pageContext.testId ?? null);
 		setCurrentMapId(initialMapId ?? pageContext.mapId ?? null);
 	}, [initialCourseId, initialTestId, initialMapId, pageContext.courseId, pageContext.testId, pageContext.mapId]);
+
+	useEffect(() => () => {
+		streamAbortRef.current?.abort();
+	}, []);
 
 	const scrollToBottom = () => {
 		messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -460,6 +482,34 @@ const AICourseChat = ({
 			? 'assist'
 			: (intent === 'create_course' ? 'create' : mode);
 
+		if (mode === 'workspace' && intent === 'answer') {
+			if (!isVoltEnabled('ai_qa')) {
+				notifyVoltComingSoon(showToast);
+				return;
+			}
+			if (!hasAiQuota('tutor')) {
+				notifyAiQuotaExceeded(showToast);
+				return;
+			}
+		} else if (mode === 'workspace' && (intent === 'test' || intent === 'edit_test')) {
+			if (!hasAiQuota('test_generation')) {
+				notifyAiQuotaExceeded(showToast);
+				return;
+			}
+		} else if (runMode === 'assist') {
+			if (!isVoltEnabled('ai_builder')) {
+				notifyVoltComingSoon(showToast);
+				return;
+			}
+			if (!hasAiQuota('course_generation')) {
+				notifyAiQuotaExceeded(showToast);
+				return;
+			}
+		} else if (!hasAiQuota('course_generation') && !hasAiQuota('test_generation')) {
+			notifyAiQuotaExceeded(showToast);
+			return;
+		}
+
 		if (mode === 'workspace' && ['answer', 'test', 'edit_test', 'map', 'edit_map'].includes(intent)) {
 			const userMessage = { role: 'user', content: promptText.trim() };
 			setMessages((prev) => [...prev, userMessage, { role: 'assistant', content: '…' }]);
@@ -469,6 +519,7 @@ const AICourseChat = ({
 			try {
 				let streamed = '';
 				const history = messages.map((m) => ({ role: m.role, content: m.content }));
+				const signal = beginStreamAbort();
 				if (intent === 'answer') {
 					await openaiService.streamCourseGeneration(
 						promptText.trim(),
@@ -480,7 +531,8 @@ const AICourseChat = ({
 							finishAssistantMessage(streamed);
 						},
 						null,
-						{ type: 'tutor', mode: 'admin_tutor' }
+						{ type: 'tutor', mode: 'admin_tutor' },
+						signal,
 					);
 					if (!streamed.trim()) {
 						finishAssistantMessage('Nu am putut genera un răspuns. Încearcă să reformulezi.');
@@ -501,7 +553,10 @@ const AICourseChat = ({
 							if (!chunk) return;
 							streamed += chunk;
 							finishAssistantMessage(streamed);
-						}
+						},
+						null,
+						{},
+						signal,
 					);
 					const parsed = extractJsonFromText(streamed);
 					const questions = mapVoltTestQuestions(parsed?.questions);
@@ -538,7 +593,8 @@ const AICourseChat = ({
 						finishAssistantMessage(streamed);
 					},
 					null,
-					{ type: 'tutor', mode: 'admin_tutor' }
+					{ type: 'tutor', mode: 'admin_tutor' },
+					signal,
 				);
 				const parsed = extractJsonFromText(streamed);
 				const mapName = String(parsed?.name || parsed?.title || '').trim();
@@ -707,7 +763,8 @@ const AICourseChat = ({
 						selectedLessonDraft: selectedLessonDraft ?? null,
 						attachments: attachedDocuments,
 						guided_brief: briefPayload,
-					}
+					},
+					beginStreamAbort(),
 				);
 
 			if (streamResult?.content && !assistantResponse) {
@@ -868,15 +925,28 @@ const AICourseChat = ({
 			}
 		} catch (error) {
 			console.error('Error generating course:', error);
-			showToast('Eroare la generarea cursului. Te rugăm să încerci din nou.', 'error');
-			setMessages(prev => {
-				const newMessages = [...prev];
-				newMessages[newMessages.length - 1] = {
-					...newMessages[newMessages.length - 1],
-					content: 'Îmi pare rău, am întâmpinat o eroare. Te rugăm să încerci din nou sau să reformulezi cererea.',
-				};
-				return newMessages;
-			});
+			if (isAiQuotaError(error)) {
+				const quotaMsg = quotaErrorMessage(error);
+				notifyAiQuotaExceeded(showToast, quotaMsg);
+				setMessages(prev => {
+					const newMessages = [...prev];
+					newMessages[newMessages.length - 1] = {
+						...newMessages[newMessages.length - 1],
+						content: quotaMsg,
+					};
+					return newMessages;
+				});
+			} else {
+				showToast('Eroare la generarea cursului. Te rugăm să încerci din nou.', 'error');
+				setMessages(prev => {
+					const newMessages = [...prev];
+					newMessages[newMessages.length - 1] = {
+						...newMessages[newMessages.length - 1],
+						content: 'Îmi pare rău, am întâmpinat o eroare. Te rugăm să încerci din nou sau să reformulezi cererea.',
+					};
+					return newMessages;
+				});
+			}
 		} finally {
 			if (waitingHintTimer) {
 				window.clearTimeout(waitingHintTimer);

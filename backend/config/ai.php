@@ -8,9 +8,28 @@
 return [
     // Comutatorul general pentru Volt (AI). Oprit implicit: fără AI_ENABLED=true nu pornește nicio
     // funcție AI, chiar dacă există chei de API — rutele AI răspund 404, iar interfața le ascunde.
+    /*
+     * Profil produs (validat fondator Oct 2026):
+     * ON: curs din materiale, builder_diff, teste, admin Q&A, extract local PDF/TXT, embeddings OpenAI.
+     * Provider: openai. Model ieftin (mini) pe zi de zi; mini și pe generare curs complexă.
+     * Fără tutor / study tools pe lecții (ai_tutor OFF). DEFER: OpenAI Files PDF.
+     */
     'enabled' => filter_var(env('AI_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
 
-    'provider' => env('AI_PROVIDER', 'groq'),
+    'provider' => env('AI_PROVIDER', 'openai'),
+
+    /**
+     * Cost în credite pe acțiune (pool lunar: plans.*.ai_credits).
+     * Q&A admin = 1 (cheia internă `tutor`), test = 3, curs/builder = 15.
+     */
+    'credit_costs' => [
+        'course_generation' => 15,
+        'test_generation' => 3,
+        'tutor' => 1, // admin Q&A (ai_qa); nu lesson tutor
+    ],
+
+    /** Throttle dedicat pe rutele AI (requests / minut / user). */
+    'rate_limit_per_minute' => (int) env('AI_RATE_LIMIT_PER_MINUTE', 20),
 
     'verify_ssl' => filter_var(env('AI_VERIFY_SSL', true), FILTER_VALIDATE_BOOLEAN),
 
@@ -32,9 +51,12 @@ return [
     'openai' => [
         'api_key' => env('OPENAI_API_KEY', ''),
         'api_url' => rtrim((string) env('OPENAI_API_URL', 'https://api.openai.com/v1'), '/'),
+        // Default: mini pentru teste, Q&A, builder ușor.
         'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
-        'creator_model' => env('OPENAI_CREATOR_MODEL'),
-        'creator_quality_model' => env('OPENAI_CREATOR_QUALITY_MODEL'),
+        // Generare curs (guided) — tot mini dacă nu setezi quality separat.
+        'creator_model' => env('OPENAI_CREATOR_MODEL', 'gpt-4o-mini'),
+        // Același model mini pentru toate fluxurile, inclusiv quality path.
+        'creator_quality_model' => env('OPENAI_CREATOR_QUALITY_MODEL', 'gpt-4o-mini'),
         'fallback_models' => env('OPENAI_FALLBACK_MODELS', ''),
     ],
     // Timeout-uri în secunde. guided_creation = 0: fără limită separată pentru crearea ghidată.

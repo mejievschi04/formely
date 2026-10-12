@@ -307,6 +307,7 @@ class PlanEntitlementService
             'plan_label' => (string) (config('plans.'.($company->plan ?: 'instructor').'.label') ?? 'Instructor'),
             'status' => $company->status,
             'features' => $this->featuresFor($company),
+            'ai_usage' => app(AiQuotaService::class)->payload($company),
             'seats' => [
                 'learners' => [
                     'used' => $usage['learners'],

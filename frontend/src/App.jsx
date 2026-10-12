@@ -92,6 +92,7 @@ const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const InviteRegisterPage = lazy(() => import('./pages/InviteRegisterPage'));
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
+const AdminAiOnboardingPage = lazy(() => import('./pages/admin/AdminAiOnboardingPage'));
 const AdminAnalyticsPage = lazy(() => import('./pages/admin/AdminAnalyticsPage'));
 const AdminCoursesPage = lazy(() => import('./pages/admin/AdminCoursesPage'));
 const AdminCourseDetailPage = lazy(() => import('./pages/admin/AdminCourseDetailPage'));
@@ -1294,7 +1295,10 @@ function AuthenticatedLayout({ children, authContext }) {
 				</>
 			)}
 
-            {user && isTrueAdminAccount && user.role === 'admin' && isVoltEnabled('ai_builder') && (
+            {user
+				&& (user.role === 'admin' || user.role === 'instructor' || user.actualRole === 'admin' || user.actualRole === 'instructor')
+				&& (isVoltEnabled('ai_builder') || isVoltEnabled('ai_creator') || isVoltEnabled('ai_qa'))
+				&& (
 				<ErrorBoundary fallback={() => null}>
 					<Suspense fallback={null}>
 						<VoltAssistantWidget />
@@ -1591,6 +1595,16 @@ function App() {
 											<AdminRoute>
 												<Suspense fallback={<PageLoader />}>
 													<AdminDashboardPage />
+												</Suspense>
+											</AdminRoute>
+										}
+									/>
+									<Route
+										path="/admin/ai-setup"
+										element={
+											<AdminRoute>
+												<Suspense fallback={<PageLoader />}>
+													<AdminAiOnboardingPage />
 												</Suspense>
 											</AdminRoute>
 										}

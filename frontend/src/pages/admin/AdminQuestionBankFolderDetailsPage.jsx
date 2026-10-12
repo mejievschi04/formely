@@ -25,7 +25,13 @@ import QuestionRow from '../../components/admin/question-banks/QuestionRow';
 import QuestionBuilderEditor from '../../components/admin/question-banks/QuestionBuilderEditor';
 import AIGenerateQuestionsModal from '../../components/admin/question-banks/QuestionBankBuilderSteps/AIGenerateQuestionsModal';
 import { DEFAULT_AI_QUESTION_TYPES } from '../../components/admin/question-banks/QuestionBankBuilderSteps/AIGenerateQuestionsModalShared.js';
-import { isVoltEnabled, notifyVoltComingSoon } from '../../utils/voltAvailability';
+import {
+  hasAiQuota,
+  isAiQuotaError,
+  isVoltEnabled,
+  notifyAiQuotaExceeded,
+  notifyVoltComingSoon,
+} from '../../utils/voltAvailability';
 
 import { useAuth } from '../../contexts/AuthContextShared.js';
 import './AdminQuestionBanksPage.css';
@@ -316,6 +322,10 @@ const AdminQuestionBankFolderDetailsPage = () => {
       notifyVoltComingSoon(showToast);
       return;
     }
+    if (!hasAiQuota('test_generation')) {
+      notifyAiQuotaExceeded(showToast);
+      return;
+    }
     setAiOptions({
       numberOfQuestions: 10,
       difficulty: 'medium',
@@ -375,6 +385,10 @@ const AdminQuestionBankFolderDetailsPage = () => {
       await loadData();
     } catch (err) {
       console.error('Error generating questions:', err);
+      if (isAiQuotaError(err)) {
+        notifyAiQuotaExceeded(showToast, err.response?.data?.error);
+        return;
+      }
       const message = err.response?.data?.error || err.response?.data?.message || err.message || 'Eroare la generarea întrebărilor cu Formely AI';
       setAiError(message);
       error(message);

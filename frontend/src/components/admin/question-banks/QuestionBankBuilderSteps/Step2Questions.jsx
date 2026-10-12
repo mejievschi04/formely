@@ -8,7 +8,12 @@ import Modal from '../../../../components/common/Modal';
 import QuestionItemCard from './QuestionItemCard';
 import AIGenerateQuestionsModal from './AIGenerateQuestionsModal';
 import { DEFAULT_AI_QUESTION_TYPES } from './AIGenerateQuestionsModalShared.js';
-import { isVoltEnabled, notifyVoltComingSoon } from '../../../../utils/voltAvailability';
+import {
+	hasAiQuota,
+	isVoltEnabled,
+	notifyAiQuotaExceeded,
+	notifyVoltComingSoon,
+} from '../../../../utils/voltAvailability';
 
 const QUESTION_TYPE_OPTIONS = [
 	{ value: 'multiple_choice', label: 'Răspuns multiplu' },
@@ -500,6 +505,10 @@ const QuestionBankBuilderStep2 = ({ bankId, data, onUpdate, errors }) => {
 	const handleOpenAIModal = () => {
 		if (!isVoltEnabled('ai_test_generation')) {
 			notifyVoltComingSoon(showToast);
+			return;
+		}
+		if (!hasAiQuota('test_generation')) {
+			notifyAiQuotaExceeded(showToast);
 			return;
 		}
 		setAiOptions({

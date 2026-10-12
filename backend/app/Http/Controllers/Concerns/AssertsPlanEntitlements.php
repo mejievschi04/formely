@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Concerns;
 
 use App\Models\Company;
 use App\Models\User;
+use App\Services\AiQuotaGate;
+use App\Services\AiQuotaService;
 use App\Services\PlanEntitlementService;
 use App\Support\UserRoles;
 
@@ -43,6 +45,70 @@ trait AssertsPlanEntitlements
         if (! $this->entitlements()->companyCan($company, $feature)) {
             abort(403, 'Această funcție nu este inclusă în planul organizației.');
         }
+    }
+
+    protected function aiQuotas(): AiQuotaService
+    {
+        return app(AiQuotaService::class);
+    }
+
+    protected function aiQuotaGate(): AiQuotaGate
+    {
+        return app(AiQuotaGate::class);
+    }
+
+    protected function requireUsableCompany(?User $user = null): Company
+    {
+        $company = $this->companyForEntitlements($user);
+        if (! $company) {
+            abort(403, 'Companie lipsă pentru această acțiune.');
+        }
+        if (! $company->isUsable()) {
+            abort(403, 'Compania nu este activă.');
+        }
+
+        return $company;
+    }
+
+    /**
+     * Verifică cota (fără a consuma). Folosit înainte de munca AI.
+     */
+    protected function assertAiQuotaAvailable(?string $action, ?User $user = null): void
+    {
+        $this->aiQuotaGate()->assertAvailable($this->requireUsableCompany($user), $action);
+    }
+
+    /**
+     * Înregistrează consumul după un outcome billable.
+     *
+     * @return array<string, mixed>|null
+     */
+    protected function recordAiQuota(?string $action, ?User $user = null): ?array
+    {
+        return $this->aiQuotaGate()->recordSuccess($this->requireUsableCompany($user), $action);
+    }
+
+    /**
+     * @deprecated Prefer assertAiQuotaAvailable + recordAiQuota after success.
+     * Verifică feature + consumă o unitate din cota lunară Formely AI.
+     */
+    protected function assertAndConsumeAiQuota(string $action, ?User $user = null): void
+    {
+        $company = $this->requireUsableCompany($user);
+        $this->aiQuotas()->consume($company, $action);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    protected function aiUsagePayload(?User $user = null): ?array
+    {
+        $company = $this->companyForEntitlements($user);
+        if (! $company) {
+            return null;
+        }
+
+        return $this->aiQuotas()->payload($company);
     }
 
     protected function assertSeatForRole(string $role, int $count = 1, ?User $user = null): void

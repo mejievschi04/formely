@@ -30,7 +30,15 @@ import '../components/admin/lessons/callout/LessonCallout.css';
 import '../components/admin/lessons/video/LessonVideo.css';
 import '../components/admin/lessons/image/LessonImageContent.css';
 import { logger } from '../utils/logger';
-import { isVoltEnabled } from '../utils/voltAvailability';
+import {
+	applyAiUsageFromResponse,
+	hasAiQuota,
+	isAiQuotaError,
+	isVoltEnabled,
+	notifyAiQuotaExceeded,
+	notifyVoltComingSoon,
+	quotaErrorMessage,
+} from '../utils/voltAvailability';
 
 const STUDY_TOOL_OPTIONS = [
 	{ id: 'summary', label: 'Rezumat' },
@@ -219,12 +227,27 @@ const LessonPage = () => {
 
 	const handleStudyTool = async (tool) => {
 		if (!lessonId || studyToolLoading) return;
+		if (!isVoltEnabled('ai_tutor')) {
+			notifyVoltComingSoon(showToast);
+			return;
+		}
+		if (!hasAiQuota('tutor')) {
+			notifyAiQuotaExceeded(showToast);
+			return;
+		}
 		try {
 			setStudyToolLoading(tool);
 			setStudyToolError('');
 			const response = await lessonsService.generateStudyTool(lessonId, tool);
+			applyAiUsageFromResponse(response);
 			setStudyToolResult(response);
 		} catch (err) {
+			if (isAiQuotaError(err)) {
+				const message = quotaErrorMessage(err);
+				setStudyToolError(message);
+				notifyAiQuotaExceeded(showToast, message);
+				return;
+			}
 			const message = err?.response?.data?.error || err?.message || 'Nu s-a putut genera instrumentul de studiu.';
 			setStudyToolError(message);
 			showToast(message, 'error');
@@ -435,7 +458,7 @@ const LessonPage = () => {
 						</LessonReadTrackers>
 					</div>
 
-					{user?.actualRole === 'admin' && user?.role === 'admin' && isVoltEnabled('ai_tutor') && (
+					{isVoltEnabled('ai_tutor') && (
 					<section className="lesson-study-tools">
 						<div className="lesson-study-header">
 							<div>

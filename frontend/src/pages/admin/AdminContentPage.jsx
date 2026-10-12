@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus } from '@phosphor-icons/react';
 
 import { useAuth } from '../../contexts/AuthContextShared.js';
+import { isAiSetupDone } from '../../utils/aiSetupStorage';
+import { isVoltEnabled } from '../../utils/voltAvailability';
 import AdminCoursesPage from './AdminCoursesPage';
 import AdminCourseMapsPage from './AdminCourseMapsPage';
 import AdminQuestionBanksPage from './AdminQuestionBanksPage';
@@ -26,6 +28,11 @@ const AdminContentPage = () => {
 	const shouldOpenNewMap = searchParams.get('new') === '1';
 	const activeTab = ['courses', 'tests', 'banks', 'exams', 'manual-review', 'media'].includes(tab) ? tab : 'courses';
 	const showCourseMaps = activeTab === 'courses' && view === 'maps';
+	const showAiSetupCta =
+		canMutateInAdminArea
+		&& isVoltEnabled('ai_creator')
+		&& isVoltEnabled('ai_test_generation')
+		&& !isAiSetupDone();
 
 	useEffect(() => {
 		if (!isInstructor || rawView !== 'maps') return;
@@ -47,14 +54,25 @@ const AdminContentPage = () => {
 								embedded
 								autoOpenCreate={shouldOpenNewMap}
 								headerActions={canMutateInAdminArea ? (
-									<button
-										type="button"
-										className="lms-btn-primary admin-btn-create-course"
-										onClick={() => navigate('/admin/courses/new')}
-									>
-										<Plus size={18} weight="bold" aria-hidden />
-										Creează curs
-									</button>
+									<>
+										{showAiSetupCta ? (
+											<button
+												type="button"
+												className="lms-btn-secondary"
+												onClick={() => navigate('/admin/ai-setup')}
+											>
+												Setup AI rapid
+											</button>
+										) : null}
+										<button
+											type="button"
+											className="lms-btn-primary admin-btn-create-course"
+											onClick={() => navigate('/admin/courses/new')}
+										>
+											<Plus size={18} weight="bold" aria-hidden />
+											Creează curs
+										</button>
+									</>
 								) : null}
 							/>
 						)

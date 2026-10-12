@@ -617,7 +617,7 @@ class AIKnowledgeService
     {
         $provider = strtolower(trim((string) config('ai.embedding.provider', '')));
         if ($provider === '') {
-            $provider = strtolower((string) config('ai.provider', 'groq')) === 'openai' ? 'openai' : '';
+            $provider = strtolower((string) config('ai.provider', 'openai')) === 'openai' ? 'openai' : '';
         }
 
         return match ($provider) {

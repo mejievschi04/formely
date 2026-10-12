@@ -42,6 +42,13 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute((int) config('api.app_per_minute', 300))->by($key);
         });
 
+        // Formely AI: provider spend + cotă — mai strâns decât grupul admin general.
+        RateLimiter::for('ai', function (Request $request) {
+            $key = (string) ($request->user()?->id ?? $request->ip());
+
+            return Limit::perMinute((int) config('ai.rate_limit_per_minute', 20))->by('ai:'.$key);
+        });
+
         if (config('database.default') === 'sqlite') {
             $databasePath = config('database.connections.sqlite.database');
 

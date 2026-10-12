@@ -1,5 +1,9 @@
 import api, { ensureApiCsrfCookie, readXsrfToken, refreshApiCsrfCookie } from '../api.js';
-import { assertVoltEnabled } from '../utils/voltAvailability.js';
+import {
+	AiApiError,
+	applyAiUsageFromResponse,
+	assertVoltEnabled,
+} from '../utils/voltAvailability.js';
 import { logger } from '../utils/logger';
 
 async function fetchWithCsrfRetry(url, options) {
@@ -19,7 +23,6 @@ async function fetchWithCsrfRetry(url, options) {
 	let response = await send();
 
 	if (response.status === 419) {
-		// ensureApiCsrfCookie nu reface cookie-ul dacă există deja unul vechi
 		await refreshApiCsrfCookie();
 		response = await send();
 	}
@@ -27,18 +30,104 @@ async function fetchWithCsrfRetry(url, options) {
 	return response;
 }
 
+async function throwIfNotOk(response) {
+	if (response.ok) return;
+	const errorText = await response.text();
+	let data = null;
+	try {
+		data = errorText ? JSON.parse(errorText) : null;
+	} catch {
+		data = { error: errorText };
+	}
+	const message = data?.error || `HTTP error! status: ${response.status}, body: ${errorText}`;
+	throw new AiApiError(message, response.status, data);
+}
 
+function handleParsedEvent(parsed, onChunk, onData, accumulate) {
+	if (!parsed || typeof parsed !== 'object') return;
+	if (parsed.ai_usage) {
+		applyAiUsageFromResponse(parsed);
+	}
+	if (parsed.content) {
+		accumulate.value += parsed.content;
+		if (onChunk) onChunk(parsed.content);
+	} else if (
+		parsed.course_id
+		|| parsed.course_created
+		|| parsed.course_updated
+		|| parsed.response_type
+		|| parsed.clarification_question
+		|| parsed.question
+		|| parsed.message
+		|| parsed.test_id
+		|| parsed.test_created
+		|| parsed.ai_usage
+	) {
+		if (onData) onData(parsed);
+	} else if (parsed.error) {
+		throw new Error(parsed.error);
+	}
+}
+
+async function readSseStream(response, onChunk, onData) {
+	if (!response.body) {
+		throw new Error('Response body is null');
+	}
+
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder();
+	const accumulate = { value: '' };
+	let buffer = '';
+
+	try {
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) {
+				if (buffer) {
+					for (const line of buffer.split('\n')) {
+						if (!line.startsWith('data: ')) continue;
+						const data = line.slice(6).trim();
+						if (!data || data === '[DONE]') continue;
+						try {
+							handleParsedEvent(JSON.parse(data), onChunk, onData, accumulate);
+						} catch (e) {
+							if (e instanceof Error && !e.message.includes('JSON')) throw e;
+						}
+					}
+				}
+				break;
+			}
+
+			buffer += decoder.decode(value, { stream: true });
+			const lines = buffer.split('\n');
+			buffer = lines.pop() || '';
+
+			for (const line of lines) {
+				if (!line.startsWith('data: ')) continue;
+				const data = line.slice(6).trim();
+				if (data === '[DONE]' || !data) continue;
+				try {
+					handleParsedEvent(JSON.parse(data), onChunk, onData, accumulate);
+				} catch (e) {
+					if (e instanceof Error && e.message && !e.message.includes('Unexpected')) {
+						throw e;
+					}
+				}
+			}
+		}
+	} finally {
+		try {
+			reader.releaseLock();
+		} catch {
+			/* ignore */
+		}
+	}
+
+	return { content: accumulate.value };
+}
 
 // Service for Volt-assisted generation (OpenAI-compatible / Hugging Face APIs)
 export const openaiService = {
-	/**
-	 * Generate a course using Volt chat
-	 * @param {Object} params - Course generation parameters
-	 * @param {string} params.prompt - User's prompt/request
-	 * @param {Array} params.messages - Chat history (optional)
-	 * @param {string} params.type - Type: 'course' or 'test'
-	 * @returns {Promise} Stream response
-	 */
 	generateCourse: async (prompt, messages = []) => {
 		assertVoltEnabled();
 		try {
@@ -47,6 +136,7 @@ export const openaiService = {
 				messages,
 				type: 'course',
 			});
+			applyAiUsageFromResponse(response.data);
 			return response.data;
 		} catch (error) {
 			console.error('Error generating course:', error);
@@ -54,14 +144,6 @@ export const openaiService = {
 		}
 	},
 
-	/**
-	 * Generate a test using Volt chat
-	 * @param {Object} params - Test generation parameters
-	 * @param {string} params.prompt - User's prompt/request
-	 * @param {Array} params.messages - Chat history (optional)
-	 * @param {number} params.courseId - Optional course ID to generate test for
-	 * @returns {Promise} Stream response
-	 */
 	generateTest: async (prompt, messages = [], courseId = null) => {
 		assertVoltEnabled();
 		try {
@@ -71,6 +153,7 @@ export const openaiService = {
 				courseId,
 				type: 'test',
 			});
+			applyAiUsageFromResponse(response.data);
 			return response.data;
 		} catch (error) {
 			console.error('Error generating test:', error);
@@ -79,14 +162,18 @@ export const openaiService = {
 	},
 
 	/**
-	 * Stream chat response for course generation
-	 * @param {string} prompt - User's prompt
-	 * @param {Array} messages - Chat history
-	 * @param {Function} onChunk - Callback for each chunk
-	 * @param {Function} onData - Callback for special data (like course_id)
-	 * @returns {Promise} Full response
+	 * @param {object} [extraPayload]
+	 * @param {AbortSignal} [signal]
 	 */
-	streamCourseGeneration: async (prompt, messages = [], courseId = null, onChunk = null, onData = null, extraPayload = {}) => {
+	streamCourseGeneration: async (
+		prompt,
+		messages = [],
+		courseId = null,
+		onChunk = null,
+		onData = null,
+		extraPayload = {},
+		signal = null,
+	) => {
 		assertVoltEnabled();
 		try {
 			const token = localStorage.getItem('token');
@@ -99,27 +186,25 @@ export const openaiService = {
 					...(token ? { 'Authorization': `Bearer ${token}` } : {}),
 				},
 				credentials: 'include',
+				signal: signal || undefined,
 				body: JSON.stringify({
 					prompt,
 					messages,
-					courseId, // Include course ID for updates
+					courseId,
 					type: 'course',
 					...extraPayload,
 				}),
 			});
 
-			if (!response.ok) {
-				const errorText = await response.text();
-				console.error('HTTP error response:', response.status, errorText);
-				throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
-			}
+			await throwIfNotOk(response);
 
 			const contentType = response.headers.get('content-type') || '';
 			if (!contentType.includes('text/event-stream')) {
 				const data = await response.json();
 				if (data?.error) {
-					throw new Error(data.error);
+					throw new AiApiError(data.error, response.status, data);
 				}
+				applyAiUsageFromResponse(data);
 
 				const finalContent = String(data?.content || '').trim();
 				if (finalContent && onChunk) {
@@ -136,98 +221,23 @@ export const openaiService = {
 					course_id: data?.course_id || null,
 					course_created: data?.course_created || null,
 					course_updated: data?.course_updated || null,
+					ai_usage: data?.ai_usage || null,
 				};
 			}
 
-			if (!response.body) {
-				throw new Error('Response body is null');
-			}
-
-			const reader = response.body.getReader();
-			const decoder = new TextDecoder();
-			let fullResponse = '';
-			let buffer = '';
-
-			logger.log('Starting to read stream...');
-
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) {
-					// Process remaining buffer
-					if (buffer) {
-						const lines = buffer.split('\n');
-						for (const line of lines) {
-							if (line.startsWith('data: ')) {
-								const data = line.slice(6).trim();
-								if (data && data !== '[DONE]') {
-									try {
-										const parsed = JSON.parse(data);
-										if (parsed.content) {
-											fullResponse += parsed.content;
-											if (onChunk) onChunk(parsed.content);
-										}
-									} catch (e) {
-										console.warn('Failed to parse final chunk:', data, e);
-									}
-								}
-							}
-						}
-					}
-					break;
-				}
-
-				buffer += decoder.decode(value, { stream: true });
-				const lines = buffer.split('\n');
-				
-				// Keep last incomplete line in buffer
-				buffer = lines.pop() || '';
-
-				for (const line of lines) {
-					if (line.startsWith('data: ')) {
-						const data = line.slice(6).trim();
-						if (data === '[DONE]') {
-							logger.log('Stream marked as done');
-							continue;
-						}
-						
-						if (!data) continue;
-						
-						try {
-							const parsed = JSON.parse(data);
-							if (parsed.content) {
-								fullResponse += parsed.content;
-								if (onChunk) onChunk(parsed.content);
-							} else if (parsed.course_id || parsed.course_created || parsed.course_updated || parsed.response_type || parsed.clarification_question || parsed.question || parsed.message) {
-								if (onData) {
-									onData(parsed);
-								}
-							} else if (parsed.error) {
-								console.error('Stream error:', parsed.error);
-								throw new Error(parsed.error);
-							}
-						} catch (e) {
-							if (e instanceof Error && e.message.includes('error')) {
-								throw e;
-							}
-							console.warn('Failed to parse SSE data:', data, e);
-						}
-					}
-				}
-			}
-
-			logger.log('Stream complete. Total response length:', fullResponse.length);
-			return { content: fullResponse };
+			const result = await readSseStream(response, onChunk, onData);
+			logger.log('Stream complete. Total response length:', result.content.length);
+			return result;
 		} catch (error) {
+			if (error?.name === 'AbortError') {
+				throw error;
+			}
 			console.error('Error streaming course generation:', error);
 			throw error;
 		}
 	},
 
-	/**
-	 * Extract text from an uploaded document for Volt.
-	 * Returns a normalized payload with text and preview.
-	 */
-	extractDocumentContext: async (file) => {
+	extractDocumentContext: async (file, signal = null) => {
 		assertVoltEnabled();
 		try {
 			const token = localStorage.getItem('token');
@@ -240,14 +250,11 @@ export const openaiService = {
 					...(token ? { 'Authorization': `Bearer ${token}` } : {}),
 				},
 				credentials: 'include',
+				signal: signal || undefined,
 				body: formData,
 			});
 
-			if (!response.ok) {
-				const errorText = await response.text();
-				throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
-			}
-
+			await throwIfNotOk(response);
 			return await response.json();
 		} catch (error) {
 			console.error('Error extracting document context:', error);
@@ -255,16 +262,15 @@ export const openaiService = {
 		}
 	},
 
-	/**
-	 * Stream chat response for test generation
-	 * @param {string} prompt - User's prompt
-	 * @param {Array} messages - Chat history
-	 * @param {number} courseId - Optional course ID
-	 * @param {Function} onChunk - Callback for each chunk
-	 * @param {Function} onData - Callback for special data (like test_id)
-	 * @returns {Promise} Full response
-	 */
-	streamTestGeneration: async (prompt, messages = [], courseId = null, onChunk = null, onData = null, extraPayload = {}) => {
+	streamTestGeneration: async (
+		prompt,
+		messages = [],
+		courseId = null,
+		onChunk = null,
+		onData = null,
+		extraPayload = {},
+		signal = null,
+	) => {
 		assertVoltEnabled();
 		try {
 			const token = localStorage.getItem('token');
@@ -277,6 +283,7 @@ export const openaiService = {
 					...(token ? { 'Authorization': `Bearer ${token}` } : {}),
 				},
 				credentials: 'include',
+				signal: signal || undefined,
 				body: JSON.stringify({
 					prompt,
 					messages,
@@ -286,96 +293,30 @@ export const openaiService = {
 				}),
 			});
 
-			if (!response.ok) {
-				const errorText = await response.text();
-				console.error('HTTP error response:', response.status, errorText);
-				throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
-			}
+			await throwIfNotOk(response);
 
-			if (!response.body) {
-				throw new Error('Response body is null');
-			}
-
-			const reader = response.body.getReader();
-			const decoder = new TextDecoder();
-			let fullResponse = '';
-			let buffer = '';
-
-			logger.log('Starting to read stream...');
-
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) {
-					// Process remaining buffer
-					if (buffer) {
-						const lines = buffer.split('\n');
-						for (const line of lines) {
-							if (line.startsWith('data: ')) {
-								const data = line.slice(6).trim();
-								if (data && data !== '[DONE]') {
-									try {
-										const parsed = JSON.parse(data);
-										if (parsed.content) {
-											fullResponse += parsed.content;
-											if (onChunk) onChunk(parsed.content);
-										}
-									} catch (e) {
-										console.warn('Failed to parse final chunk:', data, e);
-									}
-								}
-							}
-						}
-					}
-					break;
+			const contentType = response.headers.get('content-type') || '';
+			if (!contentType.includes('text/event-stream')) {
+				const data = await response.json();
+				if (data?.error) {
+					throw new AiApiError(data.error, response.status, data);
 				}
-
-				buffer += decoder.decode(value, { stream: true });
-				const lines = buffer.split('\n');
-				
-				// Keep last incomplete line in buffer
-				buffer = lines.pop() || '';
-
-				for (const line of lines) {
-					if (line.startsWith('data: ')) {
-						const data = line.slice(6).trim();
-						if (data === '[DONE]') {
-							logger.log('Stream marked as done');
-							continue;
-						}
-						
-						if (!data) continue;
-						
-						try {
-							const parsed = JSON.parse(data);
-							if (parsed.content) {
-								fullResponse += parsed.content;
-								if (onChunk) onChunk(parsed.content);
-							} else if (parsed.test_id || parsed.test_created) {
-								// Handle test creation notification
-								if (onData) {
-									onData(parsed);
-								}
-							} else if (parsed.error) {
-								console.error('Stream error:', parsed.error);
-								throw new Error(parsed.error);
-							}
-						} catch (e) {
-							if (e instanceof Error && e.message.includes('error')) {
-								throw e;
-							}
-							console.warn('Failed to parse SSE data:', data, e);
-						}
-					}
-				}
+				applyAiUsageFromResponse(data);
+				const finalContent = String(data?.content || '').trim();
+				if (finalContent && onChunk) onChunk(finalContent);
+				if (onData) onData(data);
+				return { content: finalContent, ...data };
 			}
 
-			logger.log('Stream complete. Total response length:', fullResponse.length);
-			return { content: fullResponse };
+			const result = await readSseStream(response, onChunk, onData);
+			logger.log('Stream complete. Total response length:', result.content.length);
+			return result;
 		} catch (error) {
+			if (error?.name === 'AbortError') {
+				throw error;
+			}
 			console.error('Error streaming test generation:', error);
 			throw error;
 		}
 	},
 };
-
-

@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { adminService } from '../../services/api';
 import {
 	Area,
@@ -14,7 +15,10 @@ import {
 	XAxis,
 	YAxis,
 } from 'recharts';
+import { isAiSetupDone } from '../../utils/aiSetupStorage';
+import { isVoltEnabled } from '../../utils/voltAvailability';
 import './AdminDashboardPage.css';
+import './AdminAiOnboardingPage.css';
 
 const PERIOD_OPTIONS = [
 	{ value: '7d', label: 'Ultimele 7 zile' },
@@ -178,6 +182,11 @@ const AdminDashboardPage = () => {
 	const firstLabel = normalizedSeries[0]?.label || '-';
 	const lastLabel = normalizedSeries[normalizedSeries.length - 1]?.label || '-';
 	const periodLabel = getPeriodLabel(selectedPeriod);
+	const showAiSetupCta =
+		isVoltEnabled('ai_creator')
+		&& isVoltEnabled('ai_test_generation')
+		&& !isAiSetupDone()
+		&& publishedCourses === 0;
 
 	const renderPeriodSelect = () => (
 		<select
@@ -274,6 +283,20 @@ const AdminDashboardPage = () => {
 					{renderPeriodSelect()}
 				</div>
 			</header>
+
+			{showAiSetupCta ? (
+				<section className="ai-setup-banner" aria-label="Formely AI setup">
+					<div>
+						<h2>Pornește cu Formely AI</h2>
+						<p>
+							Încarcă un PDF sau proceduri → generez curs + test → inviți primul angajat.
+						</p>
+					</div>
+					<Link className="lms-btn-primary" to="/admin/ai-setup">
+						Setup rapid AI
+					</Link>
+				</section>
+			) : null}
 
 			<section className="admin-dashboard-clean-hero">
 				<article className="hero-stat">

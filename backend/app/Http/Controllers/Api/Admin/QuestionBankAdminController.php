@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\AssertsPlanEntitlements;
 use App\Models\QuestionBank;
 use App\Models\Question;
 use App\Models\Test;
+use App\Services\AiQuotaService;
 use App\Services\TestBuilderService;
 use App\Services\VoltQuestionGenerationService;
 use Illuminate\Http\Request;
@@ -21,6 +23,8 @@ use Illuminate\Support\Facades\Log;
  */
 class QuestionBankAdminController extends Controller
 {
+    use AssertsPlanEntitlements;
+
     protected TestBuilderService $testBuilderService;
     protected VoltQuestionGenerationService $voltQuestionGeneration;
 
@@ -397,6 +401,9 @@ class QuestionBankAdminController extends Controller
         $approvedQuestions = array_values(array_filter(array_map('strval', (array) ($validated['approvedQuestions'] ?? []))));
         $blockedQuestions = array_values(array_filter(array_map('strval', (array) ($validated['blockedQuestions'] ?? []))));
         $autoGenerate = filter_var($request->input('autoGenerate', false), FILTER_VALIDATE_BOOLEAN);
+
+        $this->assertAiQuotaAvailable(AiQuotaService::ACTION_TEST);
+
         try {
             if ($autoGenerate) {
                 $questions = $this->voltQuestionGeneration->generateQuestionsFromContent(
@@ -424,9 +431,18 @@ class QuestionBankAdminController extends Controller
             ], 500);
         }
 
-        return response()->json([
+        if (! is_array($questions) || count($questions) === 0) {
+            return response()->json([
+                'error' => 'Formely AI nu a returnat întrebări valide.',
+            ], 422);
+        }
+
+        $usage = $this->recordAiQuota(AiQuotaService::ACTION_TEST);
+
+        return response()->json(array_filter([
             'message' => 'Draft generated successfully',
             'draft' => $questions,
-        ]);
+            'ai_usage' => $usage,
+        ]));
     }
 }

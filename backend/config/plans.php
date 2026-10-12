@@ -1,8 +1,11 @@
 <?php
 
 /**
- * Catalog planuri SaaS (sales-led). Sursă unică pentru limiți + feature flags.
+ * Catalog planuri SaaS (sales-led). Sursă unică pentru limiți + feature flags + cote AI.
  * Website-ul oglindește volumele / AI progressive în copy.
+ *
+ * ai_credits: pool lunar (UTC month). null = nelimitat (fair use); 0 = fără consum.
+ * Cost pe acțiune: config('ai.credit_costs').
  */
 return [
 
@@ -11,16 +14,17 @@ return [
         'max_active_learners' => 50,
         'max_staff' => 2,
         'features' => [
-            'ai_creator' => false,
+            'ai_creator' => true,
             'ai_builder' => false,
             'ai_tutor' => false,
             'ai_qa' => false,
             'ai_stats' => false,
-            'ai_test_generation' => false,
+            'ai_test_generation' => true,
             'library' => false,
             'events' => false,
             'analyst_role' => false,
         ],
+        'ai_credits' => 100,
     ],
 
     'academie' => [
@@ -28,16 +32,17 @@ return [
         'max_active_learners' => 250,
         'max_staff' => 6,
         'features' => [
-            'ai_creator' => false,
-            'ai_builder' => false,
+            'ai_creator' => true,
+            'ai_builder' => true,
             'ai_tutor' => false,
-            'ai_qa' => false,
+            'ai_qa' => true, // asistent admin Q&A (profil AI ales)
             'ai_stats' => false,
             'ai_test_generation' => true,
             'library' => true,
             'events' => true,
             'analyst_role' => true,
         ],
+        'ai_credits' => 500,
     ],
 
     'business' => [
@@ -47,7 +52,7 @@ return [
         'features' => [
             'ai_creator' => true,
             'ai_builder' => true,
-            'ai_tutor' => true,
+            'ai_tutor' => false, // fără tutor / study tools pe lecții
             'ai_qa' => true,
             'ai_stats' => true,
             'ai_test_generation' => true,
@@ -55,6 +60,7 @@ return [
             'events' => true,
             'analyst_role' => true,
         ],
+        'ai_credits' => 2500,
     ],
 
 ];

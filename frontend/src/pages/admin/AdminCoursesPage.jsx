@@ -33,6 +33,8 @@ import { useToast } from '../../contexts/ToastContextShared.js';
 import { CourseShowcaseCard } from '../../components/ui/course-showcase-card';
 import { COURSE_SHOWCASE_FALLBACK_IMAGE } from '../../components/ui/course-showcase-cardShared.js';
 import { hexToHslSpace } from '../../lib/hexToHsl';
+import { isAiSetupDone } from '../../utils/aiSetupStorage';
+import { isVoltEnabled } from '../../utils/voltAvailability';
 import './AdminCoursesPage.css';
 
 function sortableAdminCourseId(courseId) {
@@ -293,6 +295,11 @@ const AdminCoursesPage = () => {
 					<p>Creează și administrează conținutul academiei într-un mod simplu.</p>
 				</div>
 				<div className="admin-courses-clean-right">
+					{canMutateInAdminArea && isVoltEnabled('ai_creator') && isVoltEnabled('ai_test_generation') && !isAiSetupDone() && (
+						<button type="button" className="lms-btn-secondary" onClick={() => navigate('/admin/ai-setup')}>
+							Setup AI rapid
+						</button>
+					)}
 					{canMutateInAdminArea && (
 						<button type="button" className="lms-btn-primary admin-courses-create-btn" onClick={() => navigate('/admin/courses/new')}>
 							<Plus size={18} weight="bold" aria-hidden="true" />
@@ -327,6 +334,11 @@ const AdminCoursesPage = () => {
 			) : filteredCourses.length === 0 ? (
 				<div className="admin-courses-clean-empty">
 					<p>Nu există cursuri. Creează primul curs.</p>
+					{canMutateInAdminArea && isVoltEnabled('ai_creator') && isVoltEnabled('ai_test_generation') ? (
+						<button type="button" className="lms-btn-primary" onClick={() => navigate('/admin/ai-setup')}>
+							Pornește cu Formely AI
+						</button>
+					) : null}
 				</div>
 			) : dndEnabled ? (
 				<DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCoursesDragEnd}>
