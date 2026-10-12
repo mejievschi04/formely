@@ -68,3 +68,11 @@ test('natural course requests start creation while map requests still create map
     assert.equal(detectVoltWorkspaceIntent('Fă-mi un curs JavaScript'), 'create_course');
     assert.equal(detectVoltWorkspaceIntent('Creează o mapă cu cursuri JavaScript'), 'map');
 });
+
+
+test('short clarification replies stay in the pending course flow', () => {
+    for (const answer of ['începător', '4', 'practic', 'mediu', 'fără test']) {
+        assert.equal(detectVoltWorkspaceIntent(answer, { pendingIntent: 'create_course' }), 'create_course');
+    }
+    assert.equal(detectVoltWorkspaceIntent('Creează un test cu 5 întrebări', { pendingIntent: 'create_course' }), 'test');
+});

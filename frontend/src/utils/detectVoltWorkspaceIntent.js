@@ -35,6 +35,7 @@ export function detectVoltWorkspaceIntent(prompt, context = {}) {
 	if (onMap && wantsMutate) return mapId ? 'edit_map' : 'map';
 	if (onTestBuilder && wantsMutate) return testId ? 'edit_test' : 'test';
 	if (courseId && wantsMutate) return 'edit_course';
+	if (['create_course', 'edit_course'].includes(context.pendingIntent)) return context.pendingIntent;
 	if (onCourseBuilder && courseId && !analytics) return 'edit_course';
 	if (onTestBuilder && testId && !analytics) return 'edit_test';
 	if (onMap && mapId && !analytics) return 'edit_map';

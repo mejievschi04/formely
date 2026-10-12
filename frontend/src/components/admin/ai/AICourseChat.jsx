@@ -96,6 +96,7 @@ const AICourseChat = ({
 	const [pendingDraft, setPendingDraft] = useState(null);
 	const [generatedPlan, setGeneratedPlan] = useState(null);
 	const [isApplying, setIsApplying] = useState(false);
+	const [pendingCourseIntent, setPendingCourseIntent] = useState(null);
 	const [guidedBrief, setGuidedBrief] = useState({
 		topic: initialTitle || '',
 		courseTitle: initialTitle || '',
@@ -472,6 +473,7 @@ const AICourseChat = ({
 
 		const intent = mode === 'workspace'
 			? detectVoltWorkspaceIntent(promptText, {
+				pendingIntent: pendingCourseIntent,
 				...pageContext,
 				courseId: currentCourseId || pageContext.courseId,
 				testId: currentTestId || pageContext.testId,
@@ -730,6 +732,11 @@ const AICourseChat = ({
 				});
 			};
 			const dataHandler = (data) => {
+				if (data?.response_type === 'clarification') {
+					setPendingCourseIntent(runMode === 'assist' ? 'edit_course' : 'create_course');
+				} else if (data?.course_id || ['course', 'builder_diff', 'plan'].includes(data?.response_type)) {
+					setPendingCourseIntent(null);
+				}
 				if (data?.response_type) {
 					streamResponseType = String(data.response_type || '').trim().toLowerCase();
 				}
