@@ -3531,6 +3531,9 @@ class AIController extends Controller
             }
 
             $opType = strtolower(trim((string) ($op['op'] ?? '')));
+            if (! in_array($opType, ['create_lesson', 'createlesson', 'update_lesson', 'updatelesson', 'delete_lesson', 'deletelesson', 'create_module', 'createmodule', 'update_module', 'updatemodule', 'delete_module', 'deletemodule'], true)) {
+                return ['valid' => false, 'message' => 'Planul Formely AI conține o operație necunoscută.'];
+            }
             if (in_array($opType, ['create_lesson', 'createlesson', 'update_lesson', 'updatelesson'], true)) {
                 $lessonOperations[] = $op;
                 $lessonContent = trim((string) ($op['content'] ?? $op['body'] ?? $op['html'] ?? ''));
@@ -3574,13 +3577,6 @@ class AIController extends Controller
                     }
                 }
             }
-        }
-
-        if (!empty($moduleOperations) && empty($lessonOperations)) {
-            return [
-                'valid' => false,
-                'message' => 'Planul Formely AI modifică module, dar nu conține lecții.',
-            ];
         }
 
         return [
