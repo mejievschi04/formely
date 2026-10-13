@@ -269,11 +269,11 @@ class AiQuotaService
     /**
      * @return array<string, mixed>
      */
-    public function payload(Company $company): array
+    public function payload(Company $company, ?int $preloadedCreditsUsed = null): array
     {
         $period = $this->currentPeriod();
         $creditLimit = $this->creditLimitFor($company);
-        $creditsUsed = $this->creditsUsed($company, $period);
+        $creditsUsed = $preloadedCreditsUsed ?? $this->creditsUsed($company, $period);
         $creditsRemaining = $creditLimit === null ? null : max(0, (int) $creditLimit - $creditsUsed);
         $costs = $this->costs();
         $actions = [];

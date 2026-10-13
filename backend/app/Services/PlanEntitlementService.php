@@ -251,6 +251,17 @@ class PlanEntitlementService
             return $usage;
         }
 
+        $credits = Schema::hasTable('company_ai_usages')
+            ? \App\Models\CompanyAiUsage::query()
+                ->whereIn('company_id', $ids)
+                ->where('period', app(AiQuotaService::class)->currentPeriod())
+                ->where('action', AiQuotaService::ACTION_CREDITS)
+                ->pluck('used', 'company_id')
+            : collect();
+        foreach ($ids as $id) {
+            $usage[$id]['ai_credits_used'] = (int) ($credits[$id] ?? 0);
+        }
+
         $learnerRoles = UserRoles::learnerRoles();
         $staffRoles = UserRoles::staffRoles();
 
@@ -307,7 +318,7 @@ class PlanEntitlementService
             'plan_label' => (string) (config('plans.'.($company->plan ?: 'instructor').'.label') ?? 'Instructor'),
             'status' => $company->status,
             'features' => $this->featuresFor($company),
-            'ai_usage' => app(AiQuotaService::class)->payload($company),
+            'ai_usage' => app(AiQuotaService::class)->payload($company, $usage['ai_credits_used'] ?? null),
             'seats' => [
                 'learners' => [
                     'used' => $usage['learners'],

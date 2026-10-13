@@ -4,7 +4,7 @@ import { isDemoSession } from '../../utils/demoMode';
 
 const BANNER_DISMISSED_KEY = 'formely_demo_banner_dismissed';
 
-export function openDemoGuide() {
+function openDemoGuide() {
 	try {
 		sessionStorage.setItem('formely_demo_guide_open', '1');
 	} catch {

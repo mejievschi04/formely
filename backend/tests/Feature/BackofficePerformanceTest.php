@@ -61,6 +61,12 @@ class BackofficePerformanceTest extends TestCase
         $company = Company::query()->where('slug', 'academia-1')->firstOrFail();
         User::factory()->create(['role' => 'student', 'company_id' => $company->id, 'status' => 'suspended']);
         User::factory()->create(['role' => 'instructor', 'company_id' => $company->id]);
+        \App\Models\CompanyAiUsage::create([
+            'company_id' => $company->id,
+            'period' => app(\App\Services\AiQuotaService::class)->currentPeriod(),
+            'action' => \App\Services\AiQuotaService::ACTION_CREDITS,
+            'used' => 45,
+        ]);
 
         $service = app(PlanEntitlementService::class);
         $seats = $service->entitlementsPayload($company)['seats'];
@@ -71,6 +77,12 @@ class BackofficePerformanceTest extends TestCase
         $this->assertSame(2, $seats['staff']['used']);
         $this->assertSame($service->learnerSeatAvailable($company), $seats['learners']['available']);
         $this->assertSame($service->staffSeatAvailable($company), $seats['staff']['available']);
+        $operator = User::factory()->create(['role' => 'platform_operator', 'company_id' => null]);
+        $rows = $this->actingAs($operator, 'sanctum')
+            ->getJson('/api/platform/companies?per_page=100')->assertOk()->json('data');
+        $row = collect($rows)->firstWhere('id', $company->id);
+        $this->assertSame(45, $row['entitlements']['ai_usage']['credits']['used']);
+        $this->assertSame(455, $row['entitlements']['ai_usage']['credits']['remaining']);
     }
 
     public function test_leads_counts_cover_all_pages_and_companies_accept_status_list(): void

@@ -68,11 +68,6 @@ export default function DemoEntryPage() {
 		}
 
 		let cancelled = false;
-		if (mounted.current) {
-			setPhase('loading');
-			setError('');
-		}
-
 		demoEntryInflight
 			.then((data) => {
 				if (cancelled || !mounted.current) return;
