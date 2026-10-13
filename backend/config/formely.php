@@ -27,4 +27,13 @@ return [
     'backoffice_url' => rtrim((string) env('FORMELY_BACKOFFICE_URL', 'http://localhost:5180'), '/'),
     'trial_days' => max(1, (int) env('FORMELY_TRIAL_DAYS', 15)),
 
+    /**
+     * Login one-click pentru academia demo (marketing „Vezi demo”).
+     * Contul trebuie să existe (php artisan demo:seed-company).
+     */
+    'demo_login_enabled' => filter_var(env('FORMELY_DEMO_LOGIN_ENABLED', false), FILTER_VALIDATE_BOOL),
+    'demo_login_email' => strtolower(trim((string) env('FORMELY_DEMO_LOGIN_EMAIL', 'owner@demo.formely.local'))),
+    /** Slug company din `demo:seed-company` — pe aceasta mutațiile sunt blocate. */
+    'demo_company_slug' => strtolower(trim((string) env('FORMELY_DEMO_COMPANY_SLUG', 'formely-demo'))),
+
 ];

@@ -1,8 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { Award, BookOpen, ClipboardCheck, FileText, TrendingUp, Users } from 'lucide-react';
+import {
+  Award,
+  BookOpen,
+  ClipboardCheck,
+  FileText,
+  Sparkles,
+  TrendingUp,
+  Users,
+} from 'lucide-react';
 import { useI18n } from '../../i18n/I18nContext';
+import { demoUrl } from '../../data/site';
 
-const ORBIT_ICONS = [BookOpen, Users, TrendingUp, ClipboardCheck, FileText, Award];
+const ORBIT_ICONS = [BookOpen, Users, TrendingUp, ClipboardCheck, FileText, Award, Sparkles];
 
 const FALLBACK = [
   { label: 'Creează cursuri' },
@@ -11,6 +20,7 @@ const FALLBACK = [
   { label: 'Evaluează cunoștințele' },
   { label: 'Organizează conținutul' },
   { label: 'Măsoară rezultatele' },
+  { label: 'Formely AI' },
 ];
 
 function OrbitIcon({ index }) {
@@ -21,21 +31,23 @@ function OrbitIcon({ index }) {
 const STEP_MS = 1800;
 const SPIN_MS = 560;
 
-function cardAtNine(step) {
-  return (6 - (step % 6)) % 6;
+function cardAtNine(step, count) {
+  return (count - (step % count)) % count;
 }
 
 export default function Hero() {
   const { t } = useI18n();
   const lines = t('hero.lines');
   const orbit = t('hero.orbit');
-  const items = Array.isArray(orbit) ? orbit : FALLBACK;
+  const items = Array.isArray(orbit) && orbit.length ? orbit : FALLBACK;
+  const count = items.length;
+  const stepDeg = 360 / count;
   const [step, setStep] = useState(0);
   const [docked, setDocked] = useState(0);
   const [open, setOpen] = useState(null);
   const [hoverIndex, setHoverIndex] = useState(null);
   const hovering = hoverIndex != null;
-  const shownIndex = hoverIndex ?? (open ?? (docked == null ? null : cardAtNine(docked)));
+  const shownIndex = hoverIndex ?? (open ?? (docked == null ? null : cardAtNine(docked, count)));
   const pauseRef = useRef(false);
   pauseRef.current = hovering || open != null;
 
@@ -74,7 +86,7 @@ export default function Hero() {
             <a className="btn btn-primary" href="/#contact">
               {t('hero.ctaPrimary')}
             </a>
-            <a className="btn btn-secondary" href="/#cum-functioneaza">
+            <a className="btn btn-secondary" href={demoUrl} target="_blank" rel="noopener noreferrer">
               {t('hero.ctaSecondary')}
             </a>
           </div>
@@ -82,7 +94,7 @@ export default function Hero() {
         </div>
 
         <div className="hero-visual-wrap reveal">
-          <div className="hero-orbit">
+          <div className="hero-orbit" style={{ '--orbit-step': `${stepDeg}deg` }}>
             <div className="hero-logo-card">
               <img src="/logo.png" alt="" width={160} height={160} />
             </div>
@@ -91,7 +103,7 @@ export default function Hero() {
                 key={item.label}
                 type="button"
                 className={`hero-emoji-card${shownIndex === index ? ' is-open' : ''}`}
-                style={{ '--i': index, '--spin': `${step * 60}deg` }}
+                style={{ '--i': index, '--spin': `${step * stepDeg}deg` }}
                 onMouseEnter={() => setHoverIndex(index)}
                 onMouseLeave={() => setHoverIndex((current) => (current === index ? null : current))}
                 onFocus={() => setHoverIndex(index)}

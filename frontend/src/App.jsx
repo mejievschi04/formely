@@ -29,6 +29,7 @@ import {
 	Books,
 	CalendarDots,
 	CaretDown,
+	CaretLeft,
 	ChartLineUp,
 	CheckCircle,
 	ClipboardText,
@@ -53,6 +54,10 @@ import './styles/button-modern.css';
 import './styles/micro-interactions.css';
 import './styles/loading-states.css';
 import './styles/toast-system.css';
+import './styles/demo-tour.css';
+import DemoModeBanner from './components/demo/DemoModeBanner';
+import DemoTourGuide from './components/demo/DemoTourGuide';
+import { isDemoSession } from './utils/demoMode';
 import './styles/layout.css';
 import './styles/pages.css';
 import './styles/ui-components.css';
@@ -89,6 +94,7 @@ const EventsPage = lazy(() => import('./pages/EventsPage'));
 const MonthlyTestsPage = lazy(() => import('./pages/MonthlyTestsPage'));
 const ExamResultsPage = lazy(() => import('./pages/ExamResultsPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
+const DemoEntryPage = lazy(() => import('./pages/DemoEntryPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const InviteRegisterPage = lazy(() => import('./pages/InviteRegisterPage'));
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
@@ -258,6 +264,34 @@ function AuthenticatedLayout({ children, authContext }) {
 	});
 	const [moreMenuOpen, setMoreMenuOpen] = React.useState(false);
 	const [pendingReviewCount, setPendingReviewCount] = React.useState(0);
+	const [logoShowsMenu, setLogoShowsMenu] = React.useState(false);
+	const [logoAtEdge, setLogoAtEdge] = React.useState(false);
+	const logoShowsMenuRef = React.useRef(false);
+	const logoDesiredRef = React.useRef(false);
+	const logoFlipTimerRef = React.useRef(null);
+
+	const turnLogoCard = React.useCallback((toMenu) => {
+		logoDesiredRef.current = toMenu;
+		if (logoFlipTimerRef.current) {
+			window.clearTimeout(logoFlipTimerRef.current);
+			logoFlipTimerRef.current = null;
+		}
+		if (logoShowsMenuRef.current === toMenu) {
+			setLogoAtEdge(false);
+			return;
+		}
+		setLogoAtEdge(true);
+		logoFlipTimerRef.current = window.setTimeout(() => {
+			if (logoDesiredRef.current !== toMenu) return;
+			logoShowsMenuRef.current = toMenu;
+			setLogoShowsMenu(toMenu);
+			setLogoAtEdge(false);
+		}, 180);
+	}, []);
+
+	React.useEffect(() => () => {
+		if (logoFlipTimerRef.current) window.clearTimeout(logoFlipTimerRef.current);
+	}, []);
 
 	const prevShowUserLayoutRef = React.useRef(null);
 	React.useEffect(() => {
@@ -421,9 +455,19 @@ function AuthenticatedLayout({ children, authContext }) {
 
 	const handleAdminViewSwitch = useCallback(() => {
 		if (isUserPage) {
+			try {
+				sessionStorage.removeItem('studentPreviewFromAdmin');
+			} catch {
+				/* ignore */
+			}
 			setAdminViewMode('admin');
 			navigate('/admin', { replace: true });
 		} else {
+			try {
+				sessionStorage.setItem('studentPreviewFromAdmin', 'true');
+			} catch {
+				/* ignore */
+			}
 			setAdminViewMode('student');
 			navigate('/courses', { replace: true });
 		}
@@ -740,6 +784,8 @@ function AuthenticatedLayout({ children, authContext }) {
 
 	return (
 		<div className={`${showUserLayout ? "va-shell va-shell-topnav" : "va-shell"} ${isStudentPreviewMode ? "student-preview-mode" : ""}`}>
+			<DemoModeBanner />
+			<DemoTourGuide />
 			<AdminStylesLoader
 				loadOnAdminPagesOnly={true}
 				waitForStylesBeforePaint={requiresAdminChromePaintHold}
@@ -783,18 +829,32 @@ function AuthenticatedLayout({ children, authContext }) {
 								type="button"
 								className="modern-sidebar-logo-toggle va-sidebar-logo-toggle"
 								onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+								onMouseEnter={() => turnLogoCard(true)}
+								onMouseLeave={() => turnLogoCard(false)}
+								onFocus={() => turnLogoCard(true)}
+								onBlur={() => turnLogoCard(false)}
 								title={isSidebarExpanded ? 'Restrânge meniul' : 'Extinde meniul'}
 								aria-expanded={isSidebarExpanded}
 								aria-label={isSidebarExpanded ? 'Restrânge meniul' : 'Extinde meniul'}
 							>
-								<span className="modern-sidebar-logo va-logo-text">
-									<img 
-										src={brandLogo} 
-										alt="" 
-										aria-hidden="true"
-										className="va-logo-icon-img"
-										style={{ width: '32px', height: '32px', objectFit: 'contain' }}
-									/>
+								<span className={`va-logo-card${logoAtEdge ? ' is-edge' : ''}`} aria-hidden="true">
+									{logoShowsMenu ? (
+										<span className="va-logo-card-menu">
+											{isSidebarExpanded ? (
+												<CaretLeft size={22} weight="bold" />
+											) : (
+												<ListBullets size={22} weight="bold" />
+											)}
+										</span>
+									) : (
+										<span className="modern-sidebar-logo va-logo-text">
+											<img
+												src={brandLogo}
+												alt=""
+												className="va-logo-icon-img"
+											/>
+										</span>
+									)}
 								</span>
 							</button>
 							{isSidebarExpanded && (
@@ -1284,7 +1344,7 @@ function AuthenticatedLayout({ children, authContext }) {
 							onClick={() => {
 								sessionStorage.removeItem('studentPreviewFromAdmin');
 								setAdminViewMode('admin');
-								navigate('/admin/courses', { replace: true });
+								navigate('/admin', { replace: true });
 							}}
 							title="Înapoi la Admin"
 							aria-label="Înapoi la Admin"
@@ -1296,6 +1356,7 @@ function AuthenticatedLayout({ children, authContext }) {
 			)}
 
             {user
+				&& !isDemoSession(user)
 				&& (user.role === 'admin' || user.role === 'instructor' || user.actualRole === 'admin' || user.actualRole === 'instructor')
 				&& (isVoltEnabled('ai_builder') || isVoltEnabled('ai_creator') || isVoltEnabled('ai_qa'))
 				&& (
@@ -1341,6 +1402,14 @@ function App() {
 					<Route path="/" element={authEntryElement} />
 					{/* Public routes */}
 					<Route path="/login" element={authEntryElement} />
+					<Route
+						path="/demo"
+						element={
+							<Suspense fallback={<PageLoader />}>
+								<DemoEntryPage />
+							</Suspense>
+						}
+					/>
 					<Route path="/register/invite/:token" element={<Suspense fallback={<PageLoader />}><InviteRegisterPage /></Suspense>} />
 					<Route path="/accept-invite" element={<LegacyAcceptInviteRedirect />} />
 					<Route path="/register" element={<Suspense fallback={<PageLoader />}><RegisterPage /></Suspense>} />

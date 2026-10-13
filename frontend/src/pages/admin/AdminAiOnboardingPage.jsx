@@ -17,6 +17,8 @@ import {
 import { buildCourseCreationPromptFromBrief } from '../../utils/voltAiPrompts';
 import { isAiSetupDone, markAiSetupDone } from '../../utils/aiSetupStorage';
 import { telemetryService } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContextShared.js';
+import { isDemoSession } from '../../utils/demoMode';
 import './AdminAiOnboardingPage.css';
 
 const STEPS = [
@@ -80,6 +82,8 @@ function mapVoltTestQuestions(rawQuestions) {
 export default function AdminAiOnboardingPage() {
 	const navigate = useNavigate();
 	const { showToast } = useToast();
+	const { user } = useAuth();
+	const demoReadonly = isDemoSession(user);
 	const [step, setStep] = useState(0);
 	const [topic, setTopic] = useState('Onboarding angajați noi');
 	const [audience, setAudience] = useState('Angajați noi');
@@ -361,6 +365,11 @@ export default function AdminAiOnboardingPage() {
 
 	return (
 		<div className="ai-setup-page">
+			{demoReadonly ? (
+				<p className="demo-readonly-note">
+					Modul demo: poți vedea pașii Setup AI, dar generarea și salvarea nu persistă. Continuă ghidul spre Conținut / Statistici ca să vezi rezultatele deja populate.
+				</p>
+			) : null}
 			<header className="ai-setup-header">
 				<div>
 					<p className="ai-setup-eyebrow">Formely AI · Setup rapid</p>

@@ -24,6 +24,12 @@ export default function PrivacyPage() {
             {t('legal.controller')}{' '}
             {controllerBits ? <strong>{controllerBits}. </strong> : null}
             <a href={`mailto:${site.email}`}>{site.email}</a>
+            {site.phoneDisplay ? (
+              <>
+                {' · '}
+                <a href={`tel:${site.phone}`}>{site.phoneDisplay}</a>
+              </>
+            ) : null}
           </p>
           {sections.map((section) => (
             <section key={section.id || section.title} id={section.id || undefined}>

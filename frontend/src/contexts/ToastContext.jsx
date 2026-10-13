@@ -1,7 +1,7 @@
 import { ToastContext } from './ToastContextShared.js';
 import React, {   useState, useCallback, useEffect } from 'react';
 import Toast from '../components/common/Toast';
-import { setApiErrorNotifier } from '../api';
+import { setApiErrorNotifier, shouldSuppressDemoMutationToast } from '../api';
 
 
 
@@ -11,6 +11,10 @@ export const ToastProvider = ({ children }) => {
 	const [toasts, setToasts] = useState([]);
 
 	const showToast = useCallback((message, type = 'info', duration = 4000) => {
+		// Demo: click pe salvare/ștergere etc. — fără toast de eroare/info.
+		if (shouldSuppressDemoMutationToast()) {
+			return null;
+		}
 		const id = Date.now() + Math.random();
 		const toast = { id, message, type, duration };
 		
@@ -46,7 +50,10 @@ export const ToastProvider = ({ children }) => {
 
 	// Wire API interceptor to show toast on 5xx/network errors
 	useEffect(() => {
-		setApiErrorNotifier((msg, type, duration) => showToast(msg, type || 'error', duration));
+		setApiErrorNotifier((msg, type, duration) => {
+			if (shouldSuppressDemoMutationToast()) return;
+			showToast(msg, type || 'error', duration);
+		});
 		return () => setApiErrorNotifier(null);
 	}, [showToast]);
 

@@ -98,7 +98,8 @@
 }
 
 /* Ensure text contrast on light backgrounds.
-   Skip elements that already carry an inline color so pasted lesson text stays colored. */
+   Skip elements that already carry an inline color so pasted lesson text stays colored.
+   Demo panels (.demo-guide / .demo-mode-banner / .demo-entry) override these in demo-tour.css. */
 [data-theme="light"] h1:not([style*="color"]),
 [data-theme="light"] h2:not([style*="color"]),
 [data-theme="light"] h3:not([style*="color"]),

@@ -4,6 +4,27 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+/** Cookie-urile Laravel (Domain=localhost) trebuie să meargă și pe 127.0.0.1:5173. */
+function stripCookieDomain() {
+  return {
+    configure(proxy) {
+      proxy.on('proxyRes', (proxyRes) => {
+        const raw = proxyRes.headers['set-cookie'];
+        if (!raw) return;
+        const list = Array.isArray(raw) ? raw : [raw];
+        proxyRes.headers['set-cookie'] = list.map((cookie) =>
+          String(cookie)
+            .replace(/;\s*Domain=[^;]*/gi, '')
+            .replace(/;\s*Secure/gi, ''),
+        );
+      });
+    },
+  };
+}
+
+const backendTarget = process.env.VOLTA_BACKEND_URL || 'http://127.0.0.1:8000';
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
@@ -25,14 +46,16 @@ export default defineConfig({
     proxy: {
       '/api': {
         // Implicit: php artisan serve (8000). Alt port: VOLTA_BACKEND_URL=http://localhost:8001 npm run dev
-        target: process.env.VOLTA_BACKEND_URL || 'http://localhost:8000',
+        target: backendTarget,
         changeOrigin: true,
         secure: false,
+        ...stripCookieDomain(),
       },
       '/storage': {
-        target: process.env.VOLTA_BACKEND_URL || 'http://localhost:8000',
+        target: backendTarget,
         changeOrigin: true,
         secure: false,
+        ...stripCookieDomain(),
       },
     },
     // Warm up frequently used files - eliminates transform waterfalls on first load

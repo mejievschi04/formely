@@ -1,0 +1,491 @@
+.demo-entry {
+	min-height: 100vh;
+	display: grid;
+	place-items: center;
+	padding: 2rem;
+	background: #030712;
+	color: #e2e8f0;
+	text-align: center;
+}
+
+.demo-entry-card {
+	max-width: 420px;
+	display: grid;
+	gap: 0.75rem;
+	justify-items: center;
+}
+
+.demo-entry-text {
+	margin: 0;
+	color: #94a3b8;
+}
+
+.demo-entry-hint {
+	margin: 0;
+	font-size: 0.85rem;
+	color: #64748b;
+}
+
+.demo-entry-error {
+	margin: 0;
+	color: #fca5a5;
+}
+
+.demo-entry-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	align-items: center;
+	justify-content: center;
+}
+
+.demo-entry-actions a {
+	color: #22d3ee;
+}
+
+.demo-entry-btn {
+	border: 1px solid rgba(34, 211, 238, 0.45);
+	background: #0891b2;
+	color: #ecfeff;
+	border-radius: 10px;
+	padding: 0.5rem 0.9rem;
+	font: inherit;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.demo-mode-banner {
+	position: sticky;
+	top: 0;
+	/* Sub sidebar (z-fixed: 300) — altfel bannerul acoperă logo-ul și flip-ul / click-ul nu merg */
+	z-index: var(--z-sticky, 200);
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem 0.85rem;
+	padding: 0.4rem 0.85rem;
+	background: linear-gradient(90deg, rgba(8, 145, 178, 0.95), rgba(15, 23, 42, 0.96));
+	border-bottom: 1px solid rgba(34, 211, 238, 0.35);
+	color: #ecfeff;
+	font-size: 0.8125rem;
+	text-align: center;
+}
+
+/* Pe shell admin: bandeul începe după șina sidebar-ului */
+body.sidebar-expanded .demo-mode-banner {
+	padding-left: calc(280px + 0.85rem);
+}
+
+body:not(.sidebar-expanded):has(.modern-sidebar.va-sidebar) .demo-mode-banner {
+	padding-left: calc(72px + 0.85rem);
+}
+
+@media (max-width: 1024px) {
+	body.sidebar-expanded .demo-mode-banner,
+	body:not(.sidebar-expanded):has(.modern-sidebar.va-sidebar) .demo-mode-banner {
+		padding-left: 0.85rem;
+	}
+}
+
+.demo-mode-banner strong {
+	font-weight: 700;
+}
+
+.demo-mode-banner-btn {
+	border: 1px solid rgba(165, 243, 252, 0.55);
+	background: rgba(255, 255, 255, 0.08);
+	color: #fff;
+	border-radius: 999px;
+	padding: 0.22rem 0.75rem;
+	font: inherit;
+	font-size: 0.75rem;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.demo-mode-banner-btn:hover {
+	background: rgba(255, 255, 255, 0.16);
+}
+
+.demo-mode-banner-dismiss {
+	width: 1.5rem;
+	height: 1.5rem;
+	margin-left: 0.15rem;
+	padding: 0;
+	border: none;
+	border-radius: 6px;
+	background: transparent;
+	color: #ecfeff;
+	font: inherit;
+	font-size: 1.15rem;
+	line-height: 1;
+	cursor: pointer;
+	opacity: 0.75;
+}
+
+.demo-mode-banner-dismiss:hover {
+	opacity: 1;
+	background: rgba(255, 255, 255, 0.12);
+}
+
+/* Stânga jos — evită conflict cu VoltAssistant / FAB-uri din dreapta */
+.demo-guide-fab {
+	position: fixed;
+	left: 1rem;
+	bottom: 1rem;
+	right: auto;
+	z-index: 950;
+	border: 1px solid rgba(34, 211, 238, 0.45);
+	background: linear-gradient(160deg, #0e7490, #164e63);
+	color: #ecfeff;
+	border-radius: 999px;
+	padding: 0.65rem 1rem;
+	font: inherit;
+	font-size: 0.85rem;
+	font-weight: 700;
+	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+	cursor: pointer;
+}
+
+.demo-guide {
+	position: fixed;
+	left: 1rem;
+	bottom: 1rem;
+	right: auto;
+	z-index: 950;
+	width: min(340px, calc(100vw - 1.5rem));
+	max-height: min(52vh, 420px);
+	display: flex;
+	flex-direction: column;
+	gap: 0.55rem;
+	padding: 0.85rem 0.95rem 0.85rem;
+	border-radius: 16px;
+	border: 1px solid rgba(34, 211, 238, 0.45);
+	background: #0b1220;
+	color: #f1f5f9;
+	box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+	backdrop-filter: blur(12px);
+	isolation: isolate;
+}
+
+/*
+ * light-theme-wcag forțează text închis pe titluri, p, span, div și button cu !important.
+ * Trebuie specificitate ≥ [data-theme="light"] p:not(...) ca textul să rămână lizibil.
+ */
+[data-theme="light"] .demo-guide,
+[data-theme="light"] .demo-guide :is(h1, h2, h3, h4, h5, h6, p, span, div, label, li, small),
+.demo-guide,
+.demo-guide :is(h1, h2, h3, h4, h5, h6, p, span, div, label, li, small) {
+	color: #f1f5f9 !important;
+}
+
+[data-theme="light"] .demo-guide h2,
+[data-theme="light"] .demo-guide .demo-guide-title,
+.demo-guide h2,
+.demo-guide .demo-guide-title {
+	color: #f8fafc !important;
+}
+
+[data-theme="light"] .demo-guide .demo-guide-kicker,
+[data-theme="light"] .demo-guide .demo-guide-body,
+.demo-guide .demo-guide-kicker,
+.demo-guide .demo-guide-body {
+	color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .demo-guide .demo-guide-kicker {
+	color: #67e8f9 !important;
+}
+
+.demo-guide .demo-guide-kicker {
+	color: #67e8f9 !important;
+}
+
+[data-theme="light"] .demo-guide .demo-guide-outline-toggle,
+.demo-guide .demo-guide-outline-toggle {
+	color: #67e8f9 !important;
+	background: transparent !important;
+	border-color: transparent !important;
+}
+
+[data-theme="light"] .demo-guide .demo-guide-btn.ghost,
+.demo-guide .demo-guide-btn.ghost {
+	color: #f1f5f9 !important;
+	background: transparent !important;
+	border-color: rgba(148, 163, 184, 0.45) !important;
+}
+
+[data-theme="light"] .demo-guide .demo-guide-btn.primary,
+.demo-guide .demo-guide-btn.primary {
+	color: #ecfeff !important;
+	background: #0891b2 !important;
+	border-color: transparent !important;
+}
+
+[data-theme="light"] .demo-guide .demo-guide-icon-btn,
+.demo-guide .demo-guide-icon-btn {
+	color: #f8fafc !important;
+	background: rgba(15, 23, 42, 0.9) !important;
+	border-color: rgba(148, 163, 184, 0.45) !important;
+}
+
+[data-theme="light"] .demo-guide .demo-guide-step,
+.demo-guide .demo-guide-step {
+	color: #94a3b8 !important;
+	background: transparent !important;
+}
+
+[data-theme="light"] .demo-guide .demo-guide-step span,
+.demo-guide .demo-guide-step span {
+	color: #64748b !important;
+}
+
+[data-theme="light"] .demo-guide .demo-guide-step.is-done,
+.demo-guide .demo-guide-step.is-done {
+	color: #a5f3fc !important;
+}
+
+[data-theme="light"] .demo-guide .demo-guide-step.is-active,
+.demo-guide .demo-guide-step.is-active {
+	color: #f8fafc !important;
+	background: rgba(8, 145, 178, 0.14) !important;
+}
+
+[data-theme="light"] .demo-guide .demo-guide-step.is-active span,
+.demo-guide .demo-guide-step.is-active span {
+	color: #22d3ee !important;
+}
+
+[data-theme="light"] .demo-mode-banner,
+[data-theme="light"] .demo-mode-banner :is(strong, span, p),
+.demo-mode-banner,
+.demo-mode-banner :is(strong, span, p) {
+	color: #ecfeff !important;
+}
+
+[data-theme="light"] .demo-mode-banner .demo-mode-banner-btn,
+.demo-mode-banner .demo-mode-banner-btn {
+	color: #fff !important;
+	background: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="light"] .demo-mode-banner .demo-mode-banner-dismiss,
+.demo-mode-banner .demo-mode-banner-dismiss {
+	color: #ecfeff !important;
+	background: transparent !important;
+}
+
+.demo-guide-head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 0.75rem;
+}
+
+.demo-guide-kicker {
+	margin: 0 0 0.15rem;
+	font-size: 0.68rem;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: #22d3ee;
+}
+
+.demo-guide-title {
+	margin: 0;
+	font-size: 0.98rem;
+	line-height: 1.3;
+	font-weight: 700;
+	color: #f8fafc;
+}
+
+.demo-guide-head-actions {
+	display: flex;
+	gap: 0.25rem;
+}
+
+.demo-guide-icon-btn {
+	width: 28px;
+	height: 28px;
+	border-radius: 8px;
+	border: 1px solid rgba(148, 163, 184, 0.45);
+	background: rgba(15, 23, 42, 0.9);
+	color: #f8fafc;
+	font-size: 1.1rem;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.demo-guide-progress {
+	height: 3px;
+	border-radius: 999px;
+	background: rgba(148, 163, 184, 0.2);
+	overflow: hidden;
+}
+
+.demo-guide-progress span {
+	display: block;
+	height: 100%;
+	background: linear-gradient(90deg, #0891b2, #22d3ee);
+	transition: width 0.25s ease;
+}
+
+.demo-guide-dots {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+}
+
+.demo-guide-dot {
+	width: 8px;
+	height: 8px;
+	padding: 0;
+	border: none;
+	border-radius: 999px;
+	background: rgba(148, 163, 184, 0.35);
+	cursor: pointer;
+}
+
+.demo-guide-dot.is-done {
+	background: rgba(34, 211, 238, 0.55);
+}
+
+.demo-guide-dot.is-active {
+	width: 22px;
+	background: #22d3ee;
+}
+
+.demo-guide-body {
+	margin: 0;
+	font-size: 0.85rem;
+	line-height: 1.45;
+	color: #e2e8f0;
+}
+
+.demo-guide-outline-toggle {
+	align-self: flex-start;
+	border: none;
+	background: transparent;
+	color: #67e8f9;
+	font: inherit;
+	font-size: 0.75rem;
+	font-weight: 600;
+	padding: 0;
+	cursor: pointer;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.demo-guide-steps {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	overflow: auto;
+	display: grid;
+	gap: 0.3rem;
+	flex: 1;
+	min-height: 0;
+	max-height: 140px;
+}
+
+.demo-guide-step {
+	display: grid;
+	grid-template-columns: 2rem 1fr;
+	gap: 0.55rem;
+	align-items: start;
+	width: 100%;
+	padding: 0.4rem 0.5rem;
+	border-radius: 10px;
+	border: 1px solid transparent;
+	background: transparent;
+	color: #94a3b8;
+	font: inherit;
+	font-size: 0.78rem;
+	text-align: left;
+	cursor: pointer;
+}
+
+.demo-guide-step span {
+	font-weight: 800;
+	font-size: 0.7rem;
+	letter-spacing: 0.04em;
+	color: #64748b;
+}
+
+.demo-guide-step.is-done {
+	color: #a5f3fc;
+}
+
+.demo-guide-step.is-active {
+	border-color: rgba(34, 211, 238, 0.35);
+	background: rgba(8, 145, 178, 0.14);
+	color: #f8fafc;
+}
+
+.demo-guide-step.is-active span {
+	color: #22d3ee;
+}
+
+.demo-guide-foot {
+	display: flex;
+	gap: 0.5rem;
+	justify-content: flex-end;
+}
+
+.demo-guide-btn {
+	border-radius: 10px;
+	padding: 0.45rem 0.8rem;
+	font: inherit;
+	font-size: 0.82rem;
+	font-weight: 600;
+	cursor: pointer;
+	text-decoration: none;
+	border: 1px solid transparent;
+}
+
+.demo-guide-btn:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+.demo-guide-btn.ghost {
+	background: transparent;
+	border-color: rgba(148, 163, 184, 0.3);
+	color: #e2e8f0;
+}
+
+.demo-guide-btn.primary {
+	background: #0891b2;
+	color: #ecfeff;
+}
+
+.demo-guide-btn.primary:hover {
+	background: #0e7490;
+}
+
+.demo-readonly-note {
+	margin: 0 0 0.85rem;
+	padding: 0.65rem 0.85rem;
+	border-radius: 12px;
+	border: 1px solid rgba(34, 211, 238, 0.28);
+	background: rgba(8, 145, 178, 0.1);
+	color: #a5f3fc;
+	font-size: 0.85rem;
+	line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+	.demo-guide {
+		left: 0.5rem;
+		right: 0.5rem;
+		bottom: 0.5rem;
+		width: auto;
+		max-height: min(48vh, 380px);
+	}
+
+	.demo-guide-fab {
+		left: 0.75rem;
+		bottom: 0.75rem;
+	}
+}

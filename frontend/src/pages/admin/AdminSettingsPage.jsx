@@ -4,12 +4,14 @@ import { adminService } from '../../services/api';
 import { useToast } from '../../contexts/ToastContextShared.js';
 
 import { useAuth } from '../../contexts/AuthContextShared.js';
+import { isDemoSession } from '../../utils/demoMode';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import CompanyAcademyPanel from '../../components/admin/settings/CompanyAcademyPanel';
 
 const AdminSettingsPage = () => {
 	const { canMutateInAdminArea, user } = useAuth();
 	const readOnly = !canMutateInAdminArea;
+	const demoReadonly = isDemoSession(user);
 	// Formely: setările globale, cache-ul și importul privesc toată platforma; academia își gestionează doar branding-ul.
 	const isTenant = Boolean(user?.company_id);
 	const { success, error: showError } = useToast();
@@ -164,9 +166,11 @@ const AdminSettingsPage = () => {
 					<p className="admin-page-subtitle">
 						Gestionează configurațiile aplicației
 					</p>
-					{readOnly && (
+					{(demoReadonly || readOnly) && (
 						<p className="admin-page-subtitle" style={{ marginTop: 'var(--space-2)', color: 'var(--text-secondary)' }}>
-							Vizualizare doar în citire (rol analist).
+							{demoReadonly
+								? 'Modul demo: poți deschide și completa câmpurile — salvările nu persistă.'
+								: 'Vizualizare doar în citire (rol analist).'}
 						</p>
 					)}
 				</div>

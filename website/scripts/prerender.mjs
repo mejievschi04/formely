@@ -9,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = resolve(root, 'dist');
 const ssrDir = resolve(root, '.ssr');
-const ROUTES = ['/', '/legal/confidentialitate', '/legal/termeni'];
+const ROUTES = ['/', '/onboarding', '/legal/confidentialitate', '/legal/termeni'];
 
 const { render } = await import(pathToFileURL(resolve(ssrDir, 'entry-server.js')).href);
 const template = readFileSync(resolve(dist, 'index.html'), 'utf8');

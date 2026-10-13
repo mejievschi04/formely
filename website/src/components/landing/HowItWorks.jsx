@@ -1,18 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useI18n } from '../../i18n/I18nContext';
-import HowScheme from './HowScheme';
+import { demoUrl } from '../../data/site';
+import ProductUiFrame from './ProductUiFrame';
 import SectionTitle from './SectionTitle';
 
+const STEP_VARIANTS = ['create', 'assign', 'track'];
+
 export default function HowItWorks() {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const steps = t('how.steps');
   const [active, setActive] = useState(0);
-
-  useEffect(() => {
-    setActive(0);
-  }, [lang]);
-
-  const current = steps[active] || steps[0];
+  const variant = STEP_VARIANTS[active] || 'create';
 
   return (
     <section className="section how" id="cum-functioneaza" aria-labelledby="how-title">
@@ -21,42 +19,35 @@ export default function HowItWorks() {
         <SectionTitle id="how-title" lines={t('how.lines')} />
         <p className="section-sub reveal">{t('how.subtitle')}</p>
 
-        <div className="how-panel reveal">
-          <div className="how-tabs" role="tablist" aria-label={t('how.eyebrow')}>
-            {steps.map((step, i) => (
+        <ol className="how-steps-row reveal">
+          {steps.map((step, index) => (
+            <li key={step.num}>
               <button
-                key={step.num}
                 type="button"
-                role="tab"
-                id={`how-tab-${step.num}`}
-                aria-selected={i === active}
-                aria-controls="how-panel"
-                className={`how-tab${i === active ? ' is-active' : ''}`}
-                onClick={() => setActive(i)}
+                className={`how-step-btn${active === index ? ' is-active' : ''}`}
+                onClick={() => setActive(index)}
+                aria-pressed={active === index}
               >
-                <span className="how-tab-num">{step.num}</span>
-                <span className="how-tab-body">
-                  <strong>{step.title}</strong>
-                  <span>{step.text}</span>
-                </span>
+                <span className="how-steps-num">{step.num}</span>
+                <strong>{step.title}</strong>
+                <p>{step.text}</p>
               </button>
-            ))}
-          </div>
+            </li>
+          ))}
+        </ol>
 
-          <div
-            className="how-stage"
-            id="how-panel"
-            role="tabpanel"
-            aria-labelledby={current ? `how-tab-${current.num}` : undefined}
-          >
-            <div className="how-stage-copy">
-              <h3>{current?.title}</h3>
-              <p>{current?.text}</p>
-            </div>
-            <div className="how-stage-visual">
-              <HowScheme step={active} />
-            </div>
-          </div>
+        <div className="how-demo reveal">
+          <p className="how-demo-caption">{t('how.shotCaption')}</p>
+          <ProductUiFrame variant={variant} interactive={false} priority={active === 0} />
+        </div>
+
+        <div className="how-cta reveal">
+          <a className="btn btn-secondary" href={demoUrl} target="_blank" rel="noopener noreferrer">
+            {t('how.ctaDemo')}
+          </a>
+          <a className="btn btn-primary" href="/#contact">
+            {t('how.cta')}
+          </a>
         </div>
       </div>
     </section>

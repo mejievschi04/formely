@@ -23,6 +23,7 @@ export default function CookieNotice() {
       /* ignore */
     }
     setVisible(false);
+    window.dispatchEvent(new Event('formely-cookie-dismissed'));
   };
 
   if (!visible) return null;

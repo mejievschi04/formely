@@ -1,19 +1,21 @@
 /**
- * Mirror of backend/config/plans.php — keep volumes in sync with SaaS entitlements.
+ * Mirror of backend/config/plans.php — keep volumes + AI flags in sync with SaaS entitlements.
  */
 export const saasPlanCatalog = {
   instructor: {
     id: 'instructor',
     max_active_learners: 50,
     max_staff: 2,
-    price: 49,
+    ai_credits: 100,
+    price: 70,
     priceSuffix: '/mo',
   },
   academie: {
     id: 'academie',
     max_active_learners: 250,
     max_staff: 6,
-    price: 129,
+    ai_credits: 500,
+    price: 256,
     priceSuffix: '/mo',
     recommended: true,
   },
@@ -21,7 +23,8 @@ export const saasPlanCatalog = {
     id: 'business',
     max_active_learners: null,
     max_staff: 20,
-    price: 249,
+    ai_credits: 2500,
+    price: 499,
     priceSuffix: '/mo',
     pricePrefix: 'from',
   },
@@ -52,6 +55,11 @@ export const planFeatureOrder = [
   'courses',
   'tests',
   'teams',
+  'ai_tests',
+  'ai_creator',
+  'ai_builder',
+  'ai_qa',
+  'ai_stats',
   'library',
   'events',
   'analyst',
@@ -61,6 +69,11 @@ export const planFeatureIncluded = {
   courses: ['instructor', 'academie', 'business'],
   tests: ['instructor', 'academie', 'business'],
   teams: ['instructor', 'academie', 'business'],
+  ai_tests: ['instructor', 'academie', 'business'],
+  ai_creator: ['instructor', 'academie', 'business'],
+  ai_builder: ['academie', 'business'],
+  ai_qa: ['academie', 'business'],
+  ai_stats: ['business'],
   library: ['academie', 'business'],
   events: ['academie', 'business'],
   analyst: ['academie', 'business'],

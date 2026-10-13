@@ -22,6 +22,7 @@ use App\Support\UserRoles;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -72,6 +73,9 @@ class SeedDemoCompanyCommand extends Command
         $this->seedEvents($company, $staff);
         $this->attachTeamsToCourses($teams, $coursesBundle['courses']);
         $this->enrollWithVariedProgress($coursesBundle, $students);
+        $resultsCount = $this->seedTestResults($coursesBundle, $students);
+        $activityCount = $this->seedActivityFeed($company, $staff, $students, $coursesBundle);
+        $eventRegs = $this->seedEventRegistrations($company, $students);
 
         $this->newLine();
         $this->info('✅ Companie demo gata');
@@ -87,6 +91,9 @@ class SeedDemoCompanyCommand extends Command
                 ['Cursuri', collect($coursesBundle['courses'])->pluck('title')->implode('; ')],
                 ['Bănci', collect($banks)->map(fn (QuestionBank $b) => $b->title.' ('.$b->questions()->count().')')->implode('; ')],
                 ['Mapă', $map->name],
+                ['Rezultate teste', (string) $resultsCount],
+                ['Activity logs', (string) $activityCount],
+                ['Înscrieri evenimente', (string) $eventRegs],
                 ['Parolă', $passwordPlain],
             ]
         );
@@ -197,7 +204,7 @@ class SeedDemoCompanyCommand extends Command
         $students = [];
         foreach ($roster as $index => [$name, $title]) {
             $num = str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT);
-                        $students[] = $this->upsertUser($company, "student{$num}@".self::EMAIL_DOMAIN, [
+            $students[] = $this->upsertUser($company, "student{$num}@".self::EMAIL_DOMAIN, [
                 'name' => $name,
                 'role' => UserRoles::STUDENT,
                 'password' => $password,
@@ -205,6 +212,13 @@ class SeedDemoCompanyCommand extends Command
                 'level' => random_int(1, 4),
                 'last_login_at' => now()->subDays(random_int(0, 12))->subHours(random_int(0, 20)),
             ]);
+        }
+
+        // „Utilizatori noi” pe dashboard (ultimele 14 zile) — date de creare în interval
+        foreach ($students as $index => $student) {
+            $student->forceFill([
+                'created_at' => now()->subDays(random_int(1, 13))->subHours(random_int(0, 20)),
+            ])->saveQuietly();
         }
 
         return $students;
@@ -267,6 +281,20 @@ class SeedDemoCompanyCommand extends Command
 
     private function purgeDemoContent(Company $company): void
     {
+        $userIds = User::withoutGlobalScopes()
+            ->where('company_id', $company->id)
+            ->pluck('id');
+
+        if ($userIds->isNotEmpty()) {
+            DB::table('test_results')->whereIn('user_id', $userIds)->delete();
+            if (Schema::hasTable('activity_logs')) {
+                DB::table('activity_logs')->whereIn('user_id', $userIds)->delete();
+            }
+            if (Schema::hasTable('event_user')) {
+                DB::table('event_user')->whereIn('user_id', $userIds)->delete();
+            }
+        }
+
         $courseIds = Course::withoutGlobalScopes()
             ->where('company_id', $company->id)
             ->pluck('id');
@@ -726,6 +754,374 @@ class SeedDemoCompanyCommand extends Command
                 }
             }
         }
+    }
+
+    /**
+     * Umple panourile de statistici / progres cu rezultate de teste (passed / failed / review).
+     *
+     * @param  array{courses: array<int, Course>, lessonsByCourse: array<int, array<int, Lesson>>}  $bundle
+     * @param  array<int, User>  $students
+     */
+    private function seedTestResults(array $bundle, array $students): int
+    {
+        $now = now();
+        $created = 0;
+        $studentIds = collect($students)->pluck('id')->all();
+        if ($studentIds !== []) {
+            DB::table('test_results')->whereIn('user_id', $studentIds)->delete();
+        }
+
+        foreach ($students as $index => $student) {
+            $progressTier = $index % 5;
+            if ($progressTier === 0) {
+                continue; // abia înscriși — fără rezultate încă
+            }
+
+            $enrolledCourseIds = DB::table('course_user')
+                ->where('user_id', $student->id)
+                ->where('enrolled', true)
+                ->pluck('course_id');
+
+            foreach ($enrolledCourseIds as $courseId) {
+                $courseTests = CourseTest::where('course_id', $courseId)->orderBy('order')->get();
+                if ($courseTests->isEmpty()) {
+                    continue;
+                }
+
+                // Câți teste din curs au rezultat, după progres
+                $take = match ($progressTier) {
+                    1 => max(1, (int) ceil($courseTests->count() * 0.35)),
+                    2 => max(1, (int) ceil($courseTests->count() * 0.6)),
+                    3 => max(1, (int) ceil($courseTests->count() * 0.85)),
+                    default => $courseTests->count(),
+                };
+
+                foreach ($courseTests->take($take) as $ctIndex => $courseTest) {
+                    $test = Test::withoutGlobalScopes()->find($courseTest->test_id);
+                    if (! $test) {
+                        continue;
+                    }
+
+                    $questionCount = max(4, (int) $test->questions()->count());
+                    $maxScore = $questionCount * 10;
+                    $passing = (int) ($courseTest->passing_score ?: $test->passing_score ?: 70);
+
+                    // Primul attempt: uneori picat, al doilea: trecut
+                    $failFirst = $progressTier <= 2 && ($index + $ctIndex) % 3 === 0;
+                    $attempts = $failFirst ? 2 : 1;
+
+                    for ($attempt = 1; $attempt <= $attempts; $attempt++) {
+                        $isRetry = $attempt > 1;
+                        $needsReview = ! $isRetry && $progressTier >= 3 && ($index + $ctIndex) % 7 === 0;
+
+                        if ($failFirst && ! $isRetry) {
+                            $pct = random_int(42, max(43, $passing - 8));
+                            $passed = false;
+                        } elseif ($needsReview) {
+                            $pct = random_int(68, 92);
+                            $passed = $pct >= $passing;
+                        } else {
+                            $pct = match ($progressTier) {
+                                1 => random_int(max(50, $passing - 5), 82),
+                                2 => random_int($passing, 88),
+                                3 => random_int($passing + 2, 94),
+                                default => random_int(78, 98),
+                            };
+                            $passed = $pct >= $passing;
+                        }
+
+                        $score = (int) round(($pct / 100) * $maxScore);
+                        $correct = (int) round(($pct / 100) * $questionCount);
+                        $completedAt = $now->copy()
+                            ->subDays(max(0, 12 - ($index % 10) - $ctIndex))
+                            ->subHours(random_int(1, 20))
+                            ->addMinutes($attempt * 15);
+
+                        $payload = [
+                            'score' => $score,
+                            'max_score' => $maxScore,
+                            'correct_answers_count' => $correct,
+                            'total_questions' => $questionCount,
+                            'percentage' => $pct,
+                            'passed' => $passed,
+                            'time_taken_minutes' => random_int(6, 18),
+                            'answers' => json_encode([]),
+                            'started_at' => $completedAt->copy()->subMinutes(random_int(8, 22)),
+                            'completed_at' => $completedAt,
+                            'reviewed_at' => $needsReview ? null : $completedAt,
+                            'status' => 'completed',
+                            'needs_manual_review' => $needsReview,
+                            'passing_score_applied' => $passing,
+                            'attempt_token' => (string) Str::uuid(),
+                            'attempt_scope' => $student->id.':'.$test->id.':'.$courseId.':done:'.$attempt,
+                            'updated_at' => $now,
+                        ];
+
+                        $existing = DB::table('test_results')
+                            ->where('user_id', $student->id)
+                            ->where('test_id', $test->id)
+                            ->where('course_id', $courseId)
+                            ->where('attempt_number', $attempt)
+                            ->first();
+
+                        if ($existing) {
+                            DB::table('test_results')->where('id', $existing->id)->update($payload);
+                        } else {
+                            DB::table('test_results')->insert(array_merge($payload, [
+                                'user_id' => $student->id,
+                                'test_id' => $test->id,
+                                'course_id' => $courseId,
+                                'attempt_number' => $attempt,
+                                'created_at' => $completedAt,
+                            ]));
+                            $created++;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $created;
+    }
+
+    /**
+     * @param  array{owner: User, instructors: array<int, User>, hr: User, manager: User, analyst: User}  $staff
+     * @param  array<int, User>  $students
+     * @param  array{courses: array<int, Course>, lessonsByCourse: array<int, array<int, Lesson>>}  $bundle
+     */
+    private function seedActivityFeed(Company $company, array $staff, array $students, array $bundle): int
+    {
+        if (! Schema::hasTable('activity_logs')) {
+            return 0;
+        }
+
+        $now = now();
+        $userIds = collect($students)->pluck('id')->merge([
+            $staff['owner']->id,
+            $staff['instructors'][0]->id,
+            $staff['instructors'][1]->id,
+            $staff['hr']->id,
+        ])->all();
+
+        // Re-seed feed: șterge doar logurile demo anterioare (description marker)
+        DB::table('activity_logs')
+            ->whereIn('user_id', $userIds)
+            ->where('description', 'like', '%[demo]%')
+            ->delete();
+
+        $rows = [];
+        $push = function (array $row) use (&$rows, $now) {
+            $rows[] = array_merge([
+                'model_type' => null,
+                'model_id' => null,
+                'old_values' => null,
+                'new_values' => null,
+                'ip_address' => '127.0.0.1',
+                'user_agent' => 'FormelyDemoSeed/1.0',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ], $row);
+        };
+
+        foreach ($students as $index => $student) {
+            for ($d = 0; $d < 10; $d++) {
+                if (($index + $d) % 3 === 0) {
+                    continue;
+                }
+                $hour = [9, 10, 11, 12, 14, 15, 16, 17, 18][($index + $d) % 9];
+                $at = $now->copy()->subDays($d)->setTime($hour, random_int(0, 59));
+                $push([
+                    'user_id' => $student->id,
+                    'action' => 'logged_in',
+                    'model_type' => 'User',
+                    'model_id' => $student->id,
+                    'description' => "[demo] {$student->name} s-a autentificat",
+                    'created_at' => $at,
+                    'updated_at' => $at,
+                ]);
+                // Dashboard „Popularitate pe ore” citește session_started
+                $push([
+                    'user_id' => $student->id,
+                    'action' => 'session_started',
+                    'model_type' => 'User',
+                    'model_id' => $student->id,
+                    'description' => "[demo] {$student->name} a deschis o sesiune",
+                    'new_values' => json_encode(['session_ref' => 'demo:'.$student->id.':'.$d, 'source' => 'demo-seed']),
+                    'created_at' => $at->copy()->addMinute(),
+                    'updated_at' => $at,
+                ]);
+                $push([
+                    'user_id' => $student->id,
+                    'action' => 'telemetry.learner_focus_seconds',
+                    'description' => '[demo] Focus pe lecție',
+                    'new_values' => json_encode(['seconds' => random_int(120, 2400), 'day' => $at->toDateString()]),
+                    'created_at' => $at->copy()->addMinutes(random_int(5, 90)),
+                    'updated_at' => $at,
+                ]);
+            }
+
+            $progress = DB::table('lesson_progress')
+                ->where('user_id', $student->id)
+                ->where('completed', true)
+                ->orderByDesc('completed_at')
+                ->limit(6)
+                ->get();
+
+            foreach ($progress as $lp) {
+                $at = $lp->completed_at ? \Carbon\Carbon::parse($lp->completed_at) : $now->copy()->subDays(random_int(1, 10));
+                $push([
+                    'user_id' => $student->id,
+                    'action' => 'completed_lesson',
+                    'model_type' => 'Lesson',
+                    'model_id' => $lp->lesson_id,
+                    'description' => "[demo] {$student->name} a terminat o lecție",
+                    'created_at' => $at,
+                    'updated_at' => $at,
+                ]);
+            }
+
+            $results = DB::table('test_results')
+                ->where('user_id', $student->id)
+                ->where('status', 'completed')
+                ->orderByDesc('completed_at')
+                ->limit(8)
+                ->get();
+
+            foreach ($results as $tr) {
+                $at = $tr->completed_at ? \Carbon\Carbon::parse($tr->completed_at) : $now;
+                $push([
+                    'user_id' => $student->id,
+                    'action' => 'telemetry.learner_attempt_submitted',
+                    'model_type' => 'Test',
+                    'model_id' => $tr->test_id,
+                    'description' => "[demo] {$student->name} a trimis un test ({$tr->percentage}%)",
+                    'new_values' => json_encode([
+                        'percentage' => $tr->percentage,
+                        'passed' => (bool) $tr->passed,
+                        'course_id' => $tr->course_id,
+                    ]),
+                    'created_at' => $at,
+                    'updated_at' => $at,
+                ]);
+                if ($tr->passed) {
+                    $push([
+                        'user_id' => $student->id,
+                        'action' => 'completed_exam',
+                        'model_type' => 'Test',
+                        'model_id' => $tr->test_id,
+                        'description' => "[demo] {$student->name} a trecut un test",
+                        'created_at' => $at->copy()->addMinute(),
+                        'updated_at' => $at,
+                    ]);
+                }
+            }
+
+            foreach (DB::table('course_user')->where('user_id', $student->id)->whereNotNull('completed_at')->get() as $cu) {
+                $at = \Carbon\Carbon::parse($cu->completed_at);
+                $push([
+                    'user_id' => $student->id,
+                    'action' => 'completed_course',
+                    'model_type' => 'Course',
+                    'model_id' => $cu->course_id,
+                    'description' => "[demo] {$student->name} a finalizat un curs",
+                    'created_at' => $at,
+                    'updated_at' => $at,
+                ]);
+            }
+        }
+
+        // Admin / instructor telemetry — dashboard „activitate recentă”
+        foreach ([$staff['owner'], $staff['instructors'][0], $staff['hr']] as $adminUser) {
+            foreach (range(0, 8) as $d) {
+                $at = $now->copy()->subDays($d)->setTime(random_int(9, 17), random_int(0, 59));
+                $push([
+                    'user_id' => $adminUser->id,
+                    'action' => 'logged_in',
+                    'model_type' => 'User',
+                    'model_id' => $adminUser->id,
+                    'description' => "[demo] {$adminUser->name} s-a autentificat",
+                    'created_at' => $at,
+                    'updated_at' => $at,
+                ]);
+            }
+        }
+
+        foreach ($bundle['courses'] as $i => $course) {
+            $at = $now->copy()->subDays(20 - $i)->setTime(10, 0);
+            $push([
+                'user_id' => $staff['instructors'][$i % 2]->id,
+                'action' => 'telemetry.admin_course_created',
+                'model_type' => 'Course',
+                'model_id' => $course->id,
+                'description' => "[demo] Curs creat: {$course->title}",
+                'created_at' => $at,
+                'updated_at' => $at,
+            ]);
+            $push([
+                'user_id' => $staff['owner']->id,
+                'action' => 'telemetry.admin_course_version_published',
+                'model_type' => 'Course',
+                'model_id' => $course->id,
+                'description' => "[demo] Curs publicat: {$course->title}",
+                'created_at' => $at->copy()->addHours(2),
+                'updated_at' => $at,
+            ]);
+        }
+
+        foreach (array_chunk($rows, 100) as $chunk) {
+            DB::table('activity_logs')->insert($chunk);
+        }
+
+        return count($rows);
+    }
+
+    /**
+     * @param  array<int, User>  $students
+     */
+    private function seedEventRegistrations(Company $company, array $students): int
+    {
+        if (! Schema::hasTable('event_user')) {
+            return 0;
+        }
+
+        $events = Event::withoutGlobalScopes()->where('company_id', $company->id)->get();
+        if ($events->isEmpty()) {
+            return 0;
+        }
+
+        $count = 0;
+        $now = now();
+        foreach ($events as $eIndex => $event) {
+            $slice = array_slice($students, $eIndex * 3, 8 + $eIndex);
+            foreach ($slice as $sIndex => $student) {
+                $attended = $event->status === 'published' || ($sIndex % 3 !== 0);
+                DB::table('event_user')->updateOrInsert(
+                    ['event_id' => $event->id, 'user_id' => $student->id],
+                    [
+                        'registered' => true,
+                        'attended' => $attended,
+                        'watched_replay' => ! $attended && ($sIndex % 2 === 0),
+                        'registered_at' => $now->copy()->subDays(random_int(2, 14)),
+                        'attended_at' => $attended ? $now->copy()->subDays(random_int(0, 5)) : null,
+                        'replay_watched_at' => null,
+                        'notes' => null,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]
+                );
+                $count++;
+            }
+            if (method_exists($event, 'updateKPIs')) {
+                $event->updateKPIs();
+            } else {
+                $event->forceFill([
+                    'registrations_count' => DB::table('event_user')->where('event_id', $event->id)->where('registered', true)->count(),
+                    'attendance_count' => DB::table('event_user')->where('event_id', $event->id)->where('attended', true)->count(),
+                ])->save();
+            }
+        }
+
+        return $count;
     }
 
     private function lessonHtml(string $moduleTitle, string $lessonTitle): string

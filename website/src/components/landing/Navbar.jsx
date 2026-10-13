@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '../../i18n/I18nContext';
-import { appUrl } from '../../data/site';
+import { appUrl, demoUrl } from '../../data/site';
 
 const LINKS = [
   { href: '/#produs', key: 'nav.product' },
-  { href: '/#cum-functioneaza', key: 'nav.how' },
+  { href: demoUrl, key: 'nav.how', external: true },
   { href: '/#preturi', key: 'nav.pricing' },
   { href: '/#faq', key: 'nav.faq' },
 ];
@@ -13,12 +13,35 @@ const LINKS = [
 export default function Navbar() {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const drawerRef = useRef(null);
+  const triggerRef = useRef(null);
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';
     return () => {
       document.body.style.overflow = '';
     };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const drawer = drawerRef.current;
+    const elements = () => [...drawer.querySelectorAll('a[href], button:not([disabled])')];
+    elements()[0]?.focus();
+    function keydown(event) {
+      if (event.key === 'Escape') {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
+      if (event.key !== 'Tab') return;
+      const focusable = elements();
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    }
+    drawer.addEventListener('keydown', keydown);
+    return () => { drawer.removeEventListener('keydown', keydown); triggerRef.current?.focus(); };
   }, [open]);
 
   return (
@@ -31,7 +54,11 @@ export default function Navbar() {
 
         <nav className="nav-links" aria-label="Primary">
           {LINKS.map((item) => (
-            <a key={item.href} href={item.href}>
+            <a
+              key={item.key}
+              href={item.href}
+              {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+            >
               {t(item.key)}
             </a>
           ))}
@@ -47,6 +74,7 @@ export default function Navbar() {
           <button
             type="button"
             className="nav-burger"
+            ref={triggerRef}
             aria-label={open ? t('nav.close') : t('nav.menu')}
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
@@ -57,7 +85,7 @@ export default function Navbar() {
       </header>
 
       {open ? (
-        <div className="nav-drawer is-open" role="dialog" aria-modal="true" aria-label={t('nav.menu')}>
+        <div ref={drawerRef} className="nav-drawer is-open" role="dialog" aria-modal="true" aria-label={t('nav.menu')}>
           <div className="nav-drawer-top">
             <Link to="/" className="nav-brand" onClick={() => setOpen(false)}>
               <img src="/logo.png" alt="" width={28} height={28} />
@@ -68,7 +96,12 @@ export default function Navbar() {
             </button>
           </div>
           {LINKS.map((item) => (
-            <a key={item.href} href={item.href} onClick={() => setOpen(false)}>
+            <a
+              key={item.key}
+              href={item.href}
+              onClick={() => setOpen(false)}
+              {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+            >
               {t(item.key)}
             </a>
           ))}

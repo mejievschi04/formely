@@ -19,11 +19,12 @@ export default function Footer() {
         <div className="footer-cols">
           <div className="footer-col">
             <h4>{t('footer.product')}</h4>
-            <a href="/#produs">{t('footer.features')}</a>
+            <a href="/#cum-functioneaza">{t('footer.features')}</a>
             <a href="/#preturi">{t('footer.pricing')}</a>
           </div>
           <div className="footer-col">
             <h4>{t('footer.resources')}</h4>
+            <Link to="/onboarding">{t('footer.onboarding')}</Link>
             <a href="/#faq">{t('footer.faq')}</a>
             <a href="/#contact">{t('footer.contact')}</a>
             <a className="footer-phone" href={`tel:${site.phone}`}>{site.phoneDisplay}</a>

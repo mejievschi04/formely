@@ -5,7 +5,7 @@
  * se încarcă foarte devreme; dacă autoload-ul sau pachetul lipsește parțial, apare „Class Sanctum not found”.
  * Logica este aceeași ca în Laravel\Sanctum\Sanctum::currentApplicationUrlWithPort().
  */
-$defaultStatefulDomains = 'localhost,localhost:3000,localhost:5173,127.0.0.1,127.0.0.1:8000,::1';
+$defaultStatefulDomains = 'localhost,localhost:3000,localhost:5173,localhost:4321,127.0.0.1,127.0.0.1:5173,127.0.0.1:4321,127.0.0.1:8000,::1';
 $appUrl = env('APP_URL');
 if (is_string($appUrl) && $appUrl !== '') {
     $host = parse_url($appUrl, PHP_URL_HOST);

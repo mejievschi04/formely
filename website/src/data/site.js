@@ -6,10 +6,12 @@ export const site = {
   /** Denumire juridică + sediu — completează înainte de launch (ex. din env la build). */
   legalName: import.meta.env.VITE_LEGAL_NAME || '',
   address: import.meta.env.VITE_LEGAL_ADDRESS || '',
-  privacyUpdated: '2026-09-21',
+  privacyUpdated: '2026-10-12',
 };
 
 export const appUrl = import.meta.env.VITE_APP_URL || 'http://localhost:5173';
+/** Academia demo live — one-click login pe LMS (`/demo`). */
+export const demoUrl = import.meta.env.VITE_DEMO_URL || `${appUrl.replace(/\/$/, '')}/demo`;
 export const siteUrl = import.meta.env.VITE_SITE_URL || 'https://formely.org';
 
 export const LOCALE_META = {

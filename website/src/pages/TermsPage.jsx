@@ -29,6 +29,12 @@ export default function TermsPage() {
           ))}
           <p>
             <a href={`mailto:${site.email}`}>{site.email}</a>
+            {site.phoneDisplay ? (
+              <>
+                {' · '}
+                <a href={`tel:${site.phone}`}>{site.phoneDisplay}</a>
+              </>
+            ) : null}
             {' · '}
             <Link to="/legal/confidentialitate">{t('legal.privacyTitle')}</Link>
             {' · '}

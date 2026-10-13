@@ -186,6 +186,75 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * One-click entry into the seeded demo academy (marketing site „Vezi demo”).
+     * No password from the client — gated by FORMELY_DEMO_LOGIN_ENABLED.
+     */
+    public function demoLogin(Request $request)
+    {
+        if (! config('formely.demo_login_enabled', false)) {
+            return response()->json(['message' => 'Demo-ul public nu este disponibil.'], 404);
+        }
+
+        $email = (string) config('formely.demo_login_email', '');
+        if ($email === '') {
+            return response()->json(['message' => 'Demo-ul nu este configurat.'], 503);
+        }
+
+        $user = User::withoutGlobalScope(CompanyScope::class)->where('email', $email)->first();
+        if (! $user) {
+            return response()->json([
+                'message' => 'Contul demo lipsește. Rulează: php artisan demo:seed-company',
+            ], 503);
+        }
+
+        if (! $user->company?->isDemoAcademy()) {
+            return response()->json(['message' => 'Contul demo nu este configurat corect.'], 503);
+        }
+
+        $this->assertSaasLoginAllowed($request, $user);
+
+        if (($user->status ?? 'active') === 'pending') {
+            throw ValidationException::withMessages([
+                'email' => ['Contul demo așteaptă aprobare.'],
+            ]);
+        }
+
+        if (($user->status ?? 'active') === 'suspended') {
+            throw ValidationException::withMessages([
+                'email' => ['Contul demo este suspendat.'],
+            ]);
+        }
+
+        Auth::login($user, false);
+        $request->session()->regenerate();
+
+        $user->forceFill(['last_login_at' => now()])->save();
+        AuthActivityLogger::logLoggedIn($user, $request);
+        StudentSessionLogger::recordOpened($user, $request);
+
+        Log::info('Demo login', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'ip' => $request->ip(),
+        ]);
+
+        return response()->json([
+            'message' => 'Autentificare demo reușită',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role ?? 'student',
+                'capabilities' => ['volt' => \App\Support\VoltAvailability::isConfigured()],
+                'level' => $user->level ?? 1,
+                'points' => $user->points ?? 0,
+                'must_change_password' => (bool) ($user->must_change_password ?? false),
+                ...$this->saasUserPayload($user),
+            ],
+        ]);
+    }
+
     public function logout(Request $request)
     {
         $user = $request->user();
@@ -373,6 +442,7 @@ class AuthController extends Controller
             'company' => $company?->brandingPayload(),
             'entitlements' => $company ? app(PlanEntitlementService::class)->entitlementsPayload($company) : null,
             'is_platform_admin' => $user->isPlatformAdmin(),
+            'is_demo' => (bool) ($company?->isDemoAcademy()),
         ];
     }
 }

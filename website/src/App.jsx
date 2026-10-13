@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, useLocation, useSearchParams } from 'react-rou
 import { useEffect } from 'react';
 import SiteLayout from './layouts/SiteLayout';
 import HomePage from './pages/HomePage';
+import OnboardingPage from './pages/OnboardingPage';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -57,8 +58,9 @@ export default function App() {
       <Routes>
         <Route element={<SiteLayout />}>
           <Route index element={<HomePage />} />
-          <Route path="platforma" element={<Navigate to="/#produs" replace />} />
-          <Route path="solutii" element={<Navigate to="/" replace />} />
+          <Route path="onboarding" element={<OnboardingPage />} />
+          <Route path="platforma" element={<Navigate to="/#cum-functioneaza" replace />} />
+          <Route path="solutii" element={<Navigate to="/onboarding" replace />} />
           <Route path="preturi" element={<Navigate to="/#preturi" replace />} />
           <Route path="despre" element={<Navigate to="/" replace />} />
           <Route path="contact" element={<ContactToHome />} />

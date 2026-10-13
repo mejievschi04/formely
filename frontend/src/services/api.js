@@ -473,6 +473,14 @@ export const authService = {
     try { await refreshApiCsrfCookie(); } catch { /* sesiunea e deja deschisă */ }
     return response.data;
   },
+
+  demoLogin: async () => {
+    // Mereu cookie proaspăt — /demo e entry fără sesiune anterioară fiabilă.
+    await refreshApiCsrfCookie();
+    const response = await api.post('/auth/demo-login');
+    try { await refreshApiCsrfCookie(); } catch { /* sesiunea e deja deschisă */ }
+    return response.data;
+  },
   
   logout: async () => {
     await ensureApiCsrfCookie();

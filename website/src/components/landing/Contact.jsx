@@ -5,37 +5,17 @@ import { submitLead } from '../../lib/leads';
 import { track } from '../../lib/track';
 import { planOrder } from '../../data/plans';
 
-const COUNTRY_CODES = [
-  { iso: 'MD', dial: '+373', flag: '🇲🇩' },
-  { iso: 'RO', dial: '+40', flag: '🇷🇴' },
-  { iso: 'IT', dial: '+39', flag: '🇮🇹' },
-  { iso: 'RU', dial: '+7', flag: '🇷🇺' },
-  { iso: 'UA', dial: '+380', flag: '🇺🇦' },
-  { iso: 'DE', dial: '+49', flag: '🇩🇪' },
-  { iso: 'FR', dial: '+33', flag: '🇫🇷' },
-  { iso: 'ES', dial: '+34', flag: '🇪🇸' },
-  { iso: 'GB', dial: '+44', flag: '🇬🇧' },
-  { iso: 'US', dial: '+1', flag: '🇺🇸' },
-  { iso: 'AT', dial: '+43', flag: '🇦🇹' },
-  { iso: 'BE', dial: '+32', flag: '🇧🇪' },
-  { iso: 'CH', dial: '+41', flag: '🇨🇭' },
-  { iso: 'NL', dial: '+31', flag: '🇳🇱' },
-  { iso: 'PL', dial: '+48', flag: '🇵🇱' },
-];
-
-const DEFAULT_DIAL = 'MD';
-
-export default function Contact() {
+export default function Contact({ leadSource = 'website-landing' }) {
   const { t, lang } = useI18n();
   const [searchParams] = useSearchParams();
   const planFromUrl = searchParams.get('plan') || '';
-  const [dialIso, setDialIso] = useState(DEFAULT_DIAL);
+  const sourceFromUrl = searchParams.get('source') || '';
+  const resolvedSource = sourceFromUrl || leadSource;
   const [form, setForm] = useState({
     name: '',
     email: '',
     org: '',
-    plan_interest: planOrder.includes(planFromUrl) ? planFromUrl : 'academie',
-    phone: '',
+    plan_interest: planOrder.includes(planFromUrl) ? planFromUrl : '',
     privacy_accepted: false,
   });
   const [submitting, setSubmitting] = useState(false);
@@ -48,8 +28,6 @@ export default function Contact() {
       setForm((prev) => ({ ...prev, plan_interest: planFromUrl }));
     }
   }, [planFromUrl]);
-
-  const dial = COUNTRY_CODES.find((item) => item.iso === dialIso) || COUNTRY_CODES[0];
 
   const update = (field) => (e) => setForm({ ...form, [field]: e.target.value });
   const updateChecked = (field) => (e) => setForm({ ...form, [field]: e.target.checked });
@@ -67,9 +45,8 @@ export default function Contact() {
         name: form.name,
         email: form.email,
         company_name: form.org,
-        plan_interest: form.plan_interest,
-        phone: `${dial.dial} ${form.phone.trim()}`,
-        source: 'website-landing',
+        plan_interest: form.plan_interest || null,
+        source: resolvedSource,
         privacy_accepted: true,
       });
       setDone(true);
@@ -92,7 +69,7 @@ export default function Contact() {
         </div>
 
         {done ? (
-          <p className="form-msg is-ok reveal">{t('contact.success')}</p>
+          <p className="form-msg is-ok reveal" role="status">{t('contact.success')}</p>
         ) : (
           <form
             className="contact-form reveal"
@@ -126,39 +103,15 @@ export default function Contact() {
                 />
               </div>
             </div>
-            <div className="contact-form-row">
+            <div className="contact-form-row contact-form-optional">
               <div className="field">
-                <label htmlFor="lead-phone">{t('contact.phone')}</label>
-                <div className="phone-field">
-                  <div className="phone-code">
-                    <span className="phone-flag" aria-hidden="true">{dial.flag}</span>
-                    <select
-                      aria-label={t('contact.countryCode')}
-                      value={dial.iso}
-                      onChange={(e) => setDialIso(e.target.value)}
-                    >
-                      {COUNTRY_CODES.map((item) => (
-                        <option key={item.iso} value={item.iso}>
-                          {item.flag} {item.iso} {item.dial}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="phone-dial" aria-hidden="true">{dial.dial}</span>
-                  </div>
-                  <input
-                    id="lead-phone"
-                    type="tel"
-                    required
-                    autoComplete="tel-national"
-                    inputMode="tel"
-                    value={form.phone}
-                    onChange={update('phone')}
-                  />
-                </div>
+                <label htmlFor="lead-org">{t('contact.org')}</label>
+                <input id="lead-org" autoComplete="organization" value={form.org} onChange={update('org')} />
               </div>
               <div className="field">
                 <label htmlFor="lead-plan">{t('contact.plan')}</label>
                 <select id="lead-plan" value={form.plan_interest} onChange={update('plan_interest')}>
+                  <option value="">—</option>
                   {planOrder.map((id) => (
                     <option key={id} value={id}>
                       {t(`pricing.plans.${id}.name`)}
@@ -166,10 +119,6 @@ export default function Contact() {
                   ))}
                 </select>
               </div>
-            </div>
-            <div className="field">
-              <label htmlFor="lead-org">{t('contact.org')}</label>
-              <input id="lead-org" autoComplete="organization" value={form.org} onChange={update('org')} />
             </div>
             <div className="field field-consent">
               <label htmlFor="lead-consent" className="consent-label">
@@ -189,7 +138,7 @@ export default function Contact() {
                 </span>
               </label>
             </div>
-            {error && <p className="form-msg is-err">{error}</p>}
+            {error && <p className="form-msg is-err" role="alert">{error}</p>}
             <button className="btn btn-primary" type="submit" disabled={submitting || !form.privacy_accepted}>
               {submitting ? t('contact.sending') : t('contact.submit')}
             </button>

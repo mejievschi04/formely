@@ -13,6 +13,7 @@ export function PlanLimits({ planId }) {
     <p className="price-limits">
       <span>{learners}</span>
       <span>{t('pricing.staff', { n: plan.max_staff })}</span>
+      <span>{t('pricing.aiCredits', { n: plan.ai_credits })}</span>
     </p>
   );
 }

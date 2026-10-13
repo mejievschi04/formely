@@ -92,6 +92,15 @@ class Company extends Model
         return in_array($this->status ?? self::STATUS_ACTIVE, [self::STATUS_ACTIVE, self::STATUS_TRIAL], true);
     }
 
+    /** Academia folosită pe site pentru „Vezi demo” — mutațiile sunt blocate. */
+    public function isDemoAcademy(): bool
+    {
+        $slug = strtolower(trim((string) ($this->slug ?? '')));
+        $configured = strtolower(trim((string) config('formely.demo_company_slug', 'formely-demo')));
+
+        return $slug !== '' && $configured !== '' && $slug === $configured;
+    }
+
     public function logoUrl(): ?string
     {
         if (! $this->logo_path) {
@@ -113,6 +122,7 @@ class Company extends Model
             'secondary_color' => $this->secondary_color ?? '#22d3ee',
             'plan' => $this->plan,
             'status' => $this->status,
+            'is_demo' => $this->isDemoAcademy(),
         ];
     }
 

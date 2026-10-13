@@ -83,3 +83,9 @@ coverage/
 
 # Formely
 .venv-img/
+
+# Local agent tools and browser verification artifacts
+.agents/skills/
+.claude/
+.playwright-cli/
+output/

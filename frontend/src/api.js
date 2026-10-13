@@ -6,8 +6,57 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
 
 /** Optional: set by ToastProvider so 5xx/network errors show a toast */
 let apiErrorNotifier = null;
+/** Set by AuthProvider — academia demo: mutațiile se blochează fără toast/erori. */
+let demoSessionActive = false;
+let demoMutationToastSuppressUntil = 0;
+
 export function setApiErrorNotifier(fn) {
   apiErrorNotifier = typeof fn === "function" ? fn : null;
+}
+
+export function setDemoSessionActive(active) {
+  demoSessionActive = Boolean(active);
+  if (!demoSessionActive) {
+    demoMutationToastSuppressUntil = 0;
+  }
+}
+
+function armDemoMutationToastSuppress() {
+  demoMutationToastSuppressUntil = Date.now() + 4000;
+}
+
+/** ToastProvider: nu arăta success/error după un click blocat în demo. */
+export function shouldSuppressDemoMutationToast() {
+  return demoSessionActive && Date.now() < demoMutationToastSuppressUntil;
+}
+
+function isDemoMutationAllowedUrl(url) {
+  const path = String(url || "");
+  return (
+    path.includes("csrf-cookie")
+    || path.includes("/auth/logout")
+    || path.includes("/auth/demo-login")
+    || path.includes("/auth/login")
+    || path.includes("/auth/register")
+  );
+}
+
+function shouldBlockDemoMutation(config) {
+  if (!demoSessionActive || !config) return false;
+  if (!isUnsafeMethod(config.method)) return false;
+  if (isDemoMutationAllowedUrl(config.url)) return false;
+  return true;
+}
+
+function buildSilentDemoReadonlyError(config) {
+  const error = new Error("demo_readonly");
+  error.demoReadonlySilent = true;
+  error.config = config;
+  error.response = {
+    status: 403,
+    data: { demo_readonly: true, message: "Modul demo: modificările nu se salvează." },
+  };
+  return error;
 }
 
 const api = axios.create({
@@ -107,6 +156,12 @@ function isUnsafeMethod(method) {
 // Interceptor pentru request-uri
 api.interceptors.request.use(
   async (config) => {
+    // Demo: mutațiile nu pleacă deloc — fără eroare vizibilă în UI.
+    if (shouldBlockDemoMutation(config)) {
+      armDemoMutationToastSuppress();
+      return Promise.reject(buildSilentDemoReadonlyError(config));
+    }
+
     // If data is FormData, remove Content-Type header to let browser set it with boundary
     if (config.data instanceof FormData) {
       delete config.headers['Content-Type'];
@@ -129,6 +184,9 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    if (error?.demoReadonlySilent) {
+      return Promise.reject(error);
+    }
     logger.api.error('API Request Error:', error);
     return Promise.reject(error);
   }
@@ -155,16 +213,22 @@ api.interceptors.response.use(
     ) {
       config._csrfRetry = true;
       try {
-        syncCsrfFromResponse(error.response);
-        rememberCsrfToken(error.response?.data?.csrf_token);
-        if (!csrfToken) {
-          await refreshApiCsrfCookie();
-        }
+        // Reîncarcă cookie+token din sesiunea curentă (nu refolosi tokenul din 419 —
+        // acela e din sesiunea care a respins requestul, fără cookie aliniat).
+        csrfToken = null;
+        await refreshApiCsrfCookie();
         applyXsrfHeader(config);
         return api.request(config);
       } catch (retryErr) {
         return Promise.reject(retryErr);
       }
+    }
+
+    // Academia demo: mutație blocată — fără toast; catch-urile din pagini sunt și ele reduse.
+    if (error.demoReadonlySilent || (error.response?.status === 403 && error.response?.data?.demo_readonly)) {
+      error.demoReadonlySilent = true;
+      armDemoMutationToastSuppress();
+      return Promise.reject(error);
     }
 
     // Formely: academia a fost suspendată sau trialul a expirat — înapoi la login cu mesajul serverului.

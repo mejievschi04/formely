@@ -1,8 +1,9 @@
 import { setVoltCapabilities } from '../utils/voltAvailability';
 import { AuthContext } from './AuthContextShared.js';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { ensureApiCsrfCookie } from '../api';
+import { ensureApiCsrfCookie, setDemoSessionActive } from '../api';
 import { authService } from '../services/api';
+import { isDemoSession } from '../utils/demoMode';
 
 
 
@@ -54,6 +55,10 @@ export const AuthProvider = ({ children }) => {
 		[rawUser, adminViewMode]
 	);
 
+	/**
+	 * UI de editare ca pe o academie reală (butoane, formulare, DnD).
+	 * În demo, serverul (DemoReadOnlyMiddleware) respinge mutațiile — toast „nu se salvează”.
+	 */
 	const canMutateInAdminArea = useMemo(() => {
 		if (!user) return false;
 		const ar = user.actualRole ?? 'student';
@@ -109,10 +114,34 @@ export const AuthProvider = ({ children }) => {
 		};
 	}, [checkAuth]);
 
+	useEffect(() => {
+		setDemoSessionActive(isDemoSession(rawUser) || isDemoSession(user));
+	}, [rawUser, user]);
+
 	const login = async (email, password) => {
 		authCheckId.current += 1;
 		const data = await authService.login(email, password);
 		setVoltCapabilities(data.user?.capabilities, data.user?.entitlements);
+		setRawUser(data.user);
+		setLoading(false);
+		return data;
+	};
+
+	const demoLogin = async () => {
+		authCheckId.current += 1;
+		const data = await authService.demoLogin();
+		setVoltCapabilities(data.user?.capabilities, data.user?.entitlements);
+		// Demo pornește mereu în panoul admin (nu rămâne pe preview student din sesiuni vechi).
+		setAdminViewModeState('admin');
+		writeStoredAdminView('admin');
+		try {
+			sessionStorage.removeItem('studentPreviewFromAdmin');
+			sessionStorage.removeItem('formely_demo_banner_dismissed');
+			sessionStorage.setItem('formely_demo_guide_open', '1');
+			sessionStorage.setItem('formely_demo_guide_step', '0');
+		} catch {
+			/* ignore */
+		}
 		setRawUser(data.user);
 		setLoading(false);
 		return data;
@@ -147,6 +176,7 @@ export const AuthProvider = ({ children }) => {
 				rawUser,
 				loading,
 				login,
+				demoLogin,
 				register,
 				logout,
 				checkAuth,

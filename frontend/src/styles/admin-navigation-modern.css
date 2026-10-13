@@ -21,7 +21,6 @@
 	transition: width var(--transition-smooth);
 	box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
 	overflow: hidden;
-	backdrop-filter: blur(10px);
 }
 
 [data-theme="light"] .modern-sidebar,
@@ -59,40 +58,33 @@
 /* Doar zona logo (imagine) deschide/închide meniul */
 .modern-sidebar-logo-toggle,
 .va-sidebar-logo-toggle {
-	--logo-toggle-ease: cubic-bezier(0.22, 1, 0.36, 1);
-	--logo-toggle-duration: 0.45s;
-	display: flex;
-	align-items: center;
-	justify-content: center;
+	position: relative;
+	display: grid;
+	place-items: center;
+	width: 40px;
+	height: 40px;
 	margin: 0;
 	padding: 0;
-	min-width: 40px;
-	min-height: 40px;
 	border: none;
 	border-radius: var(--radius-md);
 	background: transparent;
+	box-shadow: none;
 	cursor: pointer;
 	font: inherit;
 	-webkit-appearance: none;
 	appearance: none;
 	flex-shrink: 0;
-	transition:
-		background-color 0.28s var(--logo-toggle-ease),
-		box-shadow 0.28s var(--logo-toggle-ease),
-		transform 0.2s var(--logo-toggle-ease);
+	perspective: 520px;
 }
 
 .modern-sidebar-logo-toggle:hover,
-.va-sidebar-logo-toggle:hover {
-	background-color: rgba(0, 0, 0, 0.38);
-	box-shadow:
-		inset 0 1px 0 rgba(255, 255, 255, 0.06),
-		0 4px 14px rgba(0, 0, 0, 0.2);
-}
-
-.modern-sidebar-logo-toggle:active,
-.va-sidebar-logo-toggle:active {
-	transform: scale(0.94);
+.va-sidebar-logo-toggle:hover,
+.modern-sidebar-logo-toggle:focus-visible,
+.va-sidebar-logo-toggle:focus-visible,
+[data-theme="light"] .modern-sidebar-logo-toggle:hover,
+[data-theme="light"] .va-sidebar-logo-toggle:hover {
+	background: transparent;
+	box-shadow: none;
 }
 
 .modern-sidebar-logo-toggle:focus-visible,
@@ -101,70 +93,53 @@
 	outline-offset: 2px;
 }
 
-[data-theme="light"] .modern-sidebar-logo-toggle:hover,
-[data-theme="light"] .va-sidebar-logo-toggle:hover {
-	background-color: rgba(0, 0, 0, 0.14);
-	box-shadow:
-		inset 0 1px 0 rgba(255, 255, 255, 0.5),
-		0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
 .modern-sidebar-logo,
 .va-logo-text {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 40px;
-	height: 40px;
+	width: 32px;
+	height: 32px;
 	flex-shrink: 0;
 }
 
-/* Rotație pe <img> — evită conflicte cu .va-logo-text; durată explicită (nu inherit din * global) */
-.modern-sidebar .modern-sidebar-logo-toggle .va-logo-icon-img,
-.modern-sidebar .va-sidebar-logo-toggle .va-logo-icon-img {
-	transform: rotate(0deg) scale(1);
-	transform-origin: center center;
-	transition: transform var(--logo-toggle-duration) var(--logo-toggle-ease);
+/* Card: se rotește pe muchie, schimbă fața, revine. Slotul rămâne 32×32. */
+.modern-sidebar .va-logo-card {
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transform: rotateY(0deg);
+	transform-style: preserve-3d;
+	transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.modern-sidebar.expanded .modern-sidebar-logo-toggle:hover .va-logo-icon-img,
-.modern-sidebar.expanded .va-sidebar-logo-toggle:hover .va-logo-icon-img {
-	transform: rotate(-90deg) scale(1.04);
+.modern-sidebar .va-logo-card.is-edge {
+	transform: rotateY(90deg);
 }
 
-.modern-sidebar:not(.expanded) .modern-sidebar-logo-toggle:hover .va-logo-icon-img,
-.modern-sidebar:not(.expanded) .va-sidebar-logo-toggle:hover .va-logo-icon-img {
-	transform: rotate(90deg) scale(1.04);
+.modern-sidebar .va-logo-card-menu {
+	color: var(--text-primary);
 }
 
-@media (prefers-reduced-motion: reduce) {
-	.modern-sidebar-logo-toggle,
-	.va-sidebar-logo-toggle {
-		transition: none;
-	}
-
-	.modern-sidebar-logo-toggle:active,
-	.va-sidebar-logo-toggle:active {
-		transform: none;
-	}
-
-	.modern-sidebar .modern-sidebar-logo-toggle .va-logo-icon-img,
-	.modern-sidebar .va-sidebar-logo-toggle .va-logo-icon-img {
-		transition: none;
-	}
-
-	.modern-sidebar.expanded .modern-sidebar-logo-toggle:hover .va-logo-icon-img,
-	.modern-sidebar.expanded .va-sidebar-logo-toggle:hover .va-logo-icon-img,
-	.modern-sidebar:not(.expanded) .modern-sidebar-logo-toggle:hover .va-logo-icon-img,
-	.modern-sidebar:not(.expanded) .va-sidebar-logo-toggle:hover .va-logo-icon-img {
-		transform: none;
-	}
+.modern-sidebar .va-logo-card-menu svg {
+	display: block;
 }
 
 .va-logo-icon-img {
-	width: 100%;
-	height: 100%;
+	width: 32px;
+	height: 32px;
 	object-fit: contain;
+	display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.modern-sidebar .va-logo-card,
+	.modern-sidebar .va-logo-card.is-edge {
+		transition: none;
+		transform: none;
+	}
 }
 
 .modern-sidebar-brand-text {

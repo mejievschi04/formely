@@ -113,7 +113,7 @@ class DashboardAdminController extends Controller
             );
 
             $hourlyActivity = Cache::remember(
-                'dashboard:hourly_sessions:v5:' . $dateRange['start']->format('YmdHi') . ':' . $dateRange['end']->format('YmdHi'),
+                'dashboard:hourly_sessions:v6:' . $dateRange['start']->format('YmdHi') . ':' . $dateRange['end']->format('YmdHi'),
                 300,
                 fn () => $this->getHourlyActivity($dateRange)
             );

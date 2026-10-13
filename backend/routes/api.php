@@ -100,6 +100,7 @@ Route::post('/auth/register', [\App\Http\Controllers\Api\AuthController::class, 
 Route::get('/auth/invitations/{token}', [RegistrationInvitationController::class, 'show'])->middleware('throttle:60,1');
 Route::post('/auth/invitations/{token}/accept', [RegistrationInvitationController::class, 'accept'])->middleware('throttle:15,1');
 Route::post('/auth/login', [\App\Http\Controllers\Api\AuthController::class, 'login'])->middleware('throttle:15,1'); // 15 attempts per minute
+Route::post('/auth/demo-login', [\App\Http\Controllers\Api\AuthController::class, 'demoLogin'])->middleware('throttle:20,1');
 
 // Formely SaaS — publice (site de marketing, branding la login)
 Route::get('/branding/{slug}', [CompanyBrandingController::class, 'showBySlug'])->middleware('throttle:60,1');
@@ -122,11 +123,11 @@ Route::get('/plans', function () {
 // Fără account.active: un cont suspendat / în așteptare trebuie să-și poată închide sesiunea.
 Route::post('/auth/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout'])->middleware(['auth:sanctum', 'tenant']);
 Route::get('/auth/me', [\App\Http\Controllers\Api\AuthController::class, 'me'])->middleware(['auth:sanctum', 'account.active', 'tenant']);
-Route::post('/auth/change-password', [\App\Http\Controllers\Api\AuthController::class, 'changePassword'])->middleware(['auth:sanctum', 'account.active', 'tenant', 'throttle:60,1']);
+Route::post('/auth/change-password', [\App\Http\Controllers\Api\AuthController::class, 'changePassword'])->middleware(['auth:sanctum', 'account.active', 'tenant', 'demo_readonly', 'throttle:60,1']);
 
 
 // Protected routes (require authentication) with rate limiting
-Route::middleware(['auth:sanctum', 'account.active', 'tenant', 'throttle:api-app'])->group(function () {
+Route::middleware(['auth:sanctum', 'account.active', 'tenant', 'demo_readonly', 'throttle:api-app'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index']);
     Route::get('/profile', [ProfileController::class, 'index']);
     Route::put('/profile', [ProfileController::class, 'update']);
@@ -227,6 +228,7 @@ Route::middleware([
     'auth:sanctum',
     'account.active',
     'tenant',
+    'demo_readonly',
     \App\Http\Middleware\StaffAreaAccessMiddleware::class,
     \App\Http\Middleware\AnalystReadOnlyMiddleware::class,
     \App\Http\Middleware\InstructorContentScopeMiddleware::class,

@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { useI18n } from '../../i18n/I18nContext';
 import { PRODUCT_SCREENS } from '../../data/productScreens';
+import {
+  FrameAiSetup,
+  FrameCourseInteractive,
+  FrameInviteInteractive,
+  FrameProgressInteractive,
+  FrameTestInteractive,
+} from './InteractiveProductDemos';
 
 function Side({ active }) {
   const { t } = useI18n();
@@ -237,6 +244,19 @@ const FRAME_MAP = {
   analytics: FrameAnalytics,
 };
 
+/** Real-product HTML demos (preferred on marketing surfaces). */
+const INTERACTIVE_MAP = {
+  aiSetup: FrameAiSetup,
+  create: FrameCourseInteractive,
+  courses: FrameCourseInteractive,
+  assign: FrameInviteInteractive,
+  people: FrameInviteInteractive,
+  tests: FrameTestInteractive,
+  track: FrameProgressInteractive,
+  progress: FrameProgressInteractive,
+  analytics: FrameProgressInteractive,
+};
+
 function ProductShot({ screen, Fallback, compact, priority }) {
   const { t } = useI18n();
   const [failed, setFailed] = useState(false);
@@ -244,17 +264,20 @@ function ProductShot({ screen, Fallback, compact, priority }) {
   return (
     <div className={`ui-frame ui-frame--shot ui-frame--bare${compact ? ' ui-frame--compact' : ''}`}>
       <div className="ui-frame-shot-wrap">
-        <img
-          className="ui-frame-shot"
-          src={screen.src}
-          alt={t(screen.altKey) || 'Formely'}
-          width={1440}
-          height={900}
-          loading={priority ? 'eager' : 'lazy'}
-          decoding="async"
-          onError={() => setFailed(true)}
-        />
+        <a href={screen.src} target="_blank" rel="noopener noreferrer" aria-label={t('frames.openScreenshot')}>
+          <img
+            className="ui-frame-shot"
+            src={screen.src}
+            alt={t(screen.altKey) || 'Formely'}
+            width={screen.width || 1440}
+            height={screen.height || 900}
+            loading={priority ? 'eager' : 'lazy'}
+            decoding="async"
+            onError={() => setFailed(true)}
+          />
+        </a>
       </div>
+      <a className="ui-frame-shot-open" href={screen.src} target="_blank" rel="noopener noreferrer">{t('frames.openScreenshot')} <span aria-hidden="true">↗</span></a>
     </div>
   );
 }
@@ -263,12 +286,20 @@ export default function ProductUiFrame({
   variant = 'dashboard',
   compact = false,
   priority = false,
+  interactive = true,
+  resetKey = 0,
 }) {
+  const Interactive = INTERACTIVE_MAP[variant];
+  if (interactive && Interactive) {
+    return <Interactive resetKey={resetKey} />;
+  }
+
   const screen = PRODUCT_SCREENS[variant];
   const Fallback = FRAME_MAP[variant] || FrameDashboard;
   if (screen?.src) {
     return (
       <ProductShot
+        key={screen.src}
         screen={screen}
         Fallback={Fallback}
         compact={compact}

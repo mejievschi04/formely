@@ -3,11 +3,11 @@ import Seo from '../components/Seo';
 import { FaqJsonLd } from '../components/JsonLd';
 import { useI18n } from '../i18n/I18nContext';
 import Hero from '../components/landing/Hero';
-import ProofStrip from '../components/landing/ProofStrip';
+import ProblemSolution from '../components/landing/ProblemSolution';
 import HowItWorks from '../components/landing/HowItWorks';
-import ProductShowcase from '../components/landing/ProductShowcase';
+import ProofStrip from '../components/landing/ProofStrip';
+import TrustStrip from '../components/landing/TrustStrip';
 import Pricing from '../components/landing/Pricing';
-import WhyFormely from '../components/landing/WhyFormely';
 import Faq from '../components/landing/Faq';
 import Contact from '../components/landing/Contact';
 import FinalCta from '../components/landing/FinalCta';
@@ -16,11 +16,9 @@ function useReveal(lang) {
   useEffect(() => {
     const els = document.querySelectorAll('.reveal:not(.is-in)');
     const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) entry.target.classList.add('is-in');
-        });
-      },
+      (entries) => entries.forEach((entry) => {
+        if (entry.isIntersecting) entry.target.classList.add('is-in');
+      }),
       { threshold: 0.12, rootMargin: '0px 0px -6% 0px' },
     );
     els.forEach((el) => io.observe(el));
@@ -34,19 +32,16 @@ function useReveal(lang) {
 export default function HomePage() {
   const { t, lang } = useI18n();
   useReveal(lang);
-
-  const faqItems = t('faq.items');
-
   return (
     <>
       <Seo title={t('seo.title')} description={t('seo.description')} path="/" />
-      <FaqJsonLd items={faqItems} />
+      <FaqJsonLd items={t('faq.items')} />
       <div className="landing-ambient" aria-hidden />
       <Hero />
-      <ProofStrip />
+      <ProblemSolution />
       <HowItWorks />
-      <ProductShowcase />
-      <WhyFormely />
+      <ProofStrip />
+      <TrustStrip />
       <Pricing />
       <Faq />
       <Contact />
