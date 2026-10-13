@@ -41,7 +41,7 @@ export default function OnboardingPage() {
       />
       <div className="landing-ambient" aria-hidden />
 
-      <section className="hero uc-hero">
+      <section className="hero uc-hero" data-analytics="onboarding">
         <div className="container hero-grid">
           <div className="hero-copy reveal">
             <p className="eyebrow">{t('onboardingPage.eyebrow')}</p>
@@ -66,7 +66,7 @@ export default function OnboardingPage() {
         </div>
       </section>
 
-      <section className="section" aria-labelledby="uc-pains-title">
+      <section className="section" data-analytics="onboarding-probleme" aria-labelledby="uc-pains-title">
         <div className="container">
           <h2 id="uc-pains-title" className="section-title reveal">
             {t('onboardingPage.painsTitle')}
@@ -82,7 +82,7 @@ export default function OnboardingPage() {
         </div>
       </section>
 
-      <section className="section" aria-labelledby="uc-steps-title">
+      <section className="section" data-analytics="onboarding-pasi" aria-labelledby="uc-steps-title">
         <div className="container">
           <h2 id="uc-steps-title" className="section-title reveal">
             {t('onboardingPage.stepsTitle')}
@@ -105,7 +105,7 @@ export default function OnboardingPage() {
         </div>
       </section>
 
-      <section className="section" aria-labelledby="uc-outcomes-title">
+      <section className="section" data-analytics="onboarding-rezultate" aria-labelledby="uc-outcomes-title">
         <div className="container">
           <h2 id="uc-outcomes-title" className="section-title reveal">
             {t('onboardingPage.outcomesTitle')}

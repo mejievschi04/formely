@@ -630,7 +630,7 @@
         "id": "cookies",
         "title": "Cookies and local storage",
         "paragraphs": [
-          "We do not set tracking cookies. We store the chosen language locally so we do not ask on every visit. If you arrived from an ad, we keep the link parameters (such as the campaign name) until you close the tab, so we know where your request came from if you send the form. You can clear this data in your browser settings. We count visits on our own server: the page, the source, the language and the device type. From the IP address and the browser we calculate a code that changes every day; the IP is not stored in that statistic. Separate security logs may contain the IP for up to 90 days."
+          "We do not set tracking cookies. We store the chosen language locally so we do not ask on every visit. If you arrived from an ad, we keep the link parameters (such as the campaign name) until you close the tab, so we know where your request came from if you send the form. You can clear this data in your browser settings. We count visits on our own server: the page, the section seen, the button pressed, the source, the language and the device type. From the IP address and the browser we calculate a code that changes every day; the IP is not stored in that statistic. Separate security logs may contain the IP for up to 90 days."
         ]
       },
       {

@@ -30,6 +30,10 @@ function ScrollToTop() {
   return null;
 }
 
+function linkLabel(anchor) {
+  return (anchor.getAttribute('data-track') || anchor.textContent || '').replace(/\s+/g, ' ').trim();
+}
+
 function Tracker() {
   const { pathname } = useLocation();
   const { lang } = useI18n();
@@ -41,11 +45,36 @@ function Tracker() {
 
   useEffect(() => {
     const onClick = (event) => {
-      if (event.target.closest?.('a[href*="#contact"]')) track('cta_click', lang);
+      const anchor = event.target.closest?.('a[href]');
+      if (!anchor) return;
+      const href = anchor.getAttribute('href') || '';
+      if (href.includes('/demo')) track('demo_click', lang, linkLabel(anchor));
+      else if (href.includes('#contact')) track('cta_click', lang, linkLabel(anchor));
     };
     document.addEventListener('click', onClick);
     return () => document.removeEventListener('click', onClick);
   }, [lang]);
+
+  useEffect(() => {
+    const nodes = document.querySelectorAll('main section[id], main section[data-analytics]');
+    if (!nodes.length || typeof IntersectionObserver === 'undefined') return undefined;
+    const seen = new Set();
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.intersectionRatio < 0.2) return;
+          const label = entry.target.getAttribute('data-analytics') || entry.target.id;
+          if (!label || seen.has(label)) return;
+          seen.add(label);
+          track('section_view', lang, label);
+          io.unobserve(entry.target);
+        });
+      },
+      { threshold: 0.2 },
+    );
+    nodes.forEach((node) => io.observe(node));
+    return () => io.disconnect();
+  }, [pathname, lang]);
 
   return null;
 }

@@ -4,7 +4,7 @@ export default function FinalCta() {
   const { t } = useI18n();
 
   return (
-    <section className="section" aria-labelledby="final-cta-title">
+    <section className="section" data-analytics="final" aria-labelledby="final-cta-title">
       <div className="container">
         <div className="final-cta reveal">
           <div className="final-cta-glow" aria-hidden="true" />

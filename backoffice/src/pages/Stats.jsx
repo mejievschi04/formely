@@ -13,6 +13,24 @@ const RANGES = [
 
 const DEVICE_LABELS = { mobile: 'Mobil', desktop: 'Desktop', tablet: 'Tabletă' };
 
+const SECTION_LABELS = {
+  hero: 'Prima ecran',
+  problem: 'Problema',
+  'cum-functioneaza': 'Cum funcționează',
+  proof: 'Dovezi',
+  trust: 'Încredere',
+  preturi: 'Prețuri',
+  faq: 'Întrebări',
+  contact: 'Contact',
+  final: 'Apel final',
+  produs: 'Produs',
+  demo: 'Turul demo',
+  onboarding: 'Onboarding',
+  'onboarding-probleme': 'Onboarding · probleme',
+  'onboarding-pasi': 'Onboarding · pași',
+  'onboarding-rezultate': 'Onboarding · rezultate',
+};
+
 const nf = new Intl.NumberFormat('ro-RO');
 
 function dayLabel(iso, long = false) {
@@ -73,6 +91,93 @@ function DailyChart({ daily }) {
         )}
       </div>
     </div>
+  );
+}
+
+function HourChart({ hours }) {
+  const [hover, setHover] = useState(null);
+  const max = niceMax(Math.max(0, ...hours.map((h) => h.visitors)));
+
+  return (
+    <div className="bo-chart">
+      <div className="bo-chart__axis" aria-hidden>
+        <span>{nf.format(max)}</span>
+        <span>{nf.format(max / 2)}</span>
+        <span>0</span>
+      </div>
+      <div className="bo-chart__plot" onMouseLeave={() => setHover(null)}>
+        <div className="bo-chart__grid" aria-hidden>
+          <span />
+          <span />
+          <span />
+        </div>
+        {hours.map((h, i) => (
+          <button
+            key={h.hour}
+            type="button"
+            className={`bo-chart__col${hover === i ? ' is-hover' : ''}`}
+            onMouseEnter={() => setHover(i)}
+            onFocus={() => setHover(i)}
+            onBlur={() => setHover(null)}
+            aria-label={`${String(h.hour).padStart(2, '0')}:00, ${h.visitors} vizitatori`}
+          >
+            <span className="bo-chart__bar" style={{ height: `${(h.visitors / max) * 100}%` }} />
+            {h.hour % 6 === 0 && <span className="bo-chart__x">{String(h.hour).padStart(2, '0')}</span>}
+          </button>
+        ))}
+        {hover != null && (
+          <div
+            className="bo-chart__tip"
+            style={{ left: `${((hover + 0.5) / hours.length) * 100}%` }}
+            role="status"
+          >
+            <strong>{String(hours[hover].hour).padStart(2, '0')}:00</strong>
+            <span>{nf.format(hours[hover].visitors)} vizitatori</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RankList({ title, rows, labels, empty = 'Încă nu sunt date.', hint }) {
+  const top = Math.max(1, ...rows.map((r) => r.visitors));
+  return (
+    <section className="bo-card">
+      <div className="bo-card__head">
+        <h2>{title}</h2>
+        {hint && <span className="bo-muted">{hint}</span>}
+      </div>
+      {rows.length === 0 ? (
+        <p className="bo-muted">{empty}</p>
+      ) : (
+        <div className="bo-table-wrap">
+          <table className="bo-table bo-stat-table">
+            <thead>
+              <tr>
+                <th>Nume</th>
+                <th className="is-num">Vizitatori</th>
+                <th className="is-num">Evenimente</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.label}>
+                  <td>
+                    <div className="bo-stat-label">
+                      <span>{labels?.[row.label] || row.label}</span>
+                      <i style={{ width: `${(row.visitors / top) * 100}%` }} aria-hidden />
+                    </div>
+                  </td>
+                  <td className="is-num">{nf.format(row.visitors)}</td>
+                  <td className="is-num">{nf.format(row.events || 0)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -140,7 +245,7 @@ export default function StatsPage() {
   const totals = data?.totals || {};
   const steps = [
     { id: 'visitors', label: 'Au intrat pe site' },
-    { id: 'cta_clicks', label: 'Au apăsat un buton de demo' },
+    { id: 'cta_clicks', label: 'Au apăsat un buton spre formular' },
     { id: 'form_starts', label: 'Au început formularul' },
     { id: 'leads', label: 'Au trimis cererea' },
   ];
@@ -151,7 +256,7 @@ export default function StatsPage() {
       <header className="bo-page-head">
         <div>
           <h1>Statistici site</h1>
-          <p>Vizite anonime pe formely.org, fără cookie-uri. Vizitatorii unici se numără pe zi.</p>
+          <p>Vizite anonime pe formely.org, fără cookie-uri. Vizitatorii unici se numără pe zi. Secțiunile și butoanele arată unde se opresc și ce apasă.</p>
         </div>
         <div className="bo-range" role="group" aria-label="Perioadă">
           {RANGES.map((r) => (
@@ -173,9 +278,24 @@ export default function StatsPage() {
               <small>{nf.format(totals.pageviews || 0)} vizite în total</small>
             </article>
             <article>
-              <span>Click pe demo</span>
+              <span>Click spre formular</span>
               <strong>{nf.format(totals.cta_clicks || 0)}</strong>
-              <small>Vizitatori care au apăsat un CTA</small>
+              <small>Au apăsat un buton de cerere</small>
+            </article>
+            <article>
+              <span>Demo deschis</span>
+              <strong>{nf.format(totals.demo_clicks || 0)}</strong>
+              <small>Au apăsat un buton de demo</small>
+            </article>
+            <article>
+              <span>Respingere</span>
+              <strong>{totals.bounce ?? 0}%</strong>
+              <small>O pagină, fără click sau formular</small>
+            </article>
+            <article>
+              <span>Pagini / vizitator</span>
+              <strong>{totals.pages_per_visitor ?? 0}</strong>
+              <small>Media vizitelor pe persoană</small>
             </article>
             <article>
               <span>Formular început</span>
@@ -208,6 +328,14 @@ export default function StatsPage() {
 
           <section className="bo-card">
             <div className="bo-card__head">
+              <h2>Ora din zi</h2>
+              <span className="bo-muted">Vizitatori unici, ora serverului</span>
+            </div>
+            <HourChart hours={data.hours || []} />
+          </section>
+
+          <section className="bo-card">
+            <div className="bo-card__head">
               <h2>Unde pierdem vizitatorii</h2>
             </div>
             <div className="bo-stat-funnel">
@@ -230,13 +358,35 @@ export default function StatsPage() {
 
           <div className="bo-split">
             <Breakdown title="Surse" rows={data.sources || []} />
-            <Breakdown title="Campanii" rows={data.campaigns || []} empty="Nicio vizită cu utm_campaign încă." />
+            <Breakdown title="Medii" rows={data.mediums || []} empty="Nicio vizită cu utm_medium încă." />
           </div>
           <div className="bo-split">
+            <Breakdown title="Campanii" rows={data.campaigns || []} empty="Nicio vizită cu utm_campaign încă." />
             <Breakdown title="Dispozitive" rows={data.devices || []} labels={DEVICE_LABELS} />
-            <Breakdown title="Limbi" rows={data.languages || []} />
           </div>
-          <Breakdown title="Pagini" rows={data.pages || []} />
+          <div className="bo-split">
+            <Breakdown title="Limbi" rows={data.languages || []} />
+            <Breakdown title="Pagini" rows={data.pages || []} />
+          </div>
+          <div className="bo-split">
+            <RankList
+              title="Până unde ajung"
+              rows={data.sections || []}
+              labels={SECTION_LABELS}
+              hint="În ordinea paginii"
+              empty="Încă nu s-a înregistrat nicio secțiune văzută."
+            />
+            <RankList
+              title="Butoane spre formular"
+              rows={data.ctas || []}
+              empty="Niciun click spre formular încă."
+            />
+          </div>
+          <RankList
+            title="Butoane de demo"
+            rows={data.demos || []}
+            empty="Niciun click pe demo încă."
+          />
         </>
       )}
     </>

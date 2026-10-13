@@ -68,7 +68,7 @@ export default function Hero() {
   }, [step]);
 
   return (
-    <section className="hero">
+    <section className="hero" data-analytics="hero">
       <div className="container hero-grid">
         <div className="hero-copy reveal">
           <p className="eyebrow">{t('hero.eyebrow')}</p>

@@ -5,7 +5,7 @@ export default function TrustStrip() {
   const items = t('trust.items');
 
   return (
-    <section className="section trust" aria-labelledby="trust-title">
+    <section className="section trust" data-analytics="trust" aria-labelledby="trust-title">
       <div className="container">
         <div className="trust-head reveal">
           <div className="trust-brand">

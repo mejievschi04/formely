@@ -79,15 +79,54 @@ class SiteStatsTest extends TestCase
         $response->assertJsonPath('totals.pageviews', 3)
             ->assertJsonPath('totals.visitors', 2)
             ->assertJsonPath('totals.cta_clicks', 1)
+            ->assertJsonPath('totals.demo_clicks', 0)
             ->assertJsonPath('totals.form_starts', 1)
             ->assertJsonPath('totals.leads', 1)
             ->assertJsonPath('totals.conversion', 50)
+            ->assertJsonPath('totals.bounce', 50)
+            ->assertJsonPath('totals.pages_per_visitor', 1.5)
             ->assertJsonPath('sources.0.label', 'facebook')
             ->assertJsonPath('sources.0.leads', 1)
             ->assertJsonPath('sources.1.label', 'Direct')
             ->assertJsonPath('campaigns.0.label', 'oct')
-            ->assertJsonCount(7, 'daily');
+            ->assertJsonCount(7, 'daily')
+            ->assertJsonCount(24, 'hours');
         $this->assertSame(2, collect($response->json('daily'))->sum('visitors'));
+    }
+
+    public function test_sections_buttons_and_medium_stay_anonymous(): void
+    {
+        $this->track('pageview', self::LAPTOP, '10.1.0.1', [
+            'attribution' => ['utm_source' => 'google', 'utm_medium' => 'cpc', 'utm_campaign' => 'search'],
+        ]);
+        $this->track('section_view', self::LAPTOP, '10.1.0.1', ['label' => 'preturi']);
+        $this->track('section_view', self::LAPTOP, '10.1.0.1', ['label' => 'hero']);
+        $this->track('cta_click', self::LAPTOP, '10.1.0.1', ['label' => 'Cere activarea']);
+        $this->track('demo_click', self::LAPTOP, '10.1.0.1', ['label' => '<b>Vezi demo</b>']);
+        $this->track('pageview', self::PHONE, '10.1.0.2');
+
+        $event = SiteEvent::where('type', 'demo_click')->first();
+        $this->assertSame('Vezi demo', $event->label);
+        $this->assertStringNotContainsString('10.1.0.1', json_encode($event->toArray()));
+
+        Sanctum::actingAs(User::factory()->create([
+            'email' => 'ops@formely.local',
+            'password' => Hash::make('Password1'),
+            'role' => UserRoles::PLATFORM_OPERATOR,
+            'company_id' => null,
+            'status' => 'active',
+        ]));
+
+        $this->getJson('/api/platform/site-stats?days=7')
+            ->assertOk()
+            ->assertJsonPath('totals.demo_clicks', 1)
+            ->assertJsonPath('totals.bounce', 50)
+            ->assertJsonPath('sections.0.label', 'hero')
+            ->assertJsonPath('sections.1.label', 'preturi')
+            ->assertJsonPath('ctas.0.label', 'Cere activarea')
+            ->assertJsonPath('ctas.0.visitors', 1)
+            ->assertJsonPath('demos.0.label', 'Vezi demo')
+            ->assertJsonPath('mediums.0.label', 'cpc');
     }
 
     public function test_stats_require_platform_access(): void

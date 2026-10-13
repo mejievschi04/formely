@@ -31,6 +31,7 @@ class SiteEventController extends Controller
             'path' => 'nullable|string|max:2000',
             'referrer' => 'nullable|string|max:2000',
             'lang' => 'nullable|string|max:5',
+            'label' => 'nullable|string|max:80',
             'attribution' => 'nullable|array',
             'attribution.*' => 'nullable|string|max:2000',
         ]);
@@ -46,6 +47,7 @@ class SiteEventController extends Controller
             'type' => $validated['type'],
             'visitor' => $this->visitor($request->ip(), $ua),
             'path' => Str::limit(parse_url($validated['path'] ?? '/', PHP_URL_PATH) ?: '/', 250, ''),
+            'label' => $this->label($validated['type'], $validated['label'] ?? null),
             'source' => $this->source($utm, $validated['referrer'] ?? null, $request),
             'utm_medium' => $this->clip($utm['utm_medium'] ?? null, 100),
             'utm_campaign' => $this->clip($utm['utm_campaign'] ?? null, 150),
@@ -94,6 +96,18 @@ class SiteEventController extends Controller
         }
 
         return preg_match('/mobile|android|iphone/i', $ua) ? 'mobile' : 'desktop';
+    }
+
+    /** Textul butonului sau id-ul secțiunii. Doar pentru evenimentele care au nevoie de el. */
+    private function label(string $type, ?string $value): ?string
+    {
+        if (! in_array($type, ['section_view', 'cta_click', 'demo_click'], true)) {
+            return null;
+        }
+
+        $clean = preg_replace('/\s+/u', ' ', (string) $value) ?? '';
+
+        return $this->clip($clean, 80);
     }
 
     private function clip(?string $value, int $max): ?string

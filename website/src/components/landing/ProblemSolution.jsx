@@ -5,7 +5,7 @@ export default function ProblemSolution() {
   const items = t('problem.items');
 
   return (
-    <section className="section" aria-labelledby="problem-title">
+    <section className="section" data-analytics="problem" aria-labelledby="problem-title">
       <div className="container">
         <h2 id="problem-title" className="section-title reveal">
           {t('problem.title')}

@@ -629,7 +629,7 @@
         "id": "cookies",
         "title": "Cookie-uri și stocare locală",
         "paragraphs": [
-          "Nu setăm cookie-uri de urmărire. Salvăm local limba aleasă, ca să nu o cerem la fiecare vizită. Dacă ai ajuns dintr-o reclamă, păstrăm până închizi tab-ul parametrii link-ului (de exemplu numele campaniei), ca să știm de unde a venit cererea dacă trimiți formularul. Poți șterge aceste date din setările browserului. Numărăm vizitele pe serverul nostru: pagina, sursa, limba și tipul de dispozitiv. Din adresa IP și din browser calculăm un cod care se schimbă în fiecare zi; IP-ul nu este salvat în această statistică. Jurnalele tehnice de securitate pot conține IP, separat, cel mult 90 de zile."
+          "Nu setăm cookie-uri de urmărire. Salvăm local limba aleasă, ca să nu o cerem la fiecare vizită. Dacă ai ajuns dintr-o reclamă, păstrăm până închizi tab-ul parametrii link-ului (de exemplu numele campaniei), ca să știm de unde a venit cererea dacă trimiți formularul. Poți șterge aceste date din setările browserului. Numărăm vizitele pe serverul nostru: pagina, secțiunea văzută, butonul apăsat, sursa, limba și tipul de dispozitiv. Din adresa IP și din browser calculăm un cod care se schimbă în fiecare zi; IP-ul nu este salvat în această statistică. Jurnalele tehnice de securitate pot conține IP, separat, cel mult 90 de zile."
         ]
       },
       {

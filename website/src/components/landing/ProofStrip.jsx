@@ -6,7 +6,7 @@ export default function ProofStrip() {
   const lines = t('proof.lines');
 
   return (
-    <section className="section proof" aria-labelledby="proof-title">
+    <section className="section proof" data-analytics="proof" aria-labelledby="proof-title">
       <div className="container">
         <div className="proof-head reveal">
           <p className="eyebrow">{t('proof.eyebrow')}</p>
