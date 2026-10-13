@@ -1,66 +1,53 @@
-import { useEffect, useState } from 'react';
 import { useI18n } from '../../i18n/I18nContext';
-import ProductUiFrame from './ProductUiFrame';
 import SectionTitle from './SectionTitle';
 
-const SCREEN_BY_ID = {
-  courses: 'aiSetup',
-  tests: 'tests',
-  progress: 'track',
-  library: 'library',
+/** Capturi statice din academia demo (2×), vezi public/screens/README.md. */
+const SHOT_BY_ID = {
+  tests: { src: '/screens/learner-path.webp', width: 2720, height: 960 },
+  progress: { src: '/screens/progress-report.webp', width: 2736, height: 1672 },
+  courses: { src: '/screens/ai-setup.webp', width: 1800, height: 1070 },
 };
 
 export default function ProductShowcase() {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const items = t('showcase.items');
-  const [active, setActive] = useState(0);
-
-  useEffect(() => {
-    setActive(0);
-  }, [lang]);
-
-  const current = items[active] || items[0];
-  const screen = SCREEN_BY_ID[current?.id] || 'create';
 
   return (
-    <section className="section" id="produs" aria-labelledby="showcase-title">
+    <section className="section" id="produs" data-analytics="showcase" aria-labelledby="showcase-title">
       <div className="container">
         <p className="eyebrow reveal">{t('showcase.eyebrow')}</p>
         <SectionTitle id="showcase-title" lines={t('showcase.lines')} />
+        <p className="section-sub reveal">{t('showcase.subtitle')}</p>
 
-        <div className="showcase-panel reveal">
-          <div className="showcase-tabs" role="tablist" aria-label={t('showcase.eyebrow')}>
-            {items.map((item, i) => (
-              <button
-                key={item.id}
-                type="button"
-                role="tab"
-                id={`showcase-tab-${item.id}`}
-                aria-selected={i === active}
-                aria-controls="showcase-panel"
-                className={`showcase-tab${i === active ? ' is-active' : ''}`}
-                onClick={() => setActive(i)}
-              >
-                <strong>{item.title}</strong>
-                <span>{item.text}</span>
-              </button>
-            ))}
-          </div>
-
-          <div
-            className="showcase-stage"
-            id="showcase-panel"
-            role="tabpanel"
-            aria-labelledby={current ? `showcase-tab-${current.id}` : undefined}
-          >
-            <div className="showcase-stage-copy">
-              <h3>{current?.title}</h3>
-              <p>{current?.text}</p>
-            </div>
-            <div className="showcase-stage-visual">
-              <ProductUiFrame variant={screen} interactive resetKey={active} />
-            </div>
-          </div>
+        <div className="feature-rows">
+          {items.map((item, i) => {
+            const shot = SHOT_BY_ID[item.id];
+            return (
+              <article key={item.id} className={`feature-row reveal${i % 2 ? ' feature-row--flip' : ''}`}>
+                <div className="feature-copy">
+                  <p className="feature-kicker">{item.kicker}</p>
+                  <h3>{item.title}</h3>
+                  <p className="feature-pain">{item.pain}</p>
+                  <p>{item.text}</p>
+                </div>
+                {shot && (
+                  <figure className="feature-shot">
+                    <a href={shot.src} target="_blank" rel="noopener noreferrer" aria-label={t('frames.openScreenshot')}>
+                      <img
+                        src={shot.src}
+                        alt={item.caption}
+                        width={shot.width}
+                        height={shot.height}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </a>
+                    <figcaption>{item.caption}</figcaption>
+                  </figure>
+                )}
+              </article>
+            );
+          })}
         </div>
       </div>
     </section>

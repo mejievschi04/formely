@@ -10,52 +10,51 @@
     "pricing": "Pricing",
     "faq": "FAQ",
     "login": "Sign in",
-    "cta": "Request Formely AI access",
+    "cta": "Get 14 days free",
     "menu": "Menu",
     "close": "Close",
     "skip": "Skip to content",
     "lang": "Language"
   },
   "hero": {
-    "eyebrow": "Formely AI for team training",
+    "eyebrow": "For onboarding and internal training",
     "lines": [
-      "Your materials.",
-      "Courses and tests.",
-      "With Formely AI."
+      "Upload your procedures.",
+      "Formely AI builds the course and test."
     ],
-    "sub": "Upload your procedures or describe what your team needs to learn. Formely AI drafts lessons and test questions. You review the content and publish it.",
-    "ctaPrimary": "Request Formely AI access",
-    "ctaSecondary": "See Formely in action",
+    "sub": "A training platform for small and mid-sized companies. Check what the AI wrote, invite your team by email and see each employee's progress.",
+    "ctaPrimary": "Get 14 days free",
+    "ctaSecondary": "Open the demo academy, no account",
     "orbit": [
       {
-        "label": "Create courses"
+        "label": "Onboarding path"
       },
       {
-        "label": "Manage the team"
+        "label": "Email invitations"
       },
       {
-        "label": "Track progress"
+        "label": "Report per employee"
       },
       {
-        "label": "Assess knowledge"
+        "label": "Test after each module"
       },
       {
-        "label": "Organize content"
+        "label": "From PDF to course"
       },
       {
-        "label": "Measure results"
+        "label": "Minimum pass mark"
       },
       {
         "label": "Formely AI"
       }
     ],
-    "note": "We email you within 24h. 14 free days after activation."
+    "note": "We email you within 24h. 14 free days after activation, no card needed."
   },
   "proof": {
-    "eyebrow": "What AI prepares",
+    "eyebrow": "What you get",
     "lines": [
       "AI for courses.",
-      "Control for you."
+      "Visibility for you."
     ],
     "items": [
       {
@@ -69,9 +68,9 @@
         "text": "Choose the question count and difficulty. AI drafts questions and answer options."
       },
       {
-        "value": "Control",
-        "label": "before publishing",
-        "text": "Review the proposed content and make the changes it needs. You decide what your team sees."
+        "value": "Progress",
+        "label": "and certificates",
+        "text": "See who went through the lessons, what score they got on the test and who received the certificate."
       }
     ]
   },
@@ -93,7 +92,7 @@
     ]
   },
   "problem": {
-    "title": "You have the materials. Now build the course.",
+    "title": "Today your training lives in PDFs, on WhatsApp and in two people's heads.",
     "items": [
       {
         "title": "Turn procedures into lessons",
@@ -111,59 +110,64 @@
     "solution": "Start with materials or a brief. Formely AI drafts the structure, lessons and tests. You adapt them to your company and publish."
   },
   "how": {
-    "eyebrow": "With Formely AI",
+    "eyebrow": "How you start",
     "lines": [
-      "From an idea",
-      "to lessons and tests."
+      "From request",
+      "to a trained team."
     ],
-    "subtitle": "Choose the topic, level and structure. Formely AI drafts the content, and you review it before sharing it with your team.",
-    "shotCaption": "Screenshots from the demo academy — select a step to view its screen.",
-    "cta": "Request Formely AI access",
+    "subtitle": "You don’t need any technical skills. We help you until your first course is published.",
+    "shotCaption": "Screenshots from the demo academy. Pick a step to see the screen.",
+    "cta": "Get 14 days free",
     "ctaDemo": "Open demo academy",
     "steps": [
       {
         "num": "01",
-        "title": "Generate with Formely AI",
-        "text": "Upload the materials and complete the form. AI drafts lessons and test questions for the level you chose."
+        "title": "We build the first course together",
+        "text": "We email you within 24h of your request and activate your academy. We start from your procedures and build the first course with Formely AI, then you review and adjust it."
       },
       {
         "num": "02",
-        "title": "Publish and invite your team",
-        "text": "Review the content, adapt it to your company and publish the course. Employees receive access through an email invitation."
+        "title": "You invite your team by email",
+        "text": "Employees get an invitation and open it in the browser, on phone or computer. Nothing to install."
       },
       {
         "num": "03",
-        "title": "See what was understood",
-        "text": "Track lessons completed and test scores. See who has finished and who needs support."
+        "title": "You see who finished",
+        "text": "The dashboard shows progress and test scores. You get 14 free days to try everything with your team, then choose a plan."
       }
     ]
   },
   "showcase": {
     "eyebrow": "Why Formely",
     "lines": [
-      "Your team's training,",
-      "under control."
+      "Why do you",
+      "need Formely?"
     ],
+    "subtitle": "If you hire often, training eats time every month. With Formely you build it once and reuse it for every new hire.",
     "items": [
       {
-        "id": "courses",
-        "title": "Courses from your materials",
-        "text": "Formely AI starts from PDFs and procedures. You edit and publish — new hires follow the path on their own."
-      },
-      {
         "id": "tests",
-        "title": "Tests that check understanding",
-        "text": "Generate questions with Formely AI or write your own. The same standard for every new hire."
+        "kicker": "Onboarding",
+        "title": "Stop explaining the same things with every hire",
+        "pain": "Right now, a new hire learns from whichever colleague has time that day. Everyone explains it differently, and the mentor loses hours of their own work.",
+        "text": "In Formely you put your procedures into a learning path once. Every new hire gets the same path and works through it at their own pace, on phone or computer.",
+        "caption": "The path as an employee sees it: onboarding, compliance and sales courses, each with its own progress."
       },
       {
         "id": "progress",
-        "title": "Clear control over training",
-        "text": "See who finished, who fell behind and who received a certificate."
+        "kicker": "Control",
+        "title": "Know exactly who learned it and who did not",
+        "pain": "When you send procedures over WhatsApp, you never know who read them. You find out when someone gets it wrong with a client.",
+        "text": "Formely shows you, for each employee, which lessons they finished, which tests they took and what they scored. You spot who is falling behind early and can step in.",
+        "caption": "The progress report: lessons and tests completed, average score and study time for each employee. Data from the demo academy."
       },
       {
-        "id": "library",
-        "title": "Knowledge stays in the company",
-        "text": "Procedures and the experience of key people live in an internal library, even after they leave. On the Academy and Business plans."
+        "id": "courses",
+        "kicker": "Formely AI",
+        "title": "You don’t write the course from scratch",
+        "pain": "Many teams put training off because turning procedures into lessons and writing test questions takes days.",
+        "text": "Upload your PDFs or paste the text of your procedures. Formely AI drafts the lessons and test questions, and you review, correct and publish them.",
+        "caption": "Formely AI setup: pick the topic and audience, add your materials, then go through the course, the test and the invitations."
       }
     ]
   },
@@ -212,7 +216,7 @@
       "Choose a plan",
       "for your team."
     ],
-    "subtitle": "AI course and test generation is included in every plan, with monthly credits. Choose according to your learner count and the features you need.",
+    "subtitle": "AI course and test generation is included in every plan, with monthly credits. At the launch price, Instructor costs under €1 per employee per month for 50 learners.",
     "recommended": "Recommended",
     "perMonth": "/ month",
     "perYear": "/ year",
@@ -229,7 +233,7 @@
     "learnersUnlimited": "Teams and organizations",
     "staff": "{n} staff seats",
     "aiCredits": "{n} AI credits / month",
-    "cta": "Request Formely AI access",
+    "cta": "Get 14 days free",
     "included": "Included",
     "excluded": "Not included",
     "note": "AI credits and features differ by plan. 14 free days after activation.",
@@ -256,7 +260,8 @@
       "business": {
         "name": "Business"
       }
-    }
+    },
+    "everythingIn": "Everything in {plan}, plus:"
   },
   "why": {
     "lines": [
@@ -288,12 +293,8 @@
     "title": "Frequently asked questions",
     "items": [
       {
-        "q": "What can Formely AI create?",
-        "a": "Formely AI drafts course structures, lessons and test questions based on your brief and materials. Configure the topic, level and other details in the form before generating."
-      },
-      {
-        "q": "Can I use my existing procedures?",
-        "a": "Yes. Add PDFs or study text to give the generation context. Formely AI drafts the content, and you check that explanations and questions reflect your company’s materials."
+        "q": "We keep procedures in Drive and on WhatsApp. Why would we need Formely?",
+        "a": "In Drive and on WhatsApp the documents exist, but you don’t know who read them or understood them. In Formely the same documents become courses with a test, and you see each employee’s progress and score. You upload them exactly as they are now."
       },
       {
         "q": "Is the course published automatically?",
@@ -304,12 +305,16 @@
         "a": "Course and test generation is included in every plan. Instructor has 100 AI credits per month, Academie 500 and Business 2500. A course uses 15 credits and a test 3. Additional features differ by plan."
       },
       {
-        "q": "How do I start the trial?",
-        "a": "Send an access request. We email you within 24h to arrange activation and help you start your first course. You have 14 free days after activation."
+        "q": "Do I need a card for the 14 free days? Can I cancel?",
+        "a": "We don’t ask for a card. You try the platform with your team for 14 days, and if you don’t want to continue, you can cancel at any time."
       },
       {
-        "q": "How does my team access the courses?",
-        "a": "Invite employees by email. They access courses and tests in a browser, on their phone or computer. You track progress and results in the platform."
+        "q": "Where is employee data stored?",
+        "a": "Your academy’s data is hosted on Formely’s servers."
+      },
+      {
+        "q": "Our employees aren’t technical. Will they manage?",
+        "a": "Yes. The employee gets an email invitation, opens the link and sees the assigned courses. They go through the lessons one by one and take the test at the end, in the browser, on phone or computer. Nothing to install."
       }
     ]
   },
@@ -323,7 +328,7 @@
     "phone": "Phone (optional)",
     "phoneHint": "Only if you want us to call",
     "countryCode": "Country code",
-    "submit": "Request Formely AI access",
+    "submit": "Get 14 days free",
     "sending": "Sending…",
     "success": "Request sent. We email you within 24h to arrange activation.",
     "error": "Could not send the request. Please try again.",
@@ -333,12 +338,12 @@
     "consentRequired": "Please accept data processing to submit."
   },
   "finalCta": {
-    "title": "You have the materials.\nLet Formely AI draft the first version.",
-    "description": "Create the course and test with AI, then review and publish them for your team. 14 free days after activation.",
-    "cta": "Request Formely AI access"
+    "title": "Get the course ready for your next new hire.",
+    "description": "We contact you within 24h and build the first course together. Then you get 14 free days.",
+    "cta": "Get 14 days free"
   },
   "sticky": {
-    "cta": "Request Formely AI access"
+    "cta": "Get 14 days free"
   },
   "demoTour": {
     "eyebrow": "Quick tour",
@@ -372,7 +377,7 @@
       {
         "screen": "track",
         "title": "See progress",
-        "text": "Who finished, who fell behind, who has the certificate."
+        "text": "Who finished, who fell behind and what each person scored."
       }
     ]
   },
@@ -416,7 +421,7 @@
       },
       {
         "title": "See if they're ready",
-        "text": "Progress, scores and certificate — before you put them on the floor or with clients."
+        "text": "Progress and test scores, before you put them on the floor or with clients."
       }
     ],
     "outcomesTitle": "What you get after activation",
@@ -428,28 +433,28 @@
     ]
   },
   "trust": {
-    "eyebrow": "You decide what to publish",
-    "title": "AI drafts the content. You review it.",
-    "subtitle": "Formely AI gives you a starting point. Your knowledge of the company and your review remain part of the process.",
+    "eyebrow": "We start together",
+    "title": "We help you build your first course.",
+    "subtitle": "Once you send the request, we email you within 24h, activate your account and prepare the first course for your team with you.",
     "items": [
       {
-        "title": "Your brief sets the direction",
-        "text": "Choose the topic, audience and level. The form collects the details before generation starts."
+        "title": "Activation within 24h",
+        "text": "We email you within 24h of your request and set up the academy together with you."
       },
       {
-        "title": "Your materials add context",
-        "text": "Add procedures or study text. AI uses them to draft course content and test questions."
+        "title": "First course from your materials",
+        "text": "We start from your company's procedures and build the first course with Formely AI. You see the result on your own content."
       },
       {
-        "title": "Review the proposal",
-        "text": "Check explanations and answers. Edit the content before publishing it for learners."
+        "title": "Nothing to install",
+        "text": "Employees open it in the browser, on phone or computer, from the email invitation."
       },
       {
-        "title": "We help you get started",
-        "text": "We help with activation and your first course. You have 14 free days after activation to try it with your team."
+        "title": "14 days free",
+        "text": "Try the platform with your team after activation. Choose a plan only after that."
       }
     ],
-    "note": "AI drafts the content. You review and publish."
+    "note": "The AI suggests the content. You check it and publish."
   },
   "footer": {
     "tagline": "Courses and tests from your materials, with Formely AI.",

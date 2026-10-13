@@ -3,14 +3,11 @@ import Seo from '../components/Seo';
 import { FaqJsonLd } from '../components/JsonLd';
 import { useI18n } from '../i18n/I18nContext';
 import Hero from '../components/landing/Hero';
-import ProblemSolution from '../components/landing/ProblemSolution';
+import ProductShowcase from '../components/landing/ProductShowcase';
 import HowItWorks from '../components/landing/HowItWorks';
-import ProofStrip from '../components/landing/ProofStrip';
-import TrustStrip from '../components/landing/TrustStrip';
 import Pricing from '../components/landing/Pricing';
 import Faq from '../components/landing/Faq';
 import Contact from '../components/landing/Contact';
-import FinalCta from '../components/landing/FinalCta';
 
 function useReveal(lang) {
   useEffect(() => {
@@ -38,14 +35,11 @@ export default function HomePage() {
       <FaqJsonLd items={t('faq.items')} />
       <div className="landing-ambient" aria-hidden />
       <Hero />
-      <ProblemSolution />
+      <ProductShowcase />
       <HowItWorks />
-      <ProofStrip />
-      <TrustStrip />
       <Pricing />
       <Faq />
       <Contact />
-      <FinalCta />
     </>
   );
 }

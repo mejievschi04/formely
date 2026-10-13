@@ -10,7 +10,7 @@
 **What it does:** Companiile creează cursuri (module, lecții, video/PDF/text), generează sau completează conținut și teste cu Formely AI (Volt), invită angajații pe email și văd progresul, notele și certificatele. Activarea e sales-assisted (formular → contact în 24h → 14 zile gratuit).  
 **Product category:** LMS / employee training / corporate onboarding (căutări: „platformă training angajați”, „LMS România”, „onboarding angajați AI”).  
 **Product type:** B2B SaaS (multi-tenant academy), sales-led activation.  
-**Business model:** Abonament lunar/anual pe 3 planuri (Instructor / Academie / Business), preț după nr. de cursanți + feature flags (library, events, AI). Ofertă lansare −30% primii 50 clienți. Prețuri listă: €49 / €129 / de la €249 → lansare ~€34 / €90 / de la €174.
+**Business model:** Abonament lunar/anual pe 3 planuri (Instructor / Academie / Business), preț după nr. de cursanți + feature flags (library, events, AI). Ofertă lansare −30% primii 50 clienți. Prețuri listă: €70 / €256 / de la €499 → lansare €49 / €179 / de la €349 (sursa: `website/src/data/plans.js`).
 
 ### Formely AI (în produs azi)
 | Capacitate | Feature flag | Plan azi (`plans.php`) |
@@ -148,6 +148,7 @@ Nume marketing public: **Formely AI** (Volt rămâne intern/tech). Entitlements 
 
 ## Changelog
 *Newest first. One line per revision: what changed and why.*
+- v4.4 (2026-10-13) — Prețuri aliniate cu site-ul (`website/src/data/plans.js`): listă €70/€256/€499, lansare €49/€179/€349. Certificatele nu se emit în produs (doar setare pe curs + notă minimă) — nu le promitem pe site.
 - v4.3 (2026-10-12) — `ai_tutor` OFF pe toate planurile (fără tutor/study tools pe lecții); Q&A admin rămâne.
 - v4.2 (2026-10-12) — Limite AI pe credite (100 / 500 / 2500); cost curs 15 / test 3 / Q&A 1; pool unic lunar.
 - v4.1 (2026-10-12) — Profil AI + cote: Academie `ai_qa` cu 150 Q&A/lună; Instructor 5/20/0; Business 100/500/2000; tutor learner deferred.

@@ -10,51 +10,51 @@
     "pricing": "Prețuri",
     "faq": "Întrebări",
     "login": "Autentificare",
-    "cta": "Cere acces la Formely AI",
+    "cta": "Cere 14 zile gratuit",
     "menu": "Meniu",
     "close": "Închide",
     "skip": "Sari la conținut",
     "lang": "Limbă"
   },
   "hero": {
-    "eyebrow": "Formely AI – instruire mai inteligentă",
+    "eyebrow": "Pentru onboarding și instruiri interne",
     "lines": [
-      "Creează. Instruiește. Evoluează.",
-      "Cu Formely AI."
+      "Încarci procedurile.",
+      "Formely AI face cursul și testul."
     ],
-    "sub": "De la o simplă descriere la un curs complet. Oferă-i Formely AI materialele sau obiectivele de învățare, iar AI-ul structurează lecțiile și generează testele. Tu validezi conținutul și îl publici.",
-    "ctaPrimary": "Cere acces la Formely AI",
-    "ctaSecondary": "Vezi Formely în acțiune",
+    "sub": "O platformă de training pentru firme mici și mijlocii. Verifici ce a scris AI-ul, inviți echipa pe email și vezi progresul fiecărui angajat.",
+    "ctaPrimary": "Cere 14 zile gratuit",
+    "ctaSecondary": "Deschide academia demo, fără cont",
     "orbit": [
       {
-        "label": "Creează cursuri"
+        "label": "Traseu de onboarding"
       },
       {
-        "label": "Gestionează echipa"
+        "label": "Invitații pe email"
       },
       {
-        "label": "Urmărește progresul"
+        "label": "Raport pe fiecare angajat"
       },
       {
-        "label": "Evaluează cunoștințele"
+        "label": "Test la final de modul"
       },
       {
-        "label": "Organizează conținutul"
+        "label": "Din PDF în curs"
       },
       {
-        "label": "Măsoară rezultatele"
+        "label": "Notă minimă de trecere"
       },
       {
         "label": "Formely AI"
       }
     ],
-    "note": "Te contactăm pe email în 24h. 14 zile gratuit după activare."
+    "note": "Te contactăm pe email în 24h. 14 zile gratuit după activare, fără card."
   },
   "proof": {
-    "eyebrow": "Ce pregătește AI-ul",
+    "eyebrow": "Ce primești",
     "lines": [
       "AI pentru cursuri.",
-      "Control pentru tine."
+      "Vizibilitate pentru tine."
     ],
     "items": [
       {
@@ -68,9 +68,9 @@
         "text": "Alegi numărul întrebărilor și dificultatea. AI propune întrebările și variantele de răspuns."
       },
       {
-        "value": "Control",
-        "label": "înainte de publicare",
-        "text": "Revizuiești conținutul propus și faci modificările necesare. Tu alegi ce vede echipa."
+        "value": "Progres",
+        "label": "și certificate",
+        "text": "Vezi cine a parcurs lecțiile, ce notă a luat la test și cine a primit certificatul."
       }
     ]
   },
@@ -92,7 +92,7 @@
     ]
   },
   "problem": {
-    "title": "Lasă AI-ul să transforme materialele tale în cursuri și teste, rapid și simplu.",
+    "title": "Trainingul stă azi în PDF-uri, pe WhatsApp și în capul a doi oameni.",
     "items": [
       {
         "title": "Proceduri de transformat în lecții",
@@ -110,59 +110,64 @@
     "solution": "Pornești de la materiale sau de la o cerință. Formely AI propune structura, lecțiile și testele. Tu le adaptezi firmei și le publici."
   },
   "how": {
-    "eyebrow": "Cu Formely AI",
+    "eyebrow": "Cum începi",
     "lines": [
-      "De la idee,",
-      "la lecții și teste."
+      "De la cerere,",
+      "la echipa instruită."
     ],
-    "subtitle": "Alegi subiectul, nivelul și structura. Formely AI propune conținutul, iar tu îl verifici înainte să ajungă la echipă.",
-    "shotCaption": "Capturi din academia demo — selectează un pas pentru a vedea ecranul.",
-    "cta": "Cere acces la Formely AI",
+    "subtitle": "Nu ai nevoie de cunoștințe tehnice. Te ajutăm până publici primul curs.",
+    "shotCaption": "Capturi din academia demo. Alege un pas ca să vezi ecranul.",
+    "cta": "Cere 14 zile gratuit",
     "ctaDemo": "Deschide academia demo",
     "steps": [
       {
         "num": "01",
-        "title": "Generezi cu Formely AI",
-        "text": "Încarci materialele și completezi formularul. AI propune lecțiile și întrebările de test pentru nivelul ales."
+        "title": "Facem primul curs împreună",
+        "text": "Îți scriem în 24h de la cerere și activăm academia. Pornim de la procedurile tale și facem primul curs cu Formely AI, apoi îl verifici și îl ajustezi."
       },
       {
         "num": "02",
-        "title": "Publici și inviți echipa",
-        "text": "Verifici conținutul, îl adaptezi firmei și publici cursul. Angajații primesc acces prin invitație pe email."
+        "title": "Inviți echipa pe email",
+        "text": "Angajații primesc o invitație și intră din browser, de pe telefon sau calculator. Nu instalează nimic."
       },
       {
         "num": "03",
-        "title": "Vezi ce a fost înțeles",
-        "text": "Urmărești lecțiile parcurse și notele la teste. Vezi cine a terminat și cine are nevoie de sprijin."
+        "title": "Vezi cine a terminat",
+        "text": "În panou urmărești progresul și scorurile la teste. Ai 14 zile gratuit să testezi totul cu echipa, apoi alegi planul."
       }
     ]
   },
   "showcase": {
     "eyebrow": "De ce Formely",
     "lines": [
-      "Trainingul echipei,",
-      "sub control."
+      "De ce îți trebuie",
+      "Formely?"
     ],
+    "subtitle": "Dacă angajezi des, trainingul îți mănâncă timp în fiecare lună. Cu Formely îl construiești o dată și îl refolosești la fiecare angajare nouă.",
     "items": [
       {
-        "id": "courses",
-        "title": "Curs din materialele tale",
-        "text": "Formely AI pornește de la PDF-uri și proceduri. Tu editezi, publici — angajații noi parcurg singuri traseul."
-      },
-      {
         "id": "tests",
-        "title": "Teste care verifică înțelegerea",
-        "text": "Generezi întrebări cu Formely AI sau le scrii tu. Același standard pentru fiecare angajat nou."
+        "kicker": "Onboarding",
+        "title": "Nu mai explici aceleași lucruri la fiecare angajare",
+        "pain": "Acum, omul nou învață de la colegul care are timp în ziua aceea. Fiecare explică altfel, iar mentorul pierde ore din lucrul lui.",
+        "text": "În Formely pui procedurile o singură dată, într-un traseu de cursuri. Fiecare angajat nou primește același traseu și îl parcurge în ritmul lui, de pe telefon sau calculator.",
+        "caption": "Traseul văzut de angajat: cursurile de onboarding, compliance și vânzări, fiecare cu progresul lui."
       },
       {
         "id": "progress",
-        "title": "Control clar asupra instruirii",
-        "text": "Vezi cine a terminat, cine a rămas în urmă și cine a primit certificatul."
+        "kicker": "Control",
+        "title": "Știi exact cine a învățat și cine nu",
+        "pain": "Când trimiți procedurile pe WhatsApp, nu știi cine le-a citit. Afli abia când cineva greșește la un client.",
+        "text": "Formely îți arată pentru fiecare angajat ce lecții a parcurs, ce teste a dat și ce scor a obținut. Vezi din timp cine a rămas în urmă și poți interveni.",
+        "caption": "Raportul de progres: lecții și teste finalizate, scor mediu și timp de studiu pentru fiecare angajat. Date din academia demo."
       },
       {
-        "id": "library",
-        "title": "Cunoștințele rămân în firmă",
-        "text": "Procedurile și experiența oamenilor-cheie stau într-o bibliotecă internă, chiar și după ce aceștia pleacă. Pe planurile Academie și Business."
+        "id": "courses",
+        "kicker": "Formely AI",
+        "title": "Nu scrii cursul de la zero",
+        "pain": "Mulți amână trainingul pentru că transformarea procedurilor în lecții și scrierea întrebărilor de test cer zile întregi.",
+        "text": "Încarci PDF-urile sau lipești textul procedurilor. Formely AI propune lecțiile și întrebările de test, iar tu le verifici, le corectezi și le publici.",
+        "caption": "Setup-ul Formely AI: alegi subiectul și publicul, adaugi materialele, apoi treci prin curs, test și invitații."
       }
     ]
   },
@@ -211,7 +216,7 @@
       "Alege planul",
       "pentru echipa ta."
     ],
-    "subtitle": "Generarea de cursuri și teste cu AI este inclusă în toate planurile, cu credite lunare. Alegi în funcție de numărul de cursanți și funcțiile necesare.",
+    "subtitle": "Generarea de cursuri și teste cu AI e inclusă în toate planurile, cu credite lunare. La prețul de lansare, Instructor costă sub €1 pe angajat pe lună pentru 50 de cursanți.",
     "recommended": "Recomandat",
     "perMonth": "/ lună",
     "perYear": "/ an",
@@ -228,7 +233,7 @@
     "learnersUnlimited": "Echipe și organizații",
     "staff": "{n} locuri staff",
     "aiCredits": "{n} credite AI / lună",
-    "cta": "Cere acces la Formely AI",
+    "cta": "Cere 14 zile gratuit",
     "included": "Inclus",
     "excluded": "Nu este inclus",
     "note": "Creditele AI și funcțiile diferă între planuri. 14 zile gratuit după activare.",
@@ -255,7 +260,8 @@
       "business": {
         "name": "Business"
       }
-    }
+    },
+    "everythingIn": "Tot din {plan}, plus:"
   },
   "why": {
     "lines": [
@@ -287,12 +293,8 @@
     "title": "Întrebări frecvente",
     "items": [
       {
-        "q": "Ce poate crea Formely AI?",
-        "a": "Formely AI propune structuri de curs, lecții și întrebări de test pe baza cerinței și materialelor tale. Configurezi subiectul, nivelul și celelalte detalii în formular înainte de generare."
-      },
-      {
-        "q": "Pot folosi procedurile pe care le am deja?",
-        "a": "Da. Poți adăuga PDF-uri sau text de studiu pentru a da context generării. Formely AI propune conținutul, iar tu verifici dacă explicațiile și întrebările respectă materialele firmei."
+        "q": "Avem procedurile în Drive și pe WhatsApp. De ce ne-ar trebui Formely?",
+        "a": "În Drive și pe WhatsApp documentele există, dar nu știi cine le-a citit și cine le-a înțeles. În Formely aceleași documente devin cursuri cu test, iar tu vezi progresul și scorul fiecărui angajat. Le încarci exact cum le ai acum."
       },
       {
         "q": "Cursul este publicat automat?",
@@ -303,12 +305,16 @@
         "a": "Generarea de cursuri și teste este inclusă în toate planurile. Instructor are 100 de credite AI pe lună, Academie 500, iar Business 2500. Un curs consumă 15 credite, iar un test 3. Funcțiile suplimentare diferă între planuri."
       },
       {
-        "q": "Cum încep perioada de test?",
-        "a": "Trimiți cererea de acces. Te contactăm pe email în 24h pentru activare și te ajutăm să pornești primul curs. Ai 14 zile gratuit după activare."
+        "q": "Trebuie card pentru cele 14 zile gratuite? Pot renunța?",
+        "a": "Nu cerem card. Testezi platforma 14 zile cu echipa, iar dacă nu vrei să continui, poți renunța oricând."
       },
       {
-        "q": "Cum accesează echipa cursurile?",
-        "a": "Inviți angajații pe email. Ei accesează cursurile și testele din browser, de pe telefon sau calculator. Tu urmărești progresul și rezultatele în platformă."
+        "q": "Unde sunt stocate datele angajaților?",
+        "a": "Datele academiei tale sunt găzduite pe serverele Formely."
+      },
+      {
+        "q": "Angajații noștri nu sunt tehnici. Se descurcă?",
+        "a": "Da. Angajatul primește o invitație pe email, deschide linkul și vede cursurile atribuite. Parcurge lecțiile una după alta și dă testul la final, din browser, pe telefon sau calculator. Nu are nimic de instalat."
       }
     ]
   },
@@ -322,7 +328,7 @@
     "phone": "Telefon (opțional)",
     "phoneHint": "Doar dacă vrei să te sunăm",
     "countryCode": "Cod de țară",
-    "submit": "Cere acces la Formely AI",
+    "submit": "Cere 14 zile gratuit",
     "sending": "Se trimite…",
     "success": "Cererea a fost trimisă. Te contactăm pe email în maximum 24h pentru activare.",
     "error": "Nu am putut trimite solicitarea. Încearcă din nou.",
@@ -332,12 +338,12 @@
     "consentRequired": "Bifează acordul pentru prelucrarea datelor."
   },
   "finalCta": {
-    "title": "Inteligență artificială pentru traininguri mai eficiente.",
-    "description": "Descoperă Formely AI cu 14 zile gratuite.",
-    "cta": "Cere acces la Formely AI"
+    "title": "Pregătește cursul pentru următorul angajat nou.",
+    "description": "Te contactăm în 24h și facem împreună primul curs. Apoi ai 14 zile gratuit.",
+    "cta": "Cere 14 zile gratuit"
   },
   "sticky": {
-    "cta": "Cere acces la Formely AI"
+    "cta": "Cere 14 zile gratuit"
   },
   "demoTour": {
     "eyebrow": "Tour rapid",
@@ -371,7 +377,7 @@
       {
         "screen": "track",
         "title": "Vezi progresul",
-        "text": "Cine a terminat, cine a rămas în urmă, cine are certificatul."
+        "text": "Cine a terminat, cine a rămas în urmă și ce scor a luat fiecare."
       }
     ]
   },
@@ -415,7 +421,7 @@
       },
       {
         "title": "Vezi dacă e gata",
-        "text": "Progres, note și certificat — înainte să-l lași pe teren sau la clienți."
+        "text": "Progres și scor la teste, înainte să-l lași pe teren sau la clienți."
       }
     ],
     "outcomesTitle": "Ce obții după activare",
@@ -427,25 +433,25 @@
     ]
   },
   "trust": {
-    "eyebrow": "Tu decizi ce publici",
-    "title": "Conținut generat cu AI, verificat de tine.",
-    "subtitle": "Formely AI îți oferă un punct de pornire. Cunoștințele despre firmă și verificarea conținutului rămân la tine.",
+    "eyebrow": "Pornim împreună",
+    "title": "Te ajutăm să faci primul curs.",
+    "subtitle": "După ce trimiți cererea, îți scriem în 24h, activăm contul și pregătim împreună primul curs pentru echipa ta.",
     "items": [
       {
-        "title": "Cerința stabilește direcția",
-        "text": "Alegi subiectul, publicul și nivelul. Formularul colectează detaliile înainte să înceapă generarea."
+        "title": "Activare în 24h",
+        "text": "Îți scriem pe email în maximum 24h de la cerere și configurăm academia împreună cu tine."
       },
       {
-        "title": "Materialele dau context",
-        "text": "Adaugi procedurile sau textul de studiu. AI le folosește pentru a propune conținutul cursului și întrebările de test."
+        "title": "Primul curs, din materialele tale",
+        "text": "Pornim de la procedurile firmei și facem primul curs cu Formely AI. Vezi rezultatul pe conținutul tău."
       },
       {
-        "title": "Revizuiești propunerea",
-        "text": "Verifici explicațiile și răspunsurile. Editezi conținutul înainte să îl publici pentru cursanți."
+        "title": "Fără instalare",
+        "text": "Angajații intră din browser, de pe telefon sau calculator, prin invitația primită pe email."
       },
       {
-        "title": "Pornim împreună",
-        "text": "Te ajutăm la activare și la primul curs. Ai 14 zile gratuit după activare pentru a testa cu echipa."
+        "title": "14 zile gratuit",
+        "text": "Testezi platforma cu echipa după activare. Alegi planul abia după aceea."
       }
     ],
     "note": "AI propune conținutul. Tu verifici și publici."

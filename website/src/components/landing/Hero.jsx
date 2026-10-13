@@ -14,12 +14,12 @@ import { demoUrl } from '../../data/site';
 const ORBIT_ICONS = [BookOpen, Users, TrendingUp, ClipboardCheck, FileText, Award, Sparkles];
 
 const FALLBACK = [
-  { label: 'Creează cursuri' },
-  { label: 'Gestionează echipa' },
-  { label: 'Urmărește progresul' },
-  { label: 'Evaluează cunoștințele' },
-  { label: 'Organizează conținutul' },
-  { label: 'Măsoară rezultatele' },
+  { label: 'Traseu de onboarding' },
+  { label: 'Invitații pe email' },
+  { label: 'Raport pe fiecare angajat' },
+  { label: 'Test la final de modul' },
+  { label: 'Din PDF în curs' },
+  { label: 'Notă minimă de trecere' },
   { label: 'Formely AI' },
 ];
 

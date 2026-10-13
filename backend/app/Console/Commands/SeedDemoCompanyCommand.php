@@ -351,7 +351,7 @@ class SeedDemoCompanyCommand extends Command
     ): array {
         $catalog = [
             [
-                'title' => 'Onboarding Formely — Primul lună',
+                'title' => 'Onboarding Formely — Prima lună',
                 'description' => 'Parcursul de acomodare: cultură, tool-uri, procese și primul deliverable.',
                 'level' => 'beginner',
                 'color' => '#0f766e',
