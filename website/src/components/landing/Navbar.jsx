@@ -5,7 +5,6 @@ import { appUrl, demoUrl } from '../../data/site';
 
 const LINKS = [
   { href: '/#produs', key: 'nav.product' },
-  { href: demoUrl, key: 'nav.how', external: true },
   { href: '/#preturi', key: 'nav.pricing' },
   { href: '/#faq', key: 'nav.faq' },
 ];
@@ -68,8 +67,8 @@ export default function Navbar() {
           <a className="nav-login" href={appUrl}>
             {t('nav.login')}
           </a>
-          <a className="btn btn-primary nav-cta" href="/#contact">
-            {t('nav.cta')}
+          <a className="btn btn-primary nav-cta" href={demoUrl} target="_blank" rel="noopener noreferrer">
+            {t('nav.how')}
           </a>
           <button
             type="button"
@@ -108,8 +107,8 @@ export default function Navbar() {
           <a className="nav-drawer-login" href={appUrl} onClick={() => setOpen(false)}>
             {t('nav.login')}
           </a>
-          <a className="btn btn-primary" href="/#contact" onClick={() => setOpen(false)}>
-            {t('nav.cta')}
+          <a className="btn btn-primary" href={demoUrl} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}>
+            {t('nav.how')}
           </a>
         </div>
       ) : null}
