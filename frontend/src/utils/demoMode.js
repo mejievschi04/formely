@@ -7,3 +7,7 @@ export function isDemoSession(user) {
 	if (user.is_demo === true) return true;
 	return user.company?.is_demo === true;
 }
+
+export function isPublicDemoSession(user) {
+	return isDemoSession(user) && user.is_public_demo_session === true;
+}

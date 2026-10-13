@@ -11,6 +11,42 @@ class DemoAccessTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_guide_session_is_only_enabled_by_public_demo_login(): void
+    {
+        $company = Company::create([
+            'name' => 'Demo', 'slug' => 'public-demo',
+            'status' => 'active', 'plan' => 'business',
+        ]);
+        $user = User::factory()->create([
+            'company_id' => $company->id, 'role' => 'admin', 'status' => 'active',
+            'password' => bcrypt('Password123!'),
+        ]);
+        config([
+            'formely.demo_login_enabled' => true,
+            'formely.demo_login_email' => $user->email,
+            'formely.demo_company_slug' => $company->slug,
+        ]);
+
+        $this->postJson('/api/auth/demo-login')->assertOk()
+            ->assertJsonPath('user.is_public_demo_session', true);
+        $this->getJson('/api/auth/me')->assertOk()
+            ->assertJsonPath('user.is_public_demo_session', true);
+        \Illuminate\Support\Facades\Auth::shouldUse('web');
+        $this->postJson('/api/auth/login', [
+            'email' => $user->email, 'password' => 'Password123!',
+        ])->assertOk()->assertJsonPath('user.is_public_demo_session', false);
+        $this->getJson('/api/auth/me')->assertOk()
+            ->assertJsonPath('user.is_public_demo_session', false);
+    }
+
+    public function test_normal_account_does_not_inherit_public_demo_session(): void
+    {
+        $user = User::factory()->create(['role' => 'admin', 'status' => 'active']);
+        $this->withSession(['public_demo_user_id' => $user->id])
+            ->actingAs($user, 'sanctum')->getJson('/api/auth/me')->assertOk()
+            ->assertJsonPath('user.is_public_demo_session', false);
+    }
+
     public function test_public_demo_login_is_disabled_by_default(): void
     {
         config(['formely.demo_login_enabled' => false]);

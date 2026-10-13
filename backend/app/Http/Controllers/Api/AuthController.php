@@ -127,6 +127,7 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
+            $request->session()->forget('public_demo_user_id');
             
             $user = Auth::user();
 
@@ -228,6 +229,7 @@ class AuthController extends Controller
 
         Auth::login($user, false);
         $request->session()->regenerate();
+        $request->session()->put('public_demo_user_id', $user->id);
 
         $user->forceFill(['last_login_at' => now()])->save();
         AuthActivityLogger::logLoggedIn($user, $request);
@@ -443,6 +445,9 @@ class AuthController extends Controller
             'entitlements' => $company ? app(PlanEntitlementService::class)->entitlementsPayload($company) : null,
             'is_platform_admin' => $user->isPlatformAdmin(),
             'is_demo' => (bool) ($company?->isDemoAcademy()),
+            'is_public_demo_session' => (bool) ($company?->isDemoAcademy())
+                && request()->hasSession()
+                && (int) request()->session()->get('public_demo_user_id', 0) === (int) $user->id,
         ];
     }
 }

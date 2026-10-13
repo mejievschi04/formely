@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContextShared.js';
-import { isDemoSession } from '../../utils/demoMode';
+import { isPublicDemoSession } from '../../utils/demoMode';
 
 const STORAGE_OPEN = 'formely_demo_guide_open';
 const STORAGE_STEP = 'formely_demo_guide_step';
@@ -88,7 +88,7 @@ function readStep() {
 export default function DemoTourGuide() {
 	const { user, setAdminViewMode } = useAuth();
 	const navigate = useNavigate();
-	const demo = isDemoSession(user);
+	const demo = isPublicDemoSession(user);
 	const [open, setOpen] = useState(readOpen);
 	const [step, setStep] = useState(readStep);
 	const [minimized, setMinimized] = useState(false);
