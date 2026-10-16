@@ -14,8 +14,9 @@ export const buildCourseCreationPromptFromBrief = (briefPayload, manualPrompt = 
 		`Nivel: ${briefPayload.level}; Stil: ${briefPayload.style}; Dimensiune lecții: ${briefPayload.lesson_size}.`,
 		`Structură fixă: ${briefPayload.modules_count} module, ${briefPayload.lessons_per_module} lecții per modul.`,
 		`Descriere: ${briefPayload.description || '(generează una profesională și clară)'}.`,
-		'Fiecare lecție trebuie să fie predabilă: introducere, explicație, exemplu, exercițiu/aplicație și recapitulare.',
-		'Păstrează tonul practic și coerent pe tot cursul. Dacă datele de mai sus sunt suficiente, nu cere clarificări și livrează direct cursul final.',
+		'Fiecare lecție predă o idee sau competență distinctă, prin explicații dezvoltate, exemple explicate și o aplicare cu rezultat sau criterii de verificare.',
+		'Alege structura potrivită subiectului. Începe direct cu conținutul util, fără introducere și recapitulare standard la fiecare lecție și fără titluri urmate de câte o singură propoziție.',
+		'Respectă nivelul și stilul cerute pe tot cursul. Dacă datele de mai sus sunt suficiente, nu cere clarificări și livrează direct cursul final.',
 	];
 
 	if (requestedPrompt) {

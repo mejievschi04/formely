@@ -50,6 +50,31 @@ class VoltPromptServiceTest extends TestCase
         $this->assertStringNotContainsString("Comunicare\n- language: ru", $prompt);
     }
 
+    public function test_course_and_builder_use_adaptive_lesson_structures_without_boilerplate(): void
+    {
+        foreach ([VoltPromptService::buildGuidedCourseCreationPrompt(), VoltPromptService::buildBuilderDiffPrompt()] as $prompt) {
+            foreach (['Concept:', 'Procedură:', 'Decizie / studiu de caz:', 'Lecție tehnică:', 'Consolidare:'] as $structure) {
+                $this->assertStringContainsString($structure, $prompt);
+            }
+            $this->assertStringContainsString('paragrafe dezvoltate', $prompt);
+            $this->assertStringContainsString('Fără introducere standard la fiecare lecție', $prompt);
+            $this->assertStringContainsString('Fără concluzie sau recapitulare obligatorie', $prompt);
+            $this->assertStringContainsString('răspuns orientativ', $prompt);
+            $this->assertStringContainsString('nu inventa politici interne', $prompt);
+            $this->assertStringNotContainsString('minimum nouă paragrafe', $prompt);
+            $this->assertStringNotContainsString('minimum 20 de rânduri', $prompt);
+            $this->assertStringNotContainsString('Urmează această ordine: h2 titlu', $prompt);
+        }
+    }
+
+    public function test_brief_does_not_reintroduce_the_same_lesson_template(): void
+    {
+        $prompt = VoltPromptService::buildGuidedBriefPrompt(['topic' => 'Comunicare', 'lesson_size' => 'detaliat']);
+        $this->assertStringContainsString('"lesson_size":"detaliat"', $prompt);
+        $this->assertStringContainsString('alege structura după subiect', $prompt);
+        $this->assertStringNotContainsString('aplicație și recapitulare.', $prompt);
+    }
+
     public function test_choice_example_has_four_answers_and_matching_has_three_pairs(): void
     {
         $prompt = VoltPromptService::buildQuestionGenerationPrompt('Material', 'easy', ['multiple_choice', 'matching']);

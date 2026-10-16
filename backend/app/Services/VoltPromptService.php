@@ -22,15 +22,26 @@ PROMPT;
     {
         return <<<PROMPT
 Reguli de redactare pentru lecții:
-- Structură obligatorie în fiecare lecție: obiectiv concret, explicație, exemplu rezolvat, greșeală frecventă și corectare, exercițiu cu rezultat de verificat, încheiere. Folosește subtitluri h3 pentru exemplu și exercițiu. Nu înlocui exercițiul cu promisiunea unei lecții viitoare.
-- Respectă intervalul de cuvinte cerut pentru fiecare lecție, numărând textul explicativ fără taguri și fără cod. Dezvoltă explicația și rezolvarea, fără repetiții pentru umplere.
-- Predă ideea, apoi demonstreaz-o. Folosește subtitluri descriptive și paragrafe cu o singură idee, fără formulări publicitare precum „posibilitățile sunt nelimitate”.
-- Exemplul trebuie să fie complet și reproductibil. La programare precizează unde se execută codul, arată toate elementele HTML/variabilele necesare și rezultatul exact. Nu folosi getElementById fără elementul cu acel ID în exemplu.
-- Pune codul în <pre><code>, cu newline-uri reale și markup HTML escape-at (&lt;, &gt;, &amp;); termenii scurți de cod folosesc <code>. Fără cod executabil în script-uri HTML.
-- Pentru începători explică fiecare instrucțiune nouă și o greșeală frecventă cu soluția ei. Preferă const/let și exemple moderne.
-- Exercițiul indică ce să facă elevul și cum să verifice rezultatul; recapitularea explică ce poate face acum, nu doar numește subiectele.
-- Folosește liste numai pentru pași, criterii sau comparații utile. Nu termina lecția cu trei puncte generice care repetă titlul sau paragrafele. Nu impune liste doar pentru a umple conținutul.
-- Nu fabrica o secțiune de „recapitulare” din cuvinte-cheie. O încheiere de 2-3 propoziții concrete este suficientă.
+- O lecție predă un rezultat observabil: ce va putea explica, executa sau decide cursantul. Folosește acest rezultat pentru a selecta conținutul; nu îl transforma automat într-o secțiune „Obiectiv”.
+- Începe direct cu problema, situația, explicația sau exemplul relevant. Fără introducere standard la fiecare lecție, „Bine ai venit”, „În această lecție vom învăța” sau repetarea prezentării cursului. Contextul necesar se explică scurt în prima explicație; nu elimina prerechizitele importante.
+- Explicațiile sunt paragrafe dezvoltate, de regulă 3-5 propoziții legate: explică ideea, cum/de ce funcționează și consecința practică. Nu livra o succesiune de titluri cu o propoziție sub fiecare. Definițiile, avertismentele și instrucțiunile simple pot fi scurte când sunt suficiente.
+- Dezvoltă mecanisme, relații cauză-efect, criterii și raționamentul din spatele pașilor. Un exemplu trebuie explicat: datele situației, alegerea făcută, de ce este potrivită și rezultatul. Nu te limita la afirmații precum „comunicarea este importantă”.
+- Alege structura după sarcina de învățare, fără să afișezi numele șablonului:
+  * Concept: explicație și mecanism → exemplu și contraexemplu → situație de aplicare și criteriu de verificare.
+  * Procedură: situația și condițiile necesare → pași explicați → demonstrație completă → verificarea rezultatului și remedierea unei erori relevante.
+  * Decizie / studiu de caz: situație concretă → opțiuni și consecințe → alegere argumentată → caz similar de rezolvat cu feedback.
+  * Lecție tehnică: problemă concretă → exemplu complet → explicația elementelor noi → modificare de încercat → rezultat așteptat și diagnostic.
+  * Consolidare: sarcină care combină ce s-a predat → rezolvare argumentată → variantă independentă cu criterii de verificare; fără reluarea întregii teorii.
+- Folosește h3 cu titluri despre subiect, de exemplu „Cum alegi pasul următor”, nu aceeași succesiune „Introducere / Explicație / Exemplu / Recapitulare” în toate lecțiile. Nu dubla în content titlul din câmpul title. Adaugă subtitluri numai pentru secțiuni dezvoltate.
+- Include o aplicare sau verificare scurtă care cere cursantului să explice, să decidă ori să execute ceva. Oferă separat după cerință un răspuns orientativ, un rezultat așteptat sau criterii și motivarea lor. Nu înlocui exercițiul cu promisiunea unei lecții viitoare. O secțiune separată de exerciții nu este obligatorie.
+- Fără concluzie sau recapitulare obligatorie la fiecare lecție. Încheie când rezultatul învățării a fost demonstrat și verificat; o sinteză scurtă se adaugă numai dacă ajută la o sarcină complexă.
+- Leagă lecțiile progresiv. Folosește ce a fost predat anterior fără a-l explica de la zero; fiecare lecție aduce o competență sau dificultate nouă. Nu varia structura arbitrar doar ca să pară diferită.
+- Dimensiune editorială: scurt 250-350 cuvinte, mediu 350-500, detaliat 500-700, fără taguri și cod; implicit mediu dacă dimensiunea nu este precizată. Dezvoltă explicația și demonstrația, nu umple intervalul prin repetiții. Nu există număr fix de paragrafe, subtitluri sau rânduri de atins artificial.
+- Folosește liste pentru pași, criterii și comparații, nu în locul explicațiilor. Nu fragmenta artificial textul în multe paragrafe de o propoziție și nu adăuga br pentru a crește lungimea aparentă.
+- Adaptează sprijinul la nivel: explică termenii și deciziile noi pentru începători; pentru avansați concentrează-te pe nuanțe, excepții și decizii, fără definiții elementare repetate.
+- Exemplul trebuie să fie complet și reproductibil. La programare precizează unde se execută codul, toate variabilele/elementele HTML necesare și rezultatul exact. Nu folosi getElementById fără elementul cu acel ID. Preferă const/let pentru JavaScript.
+- Pune codul în <pre><code>, cu newline-uri reale și HTML escape-at (&lt;, &gt;, &amp;); termenii scurți de cod folosesc <code>. Fără cod executabil în script-uri HTML.
+- Păstrează faptele din surse. Exemplele suplimentare sunt ipotetice și marcate ca atare; nu inventa politici interne pentru a lungi lecția. Dacă materialul nu susține detaliile necesare, semnalează lipsa în loc să completezi cu reguli inventate.
 
 PROMPT;
     }
@@ -50,7 +61,7 @@ PROMPT;
             . $data
             . "\nRespectă preferințele explicite; câmpurile goale folosesc valorile implicite. "
             . "Nu întreba despre câmpurile completate în brief; întreabă pe rând numai despre cerințele care lipsesc înainte de generare. "
-            . "Respectă numărul exact de module și lecții și dimensiunea cerută; fiecare lecție conține explicații reale, exemplu rezolvat, aplicație și recapitulare.\n";
+            . "Respectă numărul exact de module și lecții și dimensiunea cerută. Dezvoltă explicațiile și exemplele; alege structura după subiect, fără introducere și recapitulare standard la fiecare lecție.\n";
     }
 
     public static function buildGuidedCourseCreationPrompt(): string
@@ -74,10 +85,10 @@ Decizie — clarificări pas cu pas:
 
 Conținut:
 - Organizează progresiv: fundamente, aplicare, integrare; fiecare lecție dezvoltă un obiectiv distinct.
-- Include un obiectiv observabil, explicații concrete, un exemplu rezolvat, o aplicație cu criteriu de verificare și recapitulare.
+- Predă prin explicații dezvoltate, demonstrație și aplicare verificabilă, în structura potrivită sarcinii de învățare.
 - Explică termenii înainte de folosire și adaptează exemplele la public și nivel.
 - Lecțiile conțin text educațional real, nu planuri, promisiuni, placeholder-e sau paragrafe repetate pentru umplere.
-- `scurt`: 250-350 cuvinte; `mediu`: 350-500; `detaliat`: 500-700 per lecție. Păstrează minimum 20 de rânduri utile după extragerea textului, folosind blocuri scurte cu explicații și pași concreți.
+- Respectă dimensiunea editorială din regulile comune; nu folosi numărul de rânduri ca obiectiv de redactare.
 - HTML permis: h2, h3, p, ul, ol, li, strong, em, blockquote, pre, code, br. Fără scripturi, iframe, stiluri inline sau atribute de eveniment.
 - Nu inventa linkuri, fișiere, imagini, certificări sau reguli interne ale companiei.
 
@@ -105,8 +116,8 @@ Decizie și scop:
 - Nu modifica restul cursului. Pentru update folosește draftul nesalvat din editor dacă există și păstrează informația relevantă.
 
 Conținut obligatoriu:
-- Fiecare lecție nouă are 250-350 de cuvinte educaționale reale, adaptate nivelului, cu obiectiv, explicație, exemplu rezolvat, aplicație și recapitulare.
-- `content` este HTML complet. Urmează această ordine: h2 titlu; p obiectiv; h3 Explicație și două p; h3 Exemplu rezolvat și două p plus pre/code când este relevant; h3 Greșeală frecventă și p corectare; h3 Exercițiu și două p cu cerința și rezultatul exact de verificat; p încheiere. Dezvoltă cele minimum nouă paragrafe la 250-350 cuvinte explicative, fără a număra codul. Lista ul/ol este opțională.
+- Pentru lecții noi respectă dimensiunea solicitată și regulile comune de redactare. Pentru o editare punctuală păstrează dimensiunea și structura existente, dacă nu s-a cerut dezvoltarea lor.
+- `content` este HTML complet, cu paragrafe dezvoltate și subtitluri descriptive potrivite subiectului. Alege structura după ceea ce trebuie învățat; nu impune o ordine sau un număr fix de paragrafe. Nu repeta titlul lecției în corpul textului.
 - Pentru JavaScript include cod concret în pre/code și explică rezultatul; escapează caracterele HTML în cod.
 - Fără placeholder-e, „...”, lecții constând doar din titlu sau un rezumat. Fără script, iframe, evenimente HTML ori stiluri inline.
 

@@ -26,7 +26,13 @@ import {
 } from '../../../utils/voltAvailability';
 import './AIChat.css';
 import AIGenerationForm from './AIGenerationForm';
+import AIGenerationStatus from './AIGenerationStatus';
 import { logger } from '../../../utils/logger';
+
+function isGenerationPlaceholder(message) {
+	return message?.role === 'assistant' && typeof message.content === 'string'
+		&& (!message.content.trim() || message.content.startsWith('⚙️') || message.content.includes('Te rog să aștepți.'));
+}
 
 function summarizeCoursePlan(plan) {
 	const modules = plan?.modules || plan?.course?.modules || [];
@@ -1093,10 +1099,14 @@ const AICourseChat = ({
 		)
 		: Boolean(input.trim());
 
-	const liveStatusTitle = isDirectExporting ? 'Formely AI pregătește exportul Excel' : 'Formely AI pregătește ciorna';
+	const pendingMessage = messages[messages.length - 1];
+	const pendingTitle = isGenerationPlaceholder(pendingMessage)
+		? pendingMessage.content.split('\n')[0].replace(/^⚙️\s*/, '').replace(/^Generez cursul\..*$/, 'Pregătim cursul').replace(/[.…]+$/u, '')
+		: '';
+	const liveStatusTitle = isDirectExporting ? 'Pregătim fișierul Excel' : pendingTitle || 'Pregătim conținutul';
 	const liveStatusSubtitle = isDirectExporting
-		? 'Analizez cererea, extrag datele și pregătesc fișierul.'
-		: 'Verific detaliile, cer clarificări doar dacă lipsesc informații și apoi finalizez.';
+		? 'Organizăm datele pentru export.'
+		: 'Răspunsul apare aici imediat ce este pregătit.';
 
 
 	if (!isVoltEnabled()) {
@@ -1238,57 +1248,21 @@ const AICourseChat = ({
 			)}
 
 			<div className="ai-chat-messages" ref={chatContainerRef}>
-				{messages.map((message, index) => (
+				{messages.map((message, index) => {
+					if (!message.content?.trim() || (isGenerating && index === messages.length - 1 && isGenerationPlaceholder(message))) return null;
+					return (
 					<div
 						key={index}
 						className={`ai-chat-message ${message.role === 'user' ? 'ai-chat-message-user' : 'ai-chat-message-assistant'}`}
 					>
 						<div className="ai-chat-message-content">
-							{message.role === 'assistant' && typeof message.content === 'string' && message.content.includes('Te rog să aștepți.') ? (
-								<div className="ai-chat-build-status" role="status" aria-live="polite">
-									{(() => {
-										const [titleLine, ...subtitleLines] = message.content.split('\n').filter(Boolean);
-										const subtitle = subtitleLines.join(' ') || 'Te rog să aștepți.';
-										return (
-											<>
-									<p className="ai-chat-build-status-title">
-													{titleLine || '⚙️ Construiesc...'}
-									</p>
-												<p className="ai-chat-build-status-subtitle">{subtitle}</p>
-											</>
-										);
-									})()}
-									<div className="ai-chat-build-progress" aria-hidden="true">
-										<span className="ai-chat-build-progress-bar" />
-									</div>
-								</div>
-							) : (
-								message.content
-							)}
+							{message.content}
 						</div>
 					</div>
-				))}
+					);
+				})}
 				{isGenerating && (
-					<div className="ai-chat-message ai-chat-message-assistant">
-						<div className="ai-chat-message-content">
-							<div className="ai-chat-build-status ai-chat-build-status-live" role="status" aria-live="polite">
-								<p className="ai-chat-build-status-title">
-									<span className="ai-chat-build-title-text">{liveStatusTitle}</span>
-									<span className="ai-chat-build-dots" aria-hidden="true">
-										<span />
-										<span />
-										<span />
-									</span>
-								</p>
-								<p className="ai-chat-build-status-subtitle">
-									{liveStatusSubtitle}
-								</p>
-								<div className="ai-chat-build-progress" aria-hidden="true">
-									<span className="ai-chat-build-progress-bar" />
-								</div>
-							</div>
-						</div>
-					</div>
+					<AIGenerationStatus title={liveStatusTitle} description={liveStatusSubtitle} />
 				)}
                 {generationForm && <AIGenerationForm key={`${generationForm.kind}:${generationForm.request}`} kind={generationForm.kind} courseId={currentCourseId} editingTest={generationForm.intent === 'edit_test'} request={generationForm.request} disabled={isGenerating} onCancel={() => setGenerationForm(null)} onSubmit={values => {
                     const form = generationForm;

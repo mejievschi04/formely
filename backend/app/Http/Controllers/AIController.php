@@ -603,7 +603,6 @@ class AIController extends Controller
         }
 
         $lastError = null;
-        $minRequiredLessonLines = max(1, $this->getMinLessonLines() + 1); // "mai mult de 10" => at least 11
         $autoValidationRetries = 3;
 
         foreach ($attemptModels as $attemptIndex => $modelToUse) {
@@ -748,7 +747,7 @@ class AIController extends Controller
                         if ($regenAttempt < ($autoValidationRetries - 1)) {
                             $modelMessages[] = [
                                 'role' => 'user',
-                                'content' => "Refă TOT cursul în JSON valid. Reguli obligatorii: fiecare lecție trebuie să aibă mai mult de 10 rânduri (minimum {$minRequiredLessonLines} rânduri utile), folosind paragrafe separate <p>, liste <li> și exemple practice. Corectează strict aceste probleme: {$detail}",
+                                'content' => "Refă TOT cursul în JSON valid și corectează problemele de validare: {$detail}. Păstrează brief-ul și faptele din material. Dezvoltă explicațiile și exemplele în structura potrivită fiecărei lecții; nu adăuga introduceri standard, propoziții izolate, liste de umplere sau rânduri artificiale pentru a trece validarea.",
                             ];
                             continue;
                         }

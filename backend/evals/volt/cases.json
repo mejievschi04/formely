@@ -231,5 +231,65 @@
       "course_ids exact [11,12]",
       "Fără ID-uri inventate sau curs IT"
     ]
+  },
+  {
+    "id": "course_developed_lessons_without_boilerplate",
+    "flow": "course",
+    "input": {
+      "request": "Creează cursul complet din brief. Lecțiile trebuie să explice raționamentul și să ofere exemple dezvoltate, fără introducere standard la fiecare lecție.",
+      "brief": {
+        "topic": "Feedback clar în echipă",
+        "target_audience": "Angajați noi",
+        "language": "ro",
+        "level": "incepator",
+        "style": "mixt",
+        "lesson_size": "mediu",
+        "modules_count": 2,
+        "lessons_per_module": 2,
+        "evaluation": "none"
+      }
+    },
+    "checks": [
+      "JSON course cu 2 module × 2 lecții; fără test sau clarificări suplimentare",
+      "Paragrafe care explică ideea, mecanismul și consecința, nu titluri urmate de propoziții izolate",
+      "Fără introduceri standard, titlu duplicat în content sau recapitulare mecanică la toate lecțiile",
+      "Exemple dezvoltate și aplicații cu răspuns orientativ ori criterii explicate",
+      "Competențe distincte, progresive; fără repetarea definițiilor în toate lecțiile",
+      "Fără politici interne sau statistici inventate"
+    ]
+  },
+  {
+    "id": "builder_procedure_with_explanation_and_check",
+    "flow": "builder",
+    "input": {
+      "request": "Adaugă în modulul 12 o lecție practică medie, în română, pentru angajați începători, despre verificarea accesului în prima zi. Material: managerul trimite invitația la emailul de serviciu; angajatul activează contul, setează o parolă unică și autentificarea în doi pași, apoi verifică accesul împreună cu managerul. Alege tu titlul. Dezvoltă pașii fără să inventezi instrumente sau termene interne.",
+      "context": {
+        "modules": [{ "id": 12, "title": "Prima zi" }]
+      }
+    },
+    "checks": [
+      "JSON builder_diff cu create_lesson în module_id 12 și needs_confirmation true",
+      "Condiții, pași explicați, demonstrație și verificarea rezultatului; nu o listă de instrucțiuni fără justificări",
+      "Text dezvoltat fără introducere sau concluzie generice",
+      "Exemplu ipotetic marcat; fără nume de sisteme, proceduri interne sau termene inventate",
+      "Sarcină de verificare cu feedback, fără a pretinde că a creat conturi reale"
+    ]
+  },
+  {
+    "id": "builder_concept_with_example_and_counterexample",
+    "flow": "builder",
+    "input": {
+      "request": "Adaugă în modulul 12 o lecție teoretică medie pentru începători, în română: diferența dintre observație și interpretare în feedback. Alege tu titlul. Material: observația descrie un fapt verificabil, interpretarea atribuie o semnificație faptului. Arată de ce contează diferența printr-un exemplu și un contraexemplu. Cere cursantului să clasifice o formulare nouă și explică răspunsul.",
+      "context": {
+        "modules": [{ "id": 12, "title": "Feedback" }]
+      }
+    },
+    "checks": [
+      "JSON builder_diff cu create_lesson în module_id 12",
+      "Explicație dezvoltată a diferenței, cu exemple analizate și consecințe",
+      "Structură conceptuală, fără pași de procedură artificiali și fără nouă paragrafe impuse",
+      "Aplicare nouă cu răspuns explicat după cerință",
+      "Fără introducere standard, titlu duplicat sau recapitulare redundantă"
+    ]
   }
 ]

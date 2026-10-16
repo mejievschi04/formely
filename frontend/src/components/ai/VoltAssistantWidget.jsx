@@ -1,7 +1,8 @@
 import React, { lazy, Suspense, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Lightning, X } from '@phosphor-icons/react';
+import { X } from '@phosphor-icons/react';
+import formelyLogo from '../../assets/Formely logo.png';
 import ErrorBoundary from '../common/ErrorBoundary';
 import { applyVoltCoursePlan } from '../../utils/voltCoursePlan';
 import { describeVoltPageContext, getVoltPageContext } from '../../utils/getVoltPageContext';
@@ -32,7 +33,7 @@ const VoltAssistantWidget = () => {
 						<header className="volt-widget-header">
 							<div className="volt-widget-header-title">
 								<span className="volt-widget-header-icon" aria-hidden>
-									<Lightning size={18} weight="fill" />
+									<img src={formelyLogo} alt="" className="volt-widget-logo" />
 								</span>
 								<div>
 									<h2>Formely AI</h2>
@@ -100,7 +101,7 @@ const VoltAssistantWidget = () => {
 				aria-label={open ? 'Închide Formely AI' : 'Deschide Formely AI'}
 				title="Formely AI"
 			>
-				{open ? <X size={24} weight="bold" /> : <Lightning size={24} weight="fill" />}
+				{open ? <X size={24} weight="bold" /> : <img src={formelyLogo} alt="" className="volt-widget-logo" />}
 			</button>
 		</div>,
 		document.body

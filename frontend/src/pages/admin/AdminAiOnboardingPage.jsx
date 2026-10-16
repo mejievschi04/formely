@@ -357,6 +357,22 @@ export default function AdminAiOnboardingPage() {
 		navigate('/admin/users');
 	};
 
+	if (demoReadonly) {
+		return (
+			<div className="ai-setup-page ai-setup-demo-page">
+				<header className="ai-setup-header">
+					<div>
+						<p className="ai-setup-eyebrow">Formely AI · Exemplu pregătit</p>
+						<h1>Curs, test și publicare</h1>
+						<p className="ai-setup-sub">O demonstrație completă, cu același conținut la fiecare redare.</p>
+					</div>
+					<Link className="lms-btn-secondary" to="/admin">Panou</Link>
+				</header>
+				<RecordedAiCourseDemo />
+			</div>
+		);
+	}
+
 	if (!aiReady) {
 		return (
 			<div className="ai-setup-page">
@@ -473,7 +489,6 @@ export default function AdminAiOnboardingPage() {
 				</section>
 			)}
 
-			{step === 1 && demoReadonly && <RecordedAiCourseDemo onBack={() => setStep(0)} />}
 			{step === 1 && !demoReadonly && (
 				<section className="ai-setup-card">
 					<h2>2. Generează cursul cu Formely AI</h2>

@@ -22,7 +22,7 @@ const STEPS = [
 	{
 		id: 'ai',
 		title: 'Formely AI — din materiale',
-		body: 'Deschide Setup AI și continuă la pasul 2. Redă demonstrația înregistrată ca să vezi un ghid transformat în module și lecții, fără consum de credite.',
+		body: 'Redă demonstrația pregătită: material → curs → test → publicare. Tot conținutul este fix; urmărești procesul fără să editezi sau să salvezi.',
 		path: '/admin/ai-setup',
 		adminView: 'admin',
 	},
@@ -123,7 +123,7 @@ export default function DemoTourGuide() {
 		const next = Math.max(0, Math.min(STEPS.length - 1, index));
 		const def = STEPS[next];
 		setStep(next);
-		setMinimized(false);
+		setMinimized(def.id === 'ai');
 		setOpen(true);
 		setShowOutline(false);
 		if (def.adminView && typeof setAdminViewMode === 'function') {
