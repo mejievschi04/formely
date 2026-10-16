@@ -8,6 +8,18 @@ permissions:
   contents: read
 
 jobs:
+  deployment-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate production and isolated demo services
+        run: docker compose --env-file /dev/null -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.demo.yml config --format json | node scripts/check-demo-isolation.cjs
+        env:
+          DEMO_APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          DEMO_DB_PASSWORD: ci-demo-password
   frontend:
     runs-on: ubuntu-latest
     defaults:

@@ -95,6 +95,11 @@ class Company extends Model
     /** Academia folosită pe site pentru „Vezi demo” — mutațiile sunt blocate. */
     public function isDemoAcademy(): bool
     {
+        // The slug alone cannot enable demo UI/restrictions on the main database.
+        if (! config('formely.demo_instance', false)) {
+            return false;
+        }
+
         $slug = strtolower(trim((string) ($this->slug ?? '')));
         $configured = strtolower(trim((string) config('formely.demo_company_slug', 'formely-demo')));
 

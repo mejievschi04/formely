@@ -4,6 +4,7 @@
 # Opțional: DEPLOY_PRUNE=1 ./scripts/deploy-vps.sh
 # Opțional: DEPLOY_SEED=1 ./scripts/deploy-vps.sh
 # Opțional: DEPLOY_NO_CACHE=1 ./scripts/deploy-vps.sh  → rebuild complet al imaginilor
+# Demo: DEPLOY_DEMO=1; prima populare: DEPLOY_DEMO_SEED=1 (doar baza demo)
 
 set -eo pipefail
 
@@ -22,14 +23,38 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
+# Explicit one-off flags take precedence over defaults from .env.
+REQUESTED_DEPLOY_DEMO="${DEPLOY_DEMO-}"
+REQUESTED_DEPLOY_DEMO_SEED="${DEPLOY_DEMO_SEED-}"
 set -a
 # shellcheck disable=SC1091
 source .env
 set +a
+if [ -n "$REQUESTED_DEPLOY_DEMO" ]; then
+  DEPLOY_DEMO="$REQUESTED_DEPLOY_DEMO"
+fi
+if [ -n "$REQUESTED_DEPLOY_DEMO_SEED" ]; then
+  DEPLOY_DEMO_SEED="$REQUESTED_DEPLOY_DEMO_SEED"
+fi
 
 if [ -z "${APP_KEY:-}" ]; then
   echo "Eroare: APP_KEY e gol în .env. Generează:"
   echo "  ${COMPOSE[*]} run --rm --no-deps backend php artisan key:generate --show"
+  exit 1
+fi
+
+if [ "${DEPLOY_DEMO:-0}" = "1" ]; then
+  if [ -z "${DEMO_APP_KEY:-}" ] || [ -z "${DEMO_DB_PASSWORD:-}" ]; then
+    echo "Eroare: setează DEMO_APP_KEY și DEMO_DB_PASSWORD pentru baza demo separată."
+    exit 1
+  fi
+  if [ "$DEMO_APP_KEY" = "$APP_KEY" ]; then
+    echo "Eroare: DEMO_APP_KEY trebuie să fie diferită de APP_KEY."
+    exit 1
+  fi
+  COMPOSE+=(-f docker-compose.demo.yml)
+elif [ "${DEPLOY_DEMO_SEED:-0}" = "1" ]; then
+  echo "Eroare: DEPLOY_DEMO_SEED necesită DEPLOY_DEMO=1."
   exit 1
 fi
 
@@ -77,6 +102,17 @@ echo ">>> permisiuni storage"
 echo ">>> restart aplicație"
 "${COMPOSE[@]}" restart backend frontend website backoffice nginx-backend queue scheduler
 
+if [ "${DEPLOY_DEMO:-0}" = "1" ]; then
+  # Entry point applies migrations before FPM becomes healthy.
+  "${COMPOSE[@]}" up -d --wait demo-postgres demo-backend demo-api demo-frontend demo-queue demo-scheduler
+  if [ "${DEPLOY_DEMO_SEED:-0}" = "1" ]; then
+    "${COMPOSE[@]}" exec -T demo-backend php artisan demo:seed-company
+  fi
+  "${COMPOSE[@]}" restart demo-backend demo-queue demo-scheduler demo-api demo-frontend
+  curl --fail --silent --show-error --retry 10 --retry-delay 2 --retry-connrefused \
+    -H 'Host: demo.formely.org' "http://127.0.0.1:${DEMO_PORT:-13002}/api/health" > /dev/null
+fi
+
 echo ""
 echo ">>> status"
 "${COMPOSE[@]}" ps
@@ -112,10 +148,11 @@ echo "Dacă încă nu ai vhost-urile Nginx:"
 echo "  sudo cp docker/nginx-host/formely.conf /etc/nginx/sites-available/formely.conf"
 echo "  sudo ln -sf /etc/nginx/sites-available/formely.conf /etc/nginx/sites-enabled/formely.conf"
 echo "  sudo nginx -t && sudo systemctl reload nginx"
-echo "  sudo certbot --nginx -d formely.org -d www.formely.org -d api.formely.org -d academy.formely.org -d admin.formely.org"
+echo "  sudo certbot --nginx -d formely.org -d www.formely.org -d api.formely.org -d academy.formely.org -d admin.formely.org -d demo.formely.org"
 echo ""
 echo "  Website:   https://formely.org"
 echo "  API:       https://api.formely.org/api/health"
 echo "  Academy:   https://academy.formely.org"
 echo "  Admin:     https://admin.formely.org"
+echo "  Demo:      https://demo.formely.org (DEPLOY_DEMO=1)"
 echo "Loguri: ${COMPOSE[*]} logs -f backend queue"

@@ -8,6 +8,7 @@ import TermsPage from './pages/TermsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import { useI18n } from './i18n/I18nContext';
 import { track } from './lib/track';
+import { demoUrl } from './data/site';
 
 function ContactToHome() {
   const [params] = useSearchParams();
@@ -48,7 +49,7 @@ function Tracker() {
       const anchor = event.target.closest?.('a[href]');
       if (!anchor) return;
       const href = anchor.getAttribute('href') || '';
-      if (href.includes('/demo')) track('demo_click', lang, linkLabel(anchor));
+      if (anchor.href === new URL(demoUrl, window.location.origin).href) track('demo_click', lang, linkLabel(anchor));
       else if (href.includes('#contact')) track('cta_click', lang, linkLabel(anchor));
     };
     document.addEventListener('click', onClick);

@@ -10,8 +10,8 @@ export const site = {
 };
 
 export const appUrl = import.meta.env.VITE_APP_URL || 'http://localhost:5173';
-/** Academia demo live — one-click login pe LMS (`/demo`). */
-export const demoUrl = import.meta.env.VITE_DEMO_URL || `${appUrl.replace(/\/$/, '')}/demo`;
+/** Demo-ul are domeniu propriu, separat de autentificarea academiilor. */
+export const demoUrl = import.meta.env.VITE_DEMO_URL || 'https://demo.formely.org';
 export const siteUrl = import.meta.env.VITE_SITE_URL || 'https://formely.org';
 
 export const LOCALE_META = {

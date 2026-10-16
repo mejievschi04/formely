@@ -193,7 +193,7 @@ class AuthController extends Controller
      */
     public function demoLogin(Request $request)
     {
-        if (! config('formely.demo_login_enabled', false)) {
+        if (! config('formely.demo_instance', false) || ! config('formely.demo_login_enabled', false)) {
             return response()->json(['message' => 'Demo-ul public nu este disponibil.'], 404);
         }
 
@@ -209,7 +209,8 @@ class AuthController extends Controller
             ], 503);
         }
 
-        if (! $user->company?->isDemoAcademy()) {
+        if (! $user->company?->isDemoAcademy()
+            || $user->company->slug === config('formely.default_company_slug')) {
             return response()->json(['message' => 'Contul demo nu este configurat corect.'], 503);
         }
 

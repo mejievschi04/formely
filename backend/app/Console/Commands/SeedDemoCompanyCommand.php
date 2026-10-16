@@ -19,6 +19,7 @@ use App\Services\PlanEntitlementService;
 use App\Services\TestBuilderService;
 use App\Support\TenantContext;
 use App\Support\UserRoles;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -35,12 +36,12 @@ class SeedDemoCompanyCommand extends Command
 {
     protected $signature = 'demo:seed-company
         {--password=formely-demo : Parola pentru toți utilizatorii demo}
-        {--slug=formely-demo : Slug company}
+        {--slug= : Slug company demo (implicit din configurație)}
         {--fresh : Șterge cursurile/echipele demo existente și le recreează}';
 
-    protected $description = 'Creează compania Formely Demo cu studenți, cursuri, teste, bănci, echipe, library și progres';
+    protected $description = 'Creează Academia Demo cu studenți, cursuri, teste, bănci, echipe, library și progres';
 
-    private const COMPANY_NAME = 'Formely';
+    private const COMPANY_NAME = 'Academie Demo';
 
     private const EMAIL_DOMAIN = 'demo.formely.local';
 
@@ -49,9 +50,69 @@ class SeedDemoCompanyCommand extends Command
         CourseBuilderService $courseBuilder,
         TestBuilderService $testBuilder
     ): int {
+        if (app()->environment('production') && ! config('formely.demo_instance', false)) {
+            $this->error('Rulează seed-ul doar pe instanța demo, cu FORMELY_DEMO_INSTANCE=true și baza demo separată.');
+
+            return self::FAILURE;
+        }
+
         $passwordPlain = (string) $this->option('password');
         $password = Hash::make($passwordPlain);
-        $slug = Str::slug((string) $this->option('slug'));
+        $slug = Str::slug((string) ($this->option('slug') ?: config('formely.demo_company_slug')));
+
+        if (! $this->validateIsolation($slug)) {
+            return self::FAILURE;
+        }
+
+        try {
+            return DB::transaction(fn () => $this->seedCompany($entitlements, $courseBuilder, $testBuilder, $slug, $password, $passwordPlain));
+        } finally {
+            TenantContext::clear();
+        }
+    }
+
+    private function validateIsolation(string $slug): bool
+    {
+        if ($slug === '' || $slug !== config('formely.demo_company_slug') || $slug === config('formely.default_company_slug')) {
+            $this->error('Demo-ul trebuie să folosească slug-ul demo configurat, separat de academia implicită.');
+
+            return false;
+        }
+
+        $company = Company::where('slug', $slug)->first();
+        $users = User::withoutGlobalScopes();
+        if ($users->where('email', 'like', '%@'.self::EMAIL_DOMAIN)
+            ->where(function ($query) use ($company) {
+                $query->whereNull('company_id');
+                if ($company) {
+                    $query->orWhere('company_id', '!=', $company->id);
+                } else {
+                    $query->orWhereNotNull('company_id');
+                }
+            })->exists()) {
+            $this->error('Există conturi demo în altă academie. Oprit fără a muta utilizatori sau date.');
+
+            return false;
+        }
+
+        if ($company && User::withoutGlobalScopes()->where('company_id', $company->id)
+            ->where('email', 'not like', '%@'.self::EMAIL_DOMAIN)->exists()) {
+            $this->error('Academia selectată conține conturi reale. Oprit fără modificări.');
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private function seedCompany(
+        PlanEntitlementService $entitlements,
+        CourseBuilderService $courseBuilder,
+        TestBuilderService $testBuilder,
+        string $slug,
+        string $password,
+        string $passwordPlain
+    ): int {
 
         $company = $this->ensureCompany($entitlements, $slug);
         TenantContext::setCompanyId($company->id);
@@ -83,7 +144,7 @@ class SeedDemoCompanyCommand extends Command
             ['Element', 'Detalii'],
             [
                 ['Company', "{$company->name} / {$company->slug} (plan {$company->plan})"],
-                ['Owner', "owner@".self::EMAIL_DOMAIN],
+                ['Owner', 'owner@'.self::EMAIL_DOMAIN],
                 ['Instructori', 'instructor01@…, instructor02@…'],
                 ['Staff', 'hr@…, manager@…, analyst@…'],
                 ['Cursanți', count($students).' × studentNN@'.self::EMAIL_DOMAIN],
@@ -98,7 +159,7 @@ class SeedDemoCompanyCommand extends Command
             ]
         );
 
-        $this->comment('Login: https://academy.formely.org  →  owner@'.self::EMAIL_DOMAIN.' / '.$passwordPlain);
+        $this->comment('Login: '.config('formely.lms_url').'  →  owner@'.self::EMAIL_DOMAIN.' / '.$passwordPlain);
 
         return self::SUCCESS;
     }
@@ -226,7 +287,10 @@ class SeedDemoCompanyCommand extends Command
 
     private function upsertUser(Company $company, string $email, array $attrs): User
     {
-        $existing = User::withoutGlobalScopes()->where('email', $email)->first();
+        $existing = User::withoutGlobalScopes()->where('email', $email)->lockForUpdate()->first();
+        if ($existing && (int) $existing->company_id !== (int) $company->id) {
+            throw new \RuntimeException('Un cont din altă academie nu poate fi mutat în demo.');
+        }
 
         $payload = array_merge([
             'company_id' => $company->id,
@@ -517,6 +581,7 @@ class SeedDemoCompanyCommand extends Command
             $existing = QuestionBank::where('title', $title)->first();
             if ($existing && ! $this->option('fresh')) {
                 $banks[] = $existing;
+
                 continue;
             }
 
@@ -968,7 +1033,7 @@ class SeedDemoCompanyCommand extends Command
                 ->get();
 
             foreach ($progress as $lp) {
-                $at = $lp->completed_at ? \Carbon\Carbon::parse($lp->completed_at) : $now->copy()->subDays(random_int(1, 10));
+                $at = $lp->completed_at ? Carbon::parse($lp->completed_at) : $now->copy()->subDays(random_int(1, 10));
                 $push([
                     'user_id' => $student->id,
                     'action' => 'completed_lesson',
@@ -988,7 +1053,7 @@ class SeedDemoCompanyCommand extends Command
                 ->get();
 
             foreach ($results as $tr) {
-                $at = $tr->completed_at ? \Carbon\Carbon::parse($tr->completed_at) : $now;
+                $at = $tr->completed_at ? Carbon::parse($tr->completed_at) : $now;
                 $push([
                     'user_id' => $student->id,
                     'action' => 'telemetry.learner_attempt_submitted',
@@ -1017,7 +1082,7 @@ class SeedDemoCompanyCommand extends Command
             }
 
             foreach (DB::table('course_user')->where('user_id', $student->id)->whereNotNull('completed_at')->get() as $cu) {
-                $at = \Carbon\Carbon::parse($cu->completed_at);
+                $at = Carbon::parse($cu->completed_at);
                 $push([
                     'user_id' => $student->id,
                     'action' => 'completed_course',

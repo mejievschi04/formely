@@ -31,6 +31,7 @@ return [
      * Login one-click pentru academia demo (marketing „Vezi demo”).
      * Contul trebuie să existe (php artisan demo:seed-company).
      */
+    'demo_instance' => filter_var(env('FORMELY_DEMO_INSTANCE', false), FILTER_VALIDATE_BOOL),
     'demo_login_enabled' => filter_var(env('FORMELY_DEMO_LOGIN_ENABLED', false), FILTER_VALIDATE_BOOL),
     'demo_login_email' => strtolower(trim((string) env('FORMELY_DEMO_LOGIN_EMAIL', 'owner@demo.formely.local'))),
     /** Slug company din `demo:seed-company` — pe aceasta mutațiile sunt blocate. */

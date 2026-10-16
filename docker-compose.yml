@@ -67,7 +67,9 @@ services:
       FORMELY_PLATFORM_OPERATOR_EMAIL: ${FORMELY_PLATFORM_OPERATOR_EMAIL:-}
       FORMELY_PLATFORM_OPERATOR_NAME: ${FORMELY_PLATFORM_OPERATOR_NAME:-}
       FORMELY_PLATFORM_OPERATOR_PASSWORD: ${FORMELY_PLATFORM_OPERATOR_PASSWORD:-}
-      FORMELY_DEMO_LOGIN_ENABLED: ${FORMELY_DEMO_LOGIN_ENABLED:-false}
+      # Public demo runs against its own database in docker-compose.demo.yml.
+      FORMELY_DEMO_INSTANCE: "false"
+      FORMELY_DEMO_LOGIN_ENABLED: "false"
       FORMELY_DEMO_LOGIN_EMAIL: ${FORMELY_DEMO_LOGIN_EMAIL:-owner@demo.formely.local}
       FORMELY_DEMO_COMPANY_SLUG: ${FORMELY_DEMO_COMPANY_SLUG:-formely-demo}
       SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-}
@@ -206,6 +208,7 @@ services:
       args:
         VITE_API_URL: ${VITE_API_URL:-/api}
         VITE_BACKOFFICE_URL: ${VITE_BACKOFFICE_URL:-https://admin.formely.org}
+        VITE_DEMO_URL: ${DEMO_URL:-https://demo.formely.org}
         VITE_STORAGE_URL: ${VITE_STORAGE_URL:-}
         VITE_APP_ENV: ${VITE_APP_ENV:-production}
     container_name: frontend
@@ -225,6 +228,7 @@ services:
       args:
         VITE_SITE_URL: ${VITE_SITE_URL:-https://formely.org}
         VITE_APP_URL: ${VITE_APP_URL:-https://academy.formely.org}
+        VITE_DEMO_URL: ${VITE_DEMO_URL:-https://demo.formely.org}
         VITE_API_URL: ${VITE_WEBSITE_API_URL:-https://api.formely.org}
         VITE_LEGAL_NAME: ${VITE_LEGAL_NAME:-}
         VITE_LEGAL_ADDRESS: ${VITE_LEGAL_ADDRESS:-}

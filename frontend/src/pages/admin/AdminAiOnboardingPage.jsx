@@ -1,3 +1,4 @@
+import { UploadSimple, FileText, ArrowRight, Check } from '@phosphor-icons/react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/api';
@@ -367,15 +368,15 @@ export default function AdminAiOnboardingPage() {
 		<div className="ai-setup-page">
 			{demoReadonly ? (
 				<p className="demo-readonly-note">
-					Modul demo: poți vedea pașii Setup AI, dar generarea și salvarea nu persistă. Continuă ghidul spre Conținut / Statistici ca să vezi rezultatele deja populate.
+					Mod demo · Explorează pașii. Generarea și salvarea sunt dezactivate.
 				</p>
 			) : null}
 			<header className="ai-setup-header">
 				<div>
-					<p className="ai-setup-eyebrow">Formely AI · Setup rapid</p>
-					<h1>Din materiale la echipă instruită</h1>
+					<p className="ai-setup-eyebrow">Formely AI</p>
+					<h1>Primul tău curs, cu AI</h1>
 					<p className="ai-setup-sub">
-						Încarci ce ai deja → AI face cursul și testul → inviți primul om.
+						Adaugă materialele. Creează cursul și testul. Invită echipa.
 					</p>
 					{formatCredits(credits) ? (
 						<p className="ai-setup-quota">
@@ -391,11 +392,12 @@ export default function AdminAiOnboardingPage() {
 				{STEPS.map((item, index) => (
 					<li
 						key={item.id}
+						aria-current={index === step ? 'step' : undefined}
 						className={
 							index === step ? 'is-active' : index < step ? 'is-done' : undefined
 						}
 					>
-						<span>{String(index + 1).padStart(2, '0')}</span>
+						<span>{index < step ? <Check size={16} weight="bold" aria-hidden="true" /> : index + 1}</span>
 						{item.label}
 					</li>
 				))}
@@ -404,9 +406,10 @@ export default function AdminAiOnboardingPage() {
 			{status ? <p className="ai-setup-status" role="status">{status}</p> : null}
 
 			{step === 0 && (
-				<section className="ai-setup-card">
-					<h2>1. Materialele de onboarding</h2>
-					<p>PDF, TXT sau text lipit — proceduri, checklist, prezentare produs.</p>
+				<section className="ai-setup-card ai-setup-materials">
+					<h2>Cu ce începem?</h2>
+					<p>Folosește proceduri, ghiduri sau prezentări pe care le ai deja.</p>
+					<div className="ai-setup-details">
 					<label className="ai-setup-field">
 						<span>Subiect / titlu curs</span>
 						<input value={topic} onChange={(e) => setTopic(e.target.value)} />
@@ -415,8 +418,13 @@ export default function AdminAiOnboardingPage() {
 						<span>Public țintă</span>
 						<input value={audience} onChange={(e) => setAudience(e.target.value)} />
 					</label>
-					<label className="ai-setup-field">
-						<span>Încarcă fișiere</span>
+					</div>
+					<div className="ai-setup-sources">
+					<div className="ai-setup-files">
+					<label className="ai-setup-upload">
+						<UploadSimple size={28} aria-hidden="true" />
+						<strong>Alege materialele tale</strong>
+						<span>PDF sau TXT · poți adăuga mai multe fișiere</span>
 						<input type="file" accept=".pdf,.txt,application/pdf,text/plain" multiple onChange={handleFiles} disabled={busy} />
 					</label>
 					{documents.length > 0 && (
@@ -434,23 +442,28 @@ export default function AdminAiOnboardingPage() {
 							))}
 						</ul>
 					)}
-					<label className="ai-setup-field">
-						<span>Sau lipește text</span>
+					</div>
+					<label className="ai-setup-field ai-setup-text">
+						<span><FileText size={16} aria-hidden="true" /> Sau adaugă textul direct</span>
 						<textarea
-							rows={6}
+							rows={4}
 							value={pastedText}
 							onChange={(e) => setPastedText(e.target.value)}
 							placeholder="Proceduri, reguli, pași de lucru…"
 						/>
 					</label>
+					</div>
+					<footer className="ai-setup-footer">
+						<span>Pasul 1 din 4 · Materialele rămân editabile</span>
 					<button
 						type="button"
 						className="lms-btn-primary"
 						disabled={busy}
 						onClick={goToCourseStep}
 					>
-						Continuă la generare curs
+						Continuă <ArrowRight size={17} aria-hidden="true" />
 					</button>
+					</footer>
 				</section>
 			)}
 

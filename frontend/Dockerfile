@@ -9,10 +9,12 @@ ARG VITE_API_URL=/api
 ARG VITE_BACKOFFICE_URL=https://admin.formely.org
 ARG VITE_STORAGE_URL=
 ARG VITE_APP_ENV=production
+ARG VITE_DEMO_URL=https://demo.formely.org
 ENV VITE_API_URL=$VITE_API_URL \
     VITE_BACKOFFICE_URL=$VITE_BACKOFFICE_URL \
     VITE_STORAGE_URL=$VITE_STORAGE_URL \
-    VITE_APP_ENV=$VITE_APP_ENV
+    VITE_APP_ENV=$VITE_APP_ENV \
+    VITE_DEMO_URL=$VITE_DEMO_URL
 
 # Copiază fișierele de dependențe
 COPY package*.json ./

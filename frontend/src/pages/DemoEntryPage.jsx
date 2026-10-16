@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContextShared.js';
 import { isStaffAdminRole } from '../constants/staffRoles';
 import { isDemoSession } from '../utils/demoMode';
+import { demoEntryRedirect } from '../utils/demoEntry';
 import { ensureApiCsrfCookie, refreshApiCsrfCookie } from '../api';
 import logoShort from '../assets/Formely logo.png';
 import '../styles/demo-tour.css';
@@ -34,6 +35,11 @@ export default function DemoEntryPage() {
 	}, []);
 
 	useEffect(() => {
+		const destination = demoEntryRedirect(window.location.origin, import.meta.env.VITE_DEMO_URL || undefined);
+		if (destination) {
+			window.location.replace(destination);
+			return undefined;
+		}
 		if (loading) return undefined;
 
 		if (user && isDemoSession(user)) {
