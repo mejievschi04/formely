@@ -233,14 +233,14 @@ private function extractPayloadText(mixed $payload): string
 private function normalizeExtractedText(string $text): string
 {
     $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-    $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
+    $text = \App\Support\VisibleText::normalize($text);
 
     return trim($text);
 }
 
 private function htmlToPlainText(string $html): string
 {
-    $text = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $text = $html;
     $text = preg_replace('/<(br|hr)\s*\/?>/iu', '. ', $text) ?? $text;
     $text = preg_replace('/<\/(p|div|section|article|h[1-6]|li|tr|td|th)>/iu', '. ', $text) ?? $text;
     $text = strip_tags($text);

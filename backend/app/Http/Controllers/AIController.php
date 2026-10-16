@@ -1146,7 +1146,7 @@ class AIController extends Controller
             return '';
         }
 
-        return trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8')) ?? '');
+        return \App\Support\VisibleText::fromHtml($value);
     }
 
     private function buildStudyToolPrompt(Lesson $lesson, string $lessonText, string $tool): string

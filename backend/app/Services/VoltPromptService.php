@@ -29,6 +29,8 @@ HTML permis: h3, p, ul, ol, li, strong, em, blockquote, pre, code, br. Fără at
 Returnează exclusiv JSON valid, fără markdown:
 {"content":"HTML complet","evidence":{"explanation":"fragment exact din explicația dezvoltată","example":"fragment exact din exemplul concret","application":"fragment exact din sarcina cursantului","feedback":"fragment exact din răspunsul orientativ sau criteriile de verificare"}}
 Fiecare fragment evidence trebuie să aibă cel puțin 30 de caractere și să existe în textul vizibil al lecției.
+Copiază fiecare fragment literal dintr-un singur paragraf sau element de listă din content, fără etichete HTML. Nu parafraza, nu rezuma și nu folosi puncte de suspensie pentru a omite cuvinte.
+Folosește patru fragmente distincte. Înainte de răspuns, verifică dacă fiecare fragment apare integral în content; dacă lipsește, corectează conținutul sau fragmentul.
 Fragmentele sunt metadate pentru verificare; nu afișa etichetele evidence în lecție. Conținutul trebuie să fie util, nu doar să treacă verificarea.
 PROMPT;
     }

@@ -201,6 +201,59 @@ class StagedAiCourseGenerationTest extends TestCase
         $quality->validate($lesson, 'scurt', []);
     }
 
+    public function test_evidence_matches_visible_text_across_html_boundaries_and_unicode_spaces(): void
+    {
+        $lesson = $this->lesson('Feedback');
+        $example = $lesson['evidence']['example'];
+        $lesson['content'] = str_replace($example,
+            'De&nbsp;exemplu,<br>raportul transmis</p><ul><li>fără cifrele de vânzări</li><li>a întârziat verificarea bugetului.</li></ul><p>',
+            $lesson['content']);
+        $lesson['evidence']['application'] = str_replace(' ', "\u{202F}", $lesson['evidence']['application']);
+
+        $this->assertNotEmpty(app(\App\Services\AiLessonQuality::class)->validate($lesson, 'scurt', []));
+    }
+
+    public function test_evidence_matches_words_split_by_inline_formatting(): void
+    {
+        $lesson = $this->lesson('Feedback');
+        $lesson['content'] = str_replace('raportul transmis', '<strong>raport</strong>ul <em>transmis</em>', $lesson['content']);
+
+        $this->assertNotEmpty(app(\App\Services\AiLessonQuality::class)->validate($lesson, 'scurt', []));
+    }
+
+    public function test_literal_html_in_evidence_is_preserved_and_checked_in_full(): void
+    {
+        $lesson = $this->lesson('HTML');
+        $example = 'Exemplul folosește <button>Salvează</button> pentru a confirma modificările.';
+        $lesson['content'] = str_replace($lesson['evidence']['example'], htmlspecialchars($example, ENT_QUOTES, 'UTF-8'), $lesson['content']);
+        $lesson['evidence']['example'] = $example;
+        $quality = app(\App\Services\AiLessonQuality::class);
+        $this->assertNotEmpty($quality->validate($lesson, 'scurt', []));
+
+        $lesson['evidence']['example'] = str_replace('button', 'input', $example);
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('example');
+        $quality->validate($lesson, 'scurt', []);
+    }
+
+    public function test_invalid_content_type_has_an_actionable_validation_error(): void
+    {
+        $lesson = $this->lesson('Feedback');
+        $lesson['content'] = ['html' => $lesson['content']];
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('content trebuie să fie HTML text');
+        app(\App\Services\AiLessonQuality::class)->validate($lesson, 'scurt', []);
+    }
+
+    public function test_invalid_evidence_type_is_rejected_without_a_php_warning(): void
+    {
+        $lesson = $this->lesson('Feedback');
+        $lesson['evidence']['example'] = ['text' => $lesson['evidence']['example']];
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('example');
+        app(\App\Services\AiLessonQuality::class)->validate($lesson, 'scurt', []);
+    }
+
     public function test_database_queue_runs_every_stage_and_commits_the_next_job_with_its_checkpoint(): void
     {
         Queue::swap($this->realQueue);
