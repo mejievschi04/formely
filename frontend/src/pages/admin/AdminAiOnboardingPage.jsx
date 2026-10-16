@@ -324,8 +324,9 @@ export default function AdminAiOnboardingPage() {
 			);
 
 			const parsed = extractJsonFromText(streamed);
+			if (parsed?.needs_more_context === true) throw new Error(parsed.description || 'Adaugă mai mult material în lecții înainte de generarea testului.');
 			const questions = mapVoltTestQuestions(parsed?.questions);
-			if (!parsed?.title || questions.length === 0) {
+			if (!parsed?.title || questions.length !== 8) {
 				throw new Error('Nu am putut pregăti un test valid. Regenerați sau adăugați întrebări manual.');
 			}
 
@@ -338,17 +339,19 @@ export default function AdminAiOnboardingPage() {
 			const id = test?.id;
 			if (!id) throw new Error('Testul nu a putut fi salvat.');
 
+			let linked = true;
 			try {
 				await adminService.linkTestToCourse(id, courseId);
 			} catch (linkErr) {
 				console.warn('Test created but not linked', linkErr);
+				linked = false;
 			}
 
 			setTestId(id);
 			setTestTitle(test.title || parsed.title);
 			setStep(3);
 			telemetryService.track('guided_ai_setup_test_created', { course_id: courseId, test_id: id });
-			showToast('Test creat și legat de curs.', 'success');
+			showToast(linked ? 'Test creat și legat de curs.' : 'Testul a fost salvat, dar legarea la curs a eșuat. Atașează-l din editorul cursului.', linked ? 'success' : 'warning');
 		} catch (err) {
 			console.error(err);
 			if (isAiQuotaError(err)) notifyAiQuotaExceeded(showToast, quotaErrorMessage(err));

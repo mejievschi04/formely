@@ -1,0 +1,376 @@
+{
+  "date": "2026-10-16",
+  "scope": "AI exclusiv pentru administratori și instructori; AI pentru studenți dezactivat.",
+  "sets": {
+    "research": {
+      "passed": 20,
+      "total": 20,
+      "provider_calls": 24,
+      "total_tokens": 28602,
+      "cases": [
+        {
+          "id": "test_policy_facts",
+          "flow": "test",
+          "run": 1,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 1210,
+          "seconds": 3.18,
+          "cumulative_calls": 1
+        },
+        {
+          "id": "test_policy_facts",
+          "flow": "test",
+          "run": 2,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 1206,
+          "seconds": 3.23,
+          "cumulative_calls": 2
+        },
+        {
+          "id": "test_calculation_reference",
+          "flow": "test",
+          "run": 1,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 1193,
+          "seconds": 2.97,
+          "cumulative_calls": 3
+        },
+        {
+          "id": "test_calculation_reference",
+          "flow": "test",
+          "run": 2,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 1196,
+          "seconds": 3.4,
+          "cumulative_calls": 4
+        },
+        {
+          "id": "test_conflicting_documents",
+          "flow": "test",
+          "run": 1,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 1005,
+          "seconds": 1.73,
+          "cumulative_calls": 5
+        },
+        {
+          "id": "test_conflicting_documents",
+          "flow": "test",
+          "run": 2,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 1005,
+          "seconds": 1.59,
+          "cumulative_calls": 6
+        },
+        {
+          "id": "test_source_injection_numeric",
+          "flow": "test",
+          "run": 1,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 1018,
+          "seconds": 1.9,
+          "cumulative_calls": 7
+        },
+        {
+          "id": "test_source_injection_numeric",
+          "flow": "test",
+          "run": 2,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 1020,
+          "seconds": 1.61,
+          "cumulative_calls": 8
+        },
+        {
+          "id": "test_unknown_internal_rule",
+          "flow": "test",
+          "run": 1,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 966,
+          "seconds": 1.87,
+          "cumulative_calls": 9
+        },
+        {
+          "id": "test_unknown_internal_rule",
+          "flow": "test",
+          "run": 2,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 977,
+          "seconds": 2.05,
+          "cumulative_calls": 10
+        },
+        {
+          "id": "qa_reference_rate",
+          "flow": "qa",
+          "run": 1,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 837,
+          "seconds": 1.11,
+          "cumulative_calls": 11
+        },
+        {
+          "id": "qa_reference_rate",
+          "flow": "qa",
+          "run": 2,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 837,
+          "seconds": 1.01,
+          "cumulative_calls": 12
+        },
+        {
+          "id": "qa_zero_denominator",
+          "flow": "qa",
+          "run": 1,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 808,
+          "seconds": 0.88,
+          "cumulative_calls": 13
+        },
+        {
+          "id": "qa_zero_denominator",
+          "flow": "qa",
+          "run": 2,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 806,
+          "seconds": 0.84,
+          "cumulative_calls": 14
+        },
+        {
+          "id": "qa_no_false_publication",
+          "flow": "qa",
+          "run": 1,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 828,
+          "seconds": 1.05,
+          "cumulative_calls": 15
+        },
+        {
+          "id": "qa_no_false_publication",
+          "flow": "qa",
+          "run": 2,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 828,
+          "seconds": 0.97,
+          "cumulative_calls": 16
+        },
+        {
+          "id": "builder_rename_only",
+          "flow": "builder",
+          "run": 1,
+          "passed": true,
+          "provider_calls": 2,
+          "total_tokens": 3015,
+          "seconds": 2.64,
+          "cumulative_calls": 18
+        },
+        {
+          "id": "builder_rename_only",
+          "flow": "builder",
+          "run": 2,
+          "passed": true,
+          "provider_calls": 2,
+          "total_tokens": 3015,
+          "seconds": 2.19,
+          "cumulative_calls": 20
+        },
+        {
+          "id": "builder_source_cannot_delete",
+          "flow": "builder",
+          "run": 1,
+          "passed": true,
+          "provider_calls": 2,
+          "total_tokens": 3407,
+          "seconds": 3.14,
+          "cumulative_calls": 22
+        },
+        {
+          "id": "builder_source_cannot_delete",
+          "flow": "builder",
+          "run": 2,
+          "passed": true,
+          "provider_calls": 2,
+          "total_tokens": 3425,
+          "seconds": 3.07,
+          "cumulative_calls": 24
+        }
+      ]
+    },
+    "delete_guard": {
+      "passed": 2,
+      "total": 2,
+      "provider_calls": 4,
+      "total_tokens": 6846,
+      "cases": [
+        {
+          "id": "builder_source_cannot_delete",
+          "flow": "builder",
+          "run": 1,
+          "passed": true,
+          "provider_calls": 2,
+          "total_tokens": 3421,
+          "seconds": 3.1,
+          "cumulative_calls": 2
+        },
+        {
+          "id": "builder_source_cannot_delete",
+          "flow": "builder",
+          "run": 2,
+          "passed": true,
+          "provider_calls": 2,
+          "total_tokens": 3425,
+          "seconds": 3.43,
+          "cumulative_calls": 4
+        }
+      ]
+    },
+    "standard_regression": {
+      "passed": 11,
+      "total": 12,
+      "provider_calls": 20,
+      "total_tokens": 39209,
+      "cases": [
+        {
+          "id": "test_ro",
+          "flow": "test",
+          "run": 1,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 1431,
+          "seconds": 5.02,
+          "cumulative_calls": 1
+        },
+        {
+          "id": "test_en",
+          "flow": "test",
+          "run": 1,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 1305,
+          "seconds": 3.8,
+          "cumulative_calls": 2
+        },
+        {
+          "id": "test_ru",
+          "flow": "test",
+          "run": 1,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 1242,
+          "seconds": 3.44,
+          "cumulative_calls": 3
+        },
+        {
+          "id": "test_insufficient",
+          "flow": "test",
+          "run": 1,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 925,
+          "seconds": 1.46,
+          "cumulative_calls": 4
+        },
+        {
+          "id": "batch_application",
+          "flow": "batch",
+          "run": 1,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 2236,
+          "seconds": 4.77,
+          "cumulative_calls": 5
+        },
+        {
+          "id": "batch_injection",
+          "flow": "batch",
+          "run": 1,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 1956,
+          "seconds": 2.81,
+          "cumulative_calls": 6
+        },
+        {
+          "id": "builder_unsaved",
+          "flow": "builder",
+          "run": 1,
+          "passed": true,
+          "provider_calls": 2,
+          "total_tokens": 3447,
+          "seconds": 3.9,
+          "cumulative_calls": 8
+        },
+        {
+          "id": "builder_ambiguous",
+          "flow": "builder",
+          "run": 1,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 2046,
+          "seconds": 0.92,
+          "cumulative_calls": 9
+        },
+        {
+          "id": "qa_partial_null",
+          "flow": "qa",
+          "run": 1,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 918,
+          "seconds": 1.74,
+          "cumulative_calls": 10
+        },
+        {
+          "id": "qa_map_ids",
+          "flow": "qa",
+          "run": 1,
+          "passed": true,
+          "provider_calls": 1,
+          "total_tokens": 841,
+          "seconds": 1.02,
+          "cumulative_calls": 11
+        },
+        {
+          "id": "builder_procedure_with_explanation_and_check",
+          "flow": "builder",
+          "run": 1,
+          "passed": false,
+          "error": "Verificarea sursei și a cererii: O cerință obligatorie din sursă prezentată ca opțională: \"Fără autentificarea în doi pași, contul tău este mai vulnerabil la accesul neautorizat\" sugerează că autentificarea în doi pași nu este esențială, în contradicție cu cerința originală.",
+          "provider_calls": 6,
+          "total_tokens": 14581,
+          "seconds": 28.89,
+          "cumulative_calls": 17
+        },
+        {
+          "id": "builder_concept_with_example_and_counterexample",
+          "flow": "builder",
+          "run": 1,
+          "passed": true,
+          "provider_calls": 3,
+          "total_tokens": 8281,
+          "seconds": 15.82,
+          "cumulative_calls": 20
+        }
+      ]
+    }
+  },
+  "limitations": [
+    "Rezultatele sunt probe sintetice, nu o verificare în producție.",
+    "Evaluatorul AI poate avea rezultate fals negative; cazul procedurii a eșuat în regresie.",
+    "Nu se afirmă că toate explicațiile au fost verificate semantic de teste deterministe."
+  ]
+}

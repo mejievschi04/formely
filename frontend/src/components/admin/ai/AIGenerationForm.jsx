@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 import './AIGenerationForm.css';
+import AICourseStart from './AICourseStart';
 
-export default function AIGenerationForm({ kind, request, courseId, editingTest, disabled, onSubmit, onCancel }) {
+export default function AIGenerationForm(props) {
+ if (props.kind === 'course') return <AICourseStart {...props} />;
+ return <GenerationForm {...props} />;
+}
+
+function GenerationForm({ kind, request, courseId, editingTest, disabled, onSubmit, onCancel }) {
  const course = kind === 'course';
  const [values, setValues] = useState({ topic: '', target_audience: '', level: '', style: '', lesson_size: '', language: '', modules_count: '', lessons_per_module: '', question_count: '', difficulty: '', material: '', source: '', operation: '' });
  const field = (name, label, options = null, min = null, max = null) => <label className="ai-generation-field" key={name}>{label}{options ? <select required value={values[name]} onChange={e => setValues(v => ({ ...v, [name]: e.target.value }))}><option value="">Alege…</option>{options.map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select> : <input required maxLength={name === 'topic' ? 2000 : 1000} placeholder={name === 'topic' ? (course ? 'Ex. JavaScript pentru începători' : 'Ex. Test final — JavaScript') : name === 'target_audience' ? 'Ex. Elevi fără experiență în programare' : ''} type={min ? 'number' : 'text'} min={min} max={max} value={values[name]} onChange={e => setValues(v => ({ ...v, [name]: e.target.value }))} />}</label>;

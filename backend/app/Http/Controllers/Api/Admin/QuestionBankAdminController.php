@@ -389,6 +389,7 @@ class QuestionBankAdminController extends Controller
         $seedContent = $content !== '' ? $content : "Topic: {$topic}";
         if ($courseId) {
             $course = $this->voltQuestionGeneration->loadCourseWithContentForAi($courseId);
+            abort_if(auth()->user()->isInstructor() && (int) $course->teacher_id !== (int) auth()->id(), 403, 'Acces interzis.');
             if (!$this->voltQuestionGeneration->courseHasExtractableContent($course)) {
                 return response()->json([
                     'error' => 'Cursul selectat nu are conținut textual suficient pentru generarea întrebărilor.',

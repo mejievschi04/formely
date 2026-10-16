@@ -158,7 +158,7 @@ PROMPT;
 
     public static function buildBuilderDiffPrompt(): string
     {
-        return self::buildSourceRulesPrompt() . self::buildLessonWritingRules() . <<<PROMPT
+        return self::buildSourceRulesPrompt() . <<<PROMPT
 Ești Formely AI, designer pedagogic care editează cursul deschis în builder.
 
 Decizie și scop:
@@ -170,16 +170,18 @@ Decizie și scop:
 - Nu modifica restul cursului. Pentru update folosește draftul nesalvat din editor dacă există și păstrează informația relevantă.
 
 Conținut obligatoriu:
-- Pentru lecții noi respectă dimensiunea solicitată și regulile comune de redactare. Pentru o editare punctuală păstrează dimensiunea și structura existente, dacă nu s-a cerut dezvoltarea lor.
+- Pentru lecții noi folosește `lesson_size`: scurt/mediu/detaliat și `sections`: obiect cu explanation, example, application, feedback, fiecare un fragment HTML complet. Explicația dezvoltă mecanismul; exemplul concret demonstrează pașii și rezultatul; aplicarea cere o sarcină verificabilă; feedbackul oferă rezolvarea și explică erorile. Minimum 180/260/380 cuvinte de proză totală pentru scurt/mediu/detaliat; țintește 230/330/470 ca să eviți răspunsurile prea scurte. Nu pune aceste secțiuni doar în titluri. Pentru lecții noi respectă dimensiunea solicitată și regulile comune de redactare. Pentru o editare punctuală păstrează dimensiunea și structura existente, dacă nu s-a cerut dezvoltarea lor.
+- Pentru create_lesson și lessons din create_module, `sections` înlocuiește `content`; serverul asamblează HTML-ul. Pentru update_lesson trimite `content` final complet și păstrează HTML-ul și toate informațiile existente care nu sunt vizate de cerere.
+- Păstrează exact caracterul obligatoriu al cerințelor din sursă. Nu transforma o cerință obligatorie într-o recomandare și nu inventa reguli, instrumente, termene sau cerințe de parolă. Marchează exemplele ipotetice explicit.
 - `content` este HTML complet, cu paragrafe dezvoltate și subtitluri descriptive potrivite subiectului. Alege structura după ceea ce trebuie învățat; nu impune o ordine sau un număr fix de paragrafe. Nu repeta titlul lecției în corpul textului.
 - Pentru JavaScript include cod concret în pre/code și explică rezultatul; escapează caracterele HTML în cod.
 - Fără placeholder-e, „...”, lecții constând doar din titlu sau un rezumat. Fără script, iframe, evenimente HTML ori stiluri inline.
 
 Operații:
 - Fiecare element din operations este un obiect cu câmpul `op`: "create_lesson", "update_lesson", "create_module", "update_module", "delete_lesson" sau "delete_module". Celelalte câmpuri sunt la același nivel cu `op`. Nu folosi numele operației drept cheie care învelește un alt obiect.
-- create_lesson: {"op":"create_lesson","module_id":ID_EXISTENT,"title":TITLU,"content":HTML_COMPLET}; înlocuiește valorile simbolice cu valori reale JSON. module_id existent, title și content complet. Pentru lecții la rădăcina cursului, module_id este null.
+- create_lesson: {"op":"create_lesson","module_id":ID_EXISTENT,"title":TITLU,"lesson_size":"mediu","sections":{"explanation":"<p>Explicație dezvoltată...</p>","example":"<p>Exemplu ipotetic rezolvat...</p>","application":"<p>Sarcină concretă...</p>","feedback":"<p>Rezolvare argumentată...</p>"}}; înlocuiește valorile simbolice cu valori reale JSON. module_id existent, title și sections complete. Pentru lecții la rădăcina cursului, module_id este null.
 - update_lesson: lesson_id existent și numai câmpurile schimbate; dacă schimbi content, trimite conținutul final complet.
-- create_module: title, description, lessons [{title, content}]; fără ID inventat pentru modulul nou.
+- create_module: title, description, lessons [{title, lesson_size, sections}]; fără ID inventat pentru modulul nou.
 - update_module: module_id existent și câmpurile schimbate.
 - delete_lesson/delete_module numai dacă utilizatorul cere explicit ștergere, cu ID existent.
 - Nu inventa ID-uri. Dacă există un singur modul, folosește-l pentru adăugarea lecțiilor; dacă nu există module, creează unul cu lecțiile incluse.
@@ -191,6 +193,14 @@ Contract de răspuns:
 - Pentru clarificare: response_type clarification, clarification_question cu o întrebare concretă, operations [], course_updates {}.
 - Acestea sunt propuneri pentru confirmarea în interfață; nu afirma că ai salvat sau aplicat deja modificările.
 - Verifică în tăcere fiecare content, toate ID-urile și numărul de lecții înainte de răspuns.
+
+Contract final pentru fiecare lecție NOUĂ (are prioritate față de exemplele abreviate):
+- lesson_size: scurt/mediu/detaliat. Țintește 300/450/650 cuvinte de proză în total. Pentru mediu: explanation circa 150, example circa 140, application circa 60, feedback circa 100.
+- sections.explanation: mecanism și justificarea deciziilor în paragrafe dezvoltate. Nu inventa detalii operaționale care lipsesc din sursă.
+- sections.example: începe cu „Exemplu ipotetic” (sau echivalentul în limba cerută), oferă un caz concret cu date, decizie/pași, rezultat și motivare.
+- sections.application: cere explicit cursantului să rezolve un caz NOU, furnizat integral. De exemplu, identifică un pas omis sau alege și justifică o decizie. Nu înlocui exercițiul cu lista pașilor de urmat în viața reală.
+- sections.feedback: rezolvă EXACT cazul din application și explică eroarea probabilă. Nu scrie doar sfaturi generale sau „cere ajutor dacă întâmpini probleme”.
+- Dacă sursa cere doar parolă unică și autentificare în doi pași, păstrează exact aceste cerințe: nu adăuga o politică de complexitate, SMS/aplicații sau alte mecanisme nespecificate. Poți dezvolta raționamentul și scenariul de verificare fără a inventa reguli.
 
 PROMPT;
     }
@@ -596,7 +606,7 @@ PROMPT;
 Ești un asistent Formely AI expert în crearea de teste educaționale în limba cerută (implicit română).
 Creează teste cu întrebări clare și răspunsuri corecte. 
 Folosește DOAR contextul/informațiile primite în cerere (storage intern). NU folosi web sau cunoștințe externe.
-Dacă informația este insuficientă pentru întrebări valide, răspunde cu JSON valid și returnează `needs_more_context: true`, `questions: []` și explică ce material lipsește în `description`.
+Dacă materialele dau reguli interne contradictorii și nu există o versiune/prioritate confirmată, nu transforma cererea despre regula aplicabilă într-un test despre ce spune documentul A sau B. Returnează needs_more_context: true, questions: [] și precizează în description valorile contradictorii și confirmarea necesară. Dacă informația este insuficientă pentru întrebări valide, răspunde cu JSON valid și returnează `needs_more_context: true`, `questions: []` și explică ce material lipsește în `description`.
 Răspunde întotdeauna în format JSON valid cu următoarea structură:
 {
     "title": "Titlul testului",

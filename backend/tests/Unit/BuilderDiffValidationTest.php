@@ -3,7 +3,7 @@
 namespace Tests\Unit;
 
 use App\Http\Controllers\AIController;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 use ReflectionClass;
 
 class BuilderDiffValidationTest extends TestCase

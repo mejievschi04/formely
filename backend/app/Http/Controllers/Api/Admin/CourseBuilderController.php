@@ -74,6 +74,14 @@ class CourseBuilderController extends Controller
         return response()->json($result);
     }
 
+    public function applyAiPlan(Request $request, int $courseId, \App\Services\AiCoursePlanService $plans)
+    {
+        $this->ensureCourseAccess($courseId);
+        $data = $request->validate(['plan' => 'required|array']);
+
+        return response()->json($plans->apply($courseId, $data['plan'], $request->user()));
+    }
+
     public function uploadContentFile(Request $request, int $courseId)
     {
         $this->ensureCourseAccess($courseId);

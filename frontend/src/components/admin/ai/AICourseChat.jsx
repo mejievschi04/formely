@@ -521,7 +521,7 @@ const AICourseChat = ({
 
         const formKind = ['test', 'edit_test'].includes(intent) ? 'test' : runMode === 'create' ? 'course' : null;
         if (formKind && !submittedBrief) {
-            setMessages(prev => [...prev, { role: 'user', content: promptText.trim() }, { role: 'assistant', content: `Completează formularul pentru ${formKind === 'course' ? 'curs' : 'test'}, apoi apasă Generează.` }]);
+            setMessages(prev => [...prev, { role: 'user', content: promptText.trim() }, ...(formKind === 'test' ? [{ role: 'assistant', content: 'Completează formularul pentru test, apoi apasă Generează.' }] : [])]);
             setInput('');
             setGenerationForm({ kind: formKind, request: promptText.trim(), intent });
             return;
@@ -557,7 +557,7 @@ const AICourseChat = ({
 
 		if (mode === 'workspace' && ['answer', 'test', 'edit_test', 'map', 'edit_map'].includes(intent)) {
 			const userMessage = { role: 'user', content: promptText.trim() };
-			setMessages((prev) => [...prev, userMessage, { role: 'assistant', content: '…' }]);
+			setMessages((prev) => [...prev, ...(submittedBrief ? [] : [userMessage]), { role: 'assistant', content: '…' }]);
 			setInput('');
 			setIsGenerating(true);
 			setPendingDraft(null);
@@ -605,6 +605,10 @@ const AICourseChat = ({
 						signal,
 					);
 					const parsed = extractJsonFromText(streamed);
+					if (parsed?.needs_more_context === true) {
+						finishAssistantMessage(parsed.description || 'Adaugă mai mult material pentru întrebări verificabile.');
+						return;
+					}
 					const questions = mapVoltTestQuestions(parsed?.questions);
 					if (!parsed?.title || questions.length !== Number(submittedBrief?.values?.question_count) || questions.some(q => q.answers.length !== 4 || q.answers.filter(a => a.is_correct).length !== 1)) {
 						finishAssistantMessage(streamed.trim() || 'Nu am putut pregăti un test valid. Adaugă mai multe detalii.');
@@ -672,13 +676,19 @@ const AICourseChat = ({
 		}
 
 		const briefPayload = submittedBrief?.kind === 'course' ? submittedBrief.values : (mode === 'workspace' ? null : getGuidedBriefPayload());
-		const basePrompt = buildCourseCreationPromptFromBrief(briefPayload, promptText);
+		const basePrompt = submittedBrief?.kind === 'course' ? promptText.trim() : buildCourseCreationPromptFromBrief(briefPayload, promptText);
 		if (!basePrompt?.trim()) return;
 
-		const attachmentNote = buildAttachmentNote(attachedDocuments);
+		// Staged creation sends the brief and full sources as separate fields.
+		// Repeating them in prompt can exceed its 20,000-character limit.
+		const attachmentNote = runMode === 'assist' || (runMode === 'create' && briefPayload) ? '' : buildAttachmentNote(attachedDocuments);
 		const promptWithAttachments = `${basePrompt.trim()}${attachmentNote}`;
 		const userMessage = { role: 'user', content: promptWithAttachments };
-		setMessages(prev => [...prev, userMessage]);
+		setMessages(prev => {
+            if (!submittedBrief) return [...prev, userMessage];
+            const lastUser = prev.findLastIndex(message => message.role === 'user');
+            return lastUser < 0 ? [...prev, userMessage] : prev.map((message, index) => index === lastUser ? userMessage : message);
+        });
 		setInput('');
 		setIsGenerating(true);
 		setGeneratedPlan(null);
@@ -717,6 +727,7 @@ const AICourseChat = ({
 			let courseId = null;
 			let streamResponseType = '';
 			let streamClarificationText = '';
+			let builderRevision = null;
 			const streamMessages = messages.map(m => ({ role: m.role, content: m.content }));
 			const streamHandler = (chunk) => {
 				if (!chunk) return;
@@ -778,6 +789,7 @@ const AICourseChat = ({
 				});
 			};
 			const dataHandler = (data) => {
+				if (data?.builder_revision) builderRevision = data.builder_revision;
 				if (data?.progress) recovery.setProgress(data.progress);
 				if (data?.response_type === 'clarification') {
 					setPendingCourseIntent(runMode === 'assist' ? 'edit_course' : 'create_course');
@@ -856,7 +868,8 @@ const AICourseChat = ({
 				}
 
 				const planSource = rawResponse || assistantResponse;
-				const plan = extractJsonFromText(planSource);
+				const parsedPlan = extractJsonFromText(planSource);
+				const plan = parsedPlan ? { ...parsedPlan, base_revision: builderRevision } : null;
 				if (plan) {
 					setGeneratedPlan(plan);
 					const hasOperations = Array.isArray(plan.operations) && plan.operations.length > 0;
@@ -1285,11 +1298,13 @@ const AICourseChat = ({
 					<AIGenerationStatus {...(courseProgress || { title: liveStatusTitle, description: liveStatusSubtitle })} />
 				)}
 				{!isGenerating && recovery.retryId && <button type="button" className="lms-btn-primary" onClick={recovery.retry}>Reia generarea cursului</button>}
-                {generationForm && <AIGenerationForm key={`${generationForm.kind}:${generationForm.request}`} kind={generationForm.kind} courseId={currentCourseId} editingTest={generationForm.intent === 'edit_test'} request={generationForm.request} disabled={isGenerating} onCancel={() => setGenerationForm(null)} onSubmit={values => {
+                {generationForm && <AIGenerationForm key={`${generationForm.kind}:${generationForm.request}`} kind={generationForm.kind} courseId={currentCourseId} editingTest={generationForm.intent === 'edit_test'} request={generationForm.request} documents={attachedDocuments} disabled={isGenerating} onCancel={() => setGenerationForm(null)} onSubmit={values => {
                     const form = generationForm;
                     setGenerationForm(null);
-                    const request = form.request;
-                    submitPrompt(request, { kind: form.kind, intent: form.intent, values });
+                    const request = form.kind === 'course' ? values.course_request || form.request : form.request;
+                    const briefValues = { ...values };
+                    delete briefValues.course_request;
+                    submitPrompt(request, { kind: form.kind, intent: form.intent, values: briefValues });
                 }} />}
 				<div ref={messagesEndRef} />
 			</div>
@@ -1431,7 +1446,7 @@ const AICourseChat = ({
 									setIsApplying(false);
 								}
 							}}
-							disabled={isApplying || !Array.isArray(generatedPlan.operations) || generatedPlan.operations.length === 0}
+							disabled={isApplying || (!(generatedPlan.operations?.length > 0) && !Object.keys(generatedPlan.course_updates || {}).length)}
 						>
 							{isApplying ? 'Se aplică…' : 'Aplică modificările'}
 						</button>

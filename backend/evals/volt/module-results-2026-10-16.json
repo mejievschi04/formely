@@ -1,0 +1,100 @@
+{
+  "date": "2026-10-16",
+  "provider": "openai",
+  "models": [
+    "gpt-4o-mini-2024-07-18"
+  ],
+  "provider_calls": 19,
+  "total_tokens": 34750,
+  "cases": [
+    {
+      "id": "test_ro",
+      "flow": "test",
+      "passed": true,
+      "seconds": 5.4,
+      "cumulative_calls": 1
+    },
+    {
+      "id": "test_en",
+      "flow": "test",
+      "passed": true,
+      "seconds": 4.08,
+      "cumulative_calls": 2
+    },
+    {
+      "id": "test_ru",
+      "flow": "test",
+      "passed": true,
+      "seconds": 3.69,
+      "cumulative_calls": 3
+    },
+    {
+      "id": "test_insufficient",
+      "flow": "test",
+      "passed": true,
+      "seconds": 1.24,
+      "cumulative_calls": 4
+    },
+    {
+      "id": "batch_application",
+      "flow": "batch",
+      "passed": true,
+      "seconds": 4.65,
+      "cumulative_calls": 5
+    },
+    {
+      "id": "batch_injection",
+      "flow": "batch",
+      "passed": true,
+      "seconds": 2.65,
+      "cumulative_calls": 6
+    },
+    {
+      "id": "builder_unsaved",
+      "flow": "builder",
+      "passed": true,
+      "seconds": 3.48,
+      "cumulative_calls": 8
+    },
+    {
+      "id": "builder_ambiguous",
+      "flow": "builder",
+      "passed": true,
+      "seconds": 1.24,
+      "cumulative_calls": 9
+    },
+    {
+      "id": "qa_partial_null",
+      "flow": "qa",
+      "passed": true,
+      "seconds": 1.52,
+      "cumulative_calls": 10
+    },
+    {
+      "id": "qa_map_ids",
+      "flow": "qa",
+      "passed": true,
+      "seconds": 1.04,
+      "cumulative_calls": 11
+    },
+    {
+      "id": "builder_procedure_with_explanation_and_check",
+      "flow": "builder",
+      "passed": true,
+      "seconds": 26.22,
+      "cumulative_calls": 17
+    },
+    {
+      "id": "builder_concept_with_example_and_counterexample",
+      "flow": "builder",
+      "passed": true,
+      "seconds": 6.31,
+      "cumulative_calls": 19
+    }
+  ],
+  "limitations": [
+    "Probele reale folosesc date sintetice și nu persistă în aplicație.",
+    "Q&A: context sintetic și verificare separată a răspunsurilor; transportul SSE nu este testat de acest script.",
+    "Un verdict automat de calitate nu garantează fidelitatea semantică; lecțiile rămân propuneri pentru revizuire."
+  ]
+}

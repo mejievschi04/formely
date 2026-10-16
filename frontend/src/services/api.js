@@ -1327,6 +1327,15 @@ export const adminService = {
     return response.data;
   },
 
+  builderApplyAiPlan: async (courseId, plan) => {
+    try {
+      const response = await api.post(`/admin/courses/${courseId}/builder/ai-plan`, { plan });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || error.message || 'Nu am putut aplica propunerea AI.');
+    }
+  },
+
   builderCreateLesson: async (courseId, lessonData) => {
     const response = await api.post(`/admin/courses/${courseId}/builder/lessons`, lessonData);
     return response.data;

@@ -212,13 +212,14 @@ class AIController extends Controller
     {
         $requestedType = (string) $request->input('type', 'course');
         $type = in_array($requestedType, ['course', 'tutor', 'test'], true) ? $requestedType : 'course';
+        if ($type === 'test') return $this->generateTest($request);
         $mode = (string) $request->input('mode', $type === 'tutor' ? 'admin_tutor' : '');
         $intent = AiIntentResolver::resolve($type, $mode);
 
         $this->assertCompanyFeature($intent['feature']);
         $this->assertAiQuotaAvailable($intent['action']);
         if ($type === 'course') {
-            $request->validate(['courseId' => 'nullable|integer|min:1']);
+            $request->validate(['courseId' => str_contains($mode, 'builder_diff') ? 'required|integer|min:1' : 'nullable|integer|min:1']);
             if ($request->filled('courseId')) {
                 $course = Course::query()->findOrFail((int) $request->input('courseId'));
                 abort_unless(auth()->user()?->isAdmin() || (int) $course->teacher_id === (int) Auth::id(), 403);
@@ -239,9 +240,27 @@ class AIController extends Controller
         $this->assertCompanyFeature($intent['feature']);
         $this->assertAiQuotaAvailable($intent['action']);
 
+        $request->validate(['prompt' => 'required|string|max:20000', 'courseId' => 'nullable|integer|min:1',
+            'testId' => 'nullable|integer|min:1', 'test_operation' => 'required_with:testId|in:append,replace']);
+        if ($request->filled('courseId')) {
+            $course = Course::findOrFail((int) $request->input('courseId'));
+            abort_unless(auth()->user()?->isAdmin() || (int) $course->teacher_id === (int) auth()->id(), 403);
+        }
+        $existing = [];
+        if ($request->filled('testId')) {
+            $test = \App\Models\Test::with('questions')->findOrFail((int) $request->input('testId'));
+            abort_unless(auth()->user()?->isAdmin() || (int) $test->created_by === (int) auth()->id(), 403);
+            abort_unless($test->question_source === 'direct', 422, 'Editează întrebările în banca de întrebări a testului.');
+            abort_if($test->status === 'published' && DB::table('course_test')->where('test_id', $test->id)->exists(), 422, 'Creează o versiune nouă înainte de editarea testului publicat.');
+            $existing = $test->only(['id', 'title', 'description']);
+            $existing['questions'] = $test->questions->map(fn ($question) => $question->only(['content', 'answers', 'explanation']))->all();
+        }
         $this->validateGenerationForm($request, 'test');
+        $test = app(\App\Services\AiTestGenerator::class)->generate($request->input('test_brief'), $request->input('prompt'), $existing, $request->input('test_operation'));
+        $usage = ($test['needs_more_context'] ?? false) ? null : $this->recordAiQuota($intent['action']);
 
-        return $this->streamResponse($request, 'test', $intent['action']);
+        return response()->json(['response_type' => ($test['needs_more_context'] ?? false) ? 'clarification' : 'test',
+            'content' => json_encode($test, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR), 'ai_usage' => $usage]);
     }
 
     private function validateGenerationForm(Request $request, string $kind): void
@@ -251,10 +270,11 @@ class AIController extends Controller
             $structure = $this->courseBuilderService->getBuilderStructure((int) $request->input('courseId'));
             $text = [];
             foreach ($structure['lessons'] as $lesson) {
-                $text[] = $lesson->title . "\n" . $this->studyToolPlainText($lesson->content ?? '');
+                $text[] = $lesson->title . "\n" . ($lesson instanceof Lesson ? $this->extractStudyToolLessonText($lesson) : $this->studyToolPlainText($lesson->content ?? ''));
             }
             $brief = $request->input('test_brief', []);
-            $brief['material'] = mb_substr(implode("\n\n", $text), 0, 12000);
+            $perLessonBudget = max(1, intdiv(12000 - 2 * max(0, count($text) - 1), max(1, count($text))));
+            $brief['material'] = mb_substr(implode("\n\n", array_map(fn ($part) => mb_substr($part, 0, $perLessonBudget), $text)), 0, 12000);
             $request->merge(['test_brief' => $brief]);
         }
         $prefix = $kind === 'course' ? 'guided_brief' : 'test_brief';
@@ -2174,7 +2194,9 @@ class AIController extends Controller
         }
 
         $builderDiffMode = str_contains((string) $mode, 'builder_diff');
+        $builderRevision = null;
         if ($builderDiffMode && $courseId) {
+            $builderRevision = app(\App\Services\AiCoursePlanService::class)->revision((int) $courseId);
             $builderContext = $this->buildBuilderDiffContext(
                 (int) $courseId,
                 $request->input('selected_module_id') ?? $request->input('selectedModuleId'),
@@ -2220,6 +2242,18 @@ class AIController extends Controller
             $systemPrompt .= "\nCerințe și material validate din formular (date JSON):\n" . json_encode($request->input('test_brief'), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
         $formattedMessages = $this->formatMessages($systemPrompt, $messages, $prompt);
+
+        if ($builderDiffMode) {
+            $plan = app(\App\Services\AiBuilderGenerator::class)->generate($formattedMessages);
+            $clarification = ($plan['response_type'] ?? '') === 'clarification';
+            return response()->json([
+                'response_type' => $clarification ? 'clarification' : 'course',
+                'content' => json_encode($plan, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+                'clarification_question' => $plan['clarification_question'] ?? null,
+                'builder_revision' => $builderRevision,
+                'ai_usage' => $clarification ? null : $this->recordAiQuota($quotaAction),
+            ]);
+        }
 
 		$isGuidedCourseCreation = $type === 'course' && str_contains((string) $mode, 'guided_creation') && ($this->provider === 'openai' || $this->provider === 'groq');
         if ($isGuidedCourseCreation) {
@@ -2290,7 +2324,7 @@ class AIController extends Controller
         }
 
         // Configurează response pentru streaming (headers pe response, nu în callback)
-        return response()->stream(function () use ($formattedMessages, $type, $teacherId, $isClarification, $courseId, $mode, $quotaAction) {
+        return response()->stream(function () use ($formattedMessages, $type, $teacherId, $isClarification, $courseId, $mode, $quotaAction, $builderRevision) {
             try {
                 if (ob_get_level() > 0) {
                     ob_end_clean();
@@ -2343,6 +2377,7 @@ class AIController extends Controller
                             $billed = true;
                             echo "data: " . json_encode(array_filter([
                                 'response_type' => 'course',
+                                'builder_revision' => $builderRevision,
                                 'ai_usage' => $usage,
                             ])) . "\n\n";
                             @ob_flush();
@@ -2527,12 +2562,14 @@ class AIController extends Controller
         $draft = is_array($selectedLessonDraft) ? $selectedLessonDraft : null;
         if ($draft && !empty($draft['id']) && is_numeric($draft['id'])) {
             $draftId = (int) $draft['id'];
-            $draftContent = $this->studyToolPlainText((string) ($draft['content'] ?? ''));
+            abort_unless($draftId === $focusLessonId && Lesson::where('course_id', $courseId)->whereKey($draftId)->exists(), 422, 'Selectează lecția din curs înainte de a trimite draftul.');
+            $draftContent = (string) ($draft['content'] ?? '');
+            abort_if(mb_strlen($draftContent) > 60000, 422, 'Lecția este prea mare pentru o editare AI completă. Împarte materialul în lecții mai mici.');
             if ($draftContent !== '') {
                 $payload['focus_draft'] = [
                     'lesson_id' => $draftId,
                     'title' => (string) ($draft['title'] ?? ''),
-                    'content_preview' => mb_substr($draftContent, 0, 4000),
+                    'content' => $draftContent,
                     'note' => 'Conținut din editor (poate fi nesalvat) — folosește-l ca bază pentru update_lesson.',
                 ];
             }
@@ -2557,7 +2594,8 @@ class AIController extends Controller
     {
         $text = $this->extractStudyToolLessonText($lesson);
         $isFocus = $focusLessonId !== null && (int) $lesson->id === $focusLessonId;
-        $previewLimit = $isFocus ? 1400 : 320;
+        $previewLimit = $isFocus ? 60000 : 320;
+        if ($isFocus) abort_if(mb_strlen((string) $lesson->content) > 60000, 422, 'Lecția este prea mare pentru o editare AI completă. Împarte materialul în lecții mai mici.');
 
         return [
             'id' => (int) $lesson->id,
@@ -2567,6 +2605,7 @@ class AIController extends Controller
             'status' => $lesson->status ?? null,
             'is_preview' => (bool) ($lesson->is_preview ?? false),
             'content_preview' => mb_substr($text, 0, $previewLimit),
+            'content' => $isFocus ? (string) $lesson->content : null,
             'content_chars' => mb_strlen($text),
             'is_focus' => $isFocus,
         ];
@@ -2600,7 +2639,7 @@ class AIController extends Controller
 
         return VoltPromptService::buildTestPrompt(($this->provider === 'openai' || $this->provider === 'groq') ? 'IMPORTANT: Răspunde întotdeauna în format JSON valid. ' : '');
     }
-    public function streamOpenAIResponse($messages, $type, $teacherId = null, $courseId = null, &$fullResponse = null, $mode = '')
+    public function streamOpenAIResponse($messages, $type, $teacherId = null, $courseId = null, &$fullResponse = null, $mode = '', int $attempt = 0, ?float $deadline = null)
     {
         if ($fullResponse === null) {
             $fullResponse = '';
@@ -2651,6 +2690,12 @@ class AIController extends Controller
                 }
             }
 
+            $deadline ??= microtime(true) + ($effectiveTimeout > 0 ? $effectiveTimeout : 180);
+            $remaining = (int) floor($deadline - microtime(true));
+            if ($attempt >= 3 || $remaining < 5) throw new \RuntimeException('Serviciul AI nu a răspuns la timp. Reîncearcă.');
+            $effectiveTimeout = $remaining;
+            if ($attempt > 0) $effectiveModel = $this->model;
+
             // Prepare request payload
             $payload = [
                 'model' => $effectiveModel,
@@ -2683,6 +2728,7 @@ class AIController extends Controller
             $errorResponse = '';
             $headers = '';
             $responseBody = '';
+            $finishReason = null;
             
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
@@ -2704,7 +2750,7 @@ class AIController extends Controller
             });
             
             // Write function to handle streaming chunks
-            curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($ch, $data) use (&$fullResponse, &$buffer, &$errorResponse, &$responseBody) {
+            curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($ch, $data) use (&$fullResponse, &$buffer, &$errorResponse, &$responseBody, &$finishReason) {
                 $responseBody .= $data;
                 
                 // Check if this is an error response (JSON error, not streaming)
@@ -2736,14 +2782,15 @@ class AIController extends Controller
                     }
                     
                     // Check if it's SSE format
-                    if (str_starts_with($line, 'data: ')) {
-                        $jsonData = substr($line, 6);
+                    if (str_starts_with($line, 'data:')) {
+                        $jsonData = trim(substr($line, 5));
                         if ($jsonData === '[DONE]') {
                             return strlen($data);
                         }
                         
                         try {
                             $chunk = json_decode($jsonData, true);
+                            if (isset($chunk['choices'][0]['finish_reason'])) $finishReason = $chunk['choices'][0]['finish_reason'];
                             if (isset($chunk['choices'][0]['delta']['content'])) {
                                 $content = $chunk['choices'][0]['delta']['content'];
                                 $fullResponse .= $content;
@@ -2802,43 +2849,14 @@ class AIController extends Controller
                             'reason' => $isModelNotFound ? 'model_not_found' : 'rate_limit'
                         ]);
                         
-                        // Send message to client about model switch
-                        $message = $isModelNotFound 
-                            ? "\n\n⏳ Modelul {$this->model} nu este disponibil. Trec la modelul alternativ ({$nextModel})...\n\n"
-                            : "\n\n⏳ Limita pentru modelul {$this->model} a fost atinsă. Trec la modelul alternativ ({$nextModel})...\n\n";
-                        
-                        echo "data: " . json_encode([
-                            'content' => $message
-                        ]) . "\n\n";
-                                @ob_flush();
-                                flush();
-                        
                         // Switch to next model
                         $this->model = $nextModel;
                         
                         // Retry with new model (preserve $mode so model/JSON settings stay correct)
-                        return $this->streamOpenAIResponse($messages, $type, $teacherId, $courseId, $fullResponse, $mode);
+                        return $this->streamOpenAIResponse($messages, $type, $teacherId, $courseId, $fullResponse, $mode, $attempt + 1, $deadline);
                     }
                     
-                    // No more models available or not using Groq - wait and retry
-                    Log::warning("No more fallback models available, waiting before retry", [
-                        'provider' => $this->provider,
-                        'model' => $this->model
-                    ]);
-                    
-                    // Send rate limit message to client
-                    echo "data: " . json_encode([
-                        'content' => "\n\n⏳ Am atins limita de request-uri per minut. Aștept 60 de secunde înainte de a continua...\n\n"
-                    ]) . "\n\n";
-                @ob_flush();
-                flush();
-                    
-                    // Wait 60 seconds before retrying
-                    sleep(60);
-                    
-                    // Retry the request (preserve $mode so model/JSON settings stay correct)
-                    Log::info("Retrying {$providerName} API request after rate limit wait");
-                    return $this->streamOpenAIResponse($messages, $type, $teacherId, $courseId, $fullResponse, $mode);
+                    throw new \RuntimeException('Serviciul AI este ocupat. Reîncearcă mai târziu.');
                 }
                 
                 Log::error("{$providerName} API Error", [
@@ -2846,14 +2864,18 @@ class AIController extends Controller
                     'error_response' => substr($errorDetails, 0, 500),
                     'full_response' => substr($responseBody, 0, 1000),
                     'headers' => substr($headers, 0, 500),
-                    'payload' => json_encode($payload)
+                    'messages_count' => count($messages)
                 ]);
                 throw new \Exception("{$providerName} API error: HTTP {$httpCode}. " . substr($errorDetails, 0, 200));
             }
             
+            if ($finishReason !== 'stop' || trim($fullResponse) === '') {
+                throw new \RuntimeException('Răspunsul AI este incomplet. Reîncearcă cu o cerere mai scurtă. Nu au fost consumate credite pentru acest răspuns.');
+            }
+
             Log::info("{$providerName} API Success", [
                 'response_length' => strlen($fullResponse),
-                'preview' => substr($fullResponse, 0, 300),
+
                 'has_json' => preg_match('/\{[\s\S]*\}/', $fullResponse) ? 'yes' : 'no'
             ]);
         } catch (\Exception $e) {
@@ -3584,101 +3606,20 @@ class AIController extends Controller
      */
     private function validateBuilderDiffPlanData(array $plan): array
     {
-        $responseType = strtolower(trim((string) ($plan['response_type'] ?? $plan['type'] ?? '')));
-        if ($responseType !== '' && !in_array($responseType, ['plan', 'builder_diff', 'clarification'], true)) {
-            return [
-                'valid' => false,
-                'message' => 'Planul Formely AI are un tip de răspuns invalid.',
-            ];
+        $type = $plan['response_type'] ?? $plan['type'] ?? '';
+        if (!is_string($type) || ($type !== '' && !in_array(strtolower(trim($type)), ['plan', 'builder_diff', 'clarification'], true))) {
+            return ['valid' => false, 'message' => 'Planul AI are un tip de răspuns invalid.'];
         }
-
-        $operations = isset($plan['operations']) && is_array($plan['operations']) ? $plan['operations'] : [];
-        $courseUpdates = isset($plan['course_updates']) && is_array($plan['course_updates']) ? $plan['course_updates'] : null;
-        $summary = trim((string) ($plan['summary'] ?? ''));
-        $clarificationQuestion = trim((string) ($plan['clarification_question'] ?? ''));
-
-        if ($clarificationQuestion !== '') {
-            return [
-                'valid' => true,
-                'clarification' => true,
-                'clarification_question' => $clarificationQuestion,
-                'operations' => $operations,
-                'course_updates' => $courseUpdates,
-            ];
+        if (is_string($plan['clarification_question'] ?? null) && trim($plan['clarification_question']) !== '') {
+            return ['valid' => true, 'clarification' => true, 'clarification_question' => trim($plan['clarification_question']),
+                'operations' => [], 'course_updates' => []];
         }
-
-        if ($courseUpdates === null && empty($operations)) {
-            return [
-                'valid' => false,
-                'message' => 'Planul Formely AI nu conține schimbări aplicabile.',
-            ];
+        try {
+            $normalized = app(\App\Services\AiCoursePlanService::class)->normalize($plan);
+            return ['valid' => true, 'summary' => is_string($plan['summary'] ?? null) ? $plan['summary'] : ''] + $normalized;
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return ['valid' => false, 'message' => implode(' ', array_slice($e->validator->errors()->all(), 0, 3))];
         }
-
-        $lessonOperations = [];
-        $moduleOperations = [];
-        foreach ($operations as $op) {
-            if (!is_array($op)) {
-                return [
-                    'valid' => false,
-                    'message' => 'Planul Formely AI conține o operație invalidă.',
-                ];
-            }
-
-            $opType = strtolower(trim((string) ($op['op'] ?? '')));
-            if (! in_array($opType, ['create_lesson', 'createlesson', 'update_lesson', 'updatelesson', 'delete_lesson', 'deletelesson', 'create_module', 'createmodule', 'update_module', 'updatemodule', 'delete_module', 'deletemodule'], true)) {
-                return ['valid' => false, 'message' => 'Planul Formely AI conține o operație necunoscută.'];
-            }
-            if (in_array($opType, ['create_lesson', 'createlesson', 'update_lesson', 'updatelesson'], true)) {
-                $lessonOperations[] = $op;
-                $lessonContent = trim((string) ($op['content'] ?? $op['body'] ?? $op['html'] ?? ''));
-                if ($opType === 'create_lesson' || $opType === 'createlesson') {
-                    if ($lessonContent === '' || $this->countLessonContentLines($lessonContent) < 4) {
-                        return [
-                            'valid' => false,
-                            'message' => 'Planul Formely AI conține o lecție fără conținut suficient.',
-                        ];
-                    }
-                } elseif ($lessonContent !== '' && $this->countLessonContentLines($lessonContent) < 4) {
-                    return [
-                        'valid' => false,
-                        'message' => 'Planul Formely AI conține o lecție actualizată cu conținut prea scurt.',
-                    ];
-                }
-            }
-
-            if (in_array($opType, ['create_module', 'createmodule', 'update_module', 'updatemodule'], true)) {
-                $moduleOperations[] = $op;
-                $nestedLessons = isset($op['lessons']) && is_array($op['lessons']) ? $op['lessons'] : [];
-                if (($opType === 'create_module' || $opType === 'createmodule') && empty($nestedLessons)) {
-                    return [
-                        'valid' => false,
-                        'message' => 'Planul Formely AI modifică module, dar nu include lecții.',
-                    ];
-                }
-                foreach ($nestedLessons as $nestedLesson) {
-                    if (!is_array($nestedLesson)) {
-                        return [
-                            'valid' => false,
-                            'message' => 'Planul Formely AI conține o lecție invalidă în modul.',
-                        ];
-                    }
-                    $nestedContent = trim((string) ($nestedLesson['content'] ?? $nestedLesson['body'] ?? $nestedLesson['html'] ?? ''));
-                    if ($nestedContent === '' || $this->countLessonContentLines($nestedContent) < 4) {
-                        return [
-                            'valid' => false,
-                            'message' => 'Planul Formely AI conține o lecție de modul fără conținut suficient.',
-                        ];
-                    }
-                }
-            }
-        }
-
-        return [
-            'valid' => true,
-            'summary' => $summary,
-            'course_updates' => $courseUpdates,
-            'operations' => $operations,
-        ];
     }
 
     private function countLessonContentLines(string $content): int

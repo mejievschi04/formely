@@ -276,6 +276,7 @@ Route::middleware([
     Route::prefix('/courses/{courseId}/builder')->group(function () {
         Route::get('/structure', [CourseBuilderController::class, 'structure']);
         Route::patch('/structure', [CourseBuilderController::class, 'patchStructure']);
+        Route::post('/ai-plan', [CourseBuilderController::class, 'applyAiPlan']);
 
         Route::post('/modules', [CourseBuilderController::class, 'createModule']);
         Route::post('/lessons', [CourseBuilderController::class, 'createLesson']);

@@ -50,9 +50,9 @@ class VoltPromptServiceTest extends TestCase
         $this->assertStringNotContainsString("Comunicare\n- language: ru", $prompt);
     }
 
-    public function test_course_and_builder_use_adaptive_lesson_structures_without_boilerplate(): void
+    public function test_course_uses_adaptive_lesson_structures_without_boilerplate(): void
     {
-        foreach ([VoltPromptService::buildGuidedCourseCreationPrompt(), VoltPromptService::buildBuilderDiffPrompt()] as $prompt) {
+        foreach ([VoltPromptService::buildGuidedCourseCreationPrompt()] as $prompt) {
             foreach (['Concept:', 'Procedură:', 'Decizie / studiu de caz:', 'Lecție tehnică:', 'Consolidare:'] as $structure) {
                 $this->assertStringContainsString($structure, $prompt);
             }
