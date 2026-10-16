@@ -29,3 +29,19 @@ Criterii obligatorii: JSON valid unde este cerut, ID-uri existente, fără fapte
 ## Limite
 
 Exportul pregătește evaluarea; nu execută modelul și nu calculează scoruri. Scenariile validează prompturile izolat, nu autorizarea, recuperarea contextului sau persistența din endpoint-uri. Pentru un test complet adaugă separat scenarii prin API-ul aplicației. Cazurile cu material insuficient pentru întrebări individuale trebuie extinse după stabilirea contractului de eroare al generatorului.
+
+## Probe reale pentru generarea pe etape
+
+Din backend, cu providerul și cheia configurate în aplicație:
+
+```sh
+php evals/volt/course-generation.php --output=/tmp/formely-course-eval
+php evals/volt/course-generation.php --size=scurt --language=ru --output=/tmp/formely-course-ru
+php evals/volt/course-generation.php --size=scurt --source --output=/tmp/formely-course-source
+```
+
+Scriptul folosește providerul real și aceleași metode de generare/validare ca joburile. Generează implicit trei structuri cu câte două module și patru lecții: comunicare în română, JavaScript în română și suport clienți în engleză. Varianta `--source` folosește o procedură sintetică pentru un magazin fictiv. Nu salvează cursuri în baza aplicației și nu consumă creditele unei academii; apelurile sunt facturate de provider.
+
+În directorul ales salvează inputul sintetic, răspunsurile providerului (fără antete de autentificare), structura, HTML-ul validat, numărul de apeluri, tokenii și durata. Folosește directoare distincte pentru variantele comparate. `--lessons=1` limitează proba la prima lecție. `--baseline` verifică primul răspuns al promptului curent fără corectări automate; pentru comparația cu un prompt vechi rulează aceeași probă pe versiunea veche a codului.
+
+Inspectează separat fidelitatea față de surse, limba, relevanța sarcinii și rezolvarea ei. Execută exemplele tehnice în mediul indicat. Trecerea validatorului nu garantează corectitudinea semantică. Testul `test_real_provider_responses_complete_and_save_all_three_course_sizes` reia răspunsurile reale sintetice din fixture prin etapele de salvare, fără apeluri externe.

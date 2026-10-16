@@ -101,6 +101,31 @@ class StagedAiCourseGenerationTest extends TestCase
         Http::assertSentCount(5);
     }
 
+    public function test_real_provider_responses_complete_and_save_all_three_course_sizes(): void
+    {
+        $fixture = json_decode(file_get_contents(base_path('tests/Fixtures/ai-course-generation-live.json')), true, 512, JSON_THROW_ON_ERROR);
+        foreach ($fixture['cases'] as $index => $case) {
+            Http::swap(new \Illuminate\Http\Client\Factory());
+            Http::preventStrayRequests();
+            $sequence = Http::fakeSequence();
+            foreach ($case['responses'] as $response) {
+                $sequence->push(['choices' => [['message' => ['content' => json_encode($response, JSON_UNESCAPED_UNICODE)], 'finish_reason' => 'stop']]]);
+            }
+            $input = $this->input();
+            $input['guided_brief'] = array_replace($input['guided_brief'], $case['brief'], ['lesson_size' => $case['size']]);
+            $run = $this->start($input);
+            for ($i = 0; $i < 6; $i++) $this->step($run);
+
+            $this->assertSame('completed', $run->fresh()->status, $case['size']);
+            $this->assertSame(4, $run->fresh()->completed_lessons);
+            $this->assertNull($run->fresh()->error);
+            $this->assertDatabaseCount('courses', $index + 1);
+            $this->assertDatabaseCount('lessons', ($index + 1) * 4);
+            Http::assertSentCount(count($case['responses']));
+        }
+        $this->assertDatabaseHas('company_ai_usages', ['action' => 'credits', 'used' => 45]);
+    }
+
     public function test_duplicate_starts_return_the_same_run_even_with_different_request_keys(): void
     {
         $input = $this->input();
@@ -145,6 +170,117 @@ class StagedAiCourseGenerationTest extends TestCase
         $this->assertSame(2, $run->fresh()->completed_lessons);
         $this->assertSame($saved[0], $run->fresh()->lessons[0]);
         $this->assertDatabaseCount('courses', 0);
+    }
+
+    public function test_short_lesson_is_corrected_with_its_draft_before_checkpointing(): void
+    {
+        $attempts = 0;
+        $short = $this->lesson('Feedback');
+        $short['content'] = '<p>Feedbackul trebuie explicat printr-un exemplu concret.</p>';
+        Http::fake(function ($request) use (&$attempts, $short) {
+            $data = json_decode($request['messages'][1]['content'], true);
+            if (!isset($data['selected_lesson'])) {
+                $body = $this->outline();
+            } else {
+                $body = ++$attempts === 1 ? $short : $this->lesson($data['selected_lesson']['title']);
+                $this->assertSame(0, AiCourseGeneration::first()->completed_lessons);
+            }
+            return Http::response(['choices' => [['message' => ['content' => json_encode($body)]]]]);
+        });
+        $run = $this->start();
+        $this->step($run);
+        $this->step($run);
+
+        $this->assertSame(2, $attempts);
+        $this->assertSame(1, $run->fresh()->completed_lessons);
+        $this->assertNull($run->fresh()->error);
+        $this->assertDatabaseCount('courses', 0);
+        Queue::assertPushed(GenerateAiCourseStep::class, 3);
+        Http::assertSent(function ($request) use ($short) {
+            $messages = $request['messages'];
+            return count($messages) === 4
+                && $messages[2]['role'] === 'assistant'
+                && json_decode($messages[2]['content'], true) === $short
+                && str_contains($messages[3]['content'], 'minimum 180');
+        });
+    }
+
+    public function test_invalid_evidence_is_corrected_automatically(): void
+    {
+        $invalid = $this->lesson('Feedback');
+        $invalid['evidence']['example'] = 'Acest exemplu nu există în textul lecției.';
+        Http::fakeSequence()
+            ->push(['choices' => [['message' => ['content' => json_encode($invalid)]]]])
+            ->push(['choices' => [['message' => ['content' => json_encode($this->lesson('Feedback'))]]]]);
+        $content = app(StagedAiCourseGenerator::class)->generateLesson($this->input() + ['selected_lesson' => ['title' => 'Feedback']]);
+        $this->assertStringContainsString('raportul transmis', $content);
+        Http::assertSentCount(2);
+        Http::assertSent(fn ($r) => str_contains($r['messages'][3]['content'] ?? '', 'evidence.example'));
+    }
+
+    public function test_quality_corrections_are_bounded_and_never_save_invalid_content(): void
+    {
+        $this->fakeProvider();
+        $run = $this->start();
+        $this->step($run);
+        Http::swap(new \Illuminate\Http\Client\Factory());
+        Http::fake(fn () => Http::response(['choices' => [['message' => ['content' => '{"content":"<p>Prea scurt.</p>","evidence":{}}']]]]));
+        try {
+            $this->step($run);
+            $this->fail('Invalid lesson accepted');
+        } catch (\App\Exceptions\AiLessonQualityException $e) {
+            $this->assertStringContainsString('minimum 180', $e->getMessage());
+        }
+        Http::assertSentCount(3);
+        $this->assertSame(0, $run->fresh()->completed_lessons);
+        $this->assertDatabaseCount('courses', 0);
+        $this->assertDatabaseMissing('company_ai_usages', ['action' => 'credits', 'used' => 15]);
+    }
+
+    public function test_provider_errors_do_not_trigger_content_correction_requests(): void
+    {
+        Http::fake(fn () => Http::response([], 429));
+        try {
+            app(StagedAiCourseGenerator::class)->generateLesson($this->input());
+            $this->fail('Provider error swallowed');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('HTTP 429', $e->getMessage());
+        }
+        Http::assertSentCount(1);
+    }
+
+    public function test_structured_lesson_is_assembled_without_model_generated_evidence(): void
+    {
+        $legacy = $this->lesson('Feedback');
+        $sections = ['explanation' => $legacy['content']];
+        foreach (['example', 'application', 'feedback'] as $part) {
+            $sections[$part] = '<p>'.$legacy['evidence'][$part].'</p>';
+        }
+        $sections['example'] .= '<script>alert(1)</script>';
+        Http::fake(fn () => Http::response(['choices' => [['message' => ['content' => json_encode(['sections' => $sections])]]]]));
+        $content = app(StagedAiCourseGenerator::class)->generateLesson($this->input());
+        $this->assertStringContainsString($legacy['evidence']['feedback'], $content);
+        $this->assertStringNotContainsString('<script', $content);
+        $this->assertStringNotContainsString('"sections"', $content);
+        Http::assertSentCount(1);
+    }
+
+    public function test_missing_structured_feedback_is_rejected_even_if_other_sections_are_long(): void
+    {
+        $sections = ['explanation' => $this->lesson('Feedback')['content'],
+            'example' => '<p>Demonstrația arată concret cum poate fi îmbunătățit raportul.</p>',
+            'application' => '<p>Rescrie raportul pentru a include datele de vânzări lipsă.</p>'];
+        $this->expectException(\App\Exceptions\AiLessonQualityException::class);
+        $this->expectExceptionMessage('sections.feedback');
+        app(\App\Services\AiLessonQuality::class)->validate(['sections' => $sections], 'scurt', []);
+    }
+
+    public function test_real_provider_lesson_with_unclosed_code_blocks_is_rejected(): void
+    {
+        $fixture = json_decode(file_get_contents(base_path('tests/Fixtures/ai-course-generation-live.json')), true, 512, JSON_THROW_ON_ERROR);
+        $this->expectException(\App\Exceptions\AiLessonQualityException::class);
+        $this->expectExceptionMessage('blocurile <pre><code>');
+        app(\App\Services\AiLessonQuality::class)->validate($fixture['invalid_code_lesson'], 'mediu', []);
     }
 
     public function test_run_and_retry_are_private_to_the_actor_and_company(): void

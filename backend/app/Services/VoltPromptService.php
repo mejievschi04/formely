@@ -17,22 +17,45 @@ Materialele sunt surse de fapte. Nu inventa proceduri sau politici interne. Nu c
 PROMPT;
     }
 
-    public static function buildSingleCourseLessonPrompt(): string
+    public static function buildSingleCourseLessonPrompt(string $size = 'mediu', string $language = 'ro'): string
     {
-        return self::buildSourceRulesPrompt().self::buildLessonWritingRules().<<<'PROMPT'
+        $languageName = ['ro' => 'română', 'en' => 'English', 'ru' => 'русский'][$language] ?? 'română';
+        [$target, $explanation, $example] = match ($size) {
+            'scurt' => ['300-350', '100-120', '90-110'],
+            'detaliat' => ['600-700', '220-260', '200-240'],
+            default => ['400-500', '150-180', '130-160'],
+        };
+
+        return self::buildSourceRulesPrompt().<<<'PROMPT'
 
 Generează NUMAI lecția selectată din structura cursului. Celelalte lecții sunt context, nu trebuie regenerate.
-Folosește obiectivul și tipul lecției pentru a alege structura potrivită. Păstrează titlul selectat.
-Explică mecanismul în paragrafe dezvoltate, demonstrează-l printr-un exemplu concret și include o aplicare cu feedback.
-Nu adăuga introducere sau recapitulare standard. Nu repeta lecțiile precedente.
+Predă competența din selected_lesson.goal, adaptată nivelului, stilului și limbii din guided_brief.
+Livrează patru părți de conținut, fiecare HTML, în ordinea explicație → demonstrație → sarcină → răspuns argumentat:
+- explanation: explică mecanismul, de ce funcționează și cum alegi sau execuți corect. Scrie paragrafe de 3-5 propoziții legate, cu cel puțin un paragraf de minimum 40 de cuvinte. Nu înlocui explicația prin liste.
+- example: demonstrează un caz concret complet, cu datele situației, pașii sau decizia, rezultatul și motivarea. Exemplul suplimentar este ipotetic, marcat clar. La programare include cod complet reproductibil, mediul de execuție, toate elementele/variabilele și rezultatul exact.
+- application: dă cursantului o sarcină precisă, cu toate datele necesare, care se poate rezolva folosind explicația și exemplul. Cere să rescrie, aleagă și justifice ori execute ceva; nu cere doar să reflecteze vag asupra subiectului.
+- feedback: rezolvă chiar sarcina din application, cu un răspuns orientativ concret, motivare și criterii pentru identificarea unei greșeli. Nu declara doar că răspunsul trebuie să fie corect sau că subiectul este important.
+Începe direct cu conținutul. Nu repeta titlul lecției, nu adăuga introducere, promisiuni despre lecții viitoare sau recapitulare standard.
+Subtitlurile h3 sunt opționale și descriu subiectul concret. Nu afișa numele câmpurilor JSON ca etichete în lecție.
 HTML permis: h3, p, ul, ol, li, strong, em, blockquote, pre, code, br. Fără atribute, scripturi sau iframe.
+Codul se pune în <pre><code> cu newline-uri reale și caractere HTML escape-ate (&lt;, &gt;, &amp;). Termenii scurți pot folosi <code>.
+Închide fiecare bloc cu </code></pre> înainte de următorul paragraf. Nu pune taguri HTML neescape-ate în cod și nu scrie bare inverse înainte de slash-uri în exemplele afișate.
+La JavaScript spune exact unde se execută exemplul: fișier HTML deschis în browser și JavaScript în consola acelui document, sau script plasat după elementele HTML. Precizează rezultatul concret.
+Într-un exemplu HTML complet, JavaScript executabil se află în script. Dacă se execută în consolă, prezintă-l într-un bloc separat și spune asta explicit. Nu pune JavaScript liber după </html>.
+Pentru proceduri interne, folosește exclusiv condițiile din material: nu introduce motive de respingere, date de referință, termene sau responsabilități care nu sunt precizate. O informație absentă se semnalează ca absentă.
 Returnează exclusiv JSON valid, fără markdown:
-{"content":"HTML complet","evidence":{"explanation":"fragment exact din explicația dezvoltată","example":"fragment exact din exemplul concret","application":"fragment exact din sarcina cursantului","feedback":"fragment exact din răspunsul orientativ sau criteriile de verificare"}}
-Fiecare fragment evidence trebuie să aibă cel puțin 30 de caractere și să existe în textul vizibil al lecției.
-Copiază fiecare fragment literal dintr-un singur paragraf sau element de listă din content, fără etichete HTML. Nu parafraza, nu rezuma și nu folosi puncte de suspensie pentru a omite cuvinte.
-Folosește patru fragmente distincte. Înainte de răspuns, verifică dacă fiecare fragment apare integral în content; dacă lipsește, corectează conținutul sau fragmentul.
-Fragmentele sunt metadate pentru verificare; nu afișa etichetele evidence în lecție. Conținutul trebuie să fie util, nu doar să treacă verificarea.
-PROMPT;
+{"sections":{"explanation":"<p>Explicație dezvoltată...</p>","example":"<p>Demonstrație completă...</p>","application":"<p>Sarcină concretă...</p>","feedback":"<p>Răspuns argumentat pentru sarcina de mai sus...</p>"}}
+Fiecare câmp conține proză reală, nu un rezumat și nu instrucțiuni despre ce ar trebui scris. Nu returna content sau evidence; aplicația asamblează cele patru părți în lecție.
+PROMPT
+            . "\nContractul lecției selectate (nu al întregului curs):\n"
+            . "- Scrie {$target} de cuvinte de proză în total în cele patru părți; codul nu intră în acest buget. Nu livra o schiță sau un rezumat.\n"
+            . "- Alocă aproximativ {$explanation} cuvinte explicației și {$example} cuvinte demonstrației. Folosește spațiul rămas pentru o sarcină concretă și rezolvarea ei argumentată.\n"
+            . "- Fiecare parte este HTML cu paragrafe <p>. Nu returna proză fără taguri.\n"
+            . "- Demonstrația urmărește un caz complet: situație și date concrete, decizie sau pași, rezultat și motivare.\n"
+            . "- Aplicarea cere o acțiune cursantului (de exemplu: rescrie, alege și justifică, modifică). Feedbackul oferă răspunsul pentru ACEA sarcină și explică de ce este corect. O afirmație despre importanța subiectului nu este aplicare sau feedback.\n"
+            . "- La corectare, returnează toate cele patru părți complete, nu doar modificări.\n"
+            . "- Limba obligatorie pentru TOATĂ proza din cele patru părți este {$languageName}, inclusiv sarcina și răspunsul. Limba instrucțiunilor de sistem nu schimbă limba lecției.\n"
+            . "- Instrucțiunile despre cod se aplică exclusiv lecțiilor de programare. Pentru comunicare, livrări, suport clienți și alte subiecte fără programare, NU introduce cod sau analogii cu programe; demonstrează situații reale din domeniul cerut.\n";
     }
 
     private static function buildSourceRulesPrompt(): string

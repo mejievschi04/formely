@@ -2,12 +2,14 @@
 
 namespace App\Services;
 
+use App\Exceptions\AiLessonQualityException;
 use App\Jobs\GenerateAiCourseStep;
 use App\Models\AiCourseGeneration;
 use App\Models\Company;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class StagedAiCourseGenerator
 {
@@ -32,8 +34,7 @@ class StagedAiCourseGenerator
             $lesson = $outline['modules'][$moduleIndex]['lessons'][$lessonIndex];
             $data = $input + ['outline' => $outline, 'selected_lesson' => $lesson, 'module_index' => $moduleIndex, 'lesson_index' => $lessonIndex];
             // Goals/titles maintain continuity without resending entire finished lessons.
-            $response = $this->request(VoltPromptService::buildSingleCourseLessonPrompt(), $data, $run->error);
-            $content = $this->quality->validate($response, $brief['lesson_size'], $run->lessons ?? []);
+            $content = $this->generateLesson($data, $run->lessons ?? [], $run->error);
             $saved = $run->lessons ?? [];
             $saved[] = ['title' => $lesson['title'], 'content' => $content];
             $this->checkpoint($run, ['lessons' => $saved, 'completed_lessons' => $index + 1, 'status' => 'running', 'error' => null], $index + 1);
@@ -80,7 +81,33 @@ class StagedAiCourseGenerator
         });
     }
 
-    private function request(string $system, array $data, ?string $previousError = null): array
+    public function generateLesson(array $data, array $previous = [], ?string $previousError = null): string
+    {
+        $size = $data['guided_brief']['lesson_size'] ?? 'mediu';
+        $system = VoltPromptService::buildSingleCourseLessonPrompt($size, $data['guided_brief']['language'] ?? 'ro');
+        // All corrections share one request budget, below the job's 210s timeout.
+        $deadline = microtime(true) + min(180, max(10, (int) config('ai.timeouts.request', 180)));
+        $draft = null;
+        $lastError = null;
+        for ($attempt = 1; $attempt <= 3; $attempt++) {
+            $remaining = (int) floor($deadline - microtime(true));
+            if ($remaining < 10 && $lastError) {
+                throw $lastError;
+            }
+            $draft = $this->request($system, $data, $previousError, $draft, max(1, $remaining));
+            try {
+                return $this->quality->validate($draft, $size, $previous);
+            } catch (AiLessonQualityException $e) {
+                $lastError = $e;
+                $previousError = $e->getMessage();
+                Log::info('AI lesson needs correction', ['size' => $size, 'attempt' => $attempt, 'reason' => $previousError]);
+            }
+        }
+
+        throw $lastError;
+    }
+
+    private function request(string $system, array $data, ?string $previousError = null, ?array $draft = null, ?int $timeout = null): array
     {
         $provider = config('ai.provider');
         if (!in_array($provider, ['openai', 'groq']) || !config('ai.enabled')) {
@@ -95,12 +122,15 @@ class StagedAiCourseGenerator
             ['role' => 'system', 'content' => $system],
             ['role' => 'user', 'content' => json_encode($data, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)],
         ];
+        if ($draft !== null) {
+            $messages[] = ['role' => 'assistant', 'content' => json_encode($draft, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)];
+        }
         if ($previousError) {
-            $messages[] = ['role' => 'user', 'content' => 'Corectează problema din încercarea precedentă a acestei etape: '.$previousError];
+            $messages[] = ['role' => 'user', 'content' => 'Corectează problema din încercarea precedentă a acestei etape: '.$previousError.' Returnează JSON-ul complet al lecției corectate, păstrând obiectivul și limba cerute.'];
         }
         $response = Http::withToken(config("ai.$provider.api_key"))->acceptJson()
-            ->timeout(min(180, max(10, (int) config('ai.timeouts.request', 180))))
-            ->connectTimeout(15)->withOptions(['verify' => (bool) config('ai.verify_ssl', true)])
+            ->timeout($timeout ?? min(180, max(10, (int) config('ai.timeouts.request', 180))))
+            ->connectTimeout(min(15, $timeout ?? 15))->withOptions(['verify' => (bool) config('ai.verify_ssl', true)])
             ->post(rtrim(config("ai.$provider.api_url"), '/').'/chat/completions', [
                 'model' => config("ai.$provider.creator_model") ?: config("ai.$provider.model"),
                 'messages' => $messages, 'stream' => false, 'temperature' => 0.2,

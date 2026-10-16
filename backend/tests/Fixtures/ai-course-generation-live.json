@@ -1,0 +1,256 @@
+{
+    "description": "Synthetic live gpt-4o-mini responses captured on 2026-10-16: three complete courses and a separate rejected malformed code lesson.",
+    "cases": [
+        {
+            "size": "scurt",
+            "brief": {
+                "topic": "Feedback constructiv în echipă",
+                "language": "ro",
+                "style": "practic"
+            },
+            "responses": [
+                {
+                    "title": "Feedback constructiv în echipă",
+                    "description": "Curs pentru dezvoltarea abilităților de a oferi și primi feedback constructiv.",
+                    "short_description": "Îmbunătățirea comunicării prin feedback constructiv.",
+                    "modules": [
+                        {
+                            "title": "Introducere în feedback",
+                            "description": "Conceptul și importanța feedback-ului în echipă.",
+                            "lessons": [
+                                {
+                                    "title": "Ce este feedback-ul constructiv?",
+                                    "goal": "Definirea feedback-ului constructiv și a caracteristicilor sale.",
+                                    "kind": "concept"
+                                },
+                                {
+                                    "title": "Beneficiile feedback-ului în echipă",
+                                    "goal": "Identificarea avantajelor feedback-ului pentru echipă.",
+                                    "kind": "concept"
+                                }
+                            ]
+                        },
+                        {
+                            "title": "Tehnici de oferire a feedback-ului",
+                            "description": "Metode eficiente pentru a oferi feedback constructiv.",
+                            "lessons": [
+                                {
+                                    "title": "Reguli de bază pentru oferirea feedback-ului",
+                                    "goal": "Aplicarea regulilor de bază în oferirea feedback-ului.",
+                                    "kind": "procedure"
+                                },
+                                {
+                                    "title": "Feedback-ul pozitiv și negativ",
+                                    "goal": "Distincția între feedback-ul pozitiv și cel negativ.",
+                                    "kind": "procedure"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "sections": {
+                        "explanation": "<p>Feedback-ul constructiv reprezintă un instrument esențial în comunicarea eficientă din cadrul echipelor. Acesta se referă la oferirea de informații specifice, utile și orientate spre îmbunătățire, care ajută indivizii să înțeleagă cum pot să-și îmbunătățească performanțele. Spre deosebire de feedback-ul critic, care poate fi perceput ca o atacare a persoanei, feedback-ul constructiv se concentrează pe comportamente și rezultate, având scopul de a sprijini dezvoltarea profesională. Este important ca feedback-ul să fie oferit într-un mod clar și respectuos, pentru a încuraja receptivitatea și a evita defensivitatea. De asemenea, feedback-ul constructiv ar trebui să fie bazat pe observații concrete și să includă sugestii de îmbunătățire, astfel încât să fie perceput ca un ajutor și nu ca o critică.",
+                        "example": "<p>Imaginați-vă o situație în care un coleg, Andrei, a prezentat un proiect în fața echipei. După prezentare, un alt coleg, Maria, decide să ofere feedback constructiv. Ea spune: „Andrei, mi-a plăcut cum ai structurat informațiile, dar cred că ar fi fost util să incluzi mai multe exemple concrete pentru a ilustra punctele tale. De asemenea, poate ar fi bine să folosești un ton mai energic pentru a capta atenția audienței.” Aceasta este o abordare constructivă, deoarece Maria subliniază aspectele pozitive, dar oferă și sugestii clare pentru îmbunătățire, fără a-l face pe Andrei să se simtă atacat.",
+                        "application": "<p>Gândește-te la o situație recentă în care ai primit feedback de la un coleg sau un superior. Scrie un scurt paragraf în care să definești feedback-ul constructiv pe care l-ai primit, evidențiind caracteristicile acestuia. Asigură-te că incluzi atât aspectele pozitive, cât și sugestiile de îmbunătățire. De asemenea, explică cum te-a ajutat acest feedback să îți îmbunătățești performanța.</p>",
+                        "feedback": "<p>Un răspuns corect ar trebui să conțină o definiție clară a feedback-ului constructiv, menționând caracteristicile sale, cum ar fi specificitatea, orientarea spre soluții și respectul față de persoana care primește feedback-ul. De exemplu, dacă ai primit feedback care a inclus atât laude pentru munca ta, cât și sugestii pentru îmbunătățire, acest lucru arată că feedback-ul a fost constructiv. Este important ca răspunsul să sublinieze cum feedback-ul a contribuit la dezvoltarea ta profesională, demonstrând astfel înțelegerea conceptului de feedback constructiv.</p>"
+                    }
+                },
+                {
+                    "sections": {
+                        "explanation": "<p>Feedback-ul constructiv este esențial pentru funcționarea eficientă a unei echipe. Acesta nu doar că ajută la îmbunătățirea performanței individuale, dar contribuie și la crearea unui mediu de lucru pozitiv. Prin oferirea de feedback, membrii echipei pot identifica punctele forte și zonele de îmbunătățire, ceea ce duce la o colaborare mai bună și la atingerea obiectivelor comune. De asemenea, feedback-ul constructiv promovează încrederea și deschiderea între colegi, facilitând astfel comunicarea și reducând tensiunile.</p>",
+                        "example": "<p>Imaginați-vă o echipă care lucrează la un proiect important. După o întâlnire, un coleg observă că un alt membru al echipei a prezentat informațiile într-un mod confuz. În loc să critice, colegul oferă feedback constructiv, spunând: „Îmi place cum ai abordat subiectul, dar cred că ar fi fost mai clar dacă ai structura informațiile în pași mai simpli.” Această abordare nu doar că ajută la clarificarea mesajului, dar și încurajează colegul să îmbunătățească prezentările viitoare, contribuind astfel la succesul echipei.</p>",
+                        "application": "<p>Reflectați asupra unei situații recente în care ați primit feedback de la un coleg. Identificați cel puțin două beneficii pe care le-ați observat în urma acelui feedback. Scrieți un scurt paragraf în care să explicați cum feedback-ul a influențat munca voastră și atmosfera din echipă.</p>",
+                        "feedback": "<p>Un exemplu de răspuns ar putea fi: „Recent, am primit feedback de la colegul meu despre modul în care am gestionat o prezentare. El a subliniat că am fost bine pregătit, dar că ar fi fost util să includ mai multe exemple practice. Această observație m-a ajutat să îmbunătățesc prezentările viitoare, făcându-le mai relevante și mai ușor de înțeles pentru colegi. De asemenea, a creat un mediu deschis în care ne simțim confortabil să ne oferim sugestii unii altora.” Acest răspuns evidențiază cum feedback-ul constructiv poate îmbunătăți nu doar performanța individuală, ci și colaborarea în echipă.</p>"
+                    }
+                },
+                {
+                    "sections": {
+                        "explanation": "<p>Oferirea feedback-ului constructiv este esențială pentru îmbunătățirea performanței individuale și a echipei. Regulile de bază pentru oferirea feedback-ului includ claritatea, specificitatea, obiectivitatea și empatia. Este important ca feedback-ul să fie formulat într-un mod care să fie ușor de înțeles și să se concentreze pe comportamente specifice, nu pe persoană. De asemenea, oferirea feedback-ului într-un mod empatic ajută la menținerea unei atmosfere pozitive și la încurajarea deschiderii din partea colegilor. Aceste reguli contribuie la crearea unui mediu de lucru în care toți membrii echipei se simt confortabil să comunice și să se dezvolte.</p>",
+                        "example": "<p>Imaginați-vă o situație în care un coleg a prezentat un proiect, dar a omis câteva detalii importante. În loc să spuneți doar „prezentarea ta a fost slabă”, un feedback constructiv ar putea suna astfel: „Am observat că ai omis să menționezi datele de bază ale proiectului, ceea ce ar fi ajutat audiența să înțeleagă mai bine contextul. Poate ar fi util să incluzi aceste informații în viitoarele prezentări.” Acest tip de feedback este specific, clar și se concentrează pe comportamentul, nu pe persoană, ceea ce îl face mai ușor de acceptat și aplicat.</p>",
+                        "application": "<p>Gândește-te la o situație recentă în care ai oferit feedback unui coleg. Rescrie feedback-ul tău folosind regulile de bază discutate: asigură-te că este clar, specific, obiectiv și empatic. De exemplu, în loc să spui „nu mi-a plăcut cum ai lucrat la acest proiect”, formulează-l astfel: „Am observat că ai avut dificultăți în a respecta termenele, poate ar fi util să discutăm despre cum putem organiza mai bine sarcinile pentru a evita întârzierile.”</p>",
+                        "feedback": "<p>Răspunsul tău ar trebui să fie formulat astfel: „Am observat că ai avut dificultăți în a respecta termenele, poate ar fi util să discutăm despre cum putem organiza mai bine sarcinile pentru a evita întârzierile.” Acest feedback este clar, specific și se concentrează pe comportament, nu pe persoană. Dacă feedback-ul tău nu include aceste elemente, ar putea fi perceput ca fiind vag sau critic, ceea ce nu este constructiv. Asigură-te că te concentrezi pe soluții și pe îmbunătățiri, nu doar pe probleme.</p>"
+                    }
+                },
+                {
+                    "sections": {
+                        "explanation": "<p>Feedback-ul pozitiv și cel negativ sunt două componente esențiale ale comunicării eficiente în cadrul unei echipe. Feedback-ul pozitiv se referă la recunoașterea și aprecierea comportamentelor sau rezultatelor dorite, având rolul de a motiva și încuraja angajații. Pe de altă parte, feedback-ul negativ se concentrează pe aspectele care necesită îmbunătățire, oferind oportunitatea de a corecta greșelile și de a dezvolta abilități. Este important ca ambele tipuri de feedback să fie oferite într-un mod constructiv, astfel încât să contribuie la dezvoltarea personală și profesională a membrilor echipei. De exemplu, un feedback pozitiv poate include laude pentru o prezentare bine realizată, în timp ce feedback-ul negativ ar putea sublinia necesitatea de a îmbunătăți abilitățile de comunicare.</p>",
+                        "example": "<p>Imaginați-vă o situație în care un coleg a prezentat un proiect în fața echipei. După prezentare, un alt coleg oferă feedback pozitiv, spunând: „Prezentarea ta a fost foarte clară și bine structurată, mi-a plăcut cum ai explicat fiecare etapă.” Acest tip de feedback îi întărește colegului încrederea și îl motivează să continue să își îmbunătățească abilitățile. În contrast, un feedback negativ ar putea suna astfel: „Am observat că ai avut dificultăți în a răspunde la întrebările echipei. Poate ar fi util să te pregătești mai bine pentru întrebările dificile data viitoare.” Acest feedback, deși critic, este formulat într-un mod care sugerează o soluție și o oportunitate de dezvoltare.</p>",
+                        "application": "<p>Reflectați asupra unei situații recente în care ați oferit sau ați primit feedback. Scrieți două exemple: unul de feedback pozitiv și unul de feedback negativ. Asigurați-vă că fiecare exemplu include detalii despre contextul în care a fost oferit feedback-ul și impactul pe care l-a avut asupra persoanei care l-a primit. Justificați de ce considerați că fiecare tip de feedback a fost eficient sau nu.</p>",
+                        "feedback": "<p>Un exemplu de feedback pozitiv ar putea fi: „Îmi place cum ai gestionat proiectul, ai demonstrat abilități excelente de organizare.” Acest feedback este eficient deoarece recunoaște eforturile colegului și îi oferă încredere. Un exemplu de feedback negativ ar putea fi: „Trebuie să îmbunătățești modul în care comunici cu echipa, deoarece uneori informațiile nu sunt clare.” Acest feedback este constructiv, dar ar putea fi îmbunătățit prin oferirea de sugestii specifice pentru îmbunătățire, cum ar fi: „Poate ar fi util să folosești mai multe exemple în prezentări.” Astfel, feedback-ul devine nu doar o critică, ci și o oportunitate de învățare.</p>"
+                    }
+                }
+            ]
+        },
+        {
+            "size": "mediu",
+            "brief": {
+                "topic": "JavaScript DOM: selectarea și modificarea elementelor",
+                "language": "ro",
+                "style": "practic"
+            },
+            "responses": [
+                {
+                    "title": "JavaScript DOM: selectarea și modificarea elementelor",
+                    "description": "Curs practic pentru începători în JavaScript DOM.",
+                    "short_description": "Învățarea selectării și modificării elementelor DOM în JavaScript.",
+                    "modules": [
+                        {
+                            "title": "Introducere în DOM",
+                            "description": "Conceptul de Document Object Model și importanța sa în JavaScript.",
+                            "lessons": [
+                                {
+                                    "title": "Ce este DOM?",
+                                    "goal": "Înțelegerea conceptului de DOM și a structurii sale.",
+                                    "kind": "concept"
+                                },
+                                {
+                                    "title": "Navigarea în DOM",
+                                    "goal": "Identificarea și navigarea prin elementele DOM.",
+                                    "kind": "procedure"
+                                }
+                            ]
+                        },
+                        {
+                            "title": "Selectarea și modificarea elementelor",
+                            "description": "Tehnici de selectare și modificare a elementelor DOM.",
+                            "lessons": [
+                                {
+                                    "title": "Selectarea elementelor",
+                                    "goal": "Utilizarea metodelor de selectare a elementelor DOM.",
+                                    "kind": "procedure"
+                                },
+                                {
+                                    "title": "Modificarea elementelor",
+                                    "goal": "Aplicarea modificărilor asupra elementelor selectate.",
+                                    "kind": "procedure"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "sections": {
+                        "explanation": "<p>Document Object Model (DOM) este o interfață de programare care permite accesul și manipularea structurii unui document HTML sau XML. DOM reprezintă documentul ca o structură de tip arbore, unde fiecare element, atribut și text devin noduri în acest arbore. Această structură permite dezvoltatorilor să interacționeze cu documentul, să modifice conținutul, să schimbe stilurile și să răspundă la evenimentele utilizatorilor. De exemplu, când un utilizator face clic pe un buton, DOM permite executarea unui cod JavaScript care poate modifica elementele de pe pagină. Înțelegerea DOM este esențială pentru orice dezvoltator web, deoarece este fundamentul pe care se bazează interacțiunile dinamice ale paginilor web.</p>",
+                        "example": "<p>Imaginați-vă un document HTML simplu care conține un titlu și un paragraf:</p>\n<pre><code>&lt;!DOCTYPE html&gt;\n&lt;html&gt;\n&lt;head&gt;\n    &lt;title&gt;Exemplu DOM&lt;/title&gt;\n&lt;/head&gt;\n&lt;body&gt;\n    &lt;h1&gt;Bun venit!&lt;/h1&gt;\n    &lt;p&gt;Aceasta este o pagină de exemplu.&lt;/p&gt;\n&lt;/body&gt;\n&lt;/html&gt;</code></pre>\n<p>În acest exemplu, DOM va reprezenta documentul ca un arbore, unde <code>&lt;html&gt;</code> este rădăcina, iar <code>&lt;h1&gt;</code> și <code>&lt;p&gt;</code> sunt noduri fiu. Fiecare nod poate fi accesat și modificat prin JavaScript, permițându-le dezvoltatorilor să schimbe titlul sau conținutul paragrafului.</p>",
+                        "application": "<p>Gândește-te la un document HTML pe care l-ai creat. Creează un document simplu care conține un titlu și un paragraf. Apoi, explică cum ar arăta structura DOM pentru acest document. Poți să descrii nodurile principale și cum sunt ele conectate între ele. De asemenea, menționează ce tipuri de modificări ai putea face asupra acestor noduri folosind JavaScript.</p>",
+                        "feedback": "<p>Structura DOM pentru documentul tău ar trebui să arate ca un arbore, cu <code>&lt;html&gt;</code> ca nod rădăcină. Sub acesta, ar trebui să ai noduri pentru <code>&lt;head&gt;</code> și <code>&lt;body&gt;</code>. În <code>&lt;body&gt;</code>, vei avea nodurile pentru <code>&lt;h1&gt;</code> și <code>&lt;p&gt;</code>. Poți modifica titlul prin accesarea nodului <code>&lt;h1&gt;</code> și schimbarea textului său, sau poți modifica stilul paragrafului prin accesarea nodului <code>&lt;p&gt;</code>. Aceste acțiuni demonstrează cum DOM permite interacțiunea dinamică cu documentele HTML.</p>"
+                    }
+                },
+                {
+                    "sections": {
+                        "explanation": "<p>Navigarea în DOM (Document Object Model) este esențială pentru a interacționa cu structura HTML a unei pagini web. DOM reprezintă o structură de tip arbore care organizează toate elementele unei pagini, permițându-le dezvoltatorilor să le acceseze și să le modifice dinamic. Fiecare element HTML devine un nod în acest arbore, iar prin utilizarea JavaScript, putem naviga prin aceste noduri pentru a obține informații sau pentru a efectua modificări. De exemplu, putem accesa un element prin ID, clasă sau tag, ceea ce ne oferă flexibilitate în gestionarea conținutului paginii. Această navigare se face prin metode precum <code>getElementById</code>, <code>getElementsByClassName</code> sau <code>querySelector</code>, fiecare având propriile sale caracteristici și utilizări.</p>",
+                        "example": "<p>Imaginăm o pagină HTML simplă care conține un titlu și un paragraf:</p>\n<pre><code>&lt;!DOCTYPE html&gt;\n&lt;html&gt;\n&lt;head&gt;\n    &lt;title&gt;Exemplu DOM&lt;/title&gt;\n&lt;/head&gt;\n&lt;body&gt;\n    &lt;h1 id='titlu'&gt;Bun venit!&lt;/h1&gt;\n    &lt;p class='text'&gt;Aceasta este o pagină de exemplu.&lt;/p&gt;\n&lt;/body&gt;\n&lt;/html&gt;</code></pre>\n<p>Pentru a naviga și a modifica acest DOM, putem folosi următorul cod JavaScript:</p>\n<pre><code>const titlu = document.getElementById('titlu');\ntitlu.textContent = 'Salutare, lume!';\n\nconst text = document.getElementsByClassName('text')[0];\ntext.textContent = 'Textul a fost modificat!';</code></pre>\n<p>După execuția acestui cod în consola browserului, titlul va fi schimbat în „Salutare, lume!” iar textul paragrafului va deveni „Textul a fost modificat!”. Aceasta demonstrează cum putem naviga și modifica elementele DOM.</p>",
+                        "application": "<p>În cadrul acestei sarcini, ai la dispoziție următoarea structură HTML:</p>\n<pre><code>&lt;!DOCTYPE html&gt;\n&lt;html&gt;\n&lt;head&gt;\n    &lt;title&gt;Sarcină DOM&lt;/title&gt;\n&lt;/head&gt;\n&lt;body&gt;\n    &lt;h2 id='subtitlu'&gt;Subtitlu original&lt;/h2&gt;\n    &lt;p class='descriere'&gt;Descriere inițială.&lt;/p&gt;\n&lt;/body&gt;\n&lt;/html&gt;</code></pre>\n<p>Folosește JavaScript pentru a schimba textul subtitlului în „Subtitlu modificat” și textul descrierii în „Descriere actualizată”. Asigură-te că folosești metodele corecte pentru a accesa elementele. Scrie codul tău în consola browserului și observă modificările.</p>",
+                        "feedback": "<p>Răspunsul corect ar trebui să arate astfel:</p>\n<pre><code>const subtitlu = document.getElementById('subtitlu');\nsubtitlu.textContent = 'Subtitlu modificat';\n\nconst descriere = document.getElementsByClassName('descriere')[0];\ndescriere.textContent = 'Descriere actualizată';</code></pre>\n<p>După execuția acestui cod, subtitlul va fi schimbat în „Subtitlu modificat” și descrierea va deveni „Descriere actualizată”. Este important să folosești metoda <code>getElementById</code> pentru a accesa elementul cu ID-ul specificat și <code>getElementsByClassName</code> pentru a accesa elementele cu o anumită clasă. Asigură-te că ai selectat corect elementele pentru a evita erorile.</p>"
+                    }
+                },
+                {
+                    "sections": {
+                        "explanation": "<p>Selectarea elementelor în DOM este un proces esențial în dezvoltarea web, deoarece permite accesul și manipularea elementelor HTML prin JavaScript. DOM (Document Object Model) reprezintă structura documentului HTML ca un arbore de noduri, unde fiecare element devine un nod. Prin utilizarea metodelor de selectare, cum ar fi <code>getElementById</code>, <code>getElementsByClassName</code> sau <code>querySelector</code>, putem obține referințe la elementele dorite. Aceste metode funcționează prin căutarea elementelor în funcție de identificatori unici, clase sau selecții CSS, facilitând astfel modificarea conținutului, stilului sau a altor atribute ale acestora.</p><p>De exemplu, <code>document.getElementById('myElement')</code> va returna elementul cu ID-ul specificat, permițându-ne să-l modificăm ulterior. Este important să alegem metoda de selectare corectă în funcție de structura documentului și de nevoile aplicației noastre. Această flexibilitate ne ajută să gestionăm eficient interacțiunile utilizatorilor și să actualizăm dinamic conținutul paginii.</p>",
+                        "example": "<p>Imaginăm că avem un document HTML simplu cu un element <code>&lt;div id=\"myDiv\"&gt;Acesta este un div.&lt;/div&gt;</code>. Vrem să selectăm acest element și să-i modificăm conținutul. Iată cum putem face acest lucru:</p><pre><code>&lt;!DOCTYPE html&gt;\n&lt;html&gt;\n&lt;head&gt;\n    &lt;title&gt;Exemplu Selectare DOM&lt;/title&gt;\n&lt;/head&gt;\n&lt;body&gt;\n    &lt;div id=\"myDiv\"&gt;Acesta este un div.&lt;/div&gt;\n    &lt;script&gt;\n        // Selectăm elementul folosind getElementById\n        var divElement = document.getElementById('myDiv');\n        // Modificăm conținutul div-ului\n        divElement.innerHTML = 'Conținutul a fost modificat!';\n    &lt;/script&gt;\n&lt;/body&gt;\n&lt;/html&gt;</code></pre><p>După ce rulăm acest cod într-un browser, conținutul div-ului va fi actualizat la \"Conținutul a fost modificat!\". Acest exemplu ilustrează cum putem selecta un element DOM și să-i modificăm conținutul folosind JavaScript.</p>",
+                        "application": "<p>Acum, este timpul să aplici ceea ce ai învățat. Creează un document HTML simplu care conține un element <code>&lt;p&gt;</code> cu un text inițial. Folosește <code>getElementById</code> pentru a selecta acest element și modifică-i textul. Asigură-te că documentul tău arată astfel:</p><pre><code>&lt;!DOCTYPE html&gt;\n&lt;html&gt;\n&lt;head&gt;\n    &lt;title&gt;Exemplu de Modificare&lt;/title&gt;\n&lt;/head&gt;\n&lt;body&gt;\n    &lt;p id=\"myParagraph\"&gt;Text inițial.&lt;/p&gt;\n    &lt;script&gt;\n        // Codul tău aici\n    &lt;/script&gt;\n&lt;/body&gt;\n&lt;/html&gt;</code></pre><p>După ce ai scris codul, salvează documentul și deschide-l în browser pentru a verifica dacă textul a fost modificat corect.</p>",
+                        "feedback": "<p>Pentru a rezolva sarcina, ar trebui să ai un document HTML similar cu următorul:</p><pre><code>&lt;!DOCTYPE html&gt;\n&lt;html&gt;\n&lt;head&gt;\n    &lt;title&gt;Exemplu de Modificare&lt;/title&gt;\n&lt;/head&gt;\n&lt;body&gt;\n    &lt;p id=\"myParagraph\"&gt;Text inițial.&lt;/p&gt;\n    &lt;script&gt;\n        // Selectăm elementul folosind getElementById\n        var paragraphElement = document.getElementById('myParagraph');\n        // Modificăm textul paragrafului\n        paragraphElement.innerHTML = 'Textul a fost modificat!';\n    &lt;/script&gt;\n&lt;/body&gt;\n&lt;/html&gt;</code></pre><p>După rularea acestui cod, textul din paragraful cu ID-ul <code>myParagraph</code> ar trebui să se schimbe în \"Textul a fost modificat!\". Dacă nu funcționează, asigură-te că ID-ul este corect și că scriptul este plasat după elementul pe care încerci să-l modifici. Verifică și consola browser-ului pentru eventuale erori.</p>"
+                    }
+                },
+                {
+                    "sections": {
+                        "explanation": "<p>Modificarea elementelor în DOM este un proces esențial pentru interactivitatea paginilor web. Aceasta implică utilizarea JavaScript pentru a schimba conținutul, stilul sau atributele elementelor HTML deja existente. Prin manipularea DOM-ului, dezvoltatorii pot răspunde la acțiunile utilizatorilor, pot actualiza informațiile în timp real și pot crea o experiență dinamică. De exemplu, pentru a modifica textul unui element, se poate accesa acel element printr-o metodă de selectare, cum ar fi <code>getElementById</code>, și apoi se poate schimba proprietatea <code>innerHTML</code> sau <code>textContent</code>. Această abordare funcționează deoarece DOM-ul este o reprezentare a structurii documentului HTML, iar JavaScript permite interacțiunea directă cu această structură.</p>",
+                        "example": "<p>Imaginați-vă că aveți un document HTML cu un element <code>&lt;h1&gt;</code> care conține un titlu. Doriți să schimbați acest titlu în \"Bun venit!\". Iată cum puteți face acest lucru:</p><pre><code>&lt;!DOCTYPE html&gt;\n&lt;html&gt;\n&lt;head&gt;\n    &lt;title&gt;Exemplu de modificare&lt;/title&gt;\n&lt;/head&gt;\n&lt;body&gt;\n    &lt;h1 id=\"titlu\"&gt;Salut!&lt;/h1&gt;\n    &lt;script&gt;\n        var element = document.getElementById('titlu');\n        element.textContent = 'Bun venit!';\n    &lt;/script&gt;\n&lt;/body&gt;\n&lt;/html&gt;</code></pre><p>În acest exemplu, am selectat elementul <code>&lt;h1&gt;</code> folosind <code>getElementById</code> și am modificat textul său prin proprietatea <code>textContent</code>. Când deschideți acest document HTML în browser, titlul va fi actualizat la \"Bun venit!\".</p>",
+                        "application": "<p>Acum, vă provoc să modificați un element dintr-un document HTML. Creați un document HTML cu un element <code>&lt;p&gt;</code> care conține textul \"Acesta este un paragraf.\". Folosiți JavaScript pentru a schimba textul acestui paragraf în \"Textul a fost modificat!\". Asigurați-vă că folosiți metoda <code>getElementById</code> pentru a selecta elementul. După ce ați realizat modificarea, explicați de ce ați ales să folosiți <code>textContent</code> în loc de <code>innerHTML</code>.</p>",
+                        "feedback": "<p>Răspunsul corect ar trebui să arate astfel:</p><pre><code>&lt;!DOCTYPE html&gt;\n&lt;html&gt;\n&lt;head&gt;\n    &lt;title&gt;Exemplu de modificare&lt;/title&gt;\n&lt;/head&gt;\n&lt;body&gt;\n    &lt;p id=\"paragraf\"&gt;Acesta este un paragraf.&lt;/p&gt;\n    &lt;script&gt;\n        var element = document.getElementById('paragraf');\n        element.textContent = 'Textul a fost modificat!';\n    &lt;/script&gt;\n&lt;/body&gt;\n&lt;/html&gt;</code></pre><p>Utilizarea <code>textContent</code> este preferabilă în acest caz, deoarece permite modificarea textului fără a interpreta HTML, ceea ce este mai sigur și mai eficient. Dacă ați folosi <code>innerHTML</code>, ar putea exista riscuri de securitate, cum ar fi atacurile de tip XSS, dacă textul conține date nesigure.</p>"
+                    }
+                }
+            ]
+        },
+        {
+            "size": "detaliat",
+            "brief": {
+                "topic": "Customer support: diagnosing a delayed delivery",
+                "language": "en",
+                "style": "mixt"
+            },
+            "responses": [
+                {
+                    "title": "Customer Support: Diagnosing a Delayed Delivery",
+                    "description": "A course designed for new employees to understand and diagnose delivery delays.",
+                    "short_description": "Learn to diagnose and address delayed deliveries in customer support.",
+                    "modules": [
+                        {
+                            "title": "Understanding Delivery Processes",
+                            "description": "Learn the key components of delivery processes and common issues.",
+                            "lessons": [
+                                {
+                                    "title": "Overview of Delivery Systems",
+                                    "goal": "Understand the basic structure of delivery systems.",
+                                    "kind": "concept"
+                                },
+                                {
+                                    "title": "Common Causes of Delivery Delays",
+                                    "goal": "Identify typical reasons for delays in delivery.",
+                                    "kind": "concept"
+                                }
+                            ]
+                        },
+                        {
+                            "title": "Diagnosing and Resolving Delays",
+                            "description": "Develop skills to diagnose and resolve delivery issues effectively.",
+                            "lessons": [
+                                {
+                                    "title": "Steps to Diagnose Delivery Issues",
+                                    "goal": "Learn the steps to diagnose delivery problems.",
+                                    "kind": "procedure"
+                                },
+                                {
+                                    "title": "Communicating with Customers",
+                                    "goal": "Master effective communication strategies for customer inquiries.",
+                                    "kind": "procedure"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "sections": {
+                        "explanation": "<p>Understanding the basic structure of delivery systems is crucial for anyone involved in customer support. Delivery systems encompass all the processes and components that ensure a product reaches the customer in a timely manner. These systems typically include order processing, inventory management, transportation, and last-mile delivery. Each of these components plays a vital role in the overall efficiency of the delivery process. For instance, if the inventory management system is not updated in real-time, it can lead to stockouts or delays in order fulfillment. Similarly, transportation logistics must be optimized to ensure timely deliveries. By grasping how these elements interact, customer support representatives can better diagnose issues when delays occur.</p><p>Moreover, understanding the delivery system helps in anticipating potential problems before they escalate. For example, if a customer inquires about their order, knowing the delivery process allows the representative to provide accurate information regarding the expected delivery date. This knowledge not only enhances customer satisfaction but also builds trust in the company's ability to deliver on its promises. Therefore, a solid foundation in the structure of delivery systems is essential for effective customer support.</p>",
+                        "example": "<p>Consider a scenario where a customer has ordered a product that was supposed to arrive within three days. However, after five days, the customer contacts support to inquire about the delay. To diagnose the issue, the support representative first checks the order processing system to confirm that the order was correctly placed and processed. Next, they review the inventory management system to ensure that the product was in stock at the time of order. If both systems indicate that everything was in order, the representative then examines the transportation logs to see if there were any reported delays in shipping.</p><p>In this case, the representative discovers that the shipment was delayed due to a transportation issue, specifically a vehicle breakdown. They can then inform the customer about the reason for the delay and provide an updated delivery estimate. This not only resolves the customer's inquiry but also demonstrates the importance of understanding the delivery system's components in diagnosing issues effectively.</p>",
+                        "application": "<p>Your task is to analyze a hypothetical situation where a customer has reported a delay in their delivery. The customer ordered a laptop that was supposed to arrive within two days. After four days, they reach out to customer support. Using the knowledge gained about delivery systems, outline the steps you would take to diagnose the issue. Be specific about which systems you would check and what information you would look for. Additionally, provide a brief explanation of how you would communicate the findings to the customer.</p>",
+                        "feedback": "<p>To address the situation where a customer reports a delayed delivery, you should follow these steps: First, check the order processing system to confirm that the order was placed correctly and is marked as processed. Next, review the inventory management system to ensure that the laptop was in stock at the time of the order. If everything appears correct, examine the transportation logs for any delays or issues during shipping.</p><p>Once you identify the cause of the delay, communicate this information to the customer clearly and empathetically. For example, if the delay was due to a transportation issue, you might say, \"I apologize for the delay in your laptop delivery. There was an unexpected issue with our shipping process, but we are working to resolve it and expect your order to arrive within the next two days.\" This approach not only informs the customer but also reassures them that their concern is being taken seriously.</p>"
+                    }
+                },
+                {
+                    "sections": {
+                        "explanation": "<p>Understanding the common causes of delivery delays is crucial for effective customer support. Delays can stem from various factors, including logistical issues, weather conditions, and miscommunication. For instance, logistical issues may arise from insufficient inventory or transportation problems, while adverse weather can hinder delivery schedules. Miscommunication between the customer and the delivery service can also lead to misunderstandings about delivery times or locations. By identifying these causes, customer support representatives can better address customer concerns and provide accurate information.</p><p>Another important aspect is recognizing that delays can be categorized into controllable and uncontrollable factors. Controllable factors include internal processes within the delivery company, such as staffing shortages or inefficient routing. Uncontrollable factors, on the other hand, involve external circumstances like natural disasters or traffic accidents. Understanding this distinction helps customer support teams to manage customer expectations effectively and offer appropriate solutions.</p>",
+                        "example": "<p>Consider a scenario where a customer contacts support regarding a delayed package. The customer ordered a product that was supposed to arrive within three business days. However, it has been five days, and they have not received it. Upon investigation, the support representative discovers that the delay was due to a logistical issue: the delivery truck broke down, causing a backlog in deliveries.</p><p>The representative explains the situation to the customer, providing details about the breakdown and the estimated time for resolution. They also offer a discount on the next purchase as a goodwill gesture. This approach not only addresses the immediate concern but also helps maintain customer satisfaction despite the delay.</p>",
+                        "application": "<p>Imagine you are a customer support representative who receives a call from a customer whose delivery is late. The customer ordered a laptop that was supposed to arrive yesterday. Your task is to identify the potential causes of the delay. Consider the following factors: logistical issues, weather conditions, and miscommunication. Write a brief response to the customer explaining what might have caused the delay and how you plan to assist them.</p>",
+                        "feedback": "<p>In your response to the customer, you should have acknowledged the delay and provided a possible explanation. For example, you could mention that logistical issues, such as a truck breakdown, might have caused the delay. Additionally, you should reassure the customer that you are looking into the matter and will provide updates as soon as possible. Offering a solution, like a discount or expedited shipping for future orders, can also enhance customer satisfaction. If you failed to mention any of these aspects, it may lead to further frustration for the customer.</p>"
+                    }
+                },
+                {
+                    "sections": {
+                        "explanation": "<p>Diagnosing delivery issues is a crucial skill in customer support, as it helps to identify the root causes of delays and implement effective solutions. The process typically involves several steps: gathering information, analyzing the data, identifying potential causes, and determining the best course of action. By systematically approaching each case, support agents can provide accurate updates to customers and improve overall satisfaction. Understanding the delivery process and common issues is essential for effective diagnosis, as it allows agents to pinpoint where the problem may have occurred.</p><p>First, it is important to gather all relevant information regarding the delivery. This includes the order details, expected delivery date, tracking information, and any communication with the customer. Next, analyzing this data helps to identify patterns or discrepancies that may indicate where the delay is occurring. For instance, if multiple customers report similar delays, it may suggest a broader issue within the delivery system. By following these steps, agents can effectively diagnose delivery problems and work towards resolving them.</p>",
+                        "example": "<p>Imagine a scenario where a customer contacts support regarding a package that was supposed to arrive two days ago but has not yet been delivered. The support agent begins by gathering information about the order, including the order number, the expected delivery date, and the tracking information. Upon checking the tracking status, the agent notices that the package is marked as \"in transit\" but has not moved from a specific location for several days.</p><p>Next, the agent analyzes the situation by checking if there are any known issues with the delivery service in that area, such as weather delays or service interruptions. After confirming that there are no widespread issues, the agent identifies that the delay may be due to a local distribution center being overwhelmed with packages. The agent then communicates this information to the customer, providing an estimated timeframe for resolution and reassuring them that their package is still on its way.</p>",
+                        "application": "<p>Now, you will practice diagnosing a delivery issue. You receive a call from a customer who states that their order, placed a week ago, has not yet arrived. Follow these steps: 1) Gather all relevant information from the customer, including the order number and expected delivery date. 2) Check the tracking information and analyze the status. 3) Identify any potential causes for the delay based on your findings. 4) Prepare a response to the customer, explaining the situation and what steps you will take to resolve it.</p>",
+                        "feedback": "<p>In your response to the customer, you should have included the order number, the expected delivery date, and the current tracking status. If you found that the package was delayed due to a local distribution issue, it is important to communicate this clearly to the customer. For example, you might say, \"I see that your package is currently at the distribution center and is experiencing delays due to high volume. We expect it to be delivered within the next few days.\" This approach not only informs the customer but also reassures them that their issue is being taken seriously. If you missed any of these steps or provided vague information, it could lead to further frustration for the customer. Always aim for clarity and empathy in your communication.</p>"
+                    }
+                },
+                {
+                    "sections": {
+                        "explanation": "<p>Effective communication is crucial in customer support, especially when addressing inquiries about delayed deliveries. Mastering communication strategies involves understanding the customer's perspective, actively listening to their concerns, and responding with empathy and clarity. When a customer reaches out regarding a delivery issue, they often feel anxious or frustrated. Therefore, it is essential to acknowledge their feelings and provide reassurance. A well-structured response not only addresses the customer's immediate concerns but also builds trust and fosters a positive relationship.</p><p>To communicate effectively, start by greeting the customer warmly and thanking them for reaching out. This sets a positive tone for the conversation. Next, listen carefully to their issue without interrupting, which shows respect and understanding. After gathering all necessary information, provide a clear and concise explanation of the situation. If there are delays, explain the reasons behind them and what steps are being taken to resolve the issue. Always end the conversation by inviting further questions and assuring the customer that their satisfaction is a priority.</p>",
+                        "example": "<p>Imagine a customer named John who contacts your support team because his package, which was supposed to arrive yesterday, has not yet been delivered. You begin the conversation by saying, \"Hello John, thank you for contacting us. I understand how frustrating it can be to wait for a delivery. Let me help you with this issue.\" After listening to John’s concerns, you check the delivery status and find that the package was delayed due to a logistical issue. You respond, \"I see that your package is currently delayed due to a logistical issue. We are actively working to resolve this and expect it to be delivered within the next two days. I apologize for the inconvenience this has caused you. Is there anything else I can assist you with today?\" This response acknowledges the customer's feelings, provides a clear explanation, and reassures them that their issue is being addressed.</p>",
+                        "application": "<p>Now, imagine you receive a call from a customer named Sarah, who is upset because her order has not arrived on time. Your task is to respond to her inquiry using the communication strategies discussed. Start by greeting her warmly and acknowledging her frustration. Then, ask her for details about her order, listen carefully to her concerns, and provide a clear explanation regarding the delay. Finally, reassure her that you are there to help and invite her to ask any further questions. Write out your response as if you were speaking to Sarah.</p>",
+                        "feedback": "<p>Your response to Sarah should begin with a warm greeting, such as, \"Hello Sarah, thank you for reaching out. I understand how disappointing it is to wait for your order.\" This shows empathy. Next, you should ask for her order details, listen to her concerns, and provide a clear explanation of the delay, such as, \"I see that your order is delayed due to unforeseen circumstances. We are working hard to resolve this issue and expect it to be delivered soon.\" Finally, reassure her by saying, \"I appreciate your patience, and I'm here to assist you with anything else you need.\" This structure effectively addresses the customer's feelings and provides clarity about the situation.</p>"
+                    }
+                }
+            ]
+        }
+    ],
+    "invalid_code_lesson": {
+        "sections": {
+            "explanation": "<p>Selectarea elementelor în DOM (Document Object Model) este un proces esențial în programarea web, care permite dezvoltatorilor să interacționeze cu structura HTML a unei pagini. DOM reprezintă o reprezentare a documentului HTML ca o structură de tip arbore, unde fiecare element HTML devine un nod. Prin utilizarea JavaScript, putem accesa și modifica aceste noduri, ceea ce ne oferă control asupra conținutului și stilului paginii. Există mai multe metode de selectare a elementelor, cum ar fi <code>getElementById</code>, <code>getElementsByClassName</code>, <code>getElementsByTagName</code> și <code>querySelector</code>. Fiecare dintre aceste metode are propriile sale caracteristici și utilizări, iar alegerea corectă depinde de structura documentului și de nevoile aplicației. De exemplu, <code>getElementById</code> este util pentru a accesa un singur element unic, în timp ce <code>getElementsByClassName</code> returnează o colecție de elemente care au aceeași clasă, permițându-ne să lucrăm cu grupuri de elemente. Această flexibilitate este crucială pentru manipularea eficientă a paginilor web.</p>",
+            "example": "<p>Imaginăm că avem un document HTML simplu care conține un titlu și un paragraf:</p> <pre><code>&lt;!DOCTYPE html&gt;\n&lt;html&gt;\n&lt;head&gt;\n    &lt;title&gt;Exemplu DOM&lt;\\/title&gt;\n&lt;\\/head&gt;\n&lt;body&gt;\n    &lt;h1 id=\"titlu\"&gt;Bun venit!&lt;\\/h1&gt;\n    &lt;p class=\"text\"&gt;Aceasta este o demonstrație a selectării elementelor DOM.&lt;\\/p&gt;\n&lt;\\/body&gt;\n&lt;\\/html&gt;<\\/code><\\/pre> <p>Pentru a selecta titlul, putem folosi:</p> <pre><code>const titlu = document.getElementById('titlu');\nconsole.log(titlu.innerText); \\/\\/ Afișează: Bun venit!</code></pre> <p>De asemenea, putem selecta paragraful folosind:</p> <pre><code>const paragraf = document.getElementsByClassName('text')[0];\nconsole.log(paragraf.innerText); \\/\\/ Afișează: Aceasta este o demonstrație a selectării elementelor DOM.</code></pre> <p>Aceste metode ne permit să accesăm și să manipulăm conținutul paginii, oferindu-ne flexibilitate în gestionarea elementelor DOM.</p>",
+            "application": "<p>În această sarcină, vei crea un document HTML simplu care conține un titlu și două paragrafe. Apoi, folosește metodele de selectare a elementelor pentru a accesa titlul și primul paragraf. Afișează conținutul acestora în consola browser-ului. Asigură-te că folosești atât <code>getElementById</code>, cât și <code>getElementsByClassName</code>. Documentul tău HTML ar trebui să arate astfel:</p> <pre><code>&lt;!DOCTYPE html&gt;\n&lt;html&gt;\n&lt;head&gt;\n    &lt;title&gt;Sarcină DOM&lt;\\/title&gt;\n&lt;\\/head&gt;\n&lt;body&gt;\n    &lt;h1 id=\"titlu\"&gt;Titlul Sarcinii&lt;\\/h1&gt;\n    &lt;p class=\"text\"&gt;Primul paragraf.&lt;\\/p&gt;\n    &lt;p class=\"text\"&gt;Al doilea paragraf.&lt;\\/p&gt;\n&lt;\\/body&gt;\n&lt;\\/html&gt;<\\/code><\\/pre> <p>După ce ai creat documentul, deschide-l în browser și verifică consola pentru a vedea rezultatele.</p>",
+            "feedback": "<p>Pentru a rezolva sarcina, documentul tău HTML ar trebui să fie similar cu exemplul dat. Asigură-te că ai folosit <code>getElementById</code> pentru a selecta titlul și <code>getElementsByClassName</code> pentru a selecta primul paragraf. Codul tău ar putea arăta astfel:</p> <pre><code>const titlu = document.getElementById('titlu');\nconsole.log(titlu.innerText); \\/\\/ Afișează: Titlul Sarcinii\n\nconst paragrafe = document.getElementsByClassName('text');\nconsole.log(paragrafe[0].innerText); \\/\\/ Afișează: Primul paragraf.</code></pre> <p>Asigură-te că ai verificat consola browser-ului pentru a vedea rezultatele. Dacă nu funcționează, verifică dacă ai scris corect ID-ul și clasele elementelor. De asemenea, asigură-te că documentul HTML este salvat corect și deschis în browser.</p>"
+        }
+    }
+}
