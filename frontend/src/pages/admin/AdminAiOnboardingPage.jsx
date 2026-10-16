@@ -20,6 +20,8 @@ import { isAiSetupDone, markAiSetupDone } from '../../utils/aiSetupStorage';
 import { telemetryService } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContextShared.js';
 import { isDemoSession } from '../../utils/demoMode';
+import RecordedAiCourseDemo from '../../components/demo/RecordedAiCourseDemo';
+import { recordedAiExample } from '../../components/demo/recordedAiExample';
 import './AdminAiOnboardingPage.css';
 
 const STEPS = [
@@ -86,9 +88,9 @@ export default function AdminAiOnboardingPage() {
 	const { user } = useAuth();
 	const demoReadonly = isDemoSession(user);
 	const [step, setStep] = useState(0);
-	const [topic, setTopic] = useState('Onboarding angajați noi');
+	const [topic, setTopic] = useState(demoReadonly ? recordedAiExample.title : 'Onboarding angajați noi');
 	const [audience, setAudience] = useState('Angajați noi');
-	const [pastedText, setPastedText] = useState('');
+	const [pastedText, setPastedText] = useState(demoReadonly ? recordedAiExample.source : '');
 	const [documents, setDocuments] = useState([]);
 	const [busy, setBusy] = useState(false);
 	const [status, setStatus] = useState('');
@@ -97,14 +99,14 @@ export default function AdminAiOnboardingPage() {
 	const [testId, setTestId] = useState(null);
 	const [testTitle, setTestTitle] = useState('');
 
-	const aiReady = isVoltEnabled('ai_creator') && isVoltEnabled('ai_test_generation');
+	const aiReady = demoReadonly || (isVoltEnabled('ai_creator') && isVoltEnabled('ai_test_generation'));
 	const credits = getAiCredits();
 
 	useEffect(() => {
-		if (aiReady && !isAiSetupDone()) {
+		if (!demoReadonly && aiReady && !isAiSetupDone()) {
 			telemetryService.track('guided_ai_setup_viewed', { step: 'materials' });
 		}
-	}, [aiReady]);
+	}, [aiReady, demoReadonly]);
 
 	const materialChars = useMemo(() => {
 		const docs = documents.reduce((sum, doc) => sum + String(doc.text || '').length, 0);
@@ -132,10 +134,11 @@ export default function AdminAiOnboardingPage() {
 			return;
 		}
 		setStep(1);
-		telemetryService.track('guided_ai_setup_step', { step: 'course' });
+		if (!demoReadonly) telemetryService.track('guided_ai_setup_step', { step: 'course' });
 	};
 
 	const handleFiles = async (event) => {
+		if (demoReadonly) return;
 		const files = Array.from(event.target.files || []);
 		if (!files.length) return;
 		setBusy(true);
@@ -190,6 +193,7 @@ export default function AdminAiOnboardingPage() {
 	};
 
 	const generateCourse = async () => {
+		if (demoReadonly) return;
 		if (!aiReady) {
 			notifyVoltComingSoon(showToast);
 			return;
@@ -282,6 +286,7 @@ export default function AdminAiOnboardingPage() {
 	};
 
 	const generateTest = async () => {
+		if (demoReadonly) return;
 		if (!courseId) {
 			showToast('Generează mai întâi cursul.', 'warning');
 			return;
@@ -368,7 +373,7 @@ export default function AdminAiOnboardingPage() {
 		<div className="ai-setup-page">
 			{demoReadonly ? (
 				<p className="demo-readonly-note">
-					Mod demo · Explorează pașii. Generarea și salvarea sunt dezactivate.
+					Mod demo · La pasul 2 poți reda o demonstrație AI înregistrată, fără consum de credite.
 				</p>
 			) : null}
 			<header className="ai-setup-header">
@@ -378,7 +383,7 @@ export default function AdminAiOnboardingPage() {
 					<p className="ai-setup-sub">
 						Adaugă materialele. Creează cursul și testul. Invită echipa.
 					</p>
-					{formatCredits(credits) ? (
+					{!demoReadonly && formatCredits(credits) ? (
 						<p className="ai-setup-quota">
 							Formely AI: {formatCredits(credits)}
 							{' '}· curs {getAiCreditCost('course_generation')} / test {getAiCreditCost('test_generation')}
@@ -408,24 +413,24 @@ export default function AdminAiOnboardingPage() {
 			{step === 0 && (
 				<section className="ai-setup-card ai-setup-materials">
 					<h2>Cu ce începem?</h2>
-					<p>Folosește proceduri, ghiduri sau prezentări pe care le ai deja.</p>
+					<p>{demoReadonly ? 'Am pregătit un ghid exemplu. Continuă pentru a vedea cum devine un curs în demonstrația înregistrată.' : 'Folosește proceduri, ghiduri sau prezentări pe care le ai deja.'}</p>
 					<div className="ai-setup-details">
 					<label className="ai-setup-field">
 						<span>Subiect / titlu curs</span>
-						<input value={topic} onChange={(e) => setTopic(e.target.value)} />
+						<input value={topic} readOnly={demoReadonly} onChange={(e) => setTopic(e.target.value)} />
 					</label>
 					<label className="ai-setup-field">
 						<span>Public țintă</span>
-						<input value={audience} onChange={(e) => setAudience(e.target.value)} />
+						<input value={audience} readOnly={demoReadonly} onChange={(e) => setAudience(e.target.value)} />
 					</label>
 					</div>
 					<div className="ai-setup-sources">
 					<div className="ai-setup-files">
-					<label className="ai-setup-upload">
+					<label className={`ai-setup-upload${demoReadonly ? ' ai-setup-upload-example' : ''}`}>
 						<UploadSimple size={28} aria-hidden="true" />
-						<strong>Alege materialele tale</strong>
-						<span>PDF sau TXT · poți adăuga mai multe fișiere</span>
-						<input type="file" accept=".pdf,.txt,application/pdf,text/plain" multiple onChange={handleFiles} disabled={busy} />
+						<strong>{demoReadonly ? recordedAiExample.filename : 'Alege materialele tale'}</strong>
+						<span>{demoReadonly ? 'Material exemplu pentru demonstrația înregistrată' : 'PDF sau TXT · poți adăuga mai multe fișiere'}</span>
+						<input aria-label="Încarcă materialele" type="file" accept=".pdf,.txt,application/pdf,text/plain" multiple onChange={handleFiles} disabled={busy || demoReadonly} />
 					</label>
 					{documents.length > 0 && (
 						<ul className="ai-setup-docs">
@@ -444,17 +449,18 @@ export default function AdminAiOnboardingPage() {
 					)}
 					</div>
 					<label className="ai-setup-field ai-setup-text">
-						<span><FileText size={16} aria-hidden="true" /> Sau adaugă textul direct</span>
+						<span><FileText size={16} aria-hidden="true" /> {demoReadonly ? 'Textul din ghidul exemplu' : 'Sau adaugă textul direct'}</span>
 						<textarea
 							rows={4}
 							value={pastedText}
+							readOnly={demoReadonly}
 							onChange={(e) => setPastedText(e.target.value)}
 							placeholder="Proceduri, reguli, pași de lucru…"
 						/>
 					</label>
 					</div>
 					<footer className="ai-setup-footer">
-						<span>Pasul 1 din 4 · Materialele rămân editabile</span>
+						<span>{demoReadonly ? 'Pasul 1 din 4 · Material exemplu' : 'Pasul 1 din 4 · Materialele rămân editabile'}</span>
 					<button
 						type="button"
 						className="lms-btn-primary"
@@ -467,7 +473,8 @@ export default function AdminAiOnboardingPage() {
 				</section>
 			)}
 
-			{step === 1 && (
+			{step === 1 && demoReadonly && <RecordedAiCourseDemo onBack={() => setStep(0)} />}
+			{step === 1 && !demoReadonly && (
 				<section className="ai-setup-card">
 					<h2>2. Generează cursul cu Formely AI</h2>
 					<p>

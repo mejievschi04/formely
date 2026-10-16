@@ -22,7 +22,7 @@ const STEPS = [
 	{
 		id: 'ai',
 		title: 'Formely AI — din materiale',
-		body: 'Setup AI: fluxul PDF → curs + teste. În demo poți parcurge pașii vizual; generarea/salvarea nu persistă.',
+		body: 'Deschide Setup AI și continuă la pasul 2. Redă demonstrația înregistrată ca să vezi un ghid transformat în module și lecții, fără consum de credite.',
 		path: '/admin/ai-setup',
 		adminView: 'admin',
 	},
