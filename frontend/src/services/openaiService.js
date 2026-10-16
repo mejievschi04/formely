@@ -6,6 +6,7 @@ import {
 } from '../utils/voltAvailability.js';
 import { logger } from '../utils/logger';
 import { aiResponseErrorMessage, parseAiStreamEvent } from '../utils/aiResponseErrors.js';
+import { createCourseGenerationClient } from './courseGenerationClient.js';
 
 async function fetchWithCsrfRetry(url, options) {
 	const send = () => {
@@ -119,7 +120,17 @@ async function readSseStream(response, onChunk, onData) {
 }
 
 // Service for Volt-assisted generation (OpenAI-compatible / Hugging Face APIs)
+const courseGenerations = createCourseGenerationClient((url, options = {}) => {
+	const token = localStorage.getItem('token');
+	return fetchWithCsrfRetry(url, {
+		...options,
+		headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+	});
+});
+
 export const openaiService = {
+	activeCourseGeneration: signal => courseGenerations.active(signal),
+	resumeCourseGeneration: (id, onData, signal, retry = false) => courseGenerations.resume(id, onData, signal, retry),
 	generateCourse: async (prompt, messages = []) => {
 		assertVoltEnabled();
 		try {
@@ -168,6 +179,16 @@ export const openaiService = {
 	) => {
 		assertVoltEnabled();
 		try {
+			if (extraPayload?.guided_brief && String(extraPayload.mode || '').includes('guided_creation') && !courseId && !extraPayload.courseId) {
+				const result = await courseGenerations.start({
+					prompt, guided_brief: extraPayload.guided_brief,
+					...(extraPayload.source_text ? { source_text: extraPayload.source_text } : {}),
+					...(extraPayload.attachments?.length ? { attachments: extraPayload.attachments.map(({ name, text }) => ({ name, text })) } : {}),
+				}, onData, signal);
+				if (result.content) onChunk?.(result.content);
+				onData?.(result);
+				return result;
+			}
 			const token = localStorage.getItem('token');
 			logger.log('Starting course generation request...', { courseId });
 			const response = await fetchWithCsrfRetry('/api/admin/ai/generate-course', {

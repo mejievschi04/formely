@@ -1,7 +1,7 @@
 import formelyLogo from '../../../assets/Formely logo.png';
 import './AIGenerationStatus.css';
 
-export default function AIGenerationStatus({ title, description }) {
+export default function AIGenerationStatus({ title, description, percent = null }) {
 	return (
 		<div className="ai-generation-status" role="status" aria-live="polite" aria-atomic="true">
 			<div className="ai-generation-status-main">
@@ -13,7 +13,9 @@ export default function AIGenerationStatus({ title, description }) {
 				</div>
 				<span className="ai-generation-status-badge">În lucru</span>
 			</div>
-			<div className="ai-chat-build-progress ai-generation-status-track" aria-hidden="true"><span className="ai-chat-build-progress-bar" /></div>
+			{percent === null
+				? <div className="ai-chat-build-progress ai-generation-status-track" aria-hidden="true"><span className="ai-chat-build-progress-bar" /></div>
+				: <progress className="ai-generation-status-progress" value={percent} max="100" aria-label="Progresul generării cursului" />}
 		</div>
 	);
 }

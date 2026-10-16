@@ -23,6 +23,9 @@ import { isDemoSession } from '../../utils/demoMode';
 import RecordedAiCourseDemo from '../../components/demo/RecordedAiCourseDemo';
 import { recordedAiExample } from '../../components/demo/recordedAiExample';
 import './AdminAiOnboardingPage.css';
+import { useCourseGenerationRecovery } from '../../hooks/useCourseGenerationRecovery';
+import { courseGenerationProgress } from '../../utils/courseGenerationProgress';
+import AIGenerationStatus from '../../components/admin/ai/AIGenerationStatus';
 
 const STEPS = [
 	{ id: 'materials', label: 'Materiale' },
@@ -101,6 +104,13 @@ export default function AdminAiOnboardingPage() {
 
 	const aiReady = demoReadonly || (isVoltEnabled('ai_creator') && isVoltEnabled('ai_test_generation'));
 	const credits = getAiCredits();
+	const recovery = useCourseGenerationRecovery({
+		enabled: aiReady && !demoReadonly,
+		onBusy: value => { setBusy(value); if (value) setStep(1); },
+		onResult: result => { setCourseId(result.course_id); setCourseTitle(''); setStatus(''); setStep(2); },
+		onError: error => showToast(error.message, 'error'),
+	});
+	const courseProgress = recovery.progress ? courseGenerationProgress(recovery.progress) : null;
 
 	useEffect(() => {
 		if (!demoReadonly && aiReady && !isAiSetupDone()) {
@@ -194,6 +204,7 @@ export default function AdminAiOnboardingPage() {
 
 	const generateCourse = async () => {
 		if (demoReadonly) return;
+		if (recovery.retryId) { await recovery.retry(); return; }
 		if (!aiReady) {
 			notifyVoltComingSoon(showToast);
 			return;
@@ -208,6 +219,7 @@ export default function AdminAiOnboardingPage() {
 		}
 
 		setBusy(true);
+		recovery.setProgress(null);
 		setStatus('Formely AI generează cursul…');
 		try {
 			const brief = {
@@ -239,11 +251,9 @@ export default function AdminAiOnboardingPage() {
 				(chunk) => {
 					if (!chunk) return;
 					streamed += chunk;
-					if (streamed.length % 400 < 20) {
-						setStatus(`Formely AI generează cursul… (${Math.min(99, Math.round(streamed.length / 40))}%)`);
-					}
 				},
 				(data) => {
+					if (data?.progress) recovery.setProgress(data.progress);
 					if (data?.course_id) createdId = data.course_id;
 				},
 				{
@@ -276,6 +286,7 @@ export default function AdminAiOnboardingPage() {
 			telemetryService.track('guided_ai_setup_course_created', { course_id: createdId });
 			showToast('Cursul a fost creat. Urmează testul.', 'success');
 		} catch (err) {
+			recovery.captureError(err);
 			console.error(err);
 			if (isAiQuotaError(err)) notifyAiQuotaExceeded(showToast, quotaErrorMessage(err));
 			else showToast(err?.message || AI_QUOTA_EXCEEDED_MESSAGE, 'error');
@@ -386,7 +397,7 @@ export default function AdminAiOnboardingPage() {
 	}
 
 	return (
-		<div className="ai-setup-page">
+		<div className={`ai-setup-page${step === 1 ? ' ai-setup-course-step' : ''}`}>
 			{demoReadonly ? (
 				<p className="demo-readonly-note">
 					Mod demo · La pasul 2 poți reda o demonstrație AI înregistrată, fără consum de credite.
@@ -424,7 +435,7 @@ export default function AdminAiOnboardingPage() {
 				))}
 			</ol>
 
-			{status ? <p className="ai-setup-status" role="status">{status}</p> : null}
+			{status && !(step === 1 && courseProgress) ? <p className="ai-setup-status" role="status">{status}</p> : null}
 
 			{step === 0 && (
 				<section className="ai-setup-card ai-setup-materials">
@@ -492,17 +503,18 @@ export default function AdminAiOnboardingPage() {
 			{step === 1 && !demoReadonly && (
 				<section className="ai-setup-card">
 					<h2>2. Generează cursul cu Formely AI</h2>
-					<p>
+					{!courseProgress && <p>
 						Folosim {documents.length} document(e)
 						{pastedText.trim() ? ' + text lipit' : ''} · ~{materialChars} caractere sursă.
 						Consumă {getAiCreditCost('course_generation')} credite.
-					</p>
+					</p>}
+					{courseProgress && <AIGenerationStatus {...courseProgress} />}
 					<div className="ai-setup-actions">
-						<button type="button" className="lms-btn-secondary" disabled={busy} onClick={() => setStep(0)}>
+						<button type="button" className="lms-btn-secondary" disabled={busy} onClick={() => { recovery.reset(); setStep(0); }}>
 							Înapoi
 						</button>
-						<button type="button" className="lms-btn-primary" disabled={busy} onClick={generateCourse}>
-							{busy ? 'Se generează…' : 'Generează cursul'}
+						<button type="button" className="lms-btn-primary" disabled={busy || recovery.checking} onClick={generateCourse}>
+							{busy ? 'Se generează…' : recovery.retryId ? 'Reia generarea' : 'Generează cursul'}
 						</button>
 					</div>
 				</section>

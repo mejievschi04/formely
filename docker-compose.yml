@@ -97,7 +97,7 @@ services:
       LOG_CHANNEL: stack
       LOG_LEVEL: ${LOG_LEVEL:-error}
       QUEUE_CONNECTION: ${QUEUE_CONNECTION:-database}
-      DB_QUEUE_RETRY_AFTER: 240
+      DB_QUEUE_RETRY_AFTER: 300
       MAIL_MAILER: ${MAIL_MAILER:-log}
       MAIL_HOST: ${MAIL_HOST:-}
       MAIL_PORT: ${MAIL_PORT:-587}
@@ -134,7 +134,7 @@ services:
     user: www-data
     entrypoint: ["php", "artisan"]
     command: ["queue:work", "database", "--sleep=2", "--tries=3", "--timeout=60", "--max-time=3600"]
-    stop_grace_period: 200s
+    stop_grace_period: 240s
     volumes:
       - ./backend:/var/www/html
       - backend_storage:/var/www/html/storage

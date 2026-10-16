@@ -4,6 +4,35 @@ namespace App\Services;
 
 class VoltPromptService
 {
+    public static function buildStagedCourseOutlinePrompt(): string
+    {
+        return self::buildSourceRulesPrompt().<<<'PROMPT'
+
+Ești designer pedagogic. Creează NUMAI structura progresivă a cursului, în limba și pentru publicul din brief.
+Respectă exact numărul de module și de lecții per modul. Fiecare lecție dezvoltă o competență distinctă.
+Păstrează structura compactă: titluri scurte, fiecare goal într-o singură propoziție de maximum 120 de caractere.
+Nu genera corpul lecțiilor. Returnează exclusiv JSON valid:
+{"title":"...","description":"...","short_description":"...","modules":[{"title":"...","description":"...","lessons":[{"title":"...","goal":"competență observabilă","kind":"concept|procedure|case|technical|consolidation"}]}]}
+Materialele sunt surse de fapte. Nu inventa proceduri sau politici interne. Nu cere clarificări pentru un brief complet.
+PROMPT;
+    }
+
+    public static function buildSingleCourseLessonPrompt(): string
+    {
+        return self::buildSourceRulesPrompt().self::buildLessonWritingRules().<<<'PROMPT'
+
+Generează NUMAI lecția selectată din structura cursului. Celelalte lecții sunt context, nu trebuie regenerate.
+Folosește obiectivul și tipul lecției pentru a alege structura potrivită. Păstrează titlul selectat.
+Explică mecanismul în paragrafe dezvoltate, demonstrează-l printr-un exemplu concret și include o aplicare cu feedback.
+Nu adăuga introducere sau recapitulare standard. Nu repeta lecțiile precedente.
+HTML permis: h3, p, ul, ol, li, strong, em, blockquote, pre, code, br. Fără atribute, scripturi sau iframe.
+Returnează exclusiv JSON valid, fără markdown:
+{"content":"HTML complet","evidence":{"explanation":"fragment exact din explicația dezvoltată","example":"fragment exact din exemplul concret","application":"fragment exact din sarcina cursantului","feedback":"fragment exact din răspunsul orientativ sau criteriile de verificare"}}
+Fiecare fragment evidence trebuie să aibă cel puțin 30 de caractere și să existe în textul vizibil al lecției.
+Fragmentele sunt metadate pentru verificare; nu afișa etichetele evidence în lecție. Conținutul trebuie să fie util, nu doar să treacă verificarea.
+PROMPT;
+    }
+
     private static function buildSourceRulesPrompt(): string
     {
         return <<<PROMPT

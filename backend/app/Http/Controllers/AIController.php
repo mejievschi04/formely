@@ -217,6 +217,13 @@ class AIController extends Controller
 
         $this->assertCompanyFeature($intent['feature']);
         $this->assertAiQuotaAvailable($intent['action']);
+        if ($type === 'course') {
+            $request->validate(['courseId' => 'nullable|integer|min:1']);
+            if ($request->filled('courseId')) {
+                $course = Course::query()->findOrFail((int) $request->input('courseId'));
+                abort_unless(auth()->user()?->isAdmin() || (int) $course->teacher_id === (int) Auth::id(), 403);
+            }
+        }
         if ($type === 'course' && ! str_contains($mode, 'builder_diff')) {
             $this->validateGenerationForm($request, 'course');
         } elseif ($type === 'test') {
@@ -559,7 +566,7 @@ class AIController extends Controller
     /**
      * Generate guided course creation without streaming, so we can validate the final JSON before saving.
      */
-    private function generateGuidedCourseCreationJson(array $messages, ?int $teacherId = null, ?int $courseId = null, string $mode = ''): array
+    private function generateGuidedCourseCreationJson(array $messages, ?int $teacherId = null, ?int $courseId = null, string $mode = '', array $brief = [], ?string $quotaAction = null): array
     {
         $providerName = $this->provider === 'groq' ? 'Groq' : 'OpenAI';
         // Generarea ghidată face mai multe request-uri + backoff la rate limit; poate depăși 30s.
@@ -609,6 +616,7 @@ class AIController extends Controller
             $modelMessages = $messages;
 
             for ($regenAttempt = 0; $regenAttempt < $autoValidationRetries; $regenAttempt++) {
+                $persistingCourse = false;
                 $payload = [
                     'model' => $modelToUse,
                     'messages' => $modelMessages,
@@ -685,7 +693,9 @@ class AIController extends Controller
                                 continue;
                             }
 
-                            throw new \Exception('Formely AI a generat un JSON incomplet. Încearcă un curs mai mic (ex. 2 module x 2 lecții) sau crește limita AI_GUIDED_MAX_TOKENS.');
+                            throw \Illuminate\Validation\ValidationException::withMessages([
+                                'ai_response' => ['Cursul depășește limita unui singur răspuns AI. Încearcă mai puține module sau lecții.'],
+                            ]);
                         }
 
                         $clarificationQuestion = $fallbackText !== ''
@@ -731,7 +741,7 @@ class AIController extends Controller
                         ];
                     }
 
-                    $validation = $this->validateAndNormalizeCourseData($courseData);
+                    $validation = $this->validateAndNormalizeCourseData($courseData, $brief);
                     if (!($validation['ok'] ?? false)) {
                         $reasons = $validation['reasons'] ?? [];
                         $detail = $reasons !== []
@@ -752,20 +762,28 @@ class AIController extends Controller
                             continue;
                         }
 
-                        return [
-                            'response_type' => 'clarification',
-                            'clarification_question' => $detail . ' Am încercat regenerare automată, dar încă nu a respectat regula de conținut. Dă un topic mai specific ca să detaliez lecțiile.',
-                            'content' => $detail,
-                        ];
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'ai_response' => ['Răspunsul AI nu a trecut verificarea: '.implode(' ', $reasons).' Încearcă din nou sau cere mai puține lecții.'],
+                        ]);
                     }
 
                     $validated = $validation['data'];
                     $validated['response_type'] = 'course';
                     $validatedJson = json_encode($validated, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                    $createdCourse = $this->createOrUpdateCourseFromResponse($validatedJson, $teacherId, $courseId);
-                    if (!$createdCourse) {
-                        throw new \Exception('Course could not be created from Formely AI response');
-                    }
+                    $persistingCourse = true;
+                    $usage = null;
+                    $createdCourse = DB::transaction(function () use ($validatedJson, $teacherId, $courseId, $quotaAction, &$usage) {
+                        $course = $this->createOrUpdateCourseFromResponse($validatedJson, $teacherId, $courseId);
+                        if (!$course) {
+                            throw new \RuntimeException('Course could not be created from Formely AI response');
+                        }
+
+                        // A concurrent request may consume the remaining credits while AI runs.
+                        // Keep the saved course and its credit charge in the same transaction.
+                        $usage = $this->recordAiQuota($quotaAction);
+
+                        return $course;
+                    });
 
                     $isUpdate = $courseId !== null;
                     return [
@@ -774,8 +792,15 @@ class AIController extends Controller
                         'course_id' => $createdCourse->id,
                         'course_created' => !$isUpdate,
                         'course_updated' => $isUpdate,
+                        ...($usage ? ['ai_usage' => $usage] : []),
                     ];
+                } catch (\Illuminate\Validation\ValidationException|\Illuminate\Http\Exceptions\HttpResponseException $e) {
+                    throw $e;
                 } catch (\Throwable $e) {
+                    // A database failure cannot be repaired by generating the course again.
+                    if ($persistingCourse) {
+                        throw $e;
+                    }
                     $lastError = $e;
                     Log::warning("{$providerName} guided course JSON attempt failed", [
                         'attempt' => $attemptIndex + 1,
@@ -2207,18 +2232,14 @@ class AIController extends Controller
 
             while (true) {
                 try {
-                    $guidedResult = $this->generateGuidedCourseCreationJson($formattedMessages, $teacherId, $courseId, $mode);
-                    if (
-                        AiIntentResolver::isBillableResponse($guidedResult['response_type'] ?? null)
-                        && ! empty($guidedResult['course_id'])
-                    ) {
-                        $usage = $this->recordAiQuota($quotaAction);
-                        if ($usage) {
-                            $guidedResult['ai_usage'] = $usage;
-                        }
-                    }
+                    $guidedResult = $this->generateGuidedCourseCreationJson(
+                        $formattedMessages, $teacherId, $courseId, $mode,
+                        (array) $request->input('guided_brief', []), $quotaAction,
+                    );
 
                     return response()->json($guidedResult);
+                } catch (\Illuminate\Validation\ValidationException|\Illuminate\Http\Exceptions\HttpResponseException $e) {
+                    throw $e;
                 } catch (\Throwable $e) {
                     if ($this->isRateLimitError(0, (string) $e->getMessage())) {
                         $retryAfterSeconds = $this->extractRetryAfterSeconds((string) $e->getMessage(), 20);
@@ -3685,7 +3706,11 @@ class AIController extends Controller
             return mb_strlen(trim((string) $chunk)) >= 20;
         }));
 
-        return max($lineCount, $sentenceCount);
+        // Developed prose must not need artificial paragraph/line breaks to pass.
+        // Retain the existing short-content guard, with 20 words per equivalent line.
+        $wordCount = preg_match_all('/[\p{L}\p{N}]+/u', $plain) ?: 0;
+
+        return max($lineCount, $sentenceCount, intdiv($wordCount, 20));
     }
 
     private function ensureLessonHasMinimumLines(string $lessonTitle, string $lessonContent): void
@@ -3703,7 +3728,7 @@ class AIController extends Controller
      *
      * @return array{ok: true, data: array}|array{ok: false, reasons: string[]}
      */
-    private function validateAndNormalizeCourseData($data): array
+    private function validateAndNormalizeCourseData($data, array $brief = []): array
     {
         if (!is_array($data)) {
             Log::warning('Course data is not an array');
@@ -3740,6 +3765,9 @@ class AIController extends Controller
         }
 
         $modulesCount = count($data['modules']);
+        if (isset($brief['modules_count']) && $modulesCount !== (int) $brief['modules_count']) {
+            return ['ok' => false, 'reasons' => ['Formularul cere '.$brief['modules_count'].' module, dar răspunsul conține '.$modulesCount.'. Respectă numărul cerut.']];
+        }
         if ($modulesCount < 2) {
             Log::warning('Insufficient modules', [
                 'required' => 2,
@@ -3818,14 +3846,14 @@ class AIController extends Controller
 
                 $lineCount = $this->countLessonContentLines($lessonContent);
                 if ($lineCount < $this->getMinLessonLines()) {
-                    // Nu respingem cursul doar pentru că o lecție e mai scurtă.
-                    // Pe Groq free tier regenerările suplimentare epuizează TPM-ul și blochează crearea.
-                    Log::warning('Lesson content is shorter than preferred minimum; accepting anyway', [
+                    Log::warning('Lesson content rejected before course persistence', [
                         'module_title' => $moduleTitle,
                         'lesson_title' => $lessonTitle,
                         'required_min_lines' => $this->getMinLessonLines(),
                         'found_lines' => $lineCount,
                     ]);
+
+                    return ['ok' => false, 'reasons' => ['Lecția "'.$lessonTitle.'" are prea puțin conținut explicativ. Dezvoltă explicația și exemplul, fără propoziții sau rânduri de umplere.']];
                 }
 
                 $normalizedModule['lessons'][] = [
@@ -3835,6 +3863,9 @@ class AIController extends Controller
             }
 
             $lessonsCount = count($normalizedModule['lessons']);
+            if (isset($brief['lessons_per_module']) && $lessonsCount !== (int) $brief['lessons_per_module']) {
+                return ['ok' => false, 'reasons' => ['Modulul "'.$moduleTitle.'" conține '.$lessonsCount.' lecții; formularul cere '.$brief['lessons_per_module'].' lecții per modul. Respectă numărul cerut.']];
+            }
             if ($lessonsCount < 2) {
                 Log::warning('Module has insufficient lessons', [
                     'module_title' => $moduleTitle,

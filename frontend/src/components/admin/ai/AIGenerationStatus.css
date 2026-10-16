@@ -18,6 +18,7 @@
 .ai-generation-status-badge { flex-shrink: 0; padding: 4px 8px; border-radius: 6px; background: var(--bg-secondary, #f8fafc); color: var(--text-secondary, #64748b); font-size: 11px; line-height: 1.5; }
 .ai-generation-status .ai-generation-status-track { height: 3px; margin: 16px 0 0; background: var(--bg-secondary, #f1f5f9); }
 .ai-generation-status-track .ai-chat-build-progress-bar { background: var(--color-brand-primary, #1970f0); }
+.ai-generation-status-progress { display: block; width: 100%; height: 6px; margin-top: 16px; accent-color: var(--color-brand-primary, #1970f0); }
 @media (max-width: 480px) {
 	.ai-generation-status { padding: 14px; }
 	.ai-generation-status-main { gap: 10px; }

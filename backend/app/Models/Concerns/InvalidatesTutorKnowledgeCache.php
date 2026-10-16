@@ -31,6 +31,6 @@ trait InvalidatesTutorKnowledgeCache
             return;
         }
 
-        SyncAiKnowledgeJob::dispatch($lessonId, $courseId, $action)->onConnection('background');
+        SyncAiKnowledgeJob::dispatch($lessonId, $courseId, $action)->onConnection('background')->afterCommit();
     }
 }

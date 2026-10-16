@@ -450,6 +450,12 @@ Route::middleware([
     });
     
     // AI Generation routes (Hugging Face)
+    Route::middleware(['volt', 'company_feature:ai_creator'])->group(function () {
+        Route::post('/ai/course-generations', [\App\Http\Controllers\AiCourseGenerationController::class, 'start'])->middleware('throttle:ai');
+        Route::get('/ai/course-generations/active', [\App\Http\Controllers\AiCourseGenerationController::class, 'active']);
+        Route::get('/ai/course-generations/{id}', [\App\Http\Controllers\AiCourseGenerationController::class, 'show'])->whereUuid('id');
+        Route::post('/ai/course-generations/{id}/retry', [\App\Http\Controllers\AiCourseGenerationController::class, 'retry'])->whereUuid('id')->middleware('throttle:ai');
+    });
     Route::post('/ai/generate-course', [\App\Http\Controllers\AIController::class, 'generateCourse'])->middleware(['volt', 'throttle:ai']);
     Route::post('/ai/generate-test', [\App\Http\Controllers\AIController::class, 'generateTest'])->middleware(['volt', 'company_feature:ai_test_generation', 'throttle:ai']);
 });

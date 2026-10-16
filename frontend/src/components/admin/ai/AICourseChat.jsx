@@ -28,6 +28,10 @@ import './AIChat.css';
 import AIGenerationForm from './AIGenerationForm';
 import AIGenerationStatus from './AIGenerationStatus';
 import { logger } from '../../../utils/logger';
+import { useAuth } from '../../../contexts/AuthContextShared.js';
+import { isDemoSession } from '../../../utils/demoMode';
+import { useCourseGenerationRecovery } from '../../../hooks/useCourseGenerationRecovery';
+import { courseGenerationProgress } from '../../../utils/courseGenerationProgress';
 
 function isGenerationPlaceholder(message) {
 	return message?.role === 'assistant' && typeof message.content === 'string'
@@ -120,6 +124,17 @@ const AICourseChat = ({
 	const chatContainerRef = useRef(null);
 	const attachmentInputRef = useRef(null);
 	const streamAbortRef = useRef(null);
+	const { user } = useAuth();
+	const recovery = useCourseGenerationRecovery({
+		enabled: isVoltEnabled('ai_creator') && !isDemoSession(user) && !initialCourseId,
+		onBusy: setIsGenerating,
+		onResult: result => {
+			setCurrentCourseId(result.course_id);
+			setMessages(previous => [...previous.filter(message => !isGenerationPlaceholder(message)), { role: 'assistant', content: result.content }]);
+			setPendingCreatedCourse({ id: result.course_id, created: true });
+		},
+		onError: error => setMessages(previous => [...previous.filter(message => !isGenerationPlaceholder(message)), { role: 'assistant', content: error.message }]),
+	});
 
 	const beginStreamAbort = () => {
 		if (streamAbortRef.current) {
@@ -484,7 +499,8 @@ const AICourseChat = ({
 	};
 
 	const submitPrompt = async (promptText, submittedBrief = null) => {
-		if (isGenerating) return;
+		if (isGenerating || recovery.checking) return;
+		recovery.reset();
 		if (!isVoltEnabled()) {
 			notifyVoltComingSoon(showToast);
 			return;
@@ -762,6 +778,7 @@ const AICourseChat = ({
 				});
 			};
 			const dataHandler = (data) => {
+				if (data?.progress) recovery.setProgress(data.progress);
 				if (data?.response_type === 'clarification') {
 					setPendingCourseIntent(runMode === 'assist' ? 'edit_course' : 'create_course');
 				} else if (data?.course_id || ['course', 'builder_diff', 'plan'].includes(data?.response_type)) {
@@ -962,6 +979,7 @@ const AICourseChat = ({
 			}
 		} catch (error) {
 			console.error('Error generating course:', error);
+			recovery.captureError(error);
 			if (isAiQuotaError(error)) {
 				const quotaMsg = quotaErrorMessage(error);
 				notifyAiQuotaExceeded(showToast, quotaMsg);
@@ -974,12 +992,13 @@ const AICourseChat = ({
 					return newMessages;
 				});
 			} else {
-				showToast('Eroare la generarea cursului. Te rugăm să încerci din nou.', 'error');
+				if (error.name === 'AbortError') return;
+				showToast(error.message || 'Eroare la generarea cursului.', 'error');
 				setMessages(prev => {
 					const newMessages = [...prev];
 					newMessages[newMessages.length - 1] = {
 						...newMessages[newMessages.length - 1],
-						content: 'Îmi pare rău, am întâmpinat o eroare. Te rugăm să încerci din nou sau să reformulezi cererea.',
+						content: error.message || 'Generarea a fost întreruptă. Poți încerca din nou.',
 					};
 					return newMessages;
 				});
@@ -1107,6 +1126,7 @@ const AICourseChat = ({
 	const liveStatusSubtitle = isDirectExporting
 		? 'Organizăm datele pentru export.'
 		: 'Răspunsul apare aici imediat ce este pregătit.';
+	const courseProgress = recovery.progress ? courseGenerationProgress(recovery.progress) : null;
 
 
 	if (!isVoltEnabled()) {
@@ -1262,8 +1282,9 @@ const AICourseChat = ({
 					);
 				})}
 				{isGenerating && (
-					<AIGenerationStatus title={liveStatusTitle} description={liveStatusSubtitle} />
+					<AIGenerationStatus {...(courseProgress || { title: liveStatusTitle, description: liveStatusSubtitle })} />
 				)}
+				{!isGenerating && recovery.retryId && <button type="button" className="lms-btn-primary" onClick={recovery.retry}>Reia generarea cursului</button>}
                 {generationForm && <AIGenerationForm key={`${generationForm.kind}:${generationForm.request}`} kind={generationForm.kind} courseId={currentCourseId} editingTest={generationForm.intent === 'edit_test'} request={generationForm.request} disabled={isGenerating} onCancel={() => setGenerationForm(null)} onSubmit={values => {
                     const form = generationForm;
                     setGenerationForm(null);
